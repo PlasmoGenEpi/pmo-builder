@@ -1,0 +1,72 @@
+import { CircleCheck, Plus } from "lucide-react";
+
+import { Button, Callout } from "@/ui";
+
+/** How many missing names to list before "and N more". */
+const SHOWN = 8;
+
+/** Props for {@link NameCoverage}. */
+export interface NameCoverageProps {
+  /** Names another table uses, in table order. */
+  readonly referenced: readonly string[];
+  /** Names of the records on this page. */
+  readonly defined: readonly string[];
+  /** The other table, for sentences, such as "library sample table". */
+  readonly source: string;
+  /** What one name is, such as "sequencing run". */
+  readonly noun: string;
+  /** Adds a record for each name given. Leave out where records cannot be added (file mode). */
+  readonly onCreate?: (names: readonly string[]) => void;
+}
+
+/** Names in `referenced` that `defined` lacks, in order. */
+export function missingNames(
+  referenced: readonly string[],
+  defined: readonly string[],
+): readonly string[] {
+  const known = new Set(defined.map((name) => name.trim()));
+  return referenced.filter((name) => !known.has(name.trim()));
+}
+
+/**
+ * Compares the names another table uses with the records on this page, says
+ * which have no record yet, and offers to add one for each.
+ */
+export function NameCoverage({ referenced, defined, source, noun, onCreate }: NameCoverageProps) {
+  if (referenced.length === 0) return null;
+  const missing = missingNames(referenced, defined);
+  if (missing.length === 0) {
+    return (
+      <p className="flex items-start gap-1.5 text-base text-text-muted">
+        <CircleCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-success" />
+        <span>
+          Every {noun} the {source} names has a record here.
+        </span>
+      </p>
+    );
+  }
+  const shown = missing.slice(0, SHOWN);
+  const more = missing.length - shown.length;
+  const title =
+    missing.length === 1
+      ? `The ${source} names a ${noun} with no record here`
+      : `The ${source} names ${missing.length} ${noun}s with no record here`;
+  return (
+    <Callout
+      tone="info"
+      title={title}
+      action={
+        onCreate === undefined ? undefined : (
+          <Button size="sm" icon={Plus} onClick={() => onCreate(missing)}>
+            {missing.length === 1 ? `Add ${missing[0] ?? ""}` : `Add a record for each`}
+          </Button>
+        )
+      }
+    >
+      <p>
+        <span className="font-mono text-sm break-words">{shown.join(", ")}</span>
+        {more > 0 ? ` and ${more} more` : null}
+      </p>
+    </Callout>
+  );
+}

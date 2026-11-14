@@ -1,0 +1,929 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PMO Builder usage record",
+  "description": "A visit or session record from PMO Builder. Generated from src/analytics/payloadSchema.ts. Holds no identifiers, timestamps or user data.",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 1
+        },
+        "kind": {
+          "type": "string",
+          "const": "visit"
+        },
+        "app": {
+          "type": "string",
+          "pattern": "^(unknown|[0-9]{1,4}\\.[0-9]{1,4}\\.[0-9]{1,4})$"
+        }
+      },
+      "required": ["v", "kind", "app"],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer",
+          "const": 1
+        },
+        "kind": {
+          "type": "string",
+          "const": "session"
+        },
+        "app": {
+          "type": "string",
+          "pattern": "^(unknown|[0-9]{1,4}\\.[0-9]{1,4}\\.[0-9]{1,4})$"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "home",
+              "microhaplotypes",
+              "panel",
+              "specimens",
+              "librarySamples",
+              "project",
+              "sequencing",
+              "bioinformatics",
+              "readCounts",
+              "review"
+            ]
+          },
+          "maxItems": 10,
+          "uniqueItems": true
+        },
+        "tables": {
+          "type": "object",
+          "properties": {
+            "microhaplotypes": {
+              "type": "object",
+              "properties": {
+                "import": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "route": {
+                          "type": "string",
+                          "enum": ["upload", "example", "saved-panel"]
+                        },
+                        "format": {
+                          "type": "string",
+                          "enum": ["csv", "tsv", "txt", "xlsx", "other"]
+                        },
+                        "gzip": {
+                          "type": "boolean"
+                        },
+                        "rows": {
+                          "type": "string",
+                          "enum": [
+                            "0",
+                            "1-9",
+                            "10-99",
+                            "100-999",
+                            "1000-9999",
+                            "10000-99999",
+                            "100000+"
+                          ]
+                        },
+                        "columns": {
+                          "type": "string",
+                          "enum": ["0", "1-4", "5-9", "10-19", "20-49", "50-99", "100+"]
+                        }
+                      },
+                      "required": ["route", "format", "gzip", "rows", "columns"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "mappingEdited": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["import", "mappingEdited"],
+              "additionalProperties": false
+            },
+            "panelTargets": {
+              "type": "object",
+              "properties": {
+                "import": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "route": {
+                          "type": "string",
+                          "enum": ["upload", "example", "saved-panel"]
+                        },
+                        "format": {
+                          "type": "string",
+                          "enum": ["csv", "tsv", "txt", "xlsx", "other"]
+                        },
+                        "gzip": {
+                          "type": "boolean"
+                        },
+                        "rows": {
+                          "type": "string",
+                          "enum": [
+                            "0",
+                            "1-9",
+                            "10-99",
+                            "100-999",
+                            "1000-9999",
+                            "10000-99999",
+                            "100000+"
+                          ]
+                        },
+                        "columns": {
+                          "type": "string",
+                          "enum": ["0", "1-4", "5-9", "10-19", "20-49", "50-99", "100+"]
+                        }
+                      },
+                      "required": ["route", "format", "gzip", "rows", "columns"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "mappingEdited": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["import", "mappingEdited"],
+              "additionalProperties": false
+            },
+            "genomes": {
+              "type": "object",
+              "properties": {
+                "import": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "route": {
+                          "type": "string",
+                          "enum": ["upload", "example", "saved-panel"]
+                        },
+                        "format": {
+                          "type": "string",
+                          "enum": ["csv", "tsv", "txt", "xlsx", "other"]
+                        },
+                        "gzip": {
+                          "type": "boolean"
+                        },
+                        "rows": {
+                          "type": "string",
+                          "enum": [
+                            "0",
+                            "1-9",
+                            "10-99",
+                            "100-999",
+                            "1000-9999",
+                            "10000-99999",
+                            "100000+"
+                          ]
+                        },
+                        "columns": {
+                          "type": "string",
+                          "enum": ["0", "1-4", "5-9", "10-19", "20-49", "50-99", "100+"]
+                        }
+                      },
+                      "required": ["route", "format", "gzip", "rows", "columns"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "mappingEdited": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["import", "mappingEdited"],
+              "additionalProperties": false
+            },
+            "specimens": {
+              "type": "object",
+              "properties": {
+                "import": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "route": {
+                          "type": "string",
+                          "enum": ["upload", "example", "saved-panel"]
+                        },
+                        "format": {
+                          "type": "string",
+                          "enum": ["csv", "tsv", "txt", "xlsx", "other"]
+                        },
+                        "gzip": {
+                          "type": "boolean"
+                        },
+                        "rows": {
+                          "type": "string",
+                          "enum": [
+                            "0",
+                            "1-9",
+                            "10-99",
+                            "100-999",
+                            "1000-9999",
+                            "10000-99999",
+                            "100000+"
+                          ]
+                        },
+                        "columns": {
+                          "type": "string",
+                          "enum": ["0", "1-4", "5-9", "10-19", "20-49", "50-99", "100+"]
+                        }
+                      },
+                      "required": ["route", "format", "gzip", "rows", "columns"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "mappingEdited": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["import", "mappingEdited"],
+              "additionalProperties": false
+            },
+            "librarySamples": {
+              "type": "object",
+              "properties": {
+                "import": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "route": {
+                          "type": "string",
+                          "enum": ["upload", "example", "saved-panel"]
+                        },
+                        "format": {
+                          "type": "string",
+                          "enum": ["csv", "tsv", "txt", "xlsx", "other"]
+                        },
+                        "gzip": {
+                          "type": "boolean"
+                        },
+                        "rows": {
+                          "type": "string",
+                          "enum": [
+                            "0",
+                            "1-9",
+                            "10-99",
+                            "100-999",
+                            "1000-9999",
+                            "10000-99999",
+                            "100000+"
+                          ]
+                        },
+                        "columns": {
+                          "type": "string",
+                          "enum": ["0", "1-4", "5-9", "10-19", "20-49", "50-99", "100+"]
+                        }
+                      },
+                      "required": ["route", "format", "gzip", "rows", "columns"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "mappingEdited": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["import", "mappingEdited"],
+              "additionalProperties": false
+            },
+            "project": {
+              "type": "object",
+              "properties": {
+                "import": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "route": {
+                          "type": "string",
+                          "enum": ["upload", "example", "saved-panel"]
+                        },
+                        "format": {
+                          "type": "string",
+                          "enum": ["csv", "tsv", "txt", "xlsx", "other"]
+                        },
+                        "gzip": {
+                          "type": "boolean"
+                        },
+                        "rows": {
+                          "type": "string",
+                          "enum": [
+                            "0",
+                            "1-9",
+                            "10-99",
+                            "100-999",
+                            "1000-9999",
+                            "10000-99999",
+                            "100000+"
+                          ]
+                        },
+                        "columns": {
+                          "type": "string",
+                          "enum": ["0", "1-4", "5-9", "10-19", "20-49", "50-99", "100+"]
+                        }
+                      },
+                      "required": ["route", "format", "gzip", "rows", "columns"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "mappingEdited": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["import", "mappingEdited"],
+              "additionalProperties": false
+            },
+            "sequencing": {
+              "type": "object",
+              "properties": {
+                "import": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "route": {
+                          "type": "string",
+                          "enum": ["upload", "example", "saved-panel"]
+                        },
+                        "format": {
+                          "type": "string",
+                          "enum": ["csv", "tsv", "txt", "xlsx", "other"]
+                        },
+                        "gzip": {
+                          "type": "boolean"
+                        },
+                        "rows": {
+                          "type": "string",
+                          "enum": [
+                            "0",
+                            "1-9",
+                            "10-99",
+                            "100-999",
+                            "1000-9999",
+                            "10000-99999",
+                            "100000+"
+                          ]
+                        },
+                        "columns": {
+                          "type": "string",
+                          "enum": ["0", "1-4", "5-9", "10-19", "20-49", "50-99", "100+"]
+                        }
+                      },
+                      "required": ["route", "format", "gzip", "rows", "columns"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "mappingEdited": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["import", "mappingEdited"],
+              "additionalProperties": false
+            },
+            "bioinformaticsMethods": {
+              "type": "object",
+              "properties": {
+                "import": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "route": {
+                          "type": "string",
+                          "enum": ["upload", "example", "saved-panel"]
+                        },
+                        "format": {
+                          "type": "string",
+                          "enum": ["csv", "tsv", "txt", "xlsx", "other"]
+                        },
+                        "gzip": {
+                          "type": "boolean"
+                        },
+                        "rows": {
+                          "type": "string",
+                          "enum": [
+                            "0",
+                            "1-9",
+                            "10-99",
+                            "100-999",
+                            "1000-9999",
+                            "10000-99999",
+                            "100000+"
+                          ]
+                        },
+                        "columns": {
+                          "type": "string",
+                          "enum": ["0", "1-4", "5-9", "10-19", "20-49", "50-99", "100+"]
+                        }
+                      },
+                      "required": ["route", "format", "gzip", "rows", "columns"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "mappingEdited": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["import", "mappingEdited"],
+              "additionalProperties": false
+            },
+            "bioinformaticsRuns": {
+              "type": "object",
+              "properties": {
+                "import": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "route": {
+                          "type": "string",
+                          "enum": ["upload", "example", "saved-panel"]
+                        },
+                        "format": {
+                          "type": "string",
+                          "enum": ["csv", "tsv", "txt", "xlsx", "other"]
+                        },
+                        "gzip": {
+                          "type": "boolean"
+                        },
+                        "rows": {
+                          "type": "string",
+                          "enum": [
+                            "0",
+                            "1-9",
+                            "10-99",
+                            "100-999",
+                            "1000-9999",
+                            "10000-99999",
+                            "100000+"
+                          ]
+                        },
+                        "columns": {
+                          "type": "string",
+                          "enum": ["0", "1-4", "5-9", "10-19", "20-49", "50-99", "100+"]
+                        }
+                      },
+                      "required": ["route", "format", "gzip", "rows", "columns"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "mappingEdited": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["import", "mappingEdited"],
+              "additionalProperties": false
+            },
+            "readCountTotals": {
+              "type": "object",
+              "properties": {
+                "import": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "route": {
+                          "type": "string",
+                          "enum": ["upload", "example", "saved-panel"]
+                        },
+                        "format": {
+                          "type": "string",
+                          "enum": ["csv", "tsv", "txt", "xlsx", "other"]
+                        },
+                        "gzip": {
+                          "type": "boolean"
+                        },
+                        "rows": {
+                          "type": "string",
+                          "enum": [
+                            "0",
+                            "1-9",
+                            "10-99",
+                            "100-999",
+                            "1000-9999",
+                            "10000-99999",
+                            "100000+"
+                          ]
+                        },
+                        "columns": {
+                          "type": "string",
+                          "enum": ["0", "1-4", "5-9", "10-19", "20-49", "50-99", "100+"]
+                        }
+                      },
+                      "required": ["route", "format", "gzip", "rows", "columns"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "mappingEdited": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["import", "mappingEdited"],
+              "additionalProperties": false
+            },
+            "readCountsByStage": {
+              "type": "object",
+              "properties": {
+                "import": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "route": {
+                          "type": "string",
+                          "enum": ["upload", "example", "saved-panel"]
+                        },
+                        "format": {
+                          "type": "string",
+                          "enum": ["csv", "tsv", "txt", "xlsx", "other"]
+                        },
+                        "gzip": {
+                          "type": "boolean"
+                        },
+                        "rows": {
+                          "type": "string",
+                          "enum": [
+                            "0",
+                            "1-9",
+                            "10-99",
+                            "100-999",
+                            "1000-9999",
+                            "10000-99999",
+                            "100000+"
+                          ]
+                        },
+                        "columns": {
+                          "type": "string",
+                          "enum": ["0", "1-4", "5-9", "10-19", "20-49", "50-99", "100+"]
+                        }
+                      },
+                      "required": ["route", "format", "gzip", "rows", "columns"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "mappingEdited": {
+                  "type": "boolean"
+                }
+              },
+              "required": ["import", "mappingEdited"],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "sections": {
+          "type": "object",
+          "properties": {
+            "microhaplotypes": {
+              "type": "string",
+              "enum": ["empty", "incomplete", "ready", "error"]
+            },
+            "panel": {
+              "type": "string",
+              "enum": ["empty", "incomplete", "ready", "error"]
+            },
+            "specimens": {
+              "type": "string",
+              "enum": ["empty", "incomplete", "ready", "error"]
+            },
+            "librarySamples": {
+              "type": "string",
+              "enum": ["empty", "incomplete", "ready", "error"]
+            },
+            "project": {
+              "type": "string",
+              "enum": ["empty", "incomplete", "ready", "error"]
+            },
+            "sequencing": {
+              "type": "string",
+              "enum": ["empty", "incomplete", "ready", "error"]
+            },
+            "bioinformatics": {
+              "type": "string",
+              "enum": ["empty", "incomplete", "ready", "error"]
+            },
+            "readCounts": {
+              "type": "string",
+              "enum": ["empty", "incomplete", "ready", "error"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "build": {
+          "type": "object",
+          "properties": {
+            "built": {
+              "type": "string",
+              "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+            },
+            "failed": {
+              "type": "string",
+              "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+            },
+            "validation": {
+              "type": "string",
+              "enum": ["not-run", "valid", "invalid"]
+            },
+            "schemaErrors": {
+              "type": "string",
+              "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+            },
+            "downloads": {
+              "type": "object",
+              "properties": {
+                "plain": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "gzip": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                }
+              },
+              "required": ["plain", "gzip"],
+              "additionalProperties": false
+            },
+            "downloadSize": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "enum": ["0-10kb", "10-100kb", "100kb-1mb", "1-10mb", "10-100mb", "100mb+"]
+                }
+              ]
+            }
+          },
+          "required": [
+            "built",
+            "failed",
+            "validation",
+            "schemaErrors",
+            "downloads",
+            "downloadSize"
+          ],
+          "additionalProperties": false
+        },
+        "issues": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "integrity/duplicate-library-sample-result",
+                  "integrity/duplicate-mhap-id",
+                  "integrity/duplicate-name",
+                  "integrity/duplicate-representative-seq",
+                  "integrity/duplicate-representative-target",
+                  "integrity/duplicate-target-result",
+                  "integrity/end-before-start",
+                  "integrity/index-not-integer",
+                  "integrity/index-out-of-range",
+                  "integrity/target-not-in-panel",
+                  "io/invalid-gzip",
+                  "io/invalid-json",
+                  "io/invalid-utf8",
+                  "io/not-an-object",
+                  "io/not-serialisable",
+                  "merge/duplicate-library-sample-names",
+                  "merge/incomplete-name-fields",
+                  "merge/malformed-input",
+                  "merge/missing-name-field",
+                  "merge/missing-required-fields",
+                  "merge/no-panels",
+                  "merge/runs-without-methods",
+                  "merge/several-panels-without-sample-info",
+                  "merge/specimens-added",
+                  "merge/specimens-without-library-samples",
+                  "merge/unresolved-names",
+                  "metatable/density-method-length-mismatch",
+                  "metatable/density-method-type",
+                  "metatable/density-method-without-density",
+                  "metatable/duplicate-output-columns",
+                  "metatable/duplicate-selected-columns",
+                  "metatable/empty-delimiter",
+                  "metatable/invalid-density-columns",
+                  "metatable/invalid-integer",
+                  "metatable/invalid-list-value",
+                  "metatable/invalid-number",
+                  "metatable/invalid-plate-position",
+                  "metatable/invalid-taxon-id",
+                  "metatable/missing-columns",
+                  "metatable/missing-name-field",
+                  "metatable/not-a-table",
+                  "metatable/null-values",
+                  "metatable/plate-position-conflict",
+                  "metatable/plate-row-col-mismatch",
+                  "mhap/duplicate-target-seq",
+                  "mhap/incomplete-location",
+                  "mhap/incomplete-location-columns",
+                  "mhap/incomplete-masking-columns",
+                  "mhap/invalid-masking",
+                  "mhap/missing-additional-columns",
+                  "mhap/missing-columns",
+                  "mhap/missing-reads",
+                  "mhap/missing-run-name",
+                  "mhap/missing-seq",
+                  "mhap/missing-seqs",
+                  "mhap/missing-target-names",
+                  "mhap/pseudocigar-ref-loc-columns-unset",
+                  "mhap/pseudocigar-ref-loc-missing",
+                  "panel/conflicting-target-definition",
+                  "panel/duplicate-target-info",
+                  "panel/duplicate-target-names",
+                  "panel/empty-table",
+                  "panel/internal",
+                  "panel/invalid-delimiter",
+                  "panel/invalid-genome-info",
+                  "panel/invalid-integer",
+                  "panel/invalid-location-columns",
+                  "panel/invalid-table",
+                  "panel/invalid-target-index",
+                  "panel/location-without-genome",
+                  "panel/malformed-panel-info",
+                  "panel/malformed-target",
+                  "panel/missing-additional-columns",
+                  "panel/missing-columns",
+                  "panel/missing-location",
+                  "panel/missing-target-info",
+                  "panel/missing-target-name",
+                  "panel/no-panels",
+                  "validate/unknown-schema-version",
+                  "bioinformatics/blank-group",
+                  "bioinformatics/method-column",
+                  "bioinformatics/method-gone",
+                  "bioinformatics/no-method-chosen",
+                  "bioinformatics/no-methods",
+                  "bioinformatics/no-steps",
+                  "bioinformatics/unknown-group-column",
+                  "bioinformatics/unknown-method",
+                  "build/unexpected",
+                  "build/unused-fields",
+                  "draft/one-project-for-all",
+                  "draft/one-run-for-all",
+                  "draft/required-section",
+                  "draft/restore-failed",
+                  "draft/samples-on-first-panel",
+                  "draft/save-failed",
+                  "draft/section-errors",
+                  "draft/section-left-out",
+                  "draft/specimen-names-unused",
+                  "draft/unlinked-project-names",
+                  "draft/unlinked-sequencing-names",
+                  "form/duplicate-name",
+                  "form/invalid-value",
+                  "form/missing-required",
+                  "genome/missing",
+                  "import/empty-file",
+                  "import/engine-stopped",
+                  "import/missing-sheet",
+                  "import/no-rows",
+                  "import/not-loaded",
+                  "import/too-large",
+                  "import/unexpected",
+                  "import/unreadable-file",
+                  "import/unreadable-workbook",
+                  "import/unsupported-format",
+                  "import/unsupported-type",
+                  "mapping/additional-column-mapped",
+                  "mapping/duplicate-column",
+                  "mapping/incomplete-group",
+                  "mapping/missing-required",
+                  "mapping/unknown-additional-column",
+                  "mapping/unknown-column",
+                  "panel/duplicate-panel-names",
+                  "panel/empty",
+                  "panel/invalid-name",
+                  "panel/missing-name",
+                  "panel/no-saved-panel",
+                  "schema/any-of",
+                  "schema/minimum",
+                  "schema/more",
+                  "schema/pattern",
+                  "schema/required",
+                  "schema/type",
+                  "table/blank-required",
+                  "table/file-missing",
+                  "table/invalid-boolean",
+                  "table/no-rows",
+                  "table/not-imported",
+                  "table/repeated-rows",
+                  "table/typing-failed",
+                  "table/unreadable",
+                  "worker/crashed",
+                  "integrity/other",
+                  "io/other",
+                  "merge/other",
+                  "metatable/other",
+                  "mhap/other",
+                  "panel/other",
+                  "validate/other",
+                  "import/other",
+                  "draft/other",
+                  "build/other",
+                  "storage/other",
+                  "worker/other",
+                  "app/other",
+                  "bioinformatics/other",
+                  "form/other",
+                  "genome/other",
+                  "mapping/other",
+                  "schema/other",
+                  "table/other",
+                  "other"
+                ]
+              },
+              "severity": {
+                "type": "string",
+                "enum": ["error", "warning"]
+              },
+              "count": {
+                "type": "string",
+                "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+              }
+            },
+            "required": ["code", "severity", "count"],
+            "additionalProperties": false
+          }
+        },
+        "draftRestored": {
+          "type": "boolean"
+        },
+        "duration": {
+          "type": "string",
+          "enum": ["0-1m", "1-5m", "5-15m", "15-60m", "60m+"]
+        }
+      },
+      "required": [
+        "v",
+        "kind",
+        "app",
+        "steps",
+        "tables",
+        "sections",
+        "build",
+        "issues",
+        "draftRestored",
+        "duration"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+/*
+ * Colour values for both themes, written once with `light-dark()`.
+ *
+ * Which value applies follows `color-scheme`:
+ * - With no `data-theme`, `color-scheme: light dark` follows the operating
+ *   system, so the right theme shows before any script runs.
+ * - `src/app/theme.ts` sets `data-theme="light"` or `"dark"` on <html> from
+ *   the user's saved choice. Any element can carry `data-theme` to render its
+ *   subtree in the other theme (the style guide does this).
+ *
+ * The accent is the periwinkle of the PMO logo, deepened in light mode and
+ * lifted in dark mode for contrast.
+ *
+ * Every text and background pair used by the primitives meets WCAG AA
+ * (4.5:1 for text, 3:1 for control borders and icons) in both themes.
+ * Re-check those pairs before changing a value.
+ */
+
+/*
+ * Declared again on every [data-theme] element: the build turns light-dark()
+ * into variables that resolve where they are declared, so a themed subtree
+ * must recompute them itself.
+ */
+:root,
+[data-theme] {
+  color-scheme: light dark;
+
+  --c-canvas: light-dark(#f7f8fa, #0e1014);
+  --c-surface: light-dark(#ffffff, #15181d);
+  --c-surface-subtle: light-dark(#f4f5f7, #1a1d23);
+  --c-surface-muted: light-dark(#eceef2, #252931);
+  --c-surface-raised: light-dark(#ffffff, #1c2027);
+  --c-text: light-dark(#171a21, #eceef2);
+  --c-text-muted: light-dark(#555c69, #a6acb8);
+  --c-text-subtle: light-dark(#626976, #8f96a3);
+  --c-border: light-dark(#e2e5ea, #2a2e36);
+  --c-border-strong: light-dark(#848a96, #6c7380);
+  --c-accent: light-dark(#4053b8, #8d9df0);
+  --c-accent-hover: light-dark(#34449c, #a6b3f4);
+  --c-accent-fg: light-dark(#ffffff, #0e1014);
+  --c-accent-subtle: light-dark(#eef0fb, #1f2440);
+  --c-accent-text: light-dark(#3a4cad, #a3b0f5);
+  --c-success: light-dark(#1b7a4a, #4cc38a);
+  --c-success-subtle: light-dark(#e7f5ec, #13281e);
+  --c-success-text: light-dark(#17673e, #6fd3a2);
+  --c-warning: light-dark(#a35c00, #e8a33d);
+  --c-warning-subtle: light-dark(#fdf3e1, #2d2210);
+  --c-warning-text: light-dark(#8a4b00, #f0b960);
+  --c-danger: light-dark(#c4283f, #f0697d);
+  --c-danger-hover: light-dark(#a6203a, #f58a9a);
+  --c-danger-fg: light-dark(#ffffff, #0e1014);
+  --c-danger-subtle: light-dark(#fdecee, #331519);
+  --c-danger-text: light-dark(#ad2238, #f5899a);
+  --c-info: light-dark(#1f6fb2, #5aa9e6);
+  --c-info-subtle: light-dark(#e8f2fb, #112536);
+  --c-info-text: light-dark(#1a5e98, #7cbcee);
+  --c-overlay: light-dark(rgb(15 18 25 / 0.45), rgb(0 0 0 / 0.6));
+  --c-shadow: light-dark(rgb(15 18 25 / 0.08), rgb(0 0 0 / 0.35));
+  --c-shadow-strong: light-dark(rgb(15 18 25 / 0.14), rgb(0 0 0 / 0.55));
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}

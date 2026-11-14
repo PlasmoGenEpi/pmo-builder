@@ -1,0 +1,528 @@
+import "fake-indexeddb/auto";
+
+import { File as NodeFile } from "node:buffer";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import { describe, expect, it, vi } from "vitest";
+
+import {
+  TEST_DEPS,
+  exampleSuggestMapping,
+  fakeParseFile,
+  testFieldSet,
+} from "@/domain/build/testing";
+import {
+  createDraftStorage,
+  createMemoryBackend,
+  isBlob,
+  type DraftStorage,
+  type KeyValueBackend,
+} from "@/domain/draft";
+import { EngineStoppedError, type Engine } from "@/worker";
+import { createInThreadEngine } from "@/worker/engine";
+
+import type { EditorLock } from "./editorLock";
+import { createAppStore, type AppStore } from "./store";
+
+/** Tests run from the repository root. */
+const EXAMPLES = join(process.cwd(), "public/examples/");
+
+let prefixCount = 0;
+function storage(): DraftStorage {
+  prefixCount += 1;
+  return createDraftStorage({ databasePrefix: `store-${prefixCount}` });
+}
+
+/**
+ * Under jsdom, fake-indexeddb cannot clone jsdom's own `File` (it comes back
+ * as `{}`), so tests use Node's `File`, which a browser's would match. The
+ * guard checks the parts the app uses.
+ */
+function isUsableFile(value: unknown): value is File {
+  return isBlob(value) && "name" in value && typeof value.name === "string";
+}
+
+function testFile(parts: readonly string[], name: string): File {
+  const file: unknown = new NodeFile([...parts], name);
+  if (!isUsableFile(file)) throw new Error("Node's File is not usable here");
+  return file;
+}
+
+function exampleFile(name: string): File {
+  return testFile([readFileSync(`${EXAMPLES}${name}`, "utf8")], name);
+}
+
+function makeStore(draftStorage: DraftStorage = storage()): AppStore {
+  return createAppStore({
+    engine: createInThreadEngine({ parseFile: fakeParseFile, deps: TEST_DEPS }),
+    storage: draftStorage,
+    rebuildDelayMs: 5,
+    saveDelayMs: 5,
+    suggestMapping: exampleSuggestMapping,
+    getFieldSet: testFieldSet,
+    fetchExample: (path) => Promise.resolve(exampleFile(path.replace("examples/", ""))),
+  });
+}
+
+/** A promise and the function that resolves it. */
+function deferred(): { readonly promise: Promise<void>; readonly resolve: () => void } {
+  const parts: { done?: () => void } = {};
+  const promise = new Promise<void>((done) => {
+    parts.done = done;
+  });
+  return { promise, resolve: () => parts.done?.() };
+}
+
+function noSave(): Promise<void> {
+  return Promise.resolve();
+}
+
+async function settle(store: AppStore): Promise<void> {
+  await store.getState().actions.flush();
+}
+
+describe("app store", () => {
+  it("starts fresh, imports a file with a suggested mapping, and rebuilds", async () => {
+    const store = makeStore();
+    const { actions } = store.getState();
+    await actions.initialise();
+    expect(store.getState().restore).toEqual({ kind: "fresh" });
+
+    const importing = actions.importFile(
+      { section: "microhaplotypes" },
+      exampleFile("mad4hatter_allele_data_example.csv"),
+    );
+    expect(store.getState().imports["microhaplotypes"]).toEqual({
+      kind: "importing",
+      fileName: "mad4hatter_allele_data_example.csv",
+    });
+    const outcome = await importing;
+    expect(outcome.kind).toBe("imported");
+    expect(store.getState().imports).toEqual({});
+    const table = store.getState().draft.microhaplotypes.table;
+    expect(table?.mapping.fields).toMatchObject({ librarySampleName: "SampleID", reads: "Reads" });
+
+    await settle(store);
+    const build = store.getState().build;
+    expect(build.phase).toBe("idle");
+    expect(build.view?.sections.microhaplotypes).toMatchObject({
+      status: "ready",
+      summary: { librarySamples: 49 },
+    });
+    expect(build.view?.overall).toMatchObject({ status: "incomplete" });
+    expect(store.getState().persistence.kind).toBe("saved");
+  });
+
+  it("debounces rebuilds and rebuilds only the edited section", async () => {
+    const store = makeStore();
+    const { actions } = store.getState();
+    await actions.initialise();
+    await settle(store);
+    const recordId = store.getState().draft.project.records[0]?.id ?? "";
+    actions.setValue({ list: "projects", id: recordId, key: "project_name", value: "P" });
+    actions.setValue({ list: "projects", id: recordId, key: "project_description", value: "D" });
+    expect(store.getState().build.phase).toBe("pending");
+    expect(store.getState().persistence).toEqual({ kind: "unsaved" });
+    await settle(store);
+    const view = store.getState().build.view;
+    expect(view?.rebuilt).toEqual(["project"]);
+    expect(view?.sections.project).toMatchObject({ status: "ready", summary: { names: ["P"] } });
+  });
+
+  it("restores the draft and its files in a new session", async () => {
+    const shared = storage();
+    const first = makeStore(shared);
+    await first.getState().actions.initialise();
+    await first
+      .getState()
+      .actions.importFile(
+        { section: "readCounts", part: "totals" },
+        exampleFile("example_raw_reads.txt"),
+      );
+    first.getState().actions.setMode({ target: "readCountsRunName", mode: "fixed" });
+    await settle(first);
+    const draft = first.getState().draft;
+
+    const second = makeStore(shared);
+    await second.getState().actions.initialise();
+    expect(second.getState().draft).toEqual(draft);
+    expect(second.getState().restore).toMatchObject({ kind: "restored", missingFiles: [] });
+    await settle(second);
+    expect(second.getState().build.view?.sections.readCounts).toMatchObject({
+      status: "incomplete",
+      notices: [expect.objectContaining({ code: "run-name/missing" })],
+    });
+    second.getState().actions.updateSection("readCounts", (section) => ({
+      ...section,
+      runName: { ...section.runName, fixedName: "run1" },
+    }));
+    await settle(second);
+    expect(second.getState().build.view?.sections.readCounts).toMatchObject({
+      status: "ready",
+      summary: { librarySamples: 3 },
+    });
+  });
+
+  it("sets aside a corrupt saved draft and starts a new one", async () => {
+    const drafts = createMemoryBackend();
+    await drafts.set("draft", { version: 1, panel: "not a panel" });
+    const store = makeStore(
+      createDraftStorage({
+        openBackend: (name) => (name === "drafts" ? drafts : createMemoryBackend()),
+      }),
+    );
+    await store.getState().actions.initialise();
+    expect(store.getState().restore).toEqual({
+      kind: "set-aside",
+      problem: "draft.microhaplotypes is not an object",
+    });
+    expect(store.getState().draft.microhaplotypes.table).toBeNull();
+    expect((await drafts.keys()).filter((key) => key.startsWith("rejected:"))).toHaveLength(1);
+  });
+
+  it("starts over, keeping saved panels", async () => {
+    const shared = storage();
+    const store = makeStore(shared);
+    const { actions } = store.getState();
+    await actions.initialise();
+    const panelId = store.getState().draft.panel.panels[0]?.id ?? "";
+    await actions.importFile(
+      { section: "panel", panelId, part: "targets" },
+      exampleFile("mad4hatter_panel_info_example.csv"),
+    );
+    actions.updateItem({
+      list: "panels",
+      id: panelId,
+      recipe: (panel) => ({ ...panel, name: "Mad4hatter" }),
+    });
+    expect(await actions.savePanelToLibrary(panelId)).toEqual({ ok: true });
+    expect(store.getState().savedPanels).toMatchObject({
+      kind: "ready",
+      panels: [{ name: "Mad4hatter", targetCount: 276 }],
+    });
+    const tableId = store.getState().draft.panel.panels[0]?.table?.table.id ?? "";
+
+    await actions.startOver();
+    expect(store.getState().draft.panel.panels[0]?.table).toBeNull();
+    expect(await shared.loadFile(tableId)).toBeNull();
+    expect((await shared.listSavedPanels()).map((panel) => panel.name)).toEqual(["Mad4hatter"]);
+
+    const savedId = (await shared.listSavedPanels())[0]?.id ?? "";
+    const newPanelId = store.getState().draft.panel.panels[0]?.id ?? "";
+    expect(await actions.applySavedPanel(newPanelId, savedId)).toEqual({ ok: true });
+    await settle(store);
+    expect(store.getState().build.view?.sections.panel).toMatchObject({
+      status: "ready",
+      summary: { targets: 276 },
+    });
+  });
+
+  it("starts saving at once when asked, without waiting for a build", async () => {
+    const real = storage();
+    const engine = createInThreadEngine({ parseFile: fakeParseFile, deps: TEST_DEPS });
+    const never = new Promise<never>(() => {});
+    const stuck: Engine = { ...engine, build: () => never };
+    let saves = 0;
+    const counting: DraftStorage = {
+      ...real,
+      saveDraft: (draft) => {
+        saves += 1;
+        return real.saveDraft(draft);
+      },
+    };
+    const store = createAppStore({ engine: stuck, storage: counting, saveDelayMs: 60_000 });
+    const { actions } = store.getState();
+    await actions.initialise();
+    actions.updateSection("project", (project) => ({ ...project, mode: "table" }));
+    void actions.saveNow();
+    expect(saves).toBe(1);
+    await vi.waitFor(async () =>
+      expect(await real.loadDraft()).toMatchObject({
+        kind: "loaded",
+        draft: { project: { mode: "table" } },
+      }),
+    );
+  });
+
+  it("saves, then stops saving, when another tab takes over; and takes the draft back from storage", async () => {
+    const shared = storage();
+    let stepBack: () => Promise<void> = noSave;
+    const tab = (claim: "editor" | "elsewhere"): AppStore => {
+      const editorLock: EditorLock = {
+        claim: () => Promise.resolve(claim),
+        takeOver: () => Promise.resolve(),
+        onStepBack: (handler) => {
+          if (claim === "editor") stepBack = handler;
+        },
+      };
+      const engine = createInThreadEngine({ parseFile: fakeParseFile, deps: TEST_DEPS });
+      return createAppStore({ engine, storage: shared, saveDelayMs: 60_000, editorLock });
+    };
+    const first = tab("editor");
+    await first.getState().actions.initialise();
+    expect(first.getState().editing).toEqual({ kind: "editor" });
+
+    // The second tab opens while the first edits: it does not save.
+    const second = tab("elsewhere");
+    await second.getState().actions.initialise();
+    expect(second.getState().editing).toEqual({ kind: "other-tab" });
+    expect(second.getState().persistence).toEqual({ kind: "other-tab" });
+    second.getState().actions.updateSection("project", (p) => ({ ...p, mode: "table" }));
+    await second.getState().actions.saveNow();
+    expect(await shared.loadDraft()).toEqual({ kind: "none" });
+
+    // The first tab has an unsaved change when the second takes over.
+    first.getState().actions.updateSection("sequencing", (p) => ({ ...p, mode: "table" }));
+    await stepBack();
+    expect(first.getState().editing).toEqual({ kind: "other-tab" });
+    expect(await shared.loadDraft()).toMatchObject({ draft: { sequencing: { mode: "table" } } });
+    first.getState().actions.updateSection("project", (p) => ({ ...p, mode: "table" }));
+    await first.getState().actions.saveNow();
+    expect(await shared.loadDraft()).toMatchObject({ draft: { project: { mode: "manual" } } });
+
+    await second.getState().actions.takeOverEditing();
+    expect(second.getState().editing).toEqual({ kind: "editor" });
+    expect(second.getState().draft.sequencing.mode).toBe("table");
+    expect(second.getState().draft.project.mode).toBe("manual");
+  });
+
+  it("does not write the draft back when a save is in flight as the user starts over", async () => {
+    const real = storage();
+    const gate = deferred();
+    let saves = 0;
+    const slow: DraftStorage = {
+      ...real,
+      saveDraft: async (draft) => {
+        saves += 1;
+        await gate.promise;
+        return real.saveDraft(draft);
+      },
+    };
+    const store = makeStore(slow);
+    const { actions } = store.getState();
+    await actions.initialise();
+    actions.updateSection("project", (project) => ({ ...project, mode: "table" }));
+    const saving = actions.flush();
+    await vi.waitFor(() => expect(saves).toBe(1));
+
+    const startingOver = actions.startOver();
+    gate.resolve();
+    await Promise.all([saving, startingOver]);
+    await settle(store);
+    expect(await real.loadDraft()).toEqual({ kind: "none" });
+  });
+
+  it("keeps working for the session when IndexedDB throws", async () => {
+    const failing: KeyValueBackend = {
+      get: () => Promise.reject(new Error("blocked")),
+      set: () => Promise.reject(new Error("blocked")),
+      del: () => Promise.reject(new Error("blocked")),
+      keys: () => Promise.reject(new Error("blocked")),
+    };
+    const store = makeStore(createDraftStorage({ openBackend: () => failing }));
+    const { actions } = store.getState();
+    await actions.initialise();
+    expect(store.getState().persistence).toMatchObject({ kind: "session-only" });
+    await actions.importFile(
+      { section: "microhaplotypes" },
+      exampleFile("mad4hatter_allele_data_example.csv"),
+    );
+    await settle(store);
+    expect(store.getState().persistence).toMatchObject({ kind: "session-only" });
+    expect(store.getState().build.view?.sections.microhaplotypes.status).toBe("ready");
+  });
+
+  it("reports a file that fails to import on its slot", async () => {
+    const store = makeStore();
+    const { actions } = store.getState();
+    await actions.initialise();
+    const broken = testFile(["broken"], "bad.csv");
+    const outcome = await actions.importFile({ section: "specimens" }, broken);
+    expect(outcome.kind).toBe("failed");
+    expect(store.getState().imports["specimens"]).toMatchObject({
+      kind: "failed",
+      notice: { code: "import/unexpected" },
+      failure: { code: "unexpected" },
+      fileName: "bad.csv",
+    });
+    expect(store.getState().draft.specimens.table).toBeNull();
+  });
+
+  it("loads the example through the import path and builds a valid PMO", async () => {
+    const store = makeStore();
+    const { actions } = store.getState();
+    await actions.initialise();
+    expect(await actions.loadExample()).toEqual({ ok: true });
+    const draft = store.getState().draft;
+    expect(draft.panel.panels[0]?.name).toBe("Mad4hatter");
+    expect(draft.specimens.table?.table.id).not.toBe(draft.librarySamples.table?.table.id);
+    await settle(store);
+    const overall = store.getState().build.view?.overall;
+    expect(overall).toMatchObject({ status: "ready", pmo: "valid" });
+    expect(overall?.summary).toMatchObject({
+      specimens: 50,
+      librarySamples: 50,
+      librarySamplesWithReadCounts: 3,
+    });
+    const file = await actions.downloadPmo({ gzip: false });
+    expect(file?.fileName).toBe("Mad4hatter.pmo.json");
+  });
+
+  it("loads the example with the real modules and the plain suggested mappings", async () => {
+    // No stand-ins: the real parser, field sets, matcher and builders, and no
+    // fields unmapped by hand. The matcher itself must leave out the
+    // pseudo-CIGAR and insert columns that have no chromosome column.
+    const store = createAppStore({
+      engine: createInThreadEngine(),
+      storage: storage(),
+      rebuildDelayMs: 5,
+      saveDelayMs: 5,
+      fetchExample: (path) => Promise.resolve(exampleFile(path.replace("examples/", ""))),
+    });
+    const { actions } = store.getState();
+    await actions.initialise();
+    expect(await actions.loadExample()).toEqual({ ok: true });
+    const draft = store.getState().draft;
+    expect(draft.microhaplotypes.table?.mapping.fields["pseudocigar"]).toBeNull();
+    expect(draft.panel.panels[0]?.table?.mapping.fields["insertStart"]).toBeNull();
+    await settle(store);
+    const view = store.getState().build.view;
+    const notices = Object.values(view?.sections ?? {}).flatMap((section) =>
+      section.notices.map((notice) => `${notice.code}: ${notice.message}`),
+    );
+    expect(notices).toEqual([]);
+    expect(view?.overall).toMatchObject({ status: "ready", pmo: "valid" });
+  });
+
+  it("keeps the newer of two imports into one slot, whichever finishes first", async () => {
+    const inner = createInThreadEngine({ parseFile: fakeParseFile, deps: TEST_DEPS });
+    const firstHeld = deferred();
+    let calls = 0;
+    const engine: Engine = {
+      ...inner,
+      async importFile(input) {
+        calls += 1;
+        if (calls === 1) await firstHeld.promise;
+        return inner.importFile(input);
+      },
+    };
+    const store = createAppStore({
+      engine,
+      storage: storage(),
+      rebuildDelayMs: 5,
+      saveDelayMs: 5,
+      suggestMapping: exampleSuggestMapping,
+      getFieldSet: testFieldSet,
+    });
+    const { actions } = store.getState();
+    await actions.initialise();
+    const slot = { section: "readCounts", part: "totals" } as const;
+    const older = actions.importFile(slot, exampleFile("example_raw_reads.txt"), "older.txt");
+    const newer = await actions.importFile(slot, exampleFile("example_raw_reads.txt"), "newer.txt");
+    firstHeld.resolve();
+    await older;
+    expect(newer.kind).toBe("imported");
+    expect(store.getState().draft.readCounts.totals?.table.fileName).toBe("newer.txt");
+    expect(store.getState().imports).toEqual({});
+  });
+
+  it("keeps a newer finished build when an older one fails afterwards", async () => {
+    const inner = createInThreadEngine({ parseFile: fakeParseFile, deps: TEST_DEPS });
+    const olderHeld = deferred();
+    let calls = 0;
+    const engine: Engine = {
+      ...inner,
+      async build(draft, options) {
+        calls += 1;
+        if (calls === 2) {
+          // The older of the two builds below: it fails, but only after the newer one is done.
+          await olderHeld.promise;
+          throw new Error("The older build broke.");
+        }
+        return inner.build(draft, options);
+      },
+    };
+    const store = createAppStore({ engine, storage: storage(), rebuildDelayMs: 60_000 });
+    const { actions } = store.getState();
+    await actions.initialise();
+    await actions.flush();
+    expect(calls).toBe(1);
+
+    const recordId = store.getState().draft.project.records[0]?.id ?? "";
+    actions.setValue({ list: "projects", id: recordId, key: "project_name", value: "Older" });
+    const older = actions.flush();
+    actions.setValue({ list: "projects", id: recordId, key: "project_name", value: "Newer" });
+    await actions.flush();
+    expect(store.getState().build).toMatchObject({ phase: "idle" });
+    const newerView = store.getState().build.view;
+    expect(newerView?.revision).toBe(2);
+
+    olderHeld.resolve();
+    await older;
+    expect(store.getState().build).toEqual({ phase: "idle", view: newerView });
+  });
+
+  it("says when the worker stopped, and carries on once it builds again", async () => {
+    const inner = createInThreadEngine({ parseFile: fakeParseFile, deps: TEST_DEPS });
+    let stopped = true;
+    const engine: Engine = {
+      ...inner,
+      build: (draft, options) =>
+        stopped
+          ? Promise.reject(new EngineStoppedError("The background worker stopped."))
+          : inner.build(draft, options),
+      importFile: (input) =>
+        stopped
+          ? Promise.reject(new EngineStoppedError("The background worker stopped."))
+          : inner.importFile(input),
+    };
+    const store = createAppStore({ engine, storage: storage(), rebuildDelayMs: 60_000 });
+    const { actions } = store.getState();
+    await actions.initialise();
+    await actions.flush();
+    expect(store.getState().engine).toEqual({
+      kind: "stopped",
+      message: "The background worker stopped.",
+    });
+    expect(store.getState().build).toMatchObject({
+      phase: "failed",
+      message: "The background worker stopped.",
+    });
+
+    const outcome = await actions.importFile(
+      { section: "specimens" },
+      exampleFile("mad4hatter_metadata_example.tsv"),
+    );
+    expect(outcome).toMatchObject({ kind: "failed", failure: { code: "engine-stopped" } });
+    expect(store.getState().imports["specimens"]).toMatchObject({
+      kind: "failed",
+      failure: { code: "engine-stopped" },
+    });
+
+    stopped = false;
+    const recordId = store.getState().draft.project.records[0]?.id ?? "";
+    actions.setValue({ list: "projects", id: recordId, key: "project_name", value: "P" });
+    await actions.flush();
+    expect(store.getState().engine).toEqual({ kind: "running" });
+    expect(store.getState().build.phase).toBe("idle");
+  });
+
+  it("keeps a confirmed match with the table, through a save and a new session", async () => {
+    const shared = storage();
+    const store = makeStore(shared);
+    const { actions } = store.getState();
+    await actions.initialise();
+    const slot = { section: "specimens" } as const;
+    await actions.importFile(slot, exampleFile("mad4hatter_metadata_example.tsv"));
+    expect(store.getState().draft.specimens.table?.confirmedMatches).toEqual({});
+    actions.confirmMatch(slot, "specimenName", "specimen_id");
+    await settle(store);
+
+    const next = makeStore(shared);
+    await next.getState().actions.initialise();
+    expect(next.getState().draft.specimens.table?.confirmedMatches).toEqual({
+      specimenName: "specimen_id",
+    });
+  });
+});
