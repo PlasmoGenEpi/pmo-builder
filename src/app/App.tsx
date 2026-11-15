@@ -15,6 +15,13 @@ import { PageContainer } from "./PageContainer";
 import { RestoreNotice } from "./RestoreNotice";
 import { STEPS, getAdjacentSteps, page, type StepDefinition } from "./steps";
 
+const Published = page(() =>
+  import("@/features/published/PublishedPage").then((module) => module.PublishedPage),
+);
+const PublishedDataset = page(() =>
+  import("@/features/published/DatasetPage").then((module) => module.DatasetRoute),
+);
+
 const Styleguide = page(() =>
   import("./styleguide/StyleguidePage").then((module) => module.StyleguidePage),
 );
@@ -87,6 +94,8 @@ function Routes() {
           {STEPS.map((step) => (
             <Route key={step.id} path={step.path} component={step.component} />
           ))}
+          <Route path="/published" component={Published.component} />
+          <Route path="/published/:id" component={PublishedDataset.component} />
           <Route path="/styleguide" component={Styleguide.component} />
           <Route>
             <NotFoundPage />

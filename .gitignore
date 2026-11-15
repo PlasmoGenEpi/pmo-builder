@@ -9,3 +9,6 @@ test-results/
 .env
 .env.*
 !.env.example
+
+# The catalogue of published PMOs, written by `pnpm harvest`.
+public/repository/

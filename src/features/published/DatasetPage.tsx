@@ -1,0 +1,175 @@
+import { ArrowLeft, Download, ExternalLink } from "lucide-react";
+import type { ReactNode } from "react";
+import { Link as RouterLink, useParams } from "wouter";
+
+import { PageContainer } from "@/app/PageContainer";
+import type { PublishedDataset } from "@/domain/repository/types";
+import { PmoContents } from "@/features/review/PmoContents";
+import { CopyValue } from "@/features/shared/CopyValue";
+import {
+  ButtonLink,
+  Callout,
+  Card,
+  formatBytes,
+  KeyValueList,
+  Link,
+  type KeyValueItem,
+} from "@/ui";
+
+import { citationOf, doiUrl, longDate, taxonName, yearsText } from "./catalogue";
+import { CatalogueProblem } from "./CatalogueProblem";
+import { loadSharedCatalogue, useCatalogue, type CatalogueLoader } from "./useCatalogue";
+
+function NewTab() {
+  return (
+    <>
+      <ExternalLink aria-hidden="true" className="size-4" />
+      <span className="sr-only">(opens in a new tab)</span>
+    </>
+  );
+}
+
+function BackLink() {
+  return (
+    <RouterLink
+      href="/published"
+      className="inline-flex items-center gap-1.5 self-start rounded-sm text-base text-text-muted underline-offset-2 hover:text-text hover:underline"
+    >
+      <ArrowLeft aria-hidden="true" className="size-4" />
+      All published PMOs
+    </RouterLink>
+  );
+}
+
+function detailsOf(dataset: PublishedDataset): KeyValueItem[] {
+  const doi = doiUrl(dataset);
+  const rows: (readonly [string, ReactNode, boolean?] | null)[] = [
+    dataset.panels.length === 0
+      ? null
+      : [dataset.panels.length === 1 ? "Panel" : "Panels", dataset.panels.join(", ")],
+    dataset.countries.length === 0
+      ? null
+      : [dataset.countries.length === 1 ? "Country" : "Countries", dataset.countries.join(", ")],
+    yearsText(dataset) === null ? null : ["Collected", yearsText(dataset)],
+    dataset.taxa.length === 0 ? null : ["Species", dataset.taxa.map(taxonName).join(", ")],
+    dataset.bioProjects.length === 0
+      ? null
+      : [
+          dataset.bioProjects.length === 1 ? "BioProject" : "BioProjects",
+          dataset.bioProjects.join(", "),
+          true,
+        ],
+    dataset.licence === null ? null : ["Licence", dataset.licence.title],
+    dataset.version === null ? null : ["Version", dataset.version],
+    doi === null
+      ? null
+      : [
+          "DOI",
+          <Link key="doi" href={doi} external>
+            {dataset.doi}
+          </Link>,
+        ],
+  ];
+  return rows
+    .filter((row) => row !== null)
+    .map(([label, value, mono]) => ({ label, value, mono: mono === true }));
+}
+
+function Dataset({ dataset }: { readonly dataset: PublishedDataset }) {
+  return (
+    <article className="flex flex-col gap-8">
+      <header className="flex flex-col gap-3 border-b border-border pb-6">
+        <h1 className="text-2xl font-semibold tracking-tight text-balance text-text">
+          {dataset.title}
+        </h1>
+        {dataset.creators.length === 0 ? null : (
+          <p className="text-md text-text">{dataset.creators.join("; ")}</p>
+        )}
+        <p className="text-base text-text-muted">Published {longDate(dataset.published)}</p>
+        <div className="flex flex-wrap items-start gap-x-4 gap-y-3 pt-2">
+          <div className="flex flex-col gap-1.5">
+            <ButtonLink
+              variant="primary"
+              size="lg"
+              href={dataset.file.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-describedby="published-file"
+            >
+              <Download aria-hidden="true" className="size-4.5" />
+              Download from Zenodo
+            </ButtonLink>
+            <span id="published-file" className="text-sm break-all text-text-muted">
+              {dataset.file.name}, {formatBytes(dataset.file.size)}
+            </span>
+          </div>
+          <ButtonLink size="lg" href={dataset.zenodoUrl} target="_blank" rel="noreferrer noopener">
+            See the record on Zenodo
+            <NewTab />
+          </ButtonLink>
+        </div>
+      </header>
+
+      <PmoContents summary={dataset.summary} />
+
+      <Card as="section" aria-labelledby="published-details-heading">
+        <div className="flex flex-col gap-4">
+          <h2
+            id="published-details-heading"
+            className="text-lg font-semibold tracking-tight text-text"
+          >
+            About the data
+          </h2>
+          <KeyValueList items={detailsOf(dataset)} />
+        </div>
+      </Card>
+
+      <section aria-labelledby="published-cite-heading" className="flex flex-col gap-3">
+        <h2 id="published-cite-heading" className="text-lg font-semibold tracking-tight text-text">
+          How to cite
+        </h2>
+        <p className="max-w-prose text-base text-text-muted">
+          If you use this data, cite the record so its authors get the credit.
+        </p>
+        <CopyValue label="citation" value={citationOf(dataset)} />
+      </section>
+    </article>
+  );
+}
+
+/** Props for {@link DatasetPage}. */
+export interface DatasetPageProps {
+  /** The Zenodo record's identifier, from the address. */
+  readonly id: string;
+  readonly load?: CatalogueLoader;
+}
+
+/** One published PMO: what it holds, how to get it from Zenodo, and how to cite it. */
+export function DatasetPage({ id, load = loadSharedCatalogue }: DatasetPageProps) {
+  const state = useCatalogue(load);
+  const dataset =
+    state.kind === "ready" ? state.index.datasets.find((entry) => entry.id === id) : undefined;
+
+  return (
+    <PageContainer>
+      <div className="flex flex-col gap-6">
+        <BackLink />
+        {state.kind !== "ready" ? (
+          <CatalogueProblem state={state} />
+        ) : dataset === undefined ? (
+          <Callout tone="warning" title="This PMO is not in the list">
+            It may have been withdrawn from the community, or the address may be mistyped.
+          </Callout>
+        ) : (
+          <Dataset dataset={dataset} />
+        )}
+      </div>
+    </PageContainer>
+  );
+}
+
+/** {@link DatasetPage} for the address `/published/:id`. */
+export function DatasetRoute() {
+  const { id } = useParams<{ id: string }>();
+  return <DatasetPage id={id} />;
+}

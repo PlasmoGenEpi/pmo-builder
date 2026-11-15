@@ -60,6 +60,31 @@ The deployed app uses the
 where the keyword "Portable Microhaplotype Object" places a record with the
 other PMO files.
 
+## Published PMOs
+
+The app lists the PMOs published in the Zenodo community under "Published
+PMOs", with search and filters by country, panel and collection year, and a
+page for each with its numbers, its download from Zenodo and a citation.
+
+Zenodo is the store of record. The list is a file, `repository/index.json`,
+that `pnpm harvest` rebuilds from Zenodo before each build:
+
+- it lists the community's accepted records that carry the keyword
+  "Portable Microhaplotype Object";
+- it downloads each record's `.json` or `.json.gz` file and keeps the record
+  if the file matches the PMO format and its tables link up;
+- a record that fails is left out and named on the workflow run's page, for
+  the curators.
+
+The Deploy workflow harvests on every push and every night. If Zenodo cannot
+be read, it keeps the list already on the site. To remove a PMO from the
+list, remove its record from the community on Zenodo. `specimens.json`, one
+row per specimen, is written beside the index for a later search across
+datasets; no page reads it yet.
+
+Run `pnpm harvest --community plasmogenepi` to try the list locally. The
+output folder, `public/repository/`, is not committed.
+
 ## Large files
 
 Files are read in the browser, so the limit is the memory of a browser tab.
@@ -111,6 +136,7 @@ Then open the address it prints.
 | `pnpm test`       | Unit tests with Vitest                                           |
 | `pnpm e2e`        | Builds, then runs the Playwright and axe tests against the build |
 | `pnpm check`      | Format check, lint, typecheck, unit tests and build              |
+| `pnpm harvest`    | Rebuilds the list of published PMOs from the Zenodo community    |
 | `pnpm lib:update` | Rebuilds pmotools-ts from `../pmotools-ts` and vendors it        |
 
 A pre-commit hook formats and lints staged files. Typecheck and tests run in

@@ -1,0 +1,272 @@
+/**
+ * Builds the catalogue from the Zenodo community: lists the accepted records
+ * that carry the PMO keyword, reads each PMO file, and keeps the ones that
+ * match the PMO format.
+ *
+ * Runs in Node from `scripts/harvest.mjs`, never in the browser.
+ */
+import {
+  checkPmoIntegrity,
+  parsePmo,
+  validatePmo,
+  type PortableMicrohaplotypeObject,
+} from "pmotools-ts";
+
+import { summarisePmo, summarisePublication } from "@/domain/build";
+
+import {
+  INDEX_VERSION,
+  type HarvestResult,
+  type PublishedDataset,
+  type PublishedFile,
+  type PublishedLicence,
+  type SkippedRecord,
+  type SpecimenRow,
+} from "./types";
+
+const ZENODO = "https://zenodo.org";
+const RECORD_JSON = "application/vnd.inveniordm.v1+json";
+
+/** The keyword that marks a record as a PMO file. The deposit panel adds it. */
+export const PMO_SUBJECT = "Portable Microhaplotype Object";
+
+/** A PMO file larger than this is left out, so one record cannot stall the harvest. */
+export const MAX_FILE_BYTES = 500 * 1024 * 1024;
+
+/** Zenodo refuses a larger page to a client that is not signed in. */
+const PAGE_SIZE = 25;
+/** A guard against a listing that never ends. */
+const MAX_PAGES = 50;
+
+/** What a harvest needs. */
+export interface HarvestOptions {
+  /** The community's identifier. */
+  readonly community: string;
+  /** Default: the global `fetch`. */
+  readonly fetch?: typeof fetch;
+  /** Default: the time the harvest starts. */
+  readonly now?: Date;
+  /** Told about each record as it is read or left out. */
+  readonly log?: (message: string) => void;
+}
+
+/** Raised when Zenodo cannot be read at all, as opposed to one record being left out. */
+export class HarvestError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "HarvestError";
+  }
+}
+
+type Json = Readonly<Record<string, unknown>>;
+
+function isRecord(value: unknown): value is Json {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function field(value: unknown, ...path: readonly string[]): unknown {
+  let current = value;
+  for (const key of path) {
+    if (!isRecord(current)) return undefined;
+    current = current[key];
+  }
+  return current;
+}
+
+function text(value: unknown): string | null {
+  if (typeof value === "number") return String(value);
+  return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
+}
+
+function list(value: unknown): readonly unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+/** The record's PMO file: a `.json` or `.json.gz` file, a `.pmo.` name first. */
+export function pmoFileOf(
+  record: unknown,
+): { readonly name: string; readonly size: number } | null {
+  const entries = field(record, "files", "entries");
+  if (!isRecord(entries)) return null;
+  const files = Object.values(entries)
+    .map((entry) => ({ name: text(field(entry, "key")), size: field(entry, "size") }))
+    .filter(
+      (file): file is { name: string; size: number } =>
+        file.name !== null && typeof file.size === "number" && /\.json(\.gz)?$/i.test(file.name),
+    )
+    .toSorted(
+      (a, b) =>
+        Number(/\.pmo\./i.test(b.name)) - Number(/\.pmo\./i.test(a.name)) ||
+        a.name.localeCompare(b.name),
+    );
+  return files[0] ?? null;
+}
+
+function licenceOf(record: unknown): PublishedLicence | null {
+  const [first] = list(field(record, "metadata", "rights"));
+  const id = text(field(first, "id"));
+  if (id === null) return null;
+  return { id, title: text(field(first, "title", "en")) ?? id };
+}
+
+function taxaOf(pmo: PortableMicrohaplotypeObject): number[] {
+  const taxa = new Set<number>();
+  for (const specimen of pmo.specimen_info) {
+    for (const taxon of specimen.specimen_taxon_id ?? []) {
+      if (Number.isInteger(taxon)) taxa.add(taxon);
+    }
+  }
+  return [...taxa].toSorted((a, b) => a - b);
+}
+
+function specimenRows(dataset: string, pmo: PortableMicrohaplotypeObject): SpecimenRow[] {
+  const libraries = new Map<number, number>();
+  for (const library of pmo.library_sample_info) {
+    libraries.set(library.specimen_id, (libraries.get(library.specimen_id) ?? 0) + 1);
+  }
+  return pmo.specimen_info.map((specimen, index) => ({
+    dataset,
+    specimen: specimen.specimen_name,
+    country: text(specimen.collection_country),
+    date: text(specimen.collection_date),
+    taxa: (specimen.specimen_taxon_id ?? []).filter((taxon) => Number.isInteger(taxon)),
+    librarySamples: libraries.get(index) ?? 0,
+  }));
+}
+
+/** The catalogue entry for one record and the PMO read from its file. */
+export function datasetFrom(
+  record: unknown,
+  file: PublishedFile,
+  pmo: PortableMicrohaplotypeObject,
+): PublishedDataset | null {
+  const id = text(field(record, "id"));
+  const title = text(field(record, "metadata", "title"));
+  if (id === null || title === null) return null;
+  const publication = summarisePublication(pmo);
+  return {
+    id,
+    title,
+    creators: list(field(record, "metadata", "creators"))
+      .map((creator) => text(field(creator, "person_or_org", "name")))
+      .filter((name) => name !== null),
+    published: text(field(record, "metadata", "publication_date")) ?? "",
+    version: text(field(record, "metadata", "version")),
+    licence: licenceOf(record),
+    doi: text(field(record, "pids", "doi", "identifier")),
+    zenodoUrl: text(field(record, "links", "self_html")) ?? `${ZENODO}/records/${id}`,
+    file,
+    summary: summarisePmo(pmo),
+    panels: publication.panels,
+    countries: publication.countries,
+    collectionYears: publication.collectionYears,
+    taxa: taxaOf(pmo),
+    bioProjects: publication.projects
+      .map((project) => project.accession)
+      .filter((accession) => accession !== null),
+  };
+}
+
+/**
+ * Harvests the community. Resolves with the catalogue, the specimen rows and
+ * the records left out. Rejects with {@link HarvestError} when the listing
+ * itself cannot be read, so a caller can keep the last good catalogue.
+ */
+export async function harvest(options: HarvestOptions): Promise<HarvestResult> {
+  const send = options.fetch ?? globalThis.fetch;
+  const log = options.log ?? (() => undefined);
+  const headers = { Accept: RECORD_JSON };
+
+  const records: unknown[] = [];
+  const query = new URLSearchParams({
+    q: `metadata.subjects.subject:"${PMO_SUBJECT}"`,
+    size: String(PAGE_SIZE),
+    sort: "newest",
+  });
+  let next: string | null =
+    `${ZENODO}/api/communities/${encodeURIComponent(options.community)}/records?${query.toString()}`;
+  for (let page = 0; next !== null && page < MAX_PAGES; page += 1) {
+    let response: Response;
+    try {
+      // oxlint-disable-next-line no-await-in-loop -- one page at a time, to go easy on Zenodo
+      response = await send(next, { headers });
+    } catch (error) {
+      throw new HarvestError(`Zenodo could not be reached: ${String(error)}`);
+    }
+    if (!response.ok) throw new HarvestError(`Zenodo answered ${response.status} to the listing`);
+    // oxlint-disable-next-line no-await-in-loop
+    const body: unknown = await response.json();
+    const hits = field(body, "hits", "hits");
+    if (!Array.isArray(hits))
+      throw new HarvestError("Zenodo's listing was not in the expected form");
+    records.push(...hits);
+    next = text(field(body, "links", "next"));
+  }
+
+  const datasets: PublishedDataset[] = [];
+  const specimens: SpecimenRow[] = [];
+  const skipped: SkippedRecord[] = [];
+  for (const record of records) {
+    const id = text(field(record, "id")) ?? "unknown";
+    const title = text(field(record, "metadata", "title")) ?? "(no title)";
+    const skip = (reason: string): void => {
+      skipped.push({ id, title, reason });
+      log(`left out ${id} "${title}": ${reason}`);
+    };
+    const found = pmoFileOf(record);
+    if (found === null) {
+      skip("it has no .json or .json.gz file");
+      continue;
+    }
+    if (found.size > MAX_FILE_BYTES) {
+      skip(`its file ${found.name} is larger than the harvester reads`);
+      continue;
+    }
+    const url = `${ZENODO}/api/records/${encodeURIComponent(id)}/files/${encodeURIComponent(found.name)}/content`;
+    let data: unknown;
+    try {
+      // oxlint-disable-next-line no-await-in-loop -- one file at a time, to go easy on Zenodo
+      const response = await send(url, {});
+      if (!response.ok) {
+        skip(`Zenodo answered ${response.status} for ${found.name}`);
+        continue;
+      }
+      // oxlint-disable-next-line no-await-in-loop
+      data = await parsePmo(await response.arrayBuffer());
+    } catch (error) {
+      skip(
+        `${found.name} could not be read: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      continue;
+    }
+    const checked = validatePmo(data);
+    if (!checked.valid) {
+      skip(`${found.name} does not match the PMO format (${checked.errorCount} problems)`);
+      continue;
+    }
+    const broken = checkPmoIntegrity(checked.pmo).filter((issue) => issue.severity === "error");
+    if (broken.length > 0) {
+      skip(`${found.name} has ${broken.length} broken links between its tables`);
+      continue;
+    }
+    const dataset = datasetFrom(record, { name: found.name, size: found.size, url }, checked.pmo);
+    if (dataset === null) {
+      skip("the record has no title");
+      continue;
+    }
+    datasets.push(dataset);
+    specimens.push(...specimenRows(dataset.id, checked.pmo));
+    log(`read ${id} "${title}": ${dataset.summary.specimens} specimens`);
+  }
+
+  return {
+    index: {
+      version: INDEX_VERSION,
+      harvestedAt: (options.now ?? new Date()).toISOString(),
+      community: options.community,
+      datasets,
+    },
+    specimens,
+    skipped,
+  };
+}

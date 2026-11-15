@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Every night, so a PMO newly accepted into the Zenodo community shows up
+  # in the list of published PMOs within a day. GitHub pauses a schedule
+  # after 60 days without activity in the repository; a push starts it again.
+  schedule:
+    - cron: "17 4 * * *"
 
 permissions:
   contents: read
@@ -31,6 +36,16 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - id: pages
+        uses: actions/configure-pages@v6
+
+      # Rebuilds the list of published PMOs from the Zenodo community. If
+      # Zenodo cannot be read, the list already on the site is kept.
+      - name: Read the published PMOs from Zenodo
+        run: pnpm harvest --fallback "${{ steps.pages.outputs.base_url }}/repository/"
+        env:
+          VITE_ZENODO_COMMUNITY: ${{ vars.VITE_ZENODO_COMMUNITY }}
+
       - name: Build
         run: pnpm build
         env:
@@ -43,8 +58,6 @@ jobs:
           VITE_ZENODO_COMMUNITY: ${{ vars.VITE_ZENODO_COMMUNITY }}
           VITE_ZENODO_COMMUNITY_NAME: ${{ vars.VITE_ZENODO_COMMUNITY_NAME }}
           VITE_ZENODO_CLIENT_ID: ${{ vars.VITE_ZENODO_CLIENT_ID }}
-
-      - uses: actions/configure-pages@v6
 
       - uses: actions/upload-pages-artifact@v5
         with:

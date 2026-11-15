@@ -1,6 +1,7 @@
-import { House } from "lucide-react";
+import { House, LibraryBig } from "lucide-react";
 import { Link as RouterLink, useLocation } from "wouter";
 
+import { zenodoConfig } from "@/features/review/zenodo";
 import { StatusIcon, cn } from "@/ui";
 
 import { stepsByGroup } from "./steps";
@@ -10,8 +11,16 @@ const itemClass =
   "flex h-8 items-center gap-2.5 rounded-md px-2.5 text-base transition-colors duration-100";
 
 /** The list of steps in the sidebar and the mobile menu, grouped as in the registry. */
-export function StepNav({ onNavigate }: { onNavigate?: () => void }) {
+export function StepNav({
+  onNavigate,
+  showPublished = zenodoConfig() !== null,
+}: {
+  onNavigate?: () => void;
+  /** Whether to link to the published PMOs. Default: when a Zenodo community is set. */
+  showPublished?: boolean;
+}) {
   const [location] = useLocation();
+  const onPublished = location === "/published" || location.startsWith("/published/");
   const statuses = useStepStatuses();
   const groups = stepsByGroup();
 
@@ -31,6 +40,23 @@ export function StepNav({ onNavigate }: { onNavigate?: () => void }) {
         <House aria-hidden="true" className="size-4 shrink-0" />
         Home
       </RouterLink>
+      {showPublished ? (
+        <RouterLink
+          href="/published"
+          onClick={onNavigate}
+          aria-current={onPublished ? "page" : undefined}
+          className={cn(
+            itemClass,
+            "-mt-4",
+            onPublished
+              ? "bg-surface-muted font-medium text-text"
+              : "text-text-muted hover:bg-surface-muted hover:text-text",
+          )}
+        >
+          <LibraryBig aria-hidden="true" className="size-4 shrink-0" />
+          Published PMOs
+        </RouterLink>
+      ) : null}
       {groups.map(({ group, steps }) => (
         <div key={group} className="flex flex-col gap-0.5">
           <h2 className="px-2.5 pb-1 text-xs font-medium text-text-subtle">{group}</h2>

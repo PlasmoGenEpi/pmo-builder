@@ -51,6 +51,11 @@ The panel works in one of two ways, depending on how the copy was set up.
   of this project. The sign-in allows making and changing drafts, not
   publishing them, and the app forgets it when you close or reload the page.
 
+## Published PMOs
+
+The list of published PMOs is a file on this site, so browsing and searching
+it contacts nothing else. A download, or a link to a record, opens Zenodo.
+
 ## Usage counts
 
 This copy of PMO Builder may send anonymous usage counts to help its
