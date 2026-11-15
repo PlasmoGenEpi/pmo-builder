@@ -3,6 +3,7 @@
  * validation, suggestions that flow between sections, and export.
  */
 export * from "./bioinformatics";
+export * from "./checkFile";
 export * from "./context";
 export * from "./exampleData";
 export * from "./export";

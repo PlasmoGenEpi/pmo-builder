@@ -9,6 +9,7 @@ import {
   Button,
   ButtonLink,
   Callout,
+  Card,
   Dialog,
   Disclosure,
   formatBytes,
@@ -31,11 +32,25 @@ import {
 import { signIn, type SignInResult } from "./zenodoAuth";
 import { depositDraft, type DepositFailure, type DepositStep } from "./zenodoDeposit";
 
+/** The PMO to publish: the one built from the draft, or a file the user chose. */
+export type PublishSource =
+  | { readonly kind: "built" }
+  | { readonly kind: "file"; readonly file: Blob; readonly fileName: string };
+
+const BUILT: PublishSource = { kind: "built" };
+
 /** Props for {@link PublishToZenodo}. */
 export interface PublishToZenodoProps {
   readonly zenodo: ZenodoConfig;
   readonly summary: MergeSummary;
   readonly publication: PublicationSummary;
+  /** Default: the PMO built from the draft. */
+  readonly source?: PublishSource;
+  /**
+   * `inline` (default) sits under the download buttons of the review step.
+   * `card` stands on its own on a page, with a level 2 heading.
+   */
+  readonly variant?: "inline" | "card";
 }
 
 function SubHeading({ children }: { readonly children: ReactNode }) {
@@ -144,17 +159,29 @@ function RecordDetails({
 }
 
 /** The steps for uploading the file to Zenodo by hand. */
-function ManualSteps({ community }: { readonly community: string }) {
+function ManualSteps({
+  community,
+  source,
+}: {
+  readonly community: string;
+  readonly source: PublishSource;
+}) {
   const { busy, download } = usePmoDownload();
   return (
     <ol className="flex list-decimal flex-col gap-4 pl-5 text-base text-text">
       <li>
-        <div className="flex flex-col items-start gap-2">
-          <span>Download the PMO file.</span>
-          <Button icon={Download} loading={busy === "gzip"} onClick={() => void download(true)}>
-            Download PMO for Zenodo
-          </Button>
-        </div>
+        {source.kind === "file" ? (
+          <span>
+            Have your file ready: <span className="font-mono text-sm">{source.fileName}</span>.
+          </span>
+        ) : (
+          <div className="flex flex-col items-start gap-2">
+            <span>Download the PMO file.</span>
+            <Button icon={Download} loading={busy === "gzip"} onClick={() => void download(true)}>
+              Download PMO for Zenodo
+            </Button>
+          </div>
+        )}
       </li>
       <li>
         <div className="flex flex-col items-start gap-2">
@@ -262,6 +289,7 @@ function useDeposit(
   zenodo: ZenodoConfig,
   record: SuggestedRecord,
   blocked: boolean,
+  source: PublishSource,
 ): DepositControl {
   const actions = useActions();
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
@@ -292,7 +320,10 @@ function useDeposit(
     }
     setPhase({ kind: "preparing" });
     try {
-      const file = await actions.downloadPmo({ gzip: true });
+      const file =
+        source.kind === "file"
+          ? { blob: source.file, fileName: source.fileName }
+          : await actions.downloadPmo({ gzip: true });
       if (file === null) {
         setPhase({
           kind: "failed",
@@ -444,11 +475,13 @@ function PublishBody({
   publication,
   record,
   deposit,
+  source,
 }: {
   readonly zenodo: ZenodoConfig;
   readonly publication: PublicationSummary;
   readonly record: SuggestedRecord;
   readonly deposit: DepositControl;
+  readonly source: PublishSource;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -458,7 +491,7 @@ function PublishBody({
       {zenodo.clientId === null ? (
         <>
           <Part title="How to publish">
-            <ManualSteps community={zenodo.community} />
+            <ManualSteps community={zenodo.community} source={source} />
           </Part>
           <Part title="Details to copy">
             <RecordDetails
@@ -482,7 +515,7 @@ function PublishBody({
           </Disclosure>
           <Disclosure title="Upload it yourself instead">
             <div className="pt-3">
-              <ManualSteps community={zenodo.community} />
+              <ManualSteps community={zenodo.community} source={source} />
             </div>
           </Disclosure>
         </>
@@ -498,41 +531,37 @@ function PublishBody({
  * for the user or the steps for uploading by hand. The app contacts Zenodo
  * only when the user chooses to deposit.
  */
-export function PublishToZenodo({ zenodo, summary, publication }: PublishToZenodoProps) {
+export function PublishToZenodo({
+  zenodo,
+  summary,
+  publication,
+  source = BUILT,
+  variant = "inline",
+}: PublishToZenodoProps) {
   const record = useMemo(() => suggestRecord(summary, publication), [summary, publication]);
-  const deposit = useDeposit(zenodo, record, publication.exampleData);
+  const deposit = useDeposit(zenodo, record, publication.exampleData, source);
   const [open, setOpen] = useState(false);
   const direct = zenodo.clientId !== null;
 
+  const Frame = variant === "card" ? CardFrame : InlineFrame;
+
   if (publication.exampleData) {
     return (
-      <section
-        aria-labelledby="review-publish-heading"
-        className="flex flex-col gap-3 border-t border-border pt-5"
-      >
-        <h3 id="review-publish-heading" className="text-md font-semibold text-text">
-          Publish to Zenodo
-        </h3>
+      <Frame>
         <p className="max-w-prose text-base text-text-muted">
-          This PMO is built from the example data, so it cannot be published. With your own tables,
-          you can add your PMO to the{" "}
+          {source.kind === "file" ? "This file is" : "This PMO is"} built from the example data, so
+          it cannot be published. With your own tables, you can add your PMO to the{" "}
           <Link href={communityUrl(zenodo.community)} external>
             {zenodo.communityName} community
           </Link>{" "}
           on Zenodo from here and get a DOI that others can cite.
         </p>
-      </section>
+      </Frame>
     );
   }
 
   return (
-    <section
-      aria-labelledby="review-publish-heading"
-      className="flex flex-col gap-3 border-t border-border pt-5"
-    >
-      <h3 id="review-publish-heading" className="text-md font-semibold text-text">
-        Publish to Zenodo
-      </h3>
+    <Frame>
       <p className="max-w-prose text-base text-text-muted">
         Zenodo is a free research archive. Add your PMO to the{" "}
         <Link href={communityUrl(zenodo.community)} external>
@@ -567,6 +596,7 @@ export function PublishToZenodo({ zenodo, summary, publication }: PublishToZenod
             publication={publication}
             record={record}
             deposit={deposit}
+            source={source}
           />
         </Dialog>
         {!open && deposit.phase.kind === "done" ? (
@@ -581,6 +611,35 @@ export function PublishToZenodo({ zenodo, summary, publication }: PublishToZenod
           <span className="text-base text-text-muted">A deposit is under way.</span>
         ) : null}
       </div>
+    </Frame>
+  );
+}
+
+/** Under the download buttons of the review step. */
+function InlineFrame({ children }: { readonly children: ReactNode }) {
+  return (
+    <section
+      aria-labelledby="review-publish-heading"
+      className="flex flex-col gap-3 border-t border-border pt-5"
+    >
+      <h3 id="review-publish-heading" className="text-md font-semibold text-text">
+        Publish to Zenodo
+      </h3>
+      {children}
     </section>
+  );
+}
+
+/** On a page of its own. */
+function CardFrame({ children }: { readonly children: ReactNode }) {
+  return (
+    <Card as="section" aria-labelledby="review-publish-heading">
+      <div className="flex flex-col gap-3">
+        <h2 id="review-publish-heading" className="text-lg font-semibold tracking-tight text-text">
+          Publish to Zenodo
+        </h2>
+        {children}
+      </div>
+    </Card>
   );
 }

@@ -1,4 +1,4 @@
-import { House, LibraryBig } from "lucide-react";
+import { FileUp, House, LibraryBig } from "lucide-react";
 import { Link as RouterLink, useLocation } from "wouter";
 
 import { zenodoConfig } from "@/features/review/zenodo";
@@ -44,21 +44,36 @@ export function StepNav({
         Home
       </RouterLink>
       {showPublished ? (
-        <RouterLink
-          href="/published"
-          onClick={onNavigate}
-          aria-current={onPublished ? "page" : undefined}
-          className={cn(
-            itemClass,
-            "-mt-4",
-            onPublished
-              ? "bg-surface-muted font-medium text-text"
-              : "text-text-muted hover:bg-surface-muted hover:text-text",
-          )}
-        >
-          <LibraryBig aria-hidden="true" className="size-4 shrink-0" />
-          Published PMOs
-        </RouterLink>
+        <div className="-mt-4 flex flex-col gap-0.5">
+          <RouterLink
+            href="/published"
+            onClick={onNavigate}
+            aria-current={onPublished ? "page" : undefined}
+            className={cn(
+              itemClass,
+              onPublished
+                ? "bg-surface-muted font-medium text-text"
+                : "text-text-muted hover:bg-surface-muted hover:text-text",
+            )}
+          >
+            <LibraryBig aria-hidden="true" className="size-4 shrink-0" />
+            Published PMOs
+          </RouterLink>
+          <RouterLink
+            href="/publish"
+            onClick={onNavigate}
+            aria-current={location === "/publish" ? "page" : undefined}
+            className={cn(
+              itemClass,
+              location === "/publish"
+                ? "bg-surface-muted font-medium text-text"
+                : "text-text-muted hover:bg-surface-muted hover:text-text",
+            )}
+          >
+            <FileUp aria-hidden="true" className="size-4 shrink-0" />
+            Publish a PMO file
+          </RouterLink>
+        </div>
       ) : null}
       {groups.map(({ group, steps }) => (
         <div key={group} className="flex flex-col gap-0.5">

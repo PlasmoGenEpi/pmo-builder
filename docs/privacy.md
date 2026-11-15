@@ -51,6 +51,10 @@ The panel works in one of two ways, depending on how the copy was set up.
   of this project. The sign-in allows making and changing drafts, not
   publishing them, and the app forgets it when you close or reload the page.
 
+The "Publish a PMO file" page works the same way for a file you already
+have: it is read and checked in your browser, and goes to Zenodo only if you
+choose to deposit it.
+
 ## Published PMOs
 
 The list of published PMOs is a file on this site, so browsing and searching

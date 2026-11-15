@@ -50,6 +50,12 @@ Developer Applications. Set the client type to Public and the redirect URI to
 `zenodo-callback.html` beside the app, such as
 `https://v2.pmotools.app/zenodo-callback.html`.
 
+"Publish a PMO file" (`#/publish`) does the same for a PMO file the user
+already has, built here earlier or with pmotools. The file is read and
+checked in the browser, and only a file in PMO version 1.1.0 that matches the
+format and whose tables link up can be deposited. The user's draft is not
+touched.
+
 The panel does not offer to publish the app's own example data. The example
 tables use made-up sample names that start with `example_sample_`, and a PMO
 holding any such sample cannot be published

@@ -161,6 +161,14 @@ export function HomePage({
             >
               Browse the published PMOs
             </RouterLink>
+            . Have a PMO file already?{" "}
+            <RouterLink
+              href="/publish"
+              className="font-medium text-accent-text underline-offset-2 hover:underline"
+            >
+              Publish it
+            </RouterLink>
+            .
           </p>
         ) : null}
         {example.kind === "loading" ? (

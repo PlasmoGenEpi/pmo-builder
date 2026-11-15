@@ -71,6 +71,8 @@ const RESULT_GUARDS: {
     value === null ||
     (isRecord(value) && typeof value["text"] === "string" && typeof value["length"] === "number"),
   getPanelFragment: (value): value is EngineResult<"getPanelFragment"> => isJsonValue(value),
+  checkPmoFile: (value): value is EngineResult<"checkPmoFile"> =>
+    hasKind(value, ["ready", "too-large", "unreadable", "wrong-version", "invalid"]),
 };
 
 /**
@@ -192,6 +194,7 @@ export function createEngineClient(
     getPmoFileSize: (...args) => call("getPmoFileSize", args),
     getPmoText: (...args) => call("getPmoText", args),
     getPanelFragment: (...args) => call("getPanelFragment", args),
+    checkPmoFile: (...args) => call("checkPmoFile", args),
     async dispose(...args) {
       try {
         await call("dispose", args);
@@ -288,6 +291,7 @@ export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
     getPmoFileSize: async (...args) => engine().getPmoFileSize(...args),
     getPmoText: async (...args) => engine().getPmoText(...args),
     getPanelFragment: async (...args) => engine().getPanelFragment(...args),
+    checkPmoFile: async (...args) => engine().checkPmoFile(...args),
     async dispose() {
       files.clear();
       const client = current;
@@ -356,6 +360,7 @@ export function createLazyInThreadEngine(): Engine {
     getPmoFileSize: async (...args) => (await load()).getPmoFileSize(...args),
     getPmoText: async (...args) => (await load()).getPmoText(...args),
     getPanelFragment: async (...args) => (await load()).getPanelFragment(...args),
+    checkPmoFile: async (...args) => (await load()).checkPmoFile(...args),
     // Nothing to release if the engine was never loaded.
     dispose: async (...args) => (loading === null ? undefined : (await load()).dispose(...args)),
   };

@@ -7,7 +7,7 @@
  */
 import { createStore, type StoreApi } from "zustand/vanilla";
 
-import type { PmoFile, Suggestions } from "@/domain/build";
+import type { PmoFile, PmoFileCheck, Suggestions } from "@/domain/build";
 // Not the `@/domain/build` or `@/domain/import` barrels: they would bring
 // pmotools-ts onto the main thread.
 import { NO_SUGGESTIONS } from "@/domain/build/suggestions";
@@ -267,6 +267,11 @@ export interface AppActions {
   }): Promise<{ readonly fileName: string; readonly size: number } | null>;
   /** Builds now if needed, then gives the PMO's text for a preview. */
   previewPmo(options?: { readonly maxLength?: number }): Promise<PmoTextPreview | null>;
+  /**
+   * Checks a PMO file the user already has, for publishing. The draft is not
+   * touched. `null` when the engine failed.
+   */
+  checkPmoFile(file: Blob): Promise<PmoFileCheck | null>;
   /** Runs any scheduled build and save now, the save without waiting for the build. */
   flush(): Promise<void>;
   /**
@@ -931,6 +936,15 @@ export function createAppStore(options: AppStoreOptions): AppStore {
         await actions.flush();
         try {
           return await engine.getPmoText(previewOptions);
+        } catch (error) {
+          engineFailed(error);
+          return null;
+        }
+      },
+
+      async checkPmoFile(file) {
+        try {
+          return await engine.checkPmoFile(file);
         } catch (error) {
           engineFailed(error);
           return null;

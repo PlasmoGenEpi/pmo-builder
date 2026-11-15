@@ -22,6 +22,10 @@ const PublishedDataset = page(() =>
   import("@/features/published/DatasetPage").then((module) => module.DatasetRoute),
 );
 
+const PublishFile = page(() =>
+  import("@/features/publish-file/PublishFilePage").then((module) => module.PublishFilePage),
+);
+
 const Styleguide = page(() =>
   import("./styleguide/StyleguidePage").then((module) => module.StyleguidePage),
 );
@@ -96,6 +100,7 @@ function Routes() {
           ))}
           <Route path="/published" component={Published.component} />
           <Route path="/published/:id" component={PublishedDataset.component} />
+          <Route path="/publish" component={PublishFile.component} />
           <Route path="/styleguide" component={Styleguide.component} />
           <Route>
             <NotFoundPage />

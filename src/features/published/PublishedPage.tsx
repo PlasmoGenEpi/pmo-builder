@@ -222,13 +222,18 @@ function AddYours() {
       <div className="flex min-w-0 flex-col gap-0.5">
         <p className="text-base font-medium text-text">Have data to share?</p>
         <p className="text-base text-text-muted">
-          Build a PMO from your tables and deposit it from the last step.
+          Build a PMO from your tables, or publish a PMO file you already have.
         </p>
       </div>
-      <RouterLink href="/" className={buttonClassName({ variant: "secondary" })}>
-        Build a PMO
-        <ArrowRight aria-hidden="true" className="size-4" />
-      </RouterLink>
+      <div className="flex flex-wrap gap-2">
+        <RouterLink href="/publish" className={buttonClassName({ variant: "secondary" })}>
+          Publish a file
+        </RouterLink>
+        <RouterLink href="/" className={buttonClassName({ variant: "secondary" })}>
+          Build a PMO
+          <ArrowRight aria-hidden="true" className="size-4" />
+        </RouterLink>
+      </div>
     </section>
   );
 }
@@ -242,12 +247,17 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
     return (
       <EmptyState
         title="No PMO has been published yet"
-        description="Build a PMO from your tables and deposit it from the last step. It appears here once a curator accepts it."
+        description="Build a PMO from your tables, or publish a PMO file you already have. It appears here once a curator accepts it."
         action={
-          <RouterLink href="/" className={buttonClassName({ variant: "primary" })}>
-            Build a PMO
-            <ArrowRight aria-hidden="true" className="size-4" />
-          </RouterLink>
+          <div className="flex flex-wrap justify-center gap-2">
+            <RouterLink href="/" className={buttonClassName({ variant: "primary" })}>
+              Build a PMO
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </RouterLink>
+            <RouterLink href="/publish" className={buttonClassName({ variant: "secondary" })}>
+              Publish a file
+            </RouterLink>
+          </div>
         }
       />
     );

@@ -9,6 +9,7 @@ import type {
   MergeSummary,
   PublicationSummary,
   PmoFile,
+  PmoFileCheck,
   SectionSummaries,
   Suggestions,
   BuildDeps,
@@ -177,6 +178,8 @@ export interface Engine {
   getPmoText(options?: { readonly maxLength?: number }): Promise<PmoTextPreview | null>;
   /** One panel's built fragment, for saving to the library, or `null` when it has not built. */
   getPanelFragment(panelId: string): Promise<JsonValue | null>;
+  /** Reads and checks a PMO file the user already has, for publishing. Leaves the draft alone. */
+  checkPmoFile(file: Blob): Promise<PmoFileCheck>;
   /** Releases the engine. A worker is terminated. */
   dispose(): Promise<void>;
 }

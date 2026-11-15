@@ -1,48 +1,9 @@
-import { gzipPmo, type PortableMicrohaplotypeObject } from "pmotools-ts";
+import { gzipPmo } from "pmotools-ts";
 import { describe, expect, it, vi } from "vitest";
 
-import { buildDraft } from "@/domain/build";
-import { EXAMPLE_MAPPINGS, mappedTable, readExample, testContext } from "@/domain/build/testing";
-import { createEmptyDraft, createPanelEntry } from "@/domain/draft";
+import { buildExamplePmo as examplePmo } from "@/domain/build/testing";
 
 import { harvest, HarvestError, pmoFileOf } from "./harvest";
-
-const tables = {
-  alleles: readExample("mad4hatter_allele_data_example.csv"),
-  panel: readExample("mad4hatter_panel_info_example.csv"),
-  metadata: readExample("mad4hatter_metadata_example.tsv"),
-};
-
-/** A PMO built from the example tables, as a deposit would hold. */
-function examplePmo(): PortableMicrohaplotypeObject {
-  const empty = createEmptyDraft();
-  const { merge } = buildDraft(
-    {
-      ...empty,
-      microhaplotypes: {
-        table: mappedTable("alleles", tables.alleles, EXAMPLE_MAPPINGS.alleles),
-        runName: { mode: "fixed", fixedName: "run1", column: null },
-        representativeColumns: [],
-      },
-      panel: {
-        panels: [
-          {
-            ...createPanelEntry("Mad4hatter"),
-            table: mappedTable("panel", tables.panel, EXAMPLE_MAPPINGS.panel),
-          },
-        ],
-      },
-      specimens: { table: mappedTable("metadata", tables.metadata, EXAMPLE_MAPPINGS.specimens) },
-      librarySamples: {
-        table: mappedTable("metadata", tables.metadata, EXAMPLE_MAPPINGS.librarySamples),
-      },
-    },
-    testContext(tables),
-    { creationDate: "2026-01-01" },
-  );
-  if (merge.outcome.kind !== "built") throw new Error("the example did not build");
-  return merge.outcome.pmo;
-}
 
 function record(id: string, files: readonly string[], title = `Dataset ${id}`): unknown {
   return {

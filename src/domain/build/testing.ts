@@ -9,9 +9,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { inferColumnTypes } from "pmotools-ts";
+import { inferColumnTypes, type PortableMicrohaplotypeObject } from "pmotools-ts";
 
 import {
+  createEmptyDraft,
+  createPanelEntry,
   METHOD_STEP_FORM_FIELDS,
   PROJECT_FORM_FIELDS,
   RUN_FORM_FIELDS,
@@ -34,6 +36,7 @@ import type {
 } from "@/domain/types";
 
 import { createBuildContext, type BuildContext, type BuildDeps } from "./context";
+import { buildDraft } from "./merge";
 
 /** Tests run from the repository root. */
 const EXAMPLES = join(process.cwd(), "public/examples/");
@@ -308,4 +311,47 @@ export function exampleSuggestMapping(fieldSet: FieldSetSpec): MappingSuggestion
     readCountsByStage: EXAMPLE_MAPPINGS.byStage,
   };
   return { mapping: byFieldSet[fieldSet.id] ?? { fields: {}, additionalColumns: [] }, matches: {} };
+}
+
+const EXAMPLE_PMO_TABLES = {
+  alleles: readExample("mad4hatter_allele_data_example.csv"),
+  panel: readExample("mad4hatter_panel_info_example.csv"),
+  metadata: readExample("mad4hatter_metadata_example.tsv"),
+};
+
+/** A valid PMO built from the example tables, as a deposit would hold. */
+export function buildExamplePmo(): PortableMicrohaplotypeObject {
+  const empty = createEmptyDraft();
+  const { merge } = buildDraft(
+    {
+      ...empty,
+      microhaplotypes: {
+        table: mappedTable("alleles", EXAMPLE_PMO_TABLES.alleles, EXAMPLE_MAPPINGS.alleles),
+        runName: { mode: "fixed", fixedName: "run1", column: null },
+        representativeColumns: [],
+      },
+      panel: {
+        panels: [
+          {
+            ...createPanelEntry("Mad4hatter"),
+            table: mappedTable("panel", EXAMPLE_PMO_TABLES.panel, EXAMPLE_MAPPINGS.panel),
+          },
+        ],
+      },
+      specimens: {
+        table: mappedTable("metadata", EXAMPLE_PMO_TABLES.metadata, EXAMPLE_MAPPINGS.specimens),
+      },
+      librarySamples: {
+        table: mappedTable(
+          "metadata",
+          EXAMPLE_PMO_TABLES.metadata,
+          EXAMPLE_MAPPINGS.librarySamples,
+        ),
+      },
+    },
+    testContext(EXAMPLE_PMO_TABLES),
+    { creationDate: "2026-01-01" },
+  );
+  if (merge.outcome.kind !== "built") throw new Error("the example did not build");
+  return merge.outcome.pmo;
 }

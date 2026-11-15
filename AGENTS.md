@@ -32,6 +32,7 @@ tests. oxlint (type-aware) and oxfmt for linting and formatting.
 | `src/features/<step>/`       | One folder per step page                                           | `ui`, `app`, `domain`, `state`, `analytics`, the three below |
 | `src/features/table-import/` | Import a table and match its columns, for every step               | `ui`, `domain`, `state`                                      |
 | `src/features/records/`      | Hand-entered records: forms, lists, suggestions                    | `ui`, `domain`                                               |
+| `src/features/publish-file/` | Checking and depositing a PMO file the user already has            | `ui`, `app`, `domain/build`, `state`, `features/review`      |
 | `src/features/published/`    | The list of published PMOs and each dataset's page                 | `ui`, `app`, `domain/repository/types`, `features/review`    |
 | `src/features/shared/`       | Parts several steps use: result card, name checks, run name        | `ui`, `app`, `domain`, `state`, `table-import`               |
 | `src/test/`                  | Test setup and shared test helpers                                 | anything                                                     |

@@ -12,6 +12,7 @@
 import type { PortableMicrohaplotypeObject, Table } from "pmotools-ts";
 
 import {
+  checkPmoFile,
   DEFAULT_BUILD_DEPS,
   NO_SUGGESTIONS,
   buildSection,
@@ -494,6 +495,10 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
         previewMemo = { pmo, maxLength, preview: previewPmo(pmo, maxLength) };
       }
       return Promise.resolve(previewMemo.preview);
+    },
+
+    checkPmoFile(file) {
+      return checkPmoFile(file);
     },
 
     getPanelFragment(panelId) {
