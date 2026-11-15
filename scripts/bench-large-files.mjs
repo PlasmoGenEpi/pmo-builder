@@ -71,12 +71,17 @@ async function stage(name, run) {
   const ms = performance.now() - started;
   await new Promise((done) => setTimeout(done, 10));
   const after = process.memoryUsage();
+  // What is still reachable: everything earlier stages kept, plus this result.
+  globalThis.gc();
+  const retained = process.memoryUsage();
   rows.push({
     stage: name,
     ms: Math.round(ms),
     peakRssMb: Math.round(Number(Atomics.load(peak, 0)) / MB),
     rssBeforeMb: Math.round(before.rss / MB),
     heapAfterMb: Math.round(after.heapUsed / MB),
+    retainedHeapMb: Math.round(retained.heapUsed / MB),
+    externalMb: Math.round(retained.external / MB),
   });
   return result;
 }

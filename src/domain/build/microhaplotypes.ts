@@ -177,19 +177,31 @@ function repeatedRowsNotice(
   const target = columns["targetName"];
   const seq = columns["seq"];
   if (sample === undefined || target === undefined || seq === undefined) return null;
-  const keyOf = (row: RawRow, extra: string | null): string =>
-    JSON.stringify([
-      runColumn === null ? "" : cell(row, runColumn),
-      cell(row, sample),
-      cell(row, target),
-      cell(row, seq),
-      extra === null ? "" : cell(row, extra),
-    ]);
+  // A row's key is the numbers of its trimmed cells, such as "3,0,12,7,": short
+  // whatever the sequence length, so a large table's keys stay small.
+  const numbers = new Map<string, Map<string, number>>();
+  const numberOf = (row: RawRow, column: string | null): string => {
+    if (column === null) return "";
+    let known = numbers.get(column);
+    if (known === undefined) {
+      known = new Map();
+      numbers.set(column, known);
+    }
+    const value = cell(row, column);
+    let number = known.get(value);
+    if (number === undefined) {
+      number = known.size;
+      known.set(value, number);
+    }
+    return String(number);
+  };
   const repeats = (extra: string | null): number[] => {
     const seen = new Set<string>();
     const found: number[] = [];
     raw.rows.forEach((row, index) => {
-      const key = keyOf(row, extra);
+      const key = [runColumn, sample, target, seq, extra]
+        .map((column) => numberOf(row, column))
+        .join(",");
       if (seen.has(key)) found.push(index);
       else seen.add(key);
     });

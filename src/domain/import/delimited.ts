@@ -1,5 +1,7 @@
 import Papa from "papaparse";
 
+import { createCellInterner } from "./intern";
+
 /** The delimiters {@link detectDelimiter} chooses between. */
 export const DELIMITERS = [",", "\t", ";", "|"] as const;
 
@@ -58,7 +60,31 @@ export function detectDelimiter(text: string, preferred: Delimiter): Delimiter {
   return best?.delimiter ?? preferred;
 }
 
-/** Splits delimited text into rows of cells, honouring quotes and embedded line breaks. */
+/**
+ * Splits delimited text into rows of cells, honouring quotes and embedded
+ * line breaks. Each distinct text is stored once per column (see
+ * `createCellInterner`), and no cell keeps `text` alive.
+ */
 export function parseDelimited(text: string, delimiter: Delimiter): string[][] {
-  return parseRows(text, delimiter);
+  const intern = createCellInterner();
+  const rows: string[][] = [];
+  Papa.parse<string[]>(text, {
+    delimiter,
+    header: false,
+    skipEmptyLines: false,
+    step: (result) => {
+      const row = result.data;
+      // See `parseRows`: a `\r` left by mixed line endings comes off the last cell.
+      const last = row.length - 1;
+      const lastCell = row[last];
+      if (result.meta.linebreak === "\n" && lastCell?.endsWith("\r") === true) {
+        row[last] = lastCell.slice(0, -1);
+      }
+      for (let column = 0; column < row.length; column += 1) {
+        row[column] = intern(column, row[column] ?? "");
+      }
+      rows.push(row);
+    },
+  });
+  return rows;
 }

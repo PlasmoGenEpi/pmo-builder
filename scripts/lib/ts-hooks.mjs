@@ -5,6 +5,9 @@
 // are looked up from this repository, so a copy of `src` elsewhere still
 // finds node_modules.
 //
+// Lingui's macros are swapped for `lingui-macro-shim.mjs`, which returns the
+// English text.
+//
 // Registered by scripts that load app code, with
 // `register("./lib/ts-hooks.mjs", import.meta.url, { data: { src } })`.
 import { existsSync, statSync } from "node:fs";
@@ -30,6 +33,10 @@ function withExtension(url) {
 }
 
 export async function resolve(specifier, context, next) {
+  // Lingui's macros need the build to compile them; a script gets English.
+  if (specifier === "@lingui/core/macro") {
+    return { url: new URL("./lingui-macro-shim.mjs", import.meta.url).href, shortCircuit: true };
+  }
   if (specifier.startsWith("@/")) {
     return { url: withExtension(new URL(specifier.slice(2), srcUrl).href), shortCircuit: true };
   }
