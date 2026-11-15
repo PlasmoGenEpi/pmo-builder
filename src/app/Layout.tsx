@@ -7,6 +7,7 @@ import { IconButton } from "@/ui";
 
 import { StepNav } from "./StepNav";
 import { OtherTabNotice } from "./OtherTabNotice";
+import { UsageNotice } from "./privacy/UsageNotice";
 import { TopBar } from "./TopBar";
 
 /** Scrolls to the top when mounted. Keyed by the route, so each new page starts at the top. */
@@ -47,6 +48,7 @@ export function Layout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+      <UsageNotice />
 
       <RadixDialog.Root open={navOpen} onOpenChange={setNavOpen}>
         <RadixDialog.Portal>

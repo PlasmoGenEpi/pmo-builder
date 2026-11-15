@@ -2,7 +2,7 @@
  * A browser stand-in for the tests in this folder. Not used by the app.
  */
 import type { AnalyticsEnvironment } from "./analytics";
-import type { PrivacySignals } from "./status";
+import { PREFERENCE_KEY, type PrivacySignals } from "./status";
 
 /** What a fake environment saw, and levers to drive it. */
 export interface FakeEnvironment {
@@ -27,11 +27,18 @@ export function fakeEnvironment(
     readonly signals?: PrivacySignals;
     readonly beaconAccepts?: boolean;
     readonly storageThrows?: boolean;
+    /**
+     * What the user chose earlier, as stored. Default `on`, so tests of
+     * sending start from a user who agreed. `null` stands for a first visit.
+     */
+    readonly choice?: "on" | "off" | null;
   } = {},
 ): FakeEnvironment {
   const beacons: { url: string; body: string }[] = [];
   const fetches: { url: string; init: RequestInit }[] = [];
   const storage = new Map<string, string>();
+  const choice = options.choice === undefined ? "on" : options.choice;
+  if (choice !== null) storage.set(PREFERENCE_KEY, choice);
   const hidden: (() => void)[] = [];
   const preference: (() => void)[] = [];
   let clock = 1000;

@@ -15,6 +15,8 @@ export interface AnalyticsHooks {
   useAnalyticsStatus(): AnalyticsStatus;
   useAnalyticsPreference(): AnalyticsPreference;
   useTransparencyLog(): TransparencySnapshot;
+  /** Whether the app should ask the user about usage counts. */
+  useUsageChoiceNeeded(): boolean;
 }
 
 /** Builds the hooks for `analytics`. `index.ts` exports the ones for the app. */
@@ -30,6 +32,9 @@ export function createAnalyticsHooks(analytics: Analytics): AnalyticsHooks {
     },
     useTransparencyLog() {
       return useSyncExternalStore(analytics.subscribe, analytics.getTransparencySnapshot);
+    },
+    useUsageChoiceNeeded() {
+      return useSyncExternalStore(analytics.subscribe, analytics.needsChoice);
     },
   };
 }

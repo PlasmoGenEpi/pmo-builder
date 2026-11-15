@@ -98,6 +98,8 @@ function statusSentence(status: AnalyticsStatus): string {
       return "Your browser sends Do Not Track, so nothing is sent.";
     case "switched-off":
       return "You switched usage counts off in this browser, so nothing is sent.";
+    case "not-chosen":
+      return "Nothing is sent until you choose whether to send anonymous usage counts.";
     default:
       return "Nothing is sent.";
   }

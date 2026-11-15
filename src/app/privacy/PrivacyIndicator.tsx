@@ -1,5 +1,5 @@
 import { ShieldCheck } from "lucide-react";
-import { Suspense } from "react";
+import { Suspense, type ReactElement } from "react";
 
 import { Button, Dialog, DialogClose, Skeleton } from "@/ui";
 
@@ -8,22 +8,27 @@ import { page } from "../steps";
 /** The details load with their own code, the first time the dialog opens or the button is pointed at. */
 const Details = page(() => import("./PrivacyDetails").then((module) => module.PrivacyDetails));
 
-/** The privacy promise in the top bar. Opens a dialog with the details. */
-export function PrivacyIndicator() {
+/** Loads the dialog's details ahead of time. */
+export function preloadPrivacyDetails(): void {
+  void Details.preload();
+}
+
+/** Props for {@link PrivacyDialog}. */
+export interface PrivacyDialogProps {
+  readonly trigger?: ReactElement;
+  readonly open?: boolean;
+  readonly onOpenChange?: (open: boolean) => void;
+}
+
+/** What stays on this device, what the browser keeps, and the usage counts, with their switch. */
+export function PrivacyDialog({ trigger, open, onOpenChange }: PrivacyDialogProps) {
   return (
     <Dialog
       title="Your data stays on this device"
       size="md"
-      trigger={
-        <Button
-          size="sm"
-          onPointerEnter={() => void Details.preload()}
-          onFocus={() => void Details.preload()}
-        >
-          <ShieldCheck aria-hidden="true" className="size-3.5 shrink-0 text-success" />
-          Your data stays on this device
-        </Button>
-      }
+      open={open}
+      onOpenChange={onOpenChange}
+      trigger={trigger}
       footer={
         <DialogClose>
           <Button variant="primary">Got it</Button>
@@ -41,5 +46,19 @@ export function PrivacyIndicator() {
         <Details.component />
       </Suspense>
     </Dialog>
+  );
+}
+
+/** The privacy promise in the top bar. Opens a dialog with the details. */
+export function PrivacyIndicator() {
+  return (
+    <PrivacyDialog
+      trigger={
+        <Button size="sm" onPointerEnter={preloadPrivacyDetails} onFocus={preloadPrivacyDetails}>
+          <ShieldCheck aria-hidden="true" className="size-3.5 shrink-0 text-success" />
+          Your data stays on this device
+        </Button>
+      }
+    />
   );
 }

@@ -57,7 +57,7 @@ describe("status", () => {
     expect(second.isEnabledByUser()).toBe(false);
     second.setEnabledByUser(true);
     expect(second.getStatus().state).toBe("on");
-    expect(fake.storage.size).toBe(0);
+    expect([...fake.storage.entries()]).toEqual([[PREFERENCE_KEY, "on"]]);
   });
 
   it("honours the switch for the page when storage is blocked", () => {
@@ -74,6 +74,83 @@ describe("status", () => {
     fake.storage.set(PREFERENCE_KEY, "off");
     fake.changePreferenceElsewhere();
     expect(analytics.getStatus()).toMatchObject({ reason: "switched-off" });
+  });
+});
+
+/** A browser on its first visit: counts are set up and the user has not chosen. */
+function firstVisit() {
+  return fakeEnvironment({ destination: DESTINATION, choice: null });
+}
+
+describe("the first visit, before the user chooses", () => {
+  it("asks for a choice and sends nothing meanwhile", () => {
+    const fake = firstVisit();
+    const analytics = createAnalytics(fake.env);
+    analytics.start();
+    analytics.recordStepOpened("panel");
+    fake.hide();
+    expect(analytics.getStatus()).toMatchObject({ state: "off", reason: "not-chosen" });
+    expect(analytics.needsChoice()).toBe(true);
+    expect(analytics.isEnabledByUser()).toBe(false);
+    expect(fake.beacons).toEqual([]);
+    expect(fake.fetches).toEqual([]);
+    expect(fake.storage.size).toBe(0);
+  });
+
+  it("sends the held visit once the user chooses to send, and the session at the next chance", () => {
+    const fake = firstVisit();
+    const analytics = createAnalytics(fake.env);
+    analytics.start();
+    analytics.recordStepOpened("panel");
+    fake.hide();
+    analytics.setEnabledByUser(true);
+    expect(analytics.needsChoice()).toBe(false);
+    expect(fake.beacons.map((beacon) => JSON.parse(beacon.body).kind)).toEqual(["visit"]);
+    fake.hide();
+    expect(fake.beacons.map((beacon) => JSON.parse(beacon.body).kind)).toEqual([
+      "visit",
+      "session",
+    ]);
+    expect([...fake.storage.entries()]).toEqual([[PREFERENCE_KEY, "on"]]);
+  });
+
+  it("drops what was held when the user chooses not to send", () => {
+    const fake = firstVisit();
+    const analytics = createAnalytics(fake.env);
+    analytics.start();
+    analytics.recordStepOpened("panel");
+    analytics.setEnabledByUser(false);
+    fake.hide();
+    expect(fake.beacons).toEqual([]);
+    expect(analytics.needsChoice()).toBe(false);
+    expect(analytics.getTransparencySnapshot().entries.map((entry) => entry.outcome)).toEqual([
+      "not-sent",
+      "not-sent",
+    ]);
+  });
+
+  it("follows a choice made in another tab", () => {
+    const fake = firstVisit();
+    const analytics = createAnalytics(fake.env);
+    analytics.start();
+    fake.storage.set(PREFERENCE_KEY, "on");
+    fake.changePreferenceElsewhere();
+    expect(analytics.needsChoice()).toBe(false);
+    expect(fake.beacons).toHaveLength(1);
+  });
+
+  it("does not ask when nothing would be sent anyway", () => {
+    for (const fake of [
+      fakeEnvironment({ choice: null }),
+      fakeEnvironment({ destination: DESTINATION, choice: null, signals: { doNotTrack: "1" } }),
+      fakeEnvironment({
+        destination: DESTINATION,
+        choice: null,
+        signals: { globalPrivacyControl: true },
+      }),
+    ]) {
+      expect(createAnalytics(fake.env).needsChoice()).toBe(false);
+    }
   });
 });
 

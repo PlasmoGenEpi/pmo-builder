@@ -17,7 +17,12 @@ export type AnalyticsOffReason =
   /** The browser sends Do Not Track. */
   | "do-not-track"
   /** The user switched usage counts off in this browser. */
-  | "switched-off";
+  | "switched-off"
+  /**
+   * The user has not chosen yet. Records wait for the choice, and are sent
+   * only if the user chooses to send them.
+   */
+  | "not-chosen";
 
 /** Whether records are sent, and where. */
 export type AnalyticsStatus =
@@ -32,8 +37,12 @@ export type AnalyticsStatus =
 /** The `localStorage` key for the user's choice. The only thing this module stores. */
 export const PREFERENCE_KEY = "pmo-builder:usage-counts";
 
-/** The value stored under `PREFERENCE_KEY` when the user switched usage counts off. */
+/** The values stored under `PREFERENCE_KEY`. Nothing stored means the user has not chosen. */
 const OFF = "off";
+const ON = "on";
+
+/** The user's choice: send, do not send, or not chosen yet. */
+export type UsageChoice = "on" | "off" | null;
 
 /** The parts of `localStorage` this module uses. */
 export type PreferenceStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
@@ -65,20 +74,20 @@ export function parseDestination(
   return { url: url.href, origin: url.origin };
 }
 
-/** Reads whether the user switched usage counts off. Storage errors count as "not off". */
-export function readSwitchedOff(storage: PreferenceStorage | undefined): boolean {
+/** Reads the user's choice. Storage errors count as "not chosen". */
+export function readChoice(storage: PreferenceStorage | undefined): UsageChoice {
   try {
-    return storage?.getItem(PREFERENCE_KEY) === OFF;
+    const value = storage?.getItem(PREFERENCE_KEY);
+    return value === OFF ? "off" : value === ON ? "on" : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
-/** Saves the user's choice. Switching on removes the stored value. */
-export function writeSwitchedOff(storage: PreferenceStorage | undefined, off: boolean): void {
+/** Saves the user's choice. */
+export function writeChoice(storage: PreferenceStorage | undefined, send: boolean): void {
   try {
-    if (off) storage?.setItem(PREFERENCE_KEY, OFF);
-    else storage?.removeItem(PREFERENCE_KEY);
+    storage?.setItem(PREFERENCE_KEY, send ? ON : OFF);
   } catch {
     // Storage can be full or blocked. The choice then lasts for this page only.
   }
@@ -88,9 +97,9 @@ export function writeSwitchedOff(storage: PreferenceStorage | undefined, off: bo
 export function computeStatus(options: {
   readonly destination: ReturnType<typeof parseDestination>;
   readonly signals: PrivacySignals | undefined;
-  readonly switchedOff: boolean;
+  readonly choice: UsageChoice;
 }): AnalyticsStatus {
-  const { destination, signals, switchedOff } = options;
+  const { destination, signals, choice } = options;
   if (destination === null) return { state: "off", reason: "not-configured", destination: null };
   if (destination === "invalid") {
     return { state: "off", reason: "invalid-destination", destination: null };
@@ -103,7 +112,8 @@ export function computeStatus(options: {
   if (dnt === "1" || dnt === "yes") {
     return { state: "off", reason: "do-not-track", destination: origin };
   }
-  if (switchedOff) return { state: "off", reason: "switched-off", destination: origin };
+  if (choice === "off") return { state: "off", reason: "switched-off", destination: origin };
+  if (choice === null) return { state: "off", reason: "not-chosen", destination: origin };
   return { state: "on", destination: origin };
 }
 

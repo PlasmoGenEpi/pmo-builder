@@ -79,9 +79,12 @@ Like any request on the internet, sending a record reveals your IP address
 and the time to the service that receives it. The receiver this project
 provides discards them and keeps only daily totals.
 
-Nothing is sent if your browser sends Global Privacy Control or Do Not Track,
-or if you switch usage counts off in the app. Switching off is remembered in
-this browser.
+On your first visit the app asks whether it may send them, and nothing is
+sent until you choose. If you choose to send them, the record of that visit
+is sent then. Your choice is remembered in this browser, and you can change
+it at any time under "Your data stays on this device". Nothing is sent, and
+you are not asked, if your browser sends Global Privacy Control or Do Not
+Track.
 
 ## Checking for yourself
 

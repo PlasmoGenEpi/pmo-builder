@@ -14,7 +14,16 @@ every other destination. A user can see the exact records and switch them off.
 Two records, with nothing that links them to each other, to a person or to a
 browser.
 
-**Visit.** Sent once when the app loads.
+**Asking first.** On the first visit the app asks, in a bar at the bottom of
+the page, whether it may send usage counts. Until the user chooses, records
+are held in memory and nothing is sent. If they choose to send, the held
+visit record goes then, and the session record at the next chance. If they
+choose not to, the held records are dropped. The choice is stored in
+`localStorage` (`pmo-builder:usage-counts`, `on` or `off`) and can be changed
+in the privacy dialog. The bar is not shown when the browser sends Global
+Privacy Control or Do Not Track, or when no receiver is set.
+
+**Visit.** Sent once when the app loads, or once the user chooses to send.
 
 | Field  | Values                           |
 | ------ | -------------------------------- |
@@ -78,8 +87,8 @@ Neither record has a timestamp. The receiver adds the date.
   metadata, in any form.
 - No error messages. Only stable codes, and only codes on a fixed list.
 - No identifiers: no cookies, no generated ids, nothing stored to recognise a
-  returning browser. The only thing the module stores is the user's off
-  switch, in `localStorage`.
+  returning browser. The only thing the module stores is the user's
+  choice, in `localStorage`.
 - No fingerprinting inputs: no screen size, time zone, language, user agent,
   referrer or page URL.
 - No exact counts or sizes. Only buckets.

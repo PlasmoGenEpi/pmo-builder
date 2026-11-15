@@ -6,13 +6,7 @@ import type { SessionRecord, VisitRecord } from "./payload";
 import { PAYLOAD_VERSION } from "./payload";
 import { createSession } from "./session";
 import type { BuildOutcome, Download, Issue, TableImport, ValidationOutcome } from "./session";
-import {
-  computeStatus,
-  parseDestination,
-  readSwitchedOff,
-  sameStatus,
-  writeSwitchedOff,
-} from "./status";
+import { computeStatus, parseDestination, readChoice, sameStatus, writeChoice } from "./status";
 import type {
   AnalyticsOffReason,
   AnalyticsStatus,
@@ -100,8 +94,13 @@ export interface Analytics {
   /** Sends the session record now, if there is one and it has not gone yet. */
   readonly flush: () => void;
   readonly getStatus: () => AnalyticsStatus;
-  /** Whether the user's own switch is on. The browser can still turn sending off. */
+  /** Whether the user has chosen to send usage counts. The browser can still turn sending off. */
   readonly isEnabledByUser: () => boolean;
+  /**
+   * Whether the app should ask the user: usage counts are set up, the browser
+   * does not refuse them, and the user has not chosen yet.
+   */
+  readonly needsChoice: () => boolean;
   readonly setEnabledByUser: (enabled: boolean) => void;
   readonly getTransparencySnapshot: () => TransparencySnapshot;
   /** Calls `listener` after any change to the status or the transparency snapshot. */
@@ -135,10 +134,13 @@ export function createAnalytics(env: AnalyticsEnvironment): Analytics {
 
   // Kept in memory as well as in storage, so the choice holds for this page
   // even when storage is blocked.
-  let switchedOff = readSwitchedOff(env.storage);
+  let choice = readChoice(env.storage);
   const readStatus = (): AnalyticsStatus =>
-    computeStatus({ destination, signals: env.signals, switchedOff });
+    computeStatus({ destination, signals: env.signals, choice });
   let status = readStatus();
+  /** Records made before the user chose. Sent if they choose to send, dropped if not. */
+  let held: (VisitRecord | SessionRecord)[] = [];
+  const waiting = (): boolean => status.state === "off" && status.reason === "not-chosen";
 
   const changed = (): void => {
     version += 1;
@@ -152,14 +154,20 @@ export function createAnalytics(env: AnalyticsEnvironment): Analytics {
   };
 
   const refreshStatus = (): void => {
-    switchedOff = readSwitchedOff(env.storage);
+    choice = readChoice(env.storage);
     const next = readStatus();
     if (sameStatus(next, status)) return;
     status = next;
+    release();
     changed();
   };
 
   const emit = (record: VisitRecord | SessionRecord): void => {
+    if (waiting()) {
+      held = [...held, record];
+      changed();
+      return;
+    }
     const body = JSON.stringify(record);
     const current = status;
     if (current.state === "on" && destination !== null && destination !== "invalid") {
@@ -177,7 +185,18 @@ export function createAnalytics(env: AnalyticsEnvironment): Analytics {
     changed();
   };
 
+  /** Once the user has chosen, sends or drops what was held. */
+  function release(): void {
+    if (waiting() || held.length === 0) return;
+    const records = held;
+    held = [];
+    for (const record of records) emit(record);
+  }
+
   const flush = (): void => {
+    // Without a choice the session stays open: it is summarised at the next
+    // chance after the user chooses, or not at all.
+    if (waiting()) return;
     if (sessionSent) return;
     const record = session.summarise(app, env.now() - startedAt);
     if (record === null) return;
@@ -221,11 +240,13 @@ export function createAnalytics(env: AnalyticsEnvironment): Analytics {
     recordDraftRestored: safely(update(() => session.draftRestored())),
     flush: safely(flush),
     getStatus: () => status,
-    isEnabledByUser: () => !switchedOff,
+    isEnabledByUser: () => choice === "on",
+    needsChoice: () => waiting(),
     setEnabledByUser: safely((enabled: boolean) => {
-      switchedOff = !enabled;
-      writeSwitchedOff(env.storage, switchedOff);
+      choice = enabled ? "on" : "off";
+      writeChoice(env.storage, enabled);
       status = readStatus();
+      release();
       changed();
     }),
     getTransparencySnapshot: () => {

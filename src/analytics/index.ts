@@ -202,6 +202,15 @@ export function useAnalyticsStatus(): AnalyticsStatus {
 }
 
 /** The user's own switch and a setter, for a settings control. */
+/**
+ * Whether to ask the user about usage counts: they are set up, the browser
+ * does not refuse them, and the user has not chosen. Until they choose,
+ * nothing is sent.
+ */
+export function useUsageChoiceNeeded(): boolean {
+  return hooks.useUsageChoiceNeeded();
+}
+
 export function useAnalyticsPreference(): AnalyticsPreference {
   return hooks.useAnalyticsPreference();
 }
