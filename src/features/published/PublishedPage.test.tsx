@@ -8,7 +8,7 @@ import { installDomPolyfills } from "@/ui/testPolyfills";
 import type { CatalogueLoad } from "./catalogue";
 import { DatasetPage } from "./DatasetPage";
 import { PublishedPage } from "./PublishedPage";
-import { catalogue } from "./testing";
+import { catalogue, DATASETS } from "./testing";
 
 beforeAll(installDomPolyfills);
 
@@ -42,9 +42,13 @@ describe("PublishedPage", () => {
       "Border travellers, Mozambique and Eswatini",
     ]);
     expect(screen.getByText("1,258")).toBeInTheDocument();
-    expect(
-      screen.getByText("50 specimens · 276 targets · Mad4hatter · Mozambique · 2015 to 2019"),
-    ).toBeInTheDocument();
+    const [first] = screen.getAllByRole("article");
+    if (first === undefined) throw new Error("no dataset");
+    expect(within(first).getByText("50 specimens")).toBeInTheDocument();
+    expect(within(first).getByText("276 targets")).toBeInTheDocument();
+    expect(within(first).getByText("Mad4hatter")).toBeInTheDocument();
+    expect(within(first).getByText("Mozambique")).toBeInTheDocument();
+    expect(within(first).getByText("2015 to 2019")).toBeInTheDocument();
     expect(screen.getByText("Achan, Sarah · 2026")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Northern Uganda cohort" })).toHaveAttribute(
       "href",
@@ -90,6 +94,19 @@ describe("PublishedPage", () => {
     await user.click(screen.getByRole("button", { name: "Clear the filters" }));
     expect(titles()).toHaveLength(3);
     expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("");
+  });
+
+  it("leaves the filters out when there is only one dataset", async () => {
+    render(
+      <PublishedPage
+        load={gives({ kind: "ready", index: catalogue(DATASETS.slice(0, 1)) })}
+        zenodo={ZENODO}
+      />,
+    );
+    expect(await screen.findByRole("article")).toBeInTheDocument();
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Build a PMO" })).toHaveAttribute("href", "/");
   });
 
   it("invites a first deposit when nothing has been published", async () => {
