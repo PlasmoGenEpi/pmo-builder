@@ -111,8 +111,10 @@
   --spacing-control-sm: 1.875rem;
   --spacing-control-lg: 2.75rem;
 
-  /* Content widths: `max-w-reading` for forms and prose, `max-w-wide` for tables. */
+  /* Content widths: `max-w-reading` for forms and prose, `max-w-step` for the build
+     steps (forms beside the step list, with previews of the tables), `max-w-wide` for tables. */
   --container-reading: 48rem;
+  --container-step: 64rem;
   --container-wide: 90rem;
 
   --radius-sm: 0.25rem;

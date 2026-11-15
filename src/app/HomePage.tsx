@@ -7,17 +7,16 @@ import {
   Hammer,
   LibraryBig,
   Microscope,
-  ShieldCheck,
   Table2,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
 import { plural, t } from "@lingui/core/macro";
-import { Trans } from "@lingui/react/macro";
 import { useState, type ReactNode } from "react";
 import { Link as RouterLink, useLocation } from "wouter";
 
 import { zenodoConfig } from "@/features/review/zenodo";
+import { useBuildState } from "@/state";
 
 import {
   Badge,
@@ -43,11 +42,15 @@ function JobCard({
   title,
   description,
   children,
+  footer,
 }: {
   readonly icon: LucideIcon;
   readonly title: string;
   readonly description: string;
+  /** The card's main action. */
   readonly children: ReactNode;
+  /** Smaller actions under it. The row is kept when empty, so main actions line up across cards. */
+  readonly footer?: ReactNode;
 }) {
   return (
     <Card as="article" className="flex flex-col gap-4">
@@ -58,7 +61,8 @@ function JobCard({
         <h2 className="text-lg font-semibold tracking-tight text-text">{title}</h2>
         <p className="text-base text-pretty text-text-muted">{description}</p>
       </div>
-      <div className="flex flex-col items-start gap-2">{children}</div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">{children}</div>
+      <div className="-mx-3 -my-1 flex min-h-8 flex-wrap items-center gap-1">{footer}</div>
     </Card>
   );
 }
@@ -111,7 +115,7 @@ type ExampleLoad =
 
 const TEMPLATE_URL = `${import.meta.env.BASE_URL}examples/PMO_building_template.xlsx`;
 
-/** The landing page: the three things the app does, the privacy promise, and what building needs. */
+/** The landing page: the three things the app does, and what building needs. The privacy promise is in the top bar. */
 export function HomePage({
   showPublished = zenodoConfig() !== null,
 }: {
@@ -131,6 +135,7 @@ export function HomePage({
   const required = STEPS.filter((step) => step.required);
   const readyCount = required.filter((step) => statuses[step.id] === "ready").length;
   const requiredCount = required.length;
+  const builtIsValid = useBuildState().view?.overall.pmo === "valid";
 
   async function tryExample() {
     setExample({ kind: "loading" });
@@ -162,21 +167,27 @@ export function HomePage({
           </div>
         </div>
 
-        <div className="flex items-start gap-3 rounded-lg border border-success/30 bg-success-subtle px-4 py-3">
-          <ShieldCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-success" />
-          <p className="text-base text-text">
-            <Trans>
-              <span className="font-semibold">Your data stays on this device.</span> Files are read
-              inside this browser and are never uploaded.
-            </Trans>
-          </p>
-        </div>
-
         <div className={showPublished ? "grid gap-4 lg:grid-cols-3" : "grid gap-4 lg:grid-cols-2"}>
           <JobCard
             icon={Hammer}
             title={t`Build a PMO`}
             description={t`From your lab's allele table, panel table and sample metadata. Fill in the steps in any order; your work is saved as you go.`}
+            footer={
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  loading={loadingExample}
+                  onClick={() => {
+                    if (hasDraft) setConfirmingExample(true);
+                    else void tryExample();
+                  }}
+                >
+                  {t`Try with example data`}
+                </Button>
+                {hasDraft ? <StartOverButton variant="ghost" size="sm" /> : null}
+              </>
+            }
           >
             <Button variant="primary" onClick={() => navigate(firstPath)}>
               {hasDraft ? t`Continue your draft` : t`Start`}
@@ -190,23 +201,22 @@ export function HomePage({
                 })}
               </p>
             ) : null}
-            <Button
-              variant="ghost"
-              size="sm"
-              loading={loadingExample}
-              onClick={() => {
-                if (hasDraft) setConfirmingExample(true);
-                else void tryExample();
-              }}
-            >
-              {t`Try with example data`}
-            </Button>
-            {hasDraft ? <StartOverButton variant="ghost" size="sm" /> : null}
           </JobCard>
           <JobCard
             icon={FileSpreadsheet}
             title={t`Work with a PMO file`}
-            description={t`Open a PMO file to download its tables, make a subset of some specimens, targets or reads, or publish it.`}
+            description={t`Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables, make a subset, or publish it.`}
+            footer={
+              builtIsValid ? (
+                // The address My PMO file opens the built PMO at; see PmoFilePage.
+                <RouterLink
+                  href="/pmo/open-built"
+                  className={buttonClassName({ variant: "ghost", size: "sm" })}
+                >
+                  {t`Open the PMO you are building`}
+                </RouterLink>
+              ) : null
+            }
           >
             <RouterLink href="/pmo" className={buttonClassName({ variant: "secondary" })}>
               {t`Open a PMO file`}

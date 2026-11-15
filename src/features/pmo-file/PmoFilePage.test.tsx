@@ -175,7 +175,9 @@ describe("PmoFilePage: subset", () => {
     await user.click(make);
     expect(await screen.findByText("The subset is ready")).toBeInTheDocument();
     expect(
-      screen.getByText(/In the subset: specimens 3, library samples 3, targets with alleles \d+\./),
+      screen.getByText(
+        /^It keeps 3 of \d+ specimens and 3 of \d+ library samples, with alleles at \d+ of \d+ targets\.$/,
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Download as .json" }));
@@ -289,12 +291,12 @@ describe("PmoFilePage: summary", () => {
     ).toBeInTheDocument();
   });
 
-  it("recounts with a read threshold", async () => {
+  it("recounts with a read threshold, kept when switching tabs", async () => {
     const { user } = await open(pmoFile(EXAMPLE));
     await user.click(await screen.findByRole("tab", { name: "Summary" }));
     const samples = await screen.findByRole("table", { name: "Samples" });
     const readsBefore = within(samples).getAllByRole("row").length;
-    await user.type(screen.getByLabelText(/Count microhaplotypes with at least/), "100000");
+    await user.type(screen.getByLabelText("Minimum reads per microhaplotype"), "100000");
     // Nothing reaches the threshold: no target has data, but every sample stays listed.
     await vi.waitFor(
       () =>
@@ -306,6 +308,11 @@ describe("PmoFilePage: summary", () => {
     expect(within(screen.getByRole("table", { name: "Samples" })).getAllByRole("row")).toHaveLength(
       readsBefore,
     );
+
+    // The threshold is the workspace's, so it survives a visit to another tab.
+    await user.click(screen.getByRole("tab", { name: "Tables" }));
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+    expect(await screen.findByLabelText("Minimum reads per microhaplotype")).toHaveValue("100000");
   });
 
   it("sorts a table by the chosen column", async () => {

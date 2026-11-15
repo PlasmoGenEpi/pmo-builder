@@ -156,9 +156,9 @@ describe("DatasetPage", () => {
     expect(screen.getByText("Okello, Grace; Mensah, Kofi")).toBeInTheDocument();
     expect(screen.getByText("Published 14 November 2026")).toBeInTheDocument();
 
-    expect(screen.getByRole("link", { name: "Open in My PMO file" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "See its summary" })).toHaveAttribute(
       "href",
-      "/pmo/published/303",
+      "/pmo/published/303/summary",
     );
     const download = screen.getByRole("link", { name: /download from zenodo/i });
     expect(download).toHaveAttribute(

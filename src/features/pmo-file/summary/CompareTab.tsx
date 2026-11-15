@@ -23,7 +23,6 @@ import {
   Callout,
   Combobox,
   Field,
-  NumberField,
   SectionHeading,
   SegmentedControl,
   Select,
@@ -33,6 +32,7 @@ import {
 } from "@/ui";
 
 import { SortableTable, type SortableColumn } from "./SortableTable";
+import { MinReadsField, ViewToolbar } from "./ViewToolbar";
 
 /** What each grouping field is called on screen. */
 function fieldName(key: GroupKey): string {
@@ -288,17 +288,25 @@ export interface CompareTabProps {
   readonly hasSubset: boolean;
   readonly source: WorkingSource;
   readonly onSourceChange: (source: WorkingSource) => void;
+  /** The minimum reads for a microhaplotype to count; `null` counts them all. */
+  readonly minReads: number | null;
+  readonly onMinReadsChange: (value: number | null) => void;
 }
 
 /** Specimens grouped by a field the file has, compared side by side. */
-export function CompareTab({ hasSubset, source, onSourceChange }: CompareTabProps) {
+export function CompareTab({
+  hasSubset,
+  source,
+  onSourceChange,
+  minReads: minReadsInput,
+  onMinReadsChange,
+}: CompareTabProps) {
   const actions = useActions();
   const [summary, setSummary] = useState<PmoSummary | null>(null);
   const fields = summary?.groupFields ?? [];
   const usable = fields.filter((field) => field.distinct > 1 || field.present < field.total);
   const [key, setKey] = useState<GroupKey | null>(null);
   const chosen = usable.find((field) => field.key === key) ?? usable[0] ?? null;
-  const [minReadsInput, setMinReadsInput] = useState<number | null>(null);
   const minReads = Math.max(0, minReadsInput ?? 0);
   const [loaded, setLoaded] = useState<Loaded>({ kind: "loading" });
   const [target, setTarget] = useState<string | null>(null);
@@ -367,8 +375,8 @@ export function CompareTab({ hasSubset, source, onSourceChange }: CompareTabProp
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface-subtle p-4 lg:flex-row lg:items-end">
-        <Field label={t`Group specimens by`} className="lg:max-w-sm lg:flex-1">
+      <ViewToolbar>
+        <Field label={t`Group specimens by`} className="w-96">
           {(control) => (
             <Select
               {...control}
@@ -388,14 +396,7 @@ export function CompareTab({ hasSubset, source, onSourceChange }: CompareTabProp
             />
           )}
         </Field>
-        <NumberField
-          label={t`Count microhaplotypes with at least this many reads`}
-          integer
-          min={0}
-          value={minReadsInput}
-          onValueChange={setMinReadsInput}
-          className="lg:max-w-xs"
-        />
+        <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
         {hasSubset ? (
           <SegmentedControl<WorkingSource>
             label={t`Compare`}
@@ -407,7 +408,7 @@ export function CompareTab({ hasSubset, source, onSourceChange }: CompareTabProp
             ]}
           />
         ) : null}
-      </div>
+      </ViewToolbar>
 
       {chosen.present < chosen.total ? (
         <p className="text-sm text-text-muted">

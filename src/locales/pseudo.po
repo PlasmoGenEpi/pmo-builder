@@ -73,7 +73,6 @@ msgstr ""
 msgid "(current choice)"
 msgstr ""
 
-#: src/features/published/DatasetPage.tsx
 #: src/features/review/PublishToZenodo.tsx
 #: src/ui/Link.tsx
 msgid "(opens in a new tab)"
@@ -1030,10 +1029,6 @@ msgstr ""
 msgid "<0>Specimen name</0> must match a name in the table on the Specimens step."
 msgstr ""
 
-#: src/app/HomePage.tsx
-msgid "<0>Your data stays on this device.</0> Files are read inside this browser and are never uploaded."
-msgstr ""
-
 #: src/features/pmo-file/summary/CompareTab.tsx
 msgid "A bar chart of specimens per collection period. The figures are in the bars' tooltips and in the group table."
 msgstr ""
@@ -1556,7 +1551,7 @@ msgid "Build a PMO from your tables, or publish a PMO file you already have. It 
 msgstr ""
 
 #: src/features/pmo-file/PmoFilePage.tsx
-msgid "Build one in this app from your tables, or download one from the published PMOs."
+msgid "Build one in this app from <0><1>your tables</1></0>, or open one of the <2><3>published PMOs</3></2>."
 msgstr ""
 
 #. The table of reads per sample, target and processing stage: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
@@ -1875,11 +1870,6 @@ msgstr ""
 msgid "Copy title"
 msgstr ""
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "Count microhaplotypes with at least this many reads"
-msgstr ""
-
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Counting"
 msgstr ""
@@ -2031,6 +2021,7 @@ msgstr ""
 msgid "Done"
 msgstr ""
 
+#: src/features/pmo-file/PmoFilePage.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Download"
 msgstr ""
@@ -2081,6 +2072,10 @@ msgstr ""
 
 #: src/features/pmo-file/OpenPublished.tsx
 msgid "Downloading {fileName} ({fileSize}) from Zenodo"
+msgstr ""
+
+#: src/app/SaveStatus.tsx
+msgid "Draft saved"
 msgstr ""
 
 #: src/ui/FileDropzone.tsx
@@ -2682,10 +2677,6 @@ msgstr ""
 msgid "In the PMO, {place}"
 msgstr ""
 
-#: src/features/pmo-file/SubsetPanel.tsx
-msgid "In the subset: specimens {specimens}, library samples {librarySamples}, targets with alleles {targets}."
-msgstr ""
-
 #. Status of a step
 #: src/ui/StatusBadge.tsx
 msgid "Incomplete"
@@ -2717,10 +2708,6 @@ msgstr ""
 msgid "It cannot be used as it is. Build the PMO again from your tables in PMO Builder, which checks it as you go."
 msgstr ""
 
-#: src/features/pmo-file/SubsetPanel.tsx
-msgid "It is a valid PMO. Download it, or download its tables."
-msgstr ""
-
 #: src/features/panel/PanelEditor.tsx
 msgid "It is offered on this page the next time you build a PMO in this browser."
 msgstr ""
@@ -2731,6 +2718,11 @@ msgstr ""
 
 #: src/features/pmo-file/PublishPanel.tsx
 msgid "It is the file of the Zenodo record <0>{recordTitle}</0>. To publish part of it as a new record, make a subset first."
+msgstr ""
+
+#. Each pair of numbers is what the subset keeps and what the whole file has. Targets are counted only when some allele was found at them.
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "It keeps {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
 msgstr ""
 
 #: src/features/pmo-file/PmoFilePage.tsx
@@ -2802,7 +2794,7 @@ msgstr ""
 msgid "Latitude and longitude"
 msgstr ""
 
-#: src/features/pmo-file/summary/SummaryPanel.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Leave empty to count them all."
 msgstr ""
 
@@ -3015,6 +3007,10 @@ msgstr ""
 msgid "Locations that end before they start"
 msgstr ""
 
+#: src/features/review/ReviewStep.tsx
+msgid "Look into your PMO"
+msgstr ""
+
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Make the subset"
 msgstr ""
@@ -3192,6 +3188,7 @@ msgid "Microhaplotypes with fewer reads are left out. Leave empty to keep them a
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Minimum reads per microhaplotype"
 msgstr ""
 
@@ -3270,10 +3267,6 @@ msgstr ""
 
 #: src/features/published/catalogue.ts
 msgid "NCBI taxon {taxon}"
-msgstr ""
-
-#: src/features/review/ReviewStep.tsx
-msgid "Need its tables, or a subset of some specimens or targets? <0>Open it in My PMO file</0>."
 msgstr ""
 
 #: src/features/review/SectionChecklist.tsx
@@ -3688,19 +3681,19 @@ msgstr ""
 msgid "Open a PMO file"
 msgstr ""
 
-#: src/app/HomePage.tsx
-msgid "Open a PMO file to download its tables, make a subset of some specimens, targets or reads, or publish it."
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables as CSV or TSV, make a smaller PMO with only some specimens, targets or reads, or publish it. The file stays in this browser."
 msgstr ""
 
-#: src/features/pmo-file/PmoFilePage.tsx
-msgid "Open a PMO file to see what it holds, download its tables as CSV or TSV, make a smaller PMO with only some specimens, targets or reads, or publish it. The file stays in this browser."
+#: src/app/HomePage.tsx
+msgid "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables, make a subset, or publish it."
 msgstr ""
 
 #: src/app/SaveStatus.tsx
 msgid "Open in another tab"
 msgstr ""
 
-#: src/features/published/DatasetPage.tsx
+#: src/features/review/ReviewStep.tsx
 msgid "Open in My PMO file"
 msgstr ""
 
@@ -3713,6 +3706,7 @@ msgstr ""
 msgid "Open the file again."
 msgstr ""
 
+#: src/app/HomePage.tsx
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Open the PMO you are building"
 msgstr ""
@@ -4690,11 +4684,16 @@ msgstr ""
 msgid "Sections"
 msgstr ""
 
+#: src/features/review/ReviewStep.tsx
+msgid "See a summary of its samples and targets, compare groups of specimens, download its tables, or make a subset."
+msgstr ""
+
 #: src/app/privacy/PrivacyDetails.tsx
 #: src/app/privacy/UsageNotice.tsx
 msgid "See exactly what is sent"
 msgstr ""
 
+#: src/features/pmo-file/SubsetPanel.tsx
 #: src/features/published/DatasetPage.tsx
 msgid "See its summary"
 msgstr ""

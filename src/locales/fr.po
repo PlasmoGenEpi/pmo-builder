@@ -67,7 +67,6 @@ msgstr "« {key} » est utilisé deux fois. Donnez à chaque information son p
 msgid "(current choice)"
 msgstr "(choix actuel)"
 
-#: src/features/published/DatasetPage.tsx
 #: src/features/review/PublishToZenodo.tsx
 #: src/ui/Link.tsx
 msgid "(opens in a new tab)"
@@ -1024,10 +1023,6 @@ msgstr "<0>Run de séquençage</0>, si vous l’avez, doit correspondre à un ru
 msgid "<0>Specimen name</0> must match a name in the table on the Specimens step."
 msgstr "<0>Nom du spécimen</0> doit correspondre à un nom du tableau de l’étape Spécimens."
 
-#: src/app/HomePage.tsx
-msgid "<0>Your data stays on this device.</0> Files are read inside this browser and are never uploaded."
-msgstr "<0>Vos données restent sur cet appareil.</0> Les fichiers sont lus dans ce navigateur et ne sont jamais envoyés ailleurs."
-
 #: src/features/pmo-file/summary/CompareTab.tsx
 msgid "A bar chart of specimens per collection period. The figures are in the bars' tooltips and in the group table."
 msgstr "Un diagramme en barres des spécimens par période de collecte. Les chiffres figurent dans les info-bulles des barres et dans le tableau des groupes."
@@ -1550,8 +1545,8 @@ msgid "Build a PMO from your tables, or publish a PMO file you already have. It 
 msgstr "Générez un PMO à partir de vos tableaux, ou publiez un fichier PMO que vous avez déjà. Il apparaît ici dès qu’un curateur l’accepte."
 
 #: src/features/pmo-file/PmoFilePage.tsx
-msgid "Build one in this app from your tables, or download one from the published PMOs."
-msgstr "Créez-en un dans cette application à partir de vos tableaux, ou téléchargez-en un parmi les PMO publiés."
+msgid "Build one in this app from <0><1>your tables</1></0>, or open one of the <2><3>published PMOs</3></2>."
+msgstr "Générez-en un dans cette application à partir de <0><1>vos tableaux</1></0>, ou ouvrez l’un des <2><3>PMO publiés</3></2>."
 
 #. The table of reads per sample, target and processing stage: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #. The table of reads per sample, target and processing stage: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
@@ -1869,11 +1864,6 @@ msgstr "Copier le mot-clé {keyword}"
 msgid "Copy title"
 msgstr "Copier le titre"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "Count microhaplotypes with at least this many reads"
-msgstr "Compter les microhaplotypes ayant au moins ce nombre de lectures"
-
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Counting"
 msgstr "Comptage en cours"
@@ -2025,6 +2015,7 @@ msgstr "Ne pas envoyer"
 msgid "Done"
 msgstr "Terminé"
 
+#: src/features/pmo-file/PmoFilePage.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Download"
 msgstr "Télécharger"
@@ -2076,6 +2067,10 @@ msgstr "Télécharger le sous-ensemble (.json.gz)"
 #: src/features/pmo-file/OpenPublished.tsx
 msgid "Downloading {fileName} ({fileSize}) from Zenodo"
 msgstr "Téléchargement de {fileName} ({fileSize}) depuis Zenodo"
+
+#: src/app/SaveStatus.tsx
+msgid "Draft saved"
+msgstr "Brouillon enregistré"
 
 #: src/ui/FileDropzone.tsx
 msgid "Drag a file here or <0>choose a file</0>"
@@ -2676,10 +2671,6 @@ msgstr "Dans aucune réaction"
 msgid "In the PMO, {place}"
 msgstr "Dans le PMO, {place}"
 
-#: src/features/pmo-file/SubsetPanel.tsx
-msgid "In the subset: specimens {specimens}, library samples {librarySamples}, targets with alleles {targets}."
-msgstr "Dans le sous-ensemble : spécimens {specimens}, échantillons de bibliothèque {librarySamples}, cibles avec des allèles {targets}."
-
 #. Status of a step
 #: src/ui/StatusBadge.tsx
 msgid "Incomplete"
@@ -2711,10 +2702,6 @@ msgstr "ne contient pas un champ obligatoire"
 msgid "It cannot be used as it is. Build the PMO again from your tables in PMO Builder, which checks it as you go."
 msgstr "Il ne peut pas être utilisé tel quel. Créez de nouveau le PMO à partir de vos tableaux dans PMO Builder, qui le vérifie au fur et à mesure."
 
-#: src/features/pmo-file/SubsetPanel.tsx
-msgid "It is a valid PMO. Download it, or download its tables."
-msgstr "C’est un PMO valide. Téléchargez-le, ou téléchargez ses tableaux."
-
 #: src/features/panel/PanelEditor.tsx
 msgid "It is offered on this page the next time you build a PMO in this browser."
 msgstr "Il vous sera proposé sur cette page la prochaine fois que vous générerez un PMO dans ce navigateur."
@@ -2726,6 +2713,11 @@ msgstr "Il est supprimé de ce navigateur et ne sera plus proposé. Les brouillo
 #: src/features/pmo-file/PublishPanel.tsx
 msgid "It is the file of the Zenodo record <0>{recordTitle}</0>. To publish part of it as a new record, make a subset first."
 msgstr "C’est le fichier de l’enregistrement Zenodo <0>{recordTitle}</0>. Pour en publier une partie comme nouvel enregistrement, créez d’abord un sous-ensemble."
+
+#. Each pair of numbers is what the subset keeps and what the whole file has. Targets are counted only when some allele was found at them.
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "It keeps {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
+msgstr "Il garde {specimens} spécimens sur {allSpecimens} et {librarySamples} échantillons de bibliothèque sur {allLibrarySamples}, avec des allèles à {targets} cibles sur {allTargets}."
 
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "It matches PMO version {version} and its tables link up."
@@ -2796,7 +2788,7 @@ msgstr "Langue"
 msgid "Latitude and longitude"
 msgstr "Latitude et longitude"
 
-#: src/features/pmo-file/summary/SummaryPanel.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Leave empty to count them all."
 msgstr "Laissez vide pour tous les compter."
 
@@ -3009,6 +3001,10 @@ msgstr "Des colonnes de position sont associées sans la colonne chromosome. Ass
 msgid "Locations that end before they start"
 msgstr "Positions qui se terminent avant de commencer"
 
+#: src/features/review/ReviewStep.tsx
+msgid "Look into your PMO"
+msgstr "Explorer votre PMO"
+
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Make the subset"
 msgstr "Créer le sous-ensemble"
@@ -3186,6 +3182,7 @@ msgid "Microhaplotypes with fewer reads are left out. Leave empty to keep them a
 msgstr "Les microhaplotypes ayant moins de lectures sont écartés. Laissez vide pour tous les garder. Le maximum dans ce fichier est de {maxReads}."
 
 #: src/features/pmo-file/SubsetPanel.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Minimum reads per microhaplotype"
 msgstr "Nombre minimal de lectures par microhaplotype"
 
@@ -3265,10 +3262,6 @@ msgstr "Noms utilisés plusieurs fois"
 #: src/features/published/catalogue.ts
 msgid "NCBI taxon {taxon}"
 msgstr "Taxon NCBI {taxon}"
-
-#: src/features/review/ReviewStep.tsx
-msgid "Need its tables, or a subset of some specimens or targets? <0>Open it in My PMO file</0>."
-msgstr "Besoin de ses tableaux, ou d’un sous-ensemble de certains spécimens ou de certaines cibles ? <0>Ouvrez-le dans Mon fichier PMO</0>."
 
 #: src/features/review/SectionChecklist.tsx
 msgid "Needed"
@@ -3682,19 +3675,19 @@ msgstr "Seul le nom du spécimen est requis. De nombreux laboratoires tiennent l
 msgid "Open a PMO file"
 msgstr "Ouvrir un fichier PMO"
 
-#: src/app/HomePage.tsx
-msgid "Open a PMO file to download its tables, make a subset of some specimens, targets or reads, or publish it."
-msgstr "Ouvrez un fichier PMO pour télécharger ses tableaux, en extraire un sous-ensemble de spécimens, de cibles ou de lectures, ou le publier."
-
 #: src/features/pmo-file/PmoFilePage.tsx
-msgid "Open a PMO file to see what it holds, download its tables as CSV or TSV, make a smaller PMO with only some specimens, targets or reads, or publish it. The file stays in this browser."
-msgstr "Ouvrez un fichier PMO pour voir ce qu’il contient, télécharger ses tableaux au format CSV ou TSV, créer un PMO plus petit avec seulement certains spécimens, certaines cibles ou certaines lectures, ou le publier. Le fichier reste dans ce navigateur."
+msgid "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables as CSV or TSV, make a smaller PMO with only some specimens, targets or reads, or publish it. The file stays in this browser."
+msgstr "Ouvrez un fichier PMO pour voir un résumé de ses échantillons et de ses cibles, comparer des groupes de spécimens, télécharger ses tableaux en CSV ou TSV, créer un PMO plus petit avec seulement certains spécimens, cibles ou lectures, ou le publier. Le fichier reste dans ce navigateur."
+
+#: src/app/HomePage.tsx
+msgid "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables, make a subset, or publish it."
+msgstr "Ouvrez un fichier PMO pour voir un résumé de ses échantillons et de ses cibles, comparer des groupes de spécimens, télécharger ses tableaux, créer un sous-ensemble ou le publier."
 
 #: src/app/SaveStatus.tsx
 msgid "Open in another tab"
 msgstr "Ouvert dans un autre onglet"
 
-#: src/features/published/DatasetPage.tsx
+#: src/features/review/ReviewStep.tsx
 msgid "Open in My PMO file"
 msgstr "Ouvrir dans Mon fichier PMO"
 
@@ -3707,6 +3700,7 @@ msgstr "Ouvrir le brouillon sur Zenodo"
 msgid "Open the file again."
 msgstr "Ouvrez de nouveau le fichier."
 
+#: src/app/HomePage.tsx
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Open the PMO you are building"
 msgstr "Ouvrir le PMO en cours de création"
@@ -4684,11 +4678,16 @@ msgstr "Faites une recherche pour voir les autres."
 msgid "Sections"
 msgstr "Sections"
 
+#: src/features/review/ReviewStep.tsx
+msgid "See a summary of its samples and targets, compare groups of specimens, download its tables, or make a subset."
+msgstr "Voyez un résumé de ses échantillons et de ses cibles, comparez des groupes de spécimens, téléchargez ses tableaux ou créez un sous-ensemble."
+
 #: src/app/privacy/PrivacyDetails.tsx
 #: src/app/privacy/UsageNotice.tsx
 msgid "See exactly what is sent"
 msgstr "Voir exactement ce qui est envoyé"
 
+#: src/features/pmo-file/SubsetPanel.tsx
 #: src/features/published/DatasetPage.tsx
 msgid "See its summary"
 msgstr "Voir son résumé"

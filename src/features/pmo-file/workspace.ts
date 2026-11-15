@@ -58,6 +58,11 @@ export interface WorkspaceState {
   readonly publishSource: WorkingSource;
   /** Which PMO the Summary tab sums up. */
   readonly summarySource: WorkingSource;
+  /**
+   * The minimum reads for a microhaplotype to count in Summary and Compare,
+   * shared so the two tabs agree. `null`: count them all.
+   */
+  readonly minReads: number | null;
   /** Counts opens, so a slow open overtaken by a newer one is ignored. */
   readonly generation: number;
 }
@@ -68,6 +73,7 @@ const INITIAL: WorkspaceState = {
   tableSource: "original",
   publishSource: "original",
   summarySource: "original",
+  minReads: null,
   generation: 0,
 };
 
@@ -100,6 +106,7 @@ export function startOpening(name: string, size: number): number {
     tableSource: "original",
     publishSource: "original",
     summarySource: "original",
+    minReads: null,
     generation,
   });
   return generation;

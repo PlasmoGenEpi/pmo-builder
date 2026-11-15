@@ -1,6 +1,6 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { Download, Plus, Scissors, X } from "lucide-react";
+import { ChartColumn, CloudUpload, Download, Plus, Scissors, Table, X } from "lucide-react";
 import { useState } from "react";
 
 import type { MergeSummary } from "@/domain/build/merge";
@@ -140,20 +140,31 @@ function Conditions({
   );
 }
 
-/** What the subset holds, as labelled counts. */
-function subsetSummary(summary: MergeSummary): string {
+/** What the subset keeps of the original, as a sentence. */
+function subsetSummary(summary: MergeSummary, original: MergeSummary): string {
   const specimens = formatCount(summary.specimens);
+  const allSpecimens = formatCount(original.specimens);
   const librarySamples = formatCount(summary.librarySamples);
+  const allLibrarySamples = formatCount(original.librarySamples);
   const targets = formatCount(summary.targetsWithCalls);
-  return t`In the subset: specimens ${specimens}, library samples ${librarySamples}, targets with alleles ${targets}.`;
+  const allTargets = formatCount(original.targetsWithCalls);
+  return t({
+    message: `It keeps ${specimens} of ${allSpecimens} specimens and ${librarySamples} of ${allLibrarySamples} library samples, with alleles at ${targets} of ${allTargets} targets.`,
+    comment:
+      "Each pair of numbers is what the subset keeps and what the whole file has. Targets are counted only when some allele was found at them.",
+  });
 }
 
 function SubsetResult({
   outcome,
+  original,
+  onShowSummary,
   onShowTables,
   onPublish,
 }: {
   readonly outcome: SubsetOutcome;
+  readonly original: MergeSummary;
+  readonly onShowSummary: () => void;
   readonly onShowTables: () => void;
   readonly onPublish: (() => void) | null;
 }) {
@@ -176,7 +187,7 @@ function SubsetResult({
         <div className="flex flex-col gap-4">
           {outcome.problems.length === 0 ? (
             <Callout tone="success" live title={t`The subset is ready`}>
-              <Trans>It is a valid PMO. Download it, or download its tables.</Trans>
+              {subsetSummary(outcome.summary, original)}
             </Callout>
           ) : (
             <Callout tone="warning" live title={t`The subset does not pass every check`}>
@@ -205,11 +216,17 @@ function SubsetResult({
             >
               {t`Download as .json`}
             </Button>
-            <Button variant="ghost" onClick={onShowTables}>
+          </div>
+          {/* Pulled out by the ghost buttons' padding, so their text lines up with the rest. */}
+          <div className="-mx-3 flex flex-wrap gap-1">
+            <Button variant="ghost" icon={ChartColumn} onClick={onShowSummary}>
+              {t`See its summary`}
+            </Button>
+            <Button variant="ghost" icon={Table} onClick={onShowTables}>
               {t`Download its tables`}
             </Button>
             {onPublish === null ? null : (
-              <Button variant="ghost" onClick={onPublish}>
+              <Button variant="ghost" icon={CloudUpload} onClick={onPublish}>
                 {t`Publish the subset`}
               </Button>
             )}
@@ -219,7 +236,6 @@ function SubsetResult({
               {t`The file could not be made. Make the subset again.`}
             </p>
           ) : null}
-          <p className="text-sm text-text-muted">{subsetSummary(outcome.summary)}</p>
         </div>
       );
     case "empty":
@@ -251,9 +267,12 @@ function SubsetResult({
 /** Props for {@link SubsetPanel}. */
 export interface SubsetPanelProps {
   readonly choices: PmoChoices;
+  /** What the whole file holds, to compare the subset with. */
+  readonly original: MergeSummary;
   /** The latest subset made, kept by the page so it survives switching tabs. */
   readonly outcome: SubsetOutcome | null;
   readonly onMade: (outcome: SubsetOutcome | null) => void;
+  readonly onShowSummary: () => void;
   readonly onShowTables: () => void;
   /** Opens publishing for the subset, or `null` when this copy cannot publish. */
   readonly onPublish: (() => void) | null;
@@ -262,8 +281,10 @@ export interface SubsetPanelProps {
 /** Choosing specimens, targets and a read threshold, and making the subset. */
 export function SubsetPanel({
   choices,
+  original,
   outcome,
   onMade,
+  onShowSummary,
   onShowTables,
   onPublish,
 }: SubsetPanelProps) {
@@ -419,7 +440,13 @@ export function SubsetPanel({
       </div>
 
       {outcome === null ? null : (
-        <SubsetResult outcome={outcome} onShowTables={onShowTables} onPublish={onPublish} />
+        <SubsetResult
+          outcome={outcome}
+          original={original}
+          onShowSummary={onShowSummary}
+          onShowTables={onShowTables}
+          onPublish={onPublish}
+        />
       )}
     </div>
   );

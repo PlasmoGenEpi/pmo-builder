@@ -1,6 +1,6 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { ArrowLeft, ChartColumn, Download, ExternalLink, FileSearch } from "lucide-react";
+import { ArrowLeft, ChartColumn, Download } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link as RouterLink, useParams } from "wouter";
 
@@ -22,17 +22,6 @@ import {
 import { citationOf, doiUrl, longDate, taxonName, yearsText } from "./catalogue";
 import { CatalogueProblem } from "./CatalogueProblem";
 import { loadSharedCatalogue, useCatalogue, type CatalogueLoader } from "./useCatalogue";
-
-function NewTab() {
-  return (
-    <>
-      <ExternalLink aria-hidden="true" className="size-4" />
-      <span className="sr-only">
-        <Trans>(opens in a new tab)</Trans>
-      </span>
-    </>
-  );
-}
 
 function BackLink() {
   return (
@@ -99,20 +88,19 @@ function Dataset({ dataset }: { readonly dataset: PublishedDataset }) {
         {dataset.creators.length === 0 ? null : (
           <p className="text-md text-text">{dataset.creators.join("; ")}</p>
         )}
-        <p className="text-base text-text-muted">
-          <Trans>Published {publishedDate}</Trans>
+        <p className="flex flex-wrap gap-x-3 text-base text-text-muted">
+          <span>
+            <Trans>Published {publishedDate}</Trans>
+          </span>
+          <Link href={dataset.zenodoUrl} external>
+            <Trans>See the record on Zenodo</Trans>
+          </Link>
         </p>
-        <div className="flex flex-wrap items-start gap-x-4 gap-y-3 pt-2">
-          <RouterLink
-            href={`/pmo/published/${dataset.id}`}
-            className={buttonClassName({ variant: "primary", size: "lg" })}
-          >
-            <FileSearch aria-hidden="true" className="size-4.5" />
-            <Trans>Open in My PMO file</Trans>
-          </RouterLink>
+        <div className="flex flex-wrap items-start gap-x-3 gap-y-3 pt-2">
+          {/* The summary opens the file in My PMO file, whose other tabs are a click away. */}
           <RouterLink
             href={`/pmo/published/${dataset.id}/summary`}
-            className={buttonClassName({ variant: "secondary", size: "lg" })}
+            className={buttonClassName({ variant: "primary", size: "lg" })}
           >
             <ChartColumn aria-hidden="true" className="size-4.5" />
             <Trans>See its summary</Trans>
@@ -132,10 +120,6 @@ function Dataset({ dataset }: { readonly dataset: PublishedDataset }) {
               {t`${fileName}, ${fileSize}`}
             </span>
           </div>
-          <ButtonLink size="lg" href={dataset.zenodoUrl} target="_blank" rel="noreferrer noopener">
-            <Trans>See the record on Zenodo</Trans>
-            <NewTab />
-          </ButtonLink>
         </div>
       </header>
 

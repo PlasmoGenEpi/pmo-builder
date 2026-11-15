@@ -1,11 +1,11 @@
 import { Trans } from "@lingui/react/macro";
-import { CircleCheck, CircleDashed, TriangleExclamationPoint } from "lucide-react";
+import { ChartColumn, CircleCheck, CircleDashed, TriangleExclamationPoint } from "lucide-react";
 import { Link as RouterLink } from "wouter";
 
 import { StepPage } from "@/app/StepPage";
 import { unreachable } from "@/domain/draft";
 import { useBuildState } from "@/state";
-import { Badge } from "@/ui";
+import { Badge, ButtonLink, Card } from "@/ui";
 
 import { PmoContents } from "./PmoContents";
 import { PmoPreview } from "./PmoPreview";
@@ -46,10 +46,37 @@ function VerdictBadge({ verdict }: { readonly verdict: Verdict }) {
   }
 }
 
+/** The way into My PMO file, where the built PMO can be looked into. */
+function ExploreCard() {
+  // The address My PMO file opens the built PMO at; see PmoFilePage.
+  const href = "/pmo/open-built";
+  return (
+    <Card as="section" className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex max-w-prose flex-col gap-1">
+        <h2 className="text-lg font-semibold text-text">
+          <Trans>Look into your PMO</Trans>
+        </h2>
+        <p className="text-base text-text-muted">
+          <Trans>
+            See a summary of its samples and targets, compare groups of specimens, download its
+            tables, or make a subset.
+          </Trans>
+        </p>
+      </div>
+      <RouterLink href={href} asChild>
+        <ButtonLink href={href}>
+          <ChartColumn aria-hidden="true" className="size-4" />
+          <Trans>Open in My PMO file</Trans>
+        </ButtonLink>
+      </RouterLink>
+    </Card>
+  );
+}
+
 /**
  * The review step: whether a PMO can be downloaded, the download and how to
- * publish a valid PMO, where each step stands, what the PMO holds, what to
- * check, a preview, and what to do next. While a rebuild runs the last result stays on screen.
+ * publish a valid PMO, what to check, the way into My PMO file, where each
+ * step stands, what the PMO holds, a preview, and what to do next. While a rebuild runs the last result stays on screen.
  */
 export function ReviewStep({
   zenodo = zenodoConfig(),
@@ -77,28 +104,10 @@ export function ReviewStep({
             />
           ) : null}
         </VerdictCard>
-        {view?.overall.pmo === "valid" ? (
-          <p className="text-base text-text-muted">
-            <Trans>
-              Need its tables, or a subset of some specimens or targets?{" "}
-              {/* The address My PMO file opens the built PMO at; see PmoFilePage. */}
-              <RouterLink
-                href="/pmo/open-built"
-                className="font-medium text-accent-text underline-offset-2 hover:underline"
-              >
-                Open it in My PMO file
-              </RouterLink>
-              .
-            </Trans>
-          </p>
-        ) : null}
+        {view === null ? null : <ThingsToCheck notices={reviewNotices(view)} built={built} />}
+        {view?.overall.pmo === "valid" ? <ExploreCard /> : null}
         <SectionChecklist view={view} />
-        {view === null ? null : (
-          <>
-            <PmoContents summary={built ? view.overall.summary : null} />
-            <ThingsToCheck notices={reviewNotices(view)} built={built} />
-          </>
-        )}
+        {view === null ? null : <PmoContents summary={built ? view.overall.summary : null} />}
         {built ? <PmoPreview /> : null}
         <WhatNext />
       </div>

@@ -47,7 +47,7 @@ test("loads the example, breaks and mends a match, and keeps the draft over a re
   await expect(result.getByText("Ready", { exact: true })).toBeVisible();
 
   // Let the debounced save land, then reload: the draft and its file come back from IndexedDB.
-  await expect(page.getByRole("button", { name: "Saved on this device" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Draft saved" })).toBeVisible();
   await page.waitForTimeout(1_000);
   await page.reload();
   await expect(page.getByText("mad4hatter_allele_data_example.csv")).toBeVisible({

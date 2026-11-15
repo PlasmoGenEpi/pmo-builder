@@ -26,7 +26,7 @@ function describe(state: ReturnType<typeof useSaveState>): SaveStatusView {
     case "saved":
     case "unsaved":
       return {
-        label: t`Saved on this device`,
+        label: t`Draft saved`,
         icon: HardDrive,
         warning: false,
         heading: t`Saved on this device`,

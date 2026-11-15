@@ -14,7 +14,7 @@ export interface StepPageProps {
   /** Which step this page is. Title, purpose and Back and Next come from the registry. */
   stepId: StepId;
   children: ReactNode;
-  /** `full` for pages that show wide tables. Defaults to a comfortable reading width. */
+  /** `full` for pages that show wide tables. Defaults to the build steps' width. */
   width?: PageWidth;
   /** Replaces the default status badge, for example with a badge and a short summary. */
   status?: ReactNode;
@@ -62,7 +62,7 @@ function StepLink({
  *   return <StepPage stepId="panel">...</StepPage>;
  * }
  */
-export function StepPage({ stepId, children, width = "reading", status, actions }: StepPageProps) {
+export function StepPage({ stepId, children, width = "step", status, actions }: StepPageProps) {
   const step = getStep(stepId);
   const { previous, next } = getAdjacentSteps(stepId);
   const currentStatus = useStepStatus(stepId);

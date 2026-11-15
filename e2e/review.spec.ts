@@ -121,7 +121,7 @@ test("the verdict and numbers come back after a reload on the review step", asyn
   const before = await readStats(page);
 
   // Let the debounced save land, then reload.
-  await expect(page.getByRole("button", { name: "Saved on this device" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Draft saved" })).toBeVisible();
   await page.waitForTimeout(1_000);
   await page.reload();
   await expect(page).toHaveURL(/#\/build\/review$/);
@@ -134,7 +134,7 @@ test("the verdict and numbers come back after a reload on the review step", asyn
 
 test("the download button is reached and used from the keyboard alone", async ({ page }) => {
   await loadExample(page);
-  await expect(page.getByRole("button", { name: "Saved on this device" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Draft saved" })).toBeVisible();
   await page.waitForTimeout(1_000);
   await page.goto("/#/build/review");
   await page.reload();

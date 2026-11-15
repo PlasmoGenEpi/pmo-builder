@@ -1,7 +1,7 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { ArrowRight, Hammer } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowRight, Download, Hammer } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link as RouterLink, useLocation, useParams } from "wouter";
 
 import { PageContainer } from "@/app/PageContainer";
@@ -13,6 +13,7 @@ import {
   type PmoFileCheck,
 } from "@/domain/build/checkFileResult";
 import { PmoContents } from "@/features/review/PmoContents";
+import { saveFile } from "@/features/review/saveFile";
 import { zenodoConfig, type ZenodoConfig } from "@/features/review/zenodo";
 import { useActions, useBuildState } from "@/state";
 import {
@@ -132,8 +133,22 @@ function Invalid({ check }: { readonly check: Extract<PmoFileCheck, { kind: "inv
   );
 }
 
+/** A tab's content at reading width, under the page's full-width tabs. */
+function Reading({ children }: { readonly children: ReactNode }) {
+  return <div className="max-w-reading">{children}</div>;
+}
+
 /** The Overview tab: whether the file is valid, anything worth a look, and what it holds. */
-function Overview({ opened, origin }: { readonly opened: Opened; readonly origin: FileOrigin }) {
+function Overview({
+  opened,
+  origin,
+  onDownload,
+}: {
+  readonly opened: Opened;
+  readonly origin: FileOrigin;
+  /** Saves the file, offered for the built PMO, which has no copy on disk yet. */
+  readonly onDownload: () => void;
+}) {
   const version = PUBLISHABLE_PMO_VERSION;
   const recordTitle = origin.kind === "published" ? origin.title : "";
   return (
@@ -151,6 +166,13 @@ function Overview({ opened, origin }: { readonly opened: Opened; readonly origin
       ) : (
         <Callout
           tone="success"
+          action={
+            origin.kind === "built" ? (
+              <Button variant="secondary" size="sm" icon={Download} onClick={onDownload}>
+                {t`Download`}
+              </Button>
+            ) : undefined
+          }
           title={
             origin.kind === "built"
               ? t`This is the PMO built from your draft`
@@ -258,6 +280,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
   const subset = useWorkspace((state) => state.subset);
   const tableSource = useWorkspace((state) => state.tableSource);
   const summarySource = useWorkspace((state) => state.summarySource);
+  const minReads = useWorkspace((state) => state.minReads);
   const build = useBuildState();
   const canOpenBuilt = build.view?.overall.pmo === "valid";
   const version = PUBLISHABLE_PMO_VERSION;
@@ -282,23 +305,23 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
   const shownFile = file.kind === "none" ? null : { name: file.name, size: file.size };
 
   return (
-    <PageContainer
-      width={
-        (tab === "summary" || tab === "compare") && file.kind === "opened" ? "full" : "reading"
-      }
-    >
+    // One width once a file is open, so the file and the tabs stay put when
+    // switching between the wide views (Summary, Compare) and the others.
+    <PageContainer width={file.kind === "opened" ? "full" : "reading"}>
       <div className="flex flex-col gap-6">
         <header className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight text-text">
             <Trans>My PMO file</Trans>
           </h1>
-          <p className="max-w-prose text-md text-text-muted">
-            <Trans>
-              Open a PMO file to see what it holds, download its tables as CSV or TSV, make a
-              smaller PMO with only some specimens, targets or reads, or publish it. The file stays
-              in this browser.
-            </Trans>
-          </p>
+          {file.kind === "opened" ? null : (
+            <p className="max-w-prose text-md text-text-muted">
+              <Trans>
+                Open a PMO file to see a summary of its samples and targets, compare groups of
+                specimens, download its tables as CSV or TSV, make a smaller PMO with only some
+                specimens, targets or reads, or publish it. The file stays in this browser.
+              </Trans>
+            </p>
+          )}
         </header>
 
         <FileDropzone
@@ -333,7 +356,15 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
               {
                 value: "overview",
                 label: t`Overview`,
-                content: <Overview opened={file.opened} origin={file.origin} />,
+                content: (
+                  <Reading>
+                    <Overview
+                      opened={file.opened}
+                      origin={file.origin}
+                      onDownload={() => saveFile(file.file, file.name)}
+                    />
+                  </Reading>
+                ),
               },
               {
                 value: "summary",
@@ -344,6 +375,8 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                     hasSubset={made !== null}
                     source={summarySource}
                     onSourceChange={(next) => updateWorkspace({ summarySource: next })}
+                    minReads={minReads}
+                    onMinReadsChange={(next) => updateWorkspace({ minReads: next })}
                   />
                 ),
               },
@@ -356,6 +389,8 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                     hasSubset={made !== null}
                     source={summarySource}
                     onSourceChange={(next) => updateWorkspace({ summarySource: next })}
+                    minReads={minReads}
+                    onMinReadsChange={(next) => updateWorkspace({ minReads: next })}
                   />
                 ),
               },
@@ -363,36 +398,45 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                 value: "tables",
                 label: t`Tables`,
                 content: (
-                  <TablesPanel
-                    tables={file.opened.tables}
-                    subsetTables={made?.tables ?? null}
-                    source={made === null ? "original" : tableSource}
-                    onSourceChange={(source) => updateWorkspace({ tableSource: source })}
-                  />
+                  <Reading>
+                    <TablesPanel
+                      tables={file.opened.tables}
+                      subsetTables={made?.tables ?? null}
+                      source={made === null ? "original" : tableSource}
+                      onSourceChange={(source) => updateWorkspace({ tableSource: source })}
+                    />
+                  </Reading>
                 ),
               },
               {
                 value: "subset",
                 label: t`Subset`,
                 content: (
-                  <SubsetPanel
-                    key={workspaceState().generation}
-                    choices={file.opened.choices}
-                    outcome={subset}
-                    onMade={(outcome) => updateWorkspace({ subset: outcome })}
-                    onShowTables={() => {
-                      updateWorkspace({ tableSource: "subset" });
-                      navigate("/pmo/tables");
-                    }}
-                    onPublish={
-                      zenodo === null
-                        ? null
-                        : () => {
-                            updateWorkspace({ publishSource: "subset" });
-                            navigate("/pmo/publish");
-                          }
-                    }
-                  />
+                  <Reading>
+                    <SubsetPanel
+                      key={workspaceState().generation}
+                      choices={file.opened.choices}
+                      original={file.opened.summary}
+                      outcome={subset}
+                      onMade={(outcome) => updateWorkspace({ subset: outcome })}
+                      onShowSummary={() => {
+                        updateWorkspace({ summarySource: "subset" });
+                        navigate("/pmo/summary");
+                      }}
+                      onShowTables={() => {
+                        updateWorkspace({ tableSource: "subset" });
+                        navigate("/pmo/tables");
+                      }}
+                      onPublish={
+                        zenodo === null
+                          ? null
+                          : () => {
+                              updateWorkspace({ publishSource: "subset" });
+                              navigate("/pmo/publish");
+                            }
+                      }
+                    />
+                  </Reading>
                 ),
               },
               ...(zenodo === null
@@ -401,7 +445,11 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                     {
                       value: "publish" as const,
                       label: t`Publish to Zenodo`,
-                      content: <PublishPanel zenodo={zenodo} file={file} subset={made} />,
+                      content: (
+                        <Reading>
+                          <PublishPanel zenodo={zenodo} file={file} subset={made} />
+                        </Reading>
+                      ),
                     },
                   ]),
             ]}
@@ -411,7 +459,15 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
         {file.kind === "none" ? (
           <Callout tone="info" title={t`Where to get a PMO file`}>
             <Trans>
-              Build one in this app from your tables, or download one from the published PMOs.
+              Build one in this app from{" "}
+              <RouterLink href={BUILD_PATH} asChild>
+                <Link href={BUILD_PATH}>your tables</Link>
+              </RouterLink>
+              , or open one of the{" "}
+              <RouterLink href="/published" asChild>
+                <Link href="/published">published PMOs</Link>
+              </RouterLink>
+              .
             </Trans>
           </Callout>
         ) : null}

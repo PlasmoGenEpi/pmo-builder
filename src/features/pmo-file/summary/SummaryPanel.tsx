@@ -14,7 +14,6 @@ import { useActions } from "@/state";
 import {
   Callout,
   Card,
-  NumberField,
   SectionHeading,
   SegmentedControl,
   Skeleton,
@@ -27,6 +26,7 @@ import { AlleleBars } from "./AlleleBars";
 import { ControlsCheck, DensityView, PlateView, StagesView } from "./QualityViews";
 import { ReadsGrid } from "./ReadsGrid";
 import { SortableTable, type SortableColumn } from "./SortableTable";
+import { MinReadsField, ViewToolbar } from "./ViewToolbar";
 
 type Loaded =
   | { readonly kind: "loading" }
@@ -194,6 +194,9 @@ export interface SummaryPanelProps {
   readonly hasSubset: boolean;
   readonly source: WorkingSource;
   readonly onSourceChange: (source: WorkingSource) => void;
+  /** The minimum reads for a microhaplotype to count; `null` counts them all. */
+  readonly minReads: number | null;
+  readonly onMinReadsChange: (value: number | null) => void;
 }
 
 /**
@@ -201,9 +204,14 @@ export interface SummaryPanelProps {
  * per-target tables, with each target's allele frequencies. One read
  * threshold applies throughout. Counted in the worker.
  */
-export function SummaryPanel({ hasSubset, source, onSourceChange }: SummaryPanelProps) {
+export function SummaryPanel({
+  hasSubset,
+  source,
+  onSourceChange,
+  minReads: minReadsInput,
+  onMinReadsChange,
+}: SummaryPanelProps) {
   const actions = useActions();
-  const [minReadsInput, setMinReadsInput] = useState<number | null>(null);
   const minReads = useSettled(Math.max(0, minReadsInput ?? 0), 400);
   const [loaded, setLoaded] = useState<Loaded>({ kind: "loading" });
   const [allTargets, setAllTargets] = useState(false);
@@ -255,16 +263,8 @@ export function SummaryPanel({ hasSubset, source, onSourceChange }: SummaryPanel
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface-subtle p-4 sm:flex-row sm:items-end sm:justify-between">
-        <NumberField
-          label={t`Count microhaplotypes with at least this many reads`}
-          hint={t`Leave empty to count them all.`}
-          integer
-          min={0}
-          value={minReadsInput}
-          onValueChange={setMinReadsInput}
-          className="sm:max-w-xs"
-        />
+      <ViewToolbar>
+        <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
         {hasSubset ? (
           <SegmentedControl<WorkingSource>
             label={t`Sum up`}
@@ -276,7 +276,7 @@ export function SummaryPanel({ hasSubset, source, onSourceChange }: SummaryPanel
             ]}
           />
         ) : null}
-      </div>
+      </ViewToolbar>
 
       {loaded.kind === "failed" ? (
         <Callout tone="error" live title={t`The summary could not be made`}>
