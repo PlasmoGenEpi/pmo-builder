@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import type { PoEntry } from "@/i18n/poFile";
 
 import type { ReviewSuggestion } from "./reviewApi";
-import { GROUPS, groupOf, progressOf, reviewItems, visibleItems } from "./reviewModel";
+import {
+  GROUPS,
+  groupOf,
+  languageStatus,
+  progressOf,
+  reviewItems,
+  visibleItems,
+} from "./reviewModel";
 
 function entry(change: Partial<PoEntry>): PoEntry {
   return {
@@ -131,5 +138,51 @@ describe("visibleItems and progressOf", () => {
 
   it("counts what has been checked", () => {
     expect(progressOf(items)).toEqual({ total: 3, checked: 1, changes: 0 });
+  });
+});
+
+describe("languageStatus", () => {
+  const entries = [
+    entry({ msgid: "Start", msgstr: "Commencer" }),
+    entry({ msgid: "Download", msgstr: "Télécharger" }),
+    entry({ msgid: "Genome", msgstr: "" }),
+  ];
+
+  it("counts translated, checked and changed messages, and reviewers", () => {
+    const status = languageStatus(entries, [
+      said({ reviewer: "Awa" }),
+      said({
+        reviewer: "Jean",
+        msgid: "Download",
+        seen: "Télécharger",
+        verdict: "edit",
+        text: "Exporter",
+      }),
+    ]);
+    expect(status).toEqual({
+      messages: 3,
+      translated: 2,
+      checked: 2,
+      changes: 1,
+      reviewers: 2,
+      ready: false,
+    });
+  });
+
+  it("is ready only when every message is translated and nearly all are checked", () => {
+    const full = [entry({ msgid: "Start", msgstr: "Commencer" })];
+    expect(languageStatus(full, []).ready).toBe(false);
+    expect(languageStatus(full, [said({})]).ready).toBe(true);
+    expect(
+      languageStatus(
+        entries,
+        entries.map((item) => said({ msgid: item.msgid, seen: item.msgstr })),
+      ).ready,
+    ).toBe(false);
+  });
+
+  it("stops counting an approval once the translation changes", () => {
+    const changed = [entry({ msgid: "Start", msgstr: "Démarrer" })];
+    expect(languageStatus(changed, [said({ seen: "Commencer" })]).checked).toBe(0);
   });
 });

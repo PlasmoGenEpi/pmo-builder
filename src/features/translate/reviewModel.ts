@@ -176,3 +176,47 @@ export function visibleItems(
         item.entry.msgstr.toLowerCase().includes(needle)),
   );
 }
+
+/**
+ * The bar a language must clear before it is offered to users: every message
+ * translated, and nearly every translation checked by a reviewer as it reads
+ * now. `pnpm translations status` reports against it.
+ */
+export const READY_TO_OFFER = { translated: 1, checked: 0.95 } as const;
+
+/** Where one language's translation stands. */
+export interface LanguageStatus {
+  readonly messages: number;
+  /** Messages with a translation. */
+  readonly translated: number;
+  /** Messages whose current translation a reviewer approved or wrote. */
+  readonly checked: number;
+  /** Messages with a suggested change not yet taken in. */
+  readonly changes: number;
+  /** People who have sent anything for this language. */
+  readonly reviewers: number;
+  /** Whether it clears {@link READY_TO_OFFER}. */
+  readonly ready: boolean;
+}
+
+/** Where a language stands, from its catalog and every suggestion sent for it. */
+export function languageStatus(
+  entries: readonly PoEntry[],
+  suggestions: readonly ReviewSuggestion[],
+): LanguageStatus {
+  const items = reviewItems(entries, suggestions);
+  const progress = progressOf(items);
+  const translated = entries.filter((entry) => entry.msgstr.trim() !== "").length;
+  const messages = entries.length;
+  return {
+    messages,
+    translated,
+    checked: progress.checked,
+    changes: progress.changes,
+    reviewers: new Set(suggestions.map((suggestion) => suggestion.reviewer)).size,
+    ready:
+      messages > 0 &&
+      translated / messages >= READY_TO_OFFER.translated &&
+      progress.checked / messages >= READY_TO_OFFER.checked,
+  };
+}

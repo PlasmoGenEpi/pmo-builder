@@ -66,6 +66,7 @@ uses will do) or `wrangler login`.
 pnpm translations link fr "Bamako lab"   # a new link; the address is shown only once
 pnpm translations links                  # every link, with how much each has sent
 pnpm translations revoke "Bamako lab"    # stop a link working; what it sent is kept
+pnpm translations status                 # each language: translated, checked, ready to offer?
 pnpm translations show [fr]              # suggestions not yet pulled, with who sent them
 pnpm translations pull                   # take suggestions into src/locales/*.po
 ```
@@ -91,6 +92,28 @@ every suggestion again; ones already in the catalogs change nothing.
 
 A translation is checked by `src/i18n/catalogs.test.ts`, which fails if a
 translation drops or invents a placeholder.
+
+### When the app's text changes
+
+Whoever adds or changes text in the app drafts it in every language in the
+same change (AGENTS.md says so). A draft is not checked until a reviewer
+approves it: a reviewer's approval belongs to the exact wording they saw, so
+a new message, a changed English message or a changed translation shows up
+under "To check" on the review page by itself. Nothing has to be marked.
+
+After a release with a lot of new text, run `pnpm translations status` and
+send reviewers a short note: how many messages are new, and which part of the
+app they are in, so they can choose that part on the review page.
+
+### Offering a language
+
+A language is offered to users, by adding it to `OFFERED` in
+`src/i18n/languages.ts`, once `pnpm translations status` says it is ready:
+every message translated and at least 95% checked by a reviewer as it reads
+now (`READY_TO_OFFER` in `src/features/translate/reviewModel.ts`). From then
+on CI fails if any of its messages has no translation, so English cannot slip
+in unnoticed. New text in an offered language ships as a draft and is checked
+afterwards, like everything else.
 
 ## Conventions
 

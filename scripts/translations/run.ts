@@ -5,6 +5,10 @@
  *   link <locale> <label>   Make a review link, such as `link fr "Bamako lab"`
  *   links                   List the links, with how much each has sent
  *   revoke <label>          Stop a link working
+ *   status                  For each language: translated, checked by a reviewer,
+ *                           changes waiting, reviewers, and whether it is ready
+ *                           to offer (READY_TO_OFFER). Works from the catalogs
+ *                           alone when the review database cannot be reached.
  *   show [locale]           List the suggestions not yet pulled, with who sent them
  *   pull [--all] [--dry-run]
  *                           Take the suggestions into src/locales/*.po and
@@ -20,7 +24,9 @@ import { execFileSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 
-import { LANGUAGES, type LanguageCode } from "@/i18n/languages";
+import { languageStatus, READY_TO_OFFER } from "@/features/translate/reviewModel";
+import { LANGUAGES, OFFERED, type LanguageCode } from "@/i18n/languages";
+import { parsePo } from "@/i18n/poFile";
 import {
   applySuggestions,
   formatReport,
@@ -193,6 +199,48 @@ function show(locale: string | undefined): number {
   return 0;
 }
 
+function percent(part: number, whole: number): string {
+  return whole === 0 ? "-" : `${Math.floor((part / whole) * 1000) / 10}%`;
+}
+
+function status(): number {
+  let reviewsRead = true;
+  const rows = REVIEWED.map(({ code }) => {
+    const entries = parsePo(readFileSync(`src/locales/${code}.po`, "utf8"));
+    let stored: StoredSuggestion[] = [];
+    if (reviewsRead) {
+      try {
+        stored = suggestions(code, true);
+      } catch {
+        reviewsRead = false;
+      }
+    }
+    const result = languageStatus(entries, stored);
+    return {
+      language: ENGLISH_NAMES[code],
+      offered: OFFERED.includes(code) ? "yes" : "preview",
+      messages: result.messages,
+      translated: `${result.translated} (${percent(result.translated, result.messages)})`,
+      checked: reviewsRead
+        ? `${result.checked} (${percent(result.checked, result.messages)})`
+        : "?",
+      "changes waiting": reviewsRead ? result.changes : "?",
+      reviewers: reviewsRead ? result.reviewers : "?",
+      "ready to offer": reviewsRead ? (result.ready ? "yes" : "no") : "?",
+    };
+  });
+  console.table(rows);
+  console.log(
+    `Ready to offer means every message translated and at least ${READY_TO_OFFER.checked * 100}% checked by a reviewer as it reads now.`,
+  );
+  if (!reviewsRead) {
+    console.error(
+      "\nThe review database could not be read, so checked, changes and reviewers are unknown. Set CLOUDFLARE_API_TOKEN (and run pnpm install in receiver/).",
+    );
+  }
+  return 0;
+}
+
 function pull(flags: readonly string[]): number {
   const all = flags.includes("--all");
   const dryRun = flags.includes("--dry-run");
@@ -247,6 +295,8 @@ export function run(args: readonly string[]): number {
       return links();
     case "revoke":
       return revoke(rest[0]);
+    case "status":
+      return status();
     case "show":
       return show(rest[0]);
     case "pull":
@@ -259,6 +309,7 @@ export function run(args: readonly string[]): number {
           '  link <locale> "<label>"   make a private review link',
           "  links                     list the links",
           '  revoke "<label>"          stop a link working',
+          "  status                    how far each language is translated and checked",
           "  show [locale]             list suggestions not yet pulled",
           "  pull [--all] [--dry-run]  take suggestions into the catalogs",
         ].join("\n"),

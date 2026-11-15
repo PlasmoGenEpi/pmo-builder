@@ -8,6 +8,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
+import { OFFERED } from "./languages";
 import { translationProblem } from "./messageShape";
 import { messageKey, parsePo, type PoEntry } from "./poFile";
 
@@ -29,5 +30,21 @@ describe.each(["fr", "pt"])("the %s catalog", (locale) => {
       return problem === null ? [] : [`${problem} ${entry.msgid} => ${entry.msgstr}`];
     });
     expect(broken).toEqual([]);
+  });
+});
+
+/**
+ * A language offered to users must have every message translated: the app
+ * would otherwise show English in the middle of it. Languages still in
+ * preview may have gaps.
+ */
+describe("offered languages", () => {
+  it("have a translation for every message", () => {
+    const gaps = OFFERED.filter((locale) => locale !== "en").flatMap((locale) =>
+      readCatalog(locale)
+        .filter((entry) => entry.msgstr.trim() === "")
+        .map((entry) => `${locale}: ${messageKey(entry)}`),
+    );
+    expect(gaps).toEqual([]);
   });
 });

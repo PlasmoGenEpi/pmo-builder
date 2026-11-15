@@ -140,6 +140,11 @@ readers review the English, so it is written in English only.
   app's modules.
 - After changing text, run `pnpm i18n:extract` and commit `src/locales/`. CI
   fails when the catalogs and the code disagree (`pnpm i18n:check`).
+- In the same change, draft the new or changed messages in every catalog
+  (`fr.po`, `pt.po`), following the conventions and glossary in
+  `docs/translation.md`. Reviewers check drafts through their review links,
+  where anything new or changed shows as "To check". A language in `OFFERED`
+  must have every message translated, or CI fails.
 - Preview a language with `?lang=fr`; `?lang=pseudo` shows every wrapped string
   lengthened and accented, so plain English is text not yet wrapped.
 
