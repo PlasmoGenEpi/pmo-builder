@@ -525,11 +525,20 @@ export function createAppStore(options: AppStoreOptions): AppStore {
       const ids = referencedTableIds(get().draft);
       await Promise.all(ids.map((id) => engine.dropTable(id)));
       const result = isEditor() ? await storage.clearDraft() : { ok: true };
-      set({
-        draft: createEmptyDraft(),
-        imports: {},
-        persistence: persistenceAfterWrite(result),
-      });
+      // Quietly: storage is now empty, and the change listener would schedule a
+      // save that writes the new empty draft straight back into it.
+      quiet = true;
+      try {
+        set({
+          draft: createEmptyDraft(),
+          imports: {},
+          persistence: persistenceAfterWrite(result),
+        });
+      } finally {
+        quiet = false;
+      }
+      savedDraft = get().draft;
+      scheduleBuild(rebuildDelay);
     };
 
     /**
@@ -830,7 +839,6 @@ export function createAppStore(options: AppStoreOptions): AppStore {
 
       async startOver() {
         await clearDraftAndFiles();
-        savedDraft = get().draft;
         scheduleBuild(0);
       },
 

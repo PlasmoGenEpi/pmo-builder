@@ -313,6 +313,24 @@ describe("app store", () => {
     expect(await real.loadDraft()).toEqual({ kind: "none" });
   });
 
+  it("saves nothing after the user starts over, however long it is left", async () => {
+    const real = storage();
+    const store = makeStore(real);
+    const { actions } = store.getState();
+    await actions.initialise();
+    actions.updateSection("project", (project) => ({ ...project, mode: "table" }));
+    await settle(store);
+    expect(await real.loadDraft()).toMatchObject({ kind: "loaded" });
+
+    await actions.startOver();
+    // Longer than the wait before a save, so a save left scheduled would have run.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    await settle(store);
+    expect(await real.loadDraft()).toEqual({ kind: "none" });
+    expect(store.getState().persistence).toMatchObject({ kind: "saved" });
+    expect(store.getState().draft.project.mode).toBe("manual");
+  });
+
   it("keeps working for the session when IndexedDB throws", async () => {
     const failing: KeyValueBackend = {
       get: () => Promise.reject(new Error("blocked")),

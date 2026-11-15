@@ -77,7 +77,11 @@ that `pnpm harvest` rebuilds from Zenodo before each build:
   the curators.
 
 The Deploy workflow harvests on every push and every night. If Zenodo cannot
-be read, it keeps the list already on the site. To remove a PMO from the
+be read, it keeps the list already on the site. GitHub pauses a nightly
+schedule after 60 days without activity in a public repository, so each
+nightly run enables the workflow again through the API to keep it going. If
+the list's "Read from Zenodo on" date falls behind, enable the Deploy
+workflow on the Actions page or run it by hand. To remove a PMO from the
 list, remove its record from the community on Zenodo. `specimens.json`, one
 row per specimen, is written beside the index for a later search across
 datasets; no page reads it yet.

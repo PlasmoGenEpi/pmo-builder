@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
   # Every night, so a PMO newly accepted into the Zenodo community shows up
   # in the list of published PMOs within a day. GitHub pauses a schedule
-  # after 60 days without activity in the repository; a push starts it again.
+  # after 60 days without activity in a public repository; the "Keep the
+  # nightly schedule alive" step below is there to stop that.
   schedule:
     - cron: "17 4 * * *"
 
@@ -22,6 +23,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      # For the "Keep the nightly schedule alive" step only.
+      actions: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -41,6 +46,16 @@ jobs:
 
       # Rebuilds the list of published PMOs from the Zenodo community. If
       # Zenodo cannot be read, the list already on the site is kept.
+      # Enabling the workflow again, through the API, is the usual way to tell
+      # GitHub the schedule is still wanted. If the schedule is paused anyway,
+      # enable the workflow on the repository's Actions page or push a commit.
+      - name: Keep the nightly schedule alive
+        if: github.event_name == 'schedule'
+        continue-on-error: true
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/deploy.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Read the published PMOs from Zenodo
         run: pnpm harvest --fallback "${{ steps.pages.outputs.base_url }}/repository/"
         env:
