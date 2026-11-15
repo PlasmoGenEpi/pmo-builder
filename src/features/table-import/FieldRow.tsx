@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { CircleExclamationPoint, TriangleExclamationPoint } from "lucide-react";
 import { useMemo } from "react";
 
@@ -39,6 +41,7 @@ export interface FieldRowProps {
  */
 export function FieldRow({ row, options, onChange, onConfirm }: FieldRowProps) {
   const { field } = row;
+  const fieldLabel = field.label;
   const error =
     row.problems.length === 0 ? null : (
       <>
@@ -53,8 +56,8 @@ export function FieldRow({ row, options, onChange, onConfirm }: FieldRowProps) {
         options={options}
         value={row.column}
         onChange={onChange}
-        noneLabel="Not in this table"
-        placeholder="Choose a column"
+        noneLabel={t`Not in this table`}
+        placeholder={t`Choose a column`}
       />
       {row.needsCheck && row.problems.length === 0 ? (
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-warning-text">
@@ -63,15 +66,15 @@ export function FieldRow({ row, options, onChange, onConfirm }: FieldRowProps) {
               aria-hidden="true"
               className="mt-0.5 size-4 shrink-0 text-warning"
             />
-            Matched by a similar name. Check it is right.
+            <Trans>Matched by a similar name. Check it is right.</Trans>
           </span>
           <Button
             size="sm"
             variant="ghost"
             onClick={onConfirm}
-            aria-label={`${field.label}: keep this match`}
+            aria-label={t`${fieldLabel}: keep this match`}
           >
-            Keep it
+            <Trans>Keep it</Trans>
           </Button>
         </div>
       ) : null}

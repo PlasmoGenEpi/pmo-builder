@@ -3,6 +3,8 @@
  * panel's name as the build labels it, its notices, its status, and whether
  * its target table gives positions on the genome.
  */
+import { t } from "@lingui/core/macro";
+
 import {
   panelEntryName,
   panelLabel,
@@ -10,6 +12,7 @@ import {
   type SavedPanelSummary,
 } from "@/domain/draft";
 import type { Notice, SectionStatus } from "@/domain/types";
+import { intlLocale } from "@/i18n/languages";
 
 /** Fields of the target table that place a target on the genome. */
 export const POSITION_FIELDS = [
@@ -48,7 +51,8 @@ export function panelName(entry: PanelEntry): string {
 /** The panel's title on screen: its name, or "Panel 2" when it has none yet. */
 export function panelTitle(entry: PanelEntry, index: number): string {
   const name = panelName(entry);
-  return name === "" ? `Panel ${index + 1}` : name;
+  const number = index + 1;
+  return name === "" ? t`Panel ${number}` : name;
 }
 
 /** Whether nothing has been entered for a panel. Mirrors the build's own test. */
@@ -131,10 +135,5 @@ export function mappedPositionFields(entry: PanelEntry): string[] {
 export function formatSavedDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(date);
-}
-
-/** "1 target" or "276 targets". */
-export function countTargets(count: number): string {
-  return `${count.toLocaleString()} ${count === 1 ? "target" : "targets"}`;
+  return new Intl.DateTimeFormat(intlLocale(), { dateStyle: "medium" }).format(date);
 }

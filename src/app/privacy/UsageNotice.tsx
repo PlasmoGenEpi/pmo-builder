@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { BarChart3 } from "lucide-react";
 import { useState } from "react";
 
@@ -23,8 +24,8 @@ export function UsageNotice() {
   function choose(send: boolean) {
     setEnabled(send);
     toast({
-      title: send ? "Usage counts are on" : "No usage counts will be sent",
-      description: "Change this any time under “Your data stays on this device” at the top.",
+      title: send ? t`Usage counts are on` : t`No usage counts will be sent`,
+      description: t`Change this any time under “Your data stays on this device” at the top.`,
       tone: "success",
     });
   }
@@ -40,12 +41,10 @@ export function UsageNotice() {
             <BarChart3 aria-hidden="true" className="size-5 shrink-0 text-accent max-sm:hidden" />
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <h2 id="usage-notice-heading" className="text-base font-semibold text-text">
-                Help improve PMO Builder
+                {t`Help improve PMO Builder`}
               </h2>
               <p className="text-base text-text-muted">
-                May this site send anonymous usage counts, such as which steps are used and whether
-                deposits work? They never include your files, sample names or anything you type, and
-                nothing in them identifies you. Nothing is sent until you choose.{" "}
+                {t`May this site send anonymous usage counts, such as which steps are used and whether deposits work? They never include your files, sample names or anything you type, and nothing in them identifies you. Nothing is sent until you choose.`}{" "}
                 <button
                   type="button"
                   onClick={() => setDetails(true)}
@@ -53,13 +52,13 @@ export function UsageNotice() {
                   onFocus={preloadPrivacyDetails}
                   className="cursor-pointer rounded-sm font-medium text-accent-text underline underline-offset-2"
                 >
-                  See exactly what is sent
+                  {t`See exactly what is sent`}
                 </button>
               </p>
             </div>
             <div className="flex shrink-0 gap-2 max-sm:[&>*]:flex-1">
-              <Button onClick={() => choose(false)}>Don&apos;t send</Button>
-              <Button onClick={() => choose(true)}>Send usage counts</Button>
+              <Button onClick={() => choose(false)}>{t`Don't send`}</Button>
+              <Button onClick={() => choose(true)}>{t`Send usage counts`}</Button>
             </div>
           </div>
         </section>

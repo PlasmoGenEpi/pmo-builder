@@ -1,3 +1,6 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
+
 import { StepLink } from "@/app/StepLink";
 import { StepPage } from "@/app/StepPage";
 import { mappedColumns, type MappedTable } from "@/domain/draft";
@@ -80,35 +83,38 @@ function References({ mapped }: { readonly mapped: MappedTable }) {
       <div className="flex flex-col gap-4">
         <SectionHeading
           id="library-links-heading"
-          title="What this table refers to"
-          description="These names must match the other steps exactly, or the links are lost."
+          title={t`What this table refers to`}
+          description={t`These names must match the other steps exactly, or the links are lost.`}
         />
         <dl className="flex flex-col divide-y divide-border">
           <NameCheck
-            label="Specimens named in this table"
+            label={t`Specimens named in this table`}
             names={specimenColumn === null ? [] : specimens}
-            noneMessage="No specimen name column is matched yet."
+            noneMessage={t`No specimen name column is matched yet.`}
             stepId="specimens"
             known={knownSpecimens}
-            things="specimens"
+            things={t`specimens`}
           />
           <NameCheck
-            label="Panels named in this table"
+            label={t`Panels named in this table`}
             names={columnFor(mapped, "panelName") === null ? [] : suggestions.panelNames}
-            noneMessage="No panel column is matched yet."
+            noneMessage={t`No panel column is matched yet.`}
             stepId="panel"
             known={panels}
-            things="named panels"
+            things={t`named panels`}
           />
           <NameCheck
-            label="Sequencing runs named in this table"
+            label={t`Sequencing runs named in this table`}
             names={
               columnFor(mapped, "sequencingInfoName") === null ? [] : suggestions.sequencingNames
             }
-            noneMessage="No sequencing run column. That is fine: it is optional."
+            noneMessage={t`No sequencing run column. That is fine: it is optional.`}
             stepId="sequencing"
             known={sequencing}
-            things="runs"
+            things={t({
+              message: "runs",
+              comment: "Sequencing runs, in: The Sequencing step has no runs yet.",
+            })}
           />
         </dl>
         {notices.map((notice) => (
@@ -126,42 +132,56 @@ function Introduction() {
   return (
     <div className="flex max-w-prose flex-col gap-4 text-md text-text">
       <p>
-        A library sample is one sequencing library made from a specimen. A specimen sequenced twice
-        has two library samples. The library sample name is the sample name in your allele table.
+        <Trans>
+          A library sample is one sequencing library made from a specimen. A specimen sequenced
+          twice has two library samples. The library sample name is the sample name in your allele
+          table.
+        </Trans>
       </p>
       <div className="flex flex-col gap-2">
-        <p>Each row links to other steps by name:</p>
+        <p>
+          <Trans>Each row links to other steps by name:</Trans>
+        </p>
         <ul className="flex list-disc flex-col gap-1 pl-5 text-base marker:text-text-subtle">
           <li>
-            <span className="font-medium">Specimen name</span> must match a name in the table on the
-            Specimens step.
+            <Trans>
+              <span className="font-medium">Specimen name</span> must match a name in the table on
+              the Specimens step.
+            </Trans>
           </li>
           <li>
-            <span className="font-medium">Panel</span> must match the name of a panel on the Panel
-            step.
+            <Trans>
+              <span className="font-medium">Panel</span> must match the name of a panel on the Panel
+              step.
+            </Trans>
           </li>
           <li>
-            <span className="font-medium">Sequencing run</span>, if you have it, must match a run on
-            the Sequencing step.
+            <Trans>
+              <span className="font-medium">Sequencing run</span>, if you have it, must match a run
+              on the Sequencing step.
+            </Trans>
           </li>
         </ul>
       </div>
       <p className="text-base text-text-muted">
-        Many labs keep specimens and library samples in one sheet. If yours does, add the same file
-        here and on the <StepLink step="specimens">Specimens step</StepLink>.
+        <Trans>
+          Many labs keep specimens and library samples in one sheet. If yours does, add the same
+          file here and on the <StepLink step="specimens">Specimens step</StepLink>.
+        </Trans>
       </p>
     </div>
   );
 }
 
+/** A count with a few of the names. `label` gives the stat's label for the count. */
 function countStat(
   names: readonly string[] | null,
-  label: readonly [string, string],
+  label: (count: number) => string,
 ): ResultStat[] {
   if (names === null || names.length === 0) return [];
   return [
     {
-      label: names.length === 1 ? label[0] : label[1],
+      label: label(names.length),
       value: names.length,
       hint: listNames(names, 3),
     },
@@ -184,21 +204,25 @@ export function LibrarySamplesStep() {
         <Introduction />
         <TableImport
           slot={SLOT}
-          label="Library sample table"
-          description="One row for each sequenced library, with its specimen and panel."
+          label={t`Library sample table`}
+          description={t`One row for each sequenced library, with its specimen and panel.`}
         >
           {(matching) => <References mapped={matching.mapped} />}
         </TableImport>
         <SectionResult
           section="librarySamples"
-          emptyMessage="Nothing here yet. This step is optional. Without it, the samples come from the allele table and all use one panel, so add it if you have several panels."
+          emptyMessage={t`Nothing here yet. This step is optional. Without it, the samples come from the allele table and all use one panel, so add it if you have several panels.`}
           stats={(summary) => [
-            { label: "Library samples", value: summary.librarySamples },
+            { label: t`Library samples`, value: summary.librarySamples },
             ...(specimens === null || specimens.length === 0
               ? []
-              : [{ label: "Specimens", value: specimens.length }]),
-            ...countStat(suggestions.panelNames, ["Panel", "Panels"]),
-            ...countStat(suggestions.sequencingNames, ["Sequencing run", "Sequencing runs"]),
+              : [{ label: t`Specimens`, value: specimens.length }]),
+            ...countStat(suggestions.panelNames, (count) =>
+              plural(count, { one: "Panel", other: "Panels" }),
+            ),
+            ...countStat(suggestions.sequencingNames, (count) =>
+              plural(count, { one: "Sequencing run", other: "Sequencing runs" }),
+            ),
           ]}
         />
       </div>

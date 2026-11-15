@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { ShieldCheck } from "lucide-react";
 import { Suspense, type ReactElement } from "react";
 
@@ -24,20 +25,20 @@ export interface PrivacyDialogProps {
 export function PrivacyDialog({ trigger, open, onOpenChange }: PrivacyDialogProps) {
   return (
     <Dialog
-      title="Your data stays on this device"
+      title={t`Your data stays on this device`}
       size="md"
       open={open}
       onOpenChange={onOpenChange}
       trigger={trigger}
       footer={
         <DialogClose>
-          <Button variant="primary">Got it</Button>
+          <Button variant="primary">{t`Got it`}</Button>
         </DialogClose>
       }
     >
       <Suspense
         fallback={
-          <output className="flex flex-col gap-3" aria-busy="true" aria-label="Loading">
+          <output className="flex flex-col gap-3" aria-busy="true" aria-label={t`Loading`}>
             <Skeleton className="h-5 w-full" />
             <Skeleton className="h-5 w-2/3" />
           </output>
@@ -56,7 +57,7 @@ export function PrivacyIndicator() {
       trigger={
         <Button size="sm" onPointerEnter={preloadPrivacyDetails} onFocus={preloadPrivacyDetails}>
           <ShieldCheck aria-hidden="true" className="size-3.5 shrink-0 text-success" />
-          Your data stays on this device
+          {t`Your data stays on this device`}
         </Button>
       }
     />

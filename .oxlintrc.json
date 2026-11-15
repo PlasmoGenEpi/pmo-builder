@@ -39,7 +39,7 @@
     "import/no-unassigned-import": [
       "error",
       {
-        "allow": ["**/*.css", "@testing-library/jest-dom/vitest", "fake-indexeddb/auto"]
+        "allow": ["**/*.css", "@testing-library/jest-dom/vitest", "fake-indexeddb/auto", "@/i18n"]
       }
     ]
   },

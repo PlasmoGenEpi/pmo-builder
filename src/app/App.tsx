@@ -1,9 +1,12 @@
+import { t } from "@lingui/core/macro";
+import { I18nProvider } from "@lingui/react";
 import { Suspense, useEffect, type ReactNode } from "react";
 import { Route, Router, Switch, useLocation, type BaseLocationHook } from "wouter";
 // Aliased: the router takes the hook itself as a value.
 import { useHashLocation as hashLocation } from "wouter/use-hash-location";
 
 import { recordPageOpened, recordStepOpened } from "@/analytics";
+import { i18n } from "@/i18n";
 import { AppStoreProvider, type AppStore } from "@/state";
 import { Skeleton, ToastProvider } from "@/ui";
 
@@ -62,7 +65,7 @@ function usePreloadNextStep(location: string): void {
 function PageSkeleton() {
   return (
     <PageContainer>
-      <output className="flex flex-col gap-4" aria-busy="true" aria-label="Loading">
+      <output className="flex flex-col gap-4" aria-busy="true" aria-label={t`Loading`}>
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-5 w-full max-w-md" />
@@ -130,17 +133,19 @@ export interface AppProps {
 // oxlint-disable-next-line react/hooks
 export function App({ locationHook = hashLocation, store, children }: AppProps) {
   return (
-    <AppStoreProvider store={store}>
-      <ToastProvider>
-        {/* oxlint-disable-next-line react/hooks */}
-        <Router hook={locationHook}>
-          <Layout>
-            <Routes />
-          </Layout>
-          <RestoreNotice />
-          {children}
-        </Router>
-      </ToastProvider>
-    </AppStoreProvider>
+    <I18nProvider i18n={i18n}>
+      <AppStoreProvider store={store}>
+        <ToastProvider>
+          {/* oxlint-disable-next-line react/hooks */}
+          <Router hook={locationHook}>
+            <Layout>
+              <Routes />
+            </Layout>
+            <RestoreNotice />
+            {children}
+          </Router>
+        </ToastProvider>
+      </AppStoreProvider>
+    </I18nProvider>
   );
 }

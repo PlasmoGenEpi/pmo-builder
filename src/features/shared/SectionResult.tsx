@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { useId, useState, type ReactNode } from "react";
 
 import type { SectionSummaries } from "@/domain/build";
@@ -39,9 +41,9 @@ export interface SectionResultProps<S extends SectionId> {
 }
 
 const STATUS_LINE: Readonly<Record<Exclude<SectionStatus, "empty">, string>> = {
-  ready: "This part is ready to go into the PMO.",
-  incomplete: "Something this part needs is missing. See below.",
-  error: "There are problems to fix before this part can go into the PMO. See below.",
+  ready: t`This part is ready to go into the PMO.`,
+  incomplete: t`Something this part needs is missing. See below.`,
+  error: t`There are problems to fix before this part can go into the PMO. See below.`,
 };
 
 const TONE: Readonly<Record<Notice["severity"], CalloutTone>> = {
@@ -50,11 +52,16 @@ const TONE: Readonly<Record<Notice["severity"], CalloutTone>> = {
   info: "info",
 };
 
-const NOUN: Readonly<Record<Notice["severity"], [string, string]>> = {
-  error: ["problem", "problems"],
-  warning: ["warning", "warnings"],
-  info: ["note", "notes"],
-};
+/** The title of a group of notices, such as "3 similar warnings". */
+function groupTitle(severity: Notice["severity"], count: number): string {
+  if (severity === "error") {
+    return plural(count, { one: "# similar problem", other: "# similar problems" });
+  }
+  if (severity === "warning") {
+    return plural(count, { one: "# similar warning", other: "# similar warnings" });
+  }
+  return plural(count, { one: "# similar note", other: "# similar notes" });
+}
 
 /** How many messages of a group show before "Show all". */
 const FIRST_SHOWN = 1;
@@ -68,12 +75,12 @@ function NoticeGroupCallout({ group }: { readonly group: NoticeGroup }) {
   if (count === 1) {
     return <Callout tone={TONE[group.severity]}>{first.message}</Callout>;
   }
-  const [, many] = NOUN[group.severity];
+  const remaining = count - FIRST_SHOWN;
   const shown = expanded ? group.notices : group.notices.slice(0, FIRST_SHOWN);
   return (
     <Callout
       tone={TONE[group.severity]}
-      title={`${count} similar ${many}`}
+      title={groupTitle(group.severity, count)}
       action={
         <Button
           size="sm"
@@ -82,7 +89,7 @@ function NoticeGroupCallout({ group }: { readonly group: NoticeGroup }) {
           aria-controls={listId}
           onClick={() => setExpanded((open) => !open)}
         >
-          {expanded ? "Show fewer" : `Show all ${count}`}
+          {expanded ? t`Show fewer` : t`Show all ${count}`}
         </Button>
       }
     >
@@ -91,7 +98,9 @@ function NoticeGroupCallout({ group }: { readonly group: NoticeGroup }) {
           <li key={notice.message}>{notice.message}</li>
         ))}
         {expanded ? null : (
-          <li className="list-none text-text-muted">and {count - FIRST_SHOWN} more like this.</li>
+          <li className="list-none text-text-muted">
+            {plural(remaining, { one: "and # more like this.", other: "and # more like this." })}
+          </li>
         )}
       </ul>
     </Callout>
@@ -114,9 +123,9 @@ function NoticeGroupCallout({ group }: { readonly group: NoticeGroup }) {
 export function SectionResult<S extends SectionId>({
   section,
   stats,
-  title = "Result",
+  title = t({ message: "Result", comment: "Heading: what this step puts into the PMO" }),
   headingLevel = 2,
-  emptyMessage = "Nothing here yet. Add a table above to see what goes into the PMO.",
+  emptyMessage = t`Nothing here yet. Add a table above to see what goes into the PMO.`,
   showCrossSection = true,
 }: SectionResultProps<S>) {
   const view = useSectionState(section);
@@ -156,13 +165,13 @@ export function SectionResult<S extends SectionId>({
             aria-hidden={!updating}
           >
             <span className="size-1.5 rounded-full bg-accent motion-safe:animate-pulse" />
-            Updating
+            <Trans>Updating</Trans>
           </span>
         </div>
         <div className={cn("flex flex-col gap-5 transition-opacity", updating && "opacity-70")}>
           <p className="text-base text-text-muted" aria-live="polite">
             {view === null
-              ? "Working out the result."
+              ? t`Working out the result.`
               : status === "empty"
                 ? emptyMessage
                 : STATUS_LINE[status]}
@@ -180,8 +189,8 @@ export function SectionResult<S extends SectionId>({
             </div>
           ) : null}
           {build.phase === "failed" ? (
-            <Callout tone="error" title="The result could not be worked out">
-              {build.message} Reload the page to try again.
+            <Callout tone="error" title={t`The result could not be worked out`}>
+              {build.message} <Trans>Reload the page to try again.</Trans>
             </Callout>
           ) : null}
           {groups.length > 0 ? (
@@ -195,11 +204,13 @@ export function SectionResult<S extends SectionId>({
             <section aria-labelledby={crossHeadingId} className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
                 <SubHeading id={crossHeadingId} className="text-base font-semibold text-text">
-                  Found by comparing tables
+                  <Trans>Found by comparing tables</Trans>
                 </SubHeading>
                 <p className="text-sm text-text-muted">
-                  These come from checking this part against the other steps. Fix them here or on
-                  the step they name.
+                  <Trans>
+                    These come from checking this part against the other steps. Fix them here or on
+                    the step they name.
+                  </Trans>
                 </p>
               </div>
               {cross.map((group) => (

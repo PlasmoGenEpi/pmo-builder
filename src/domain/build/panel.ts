@@ -3,6 +3,7 @@
  * optional genome) or from the saved-panel library, merged with
  * `mergePanelInfoDicts` when there are several.
  */
+import { t } from "@lingui/core/macro";
 import {
   collectWarnings,
   mergePanelInfoDicts,
@@ -68,11 +69,18 @@ export const PANEL_COLUMN_OPTIONS = [
 
 const PANEL_NAME_FIELD = {
   key: "panel_name",
-  label: "Panel name",
+  label: t`Panel name`,
   description: "",
   required: true,
   kind: "text",
-  format: { pattern: /^[A-z\-._0-9]+$/, hint: "letters, numbers and . _ - (no spaces)" },
+  format: {
+    pattern: /^[A-z\-._0-9]+$/,
+    hint: t({
+      message: "letters, numbers and . _ - (no spaces)",
+      comment:
+        "Finishes a sentence such as 'Panel name can only hold ...', in lower case with no full stop.",
+    }),
+  },
   example: "",
 } as const;
 
@@ -99,9 +107,18 @@ function isEntryEmpty(entry: PanelEntry): boolean {
 function prefix(entry: PanelEntry, label: string, notices: readonly Notice[]): Notice[] {
   return notices.map((notice) => ({
     ...notice,
-    message: `${label}: ${notice.message}`,
+    message: prefixed(label, notice.message),
     panelId: entry.id,
   }));
+}
+
+/** A panel's notice with its label in front. */
+function prefixed(label: string, message: string): string {
+  return t({
+    message: `${label}: ${message}`,
+    comment:
+      "{label} names a panel, such as 'Panel \"P1\"' or 'Panel 2'. {message} is a translated message about it.",
+  });
 }
 
 /** Checks a panel name typed by the user. */
@@ -121,7 +138,7 @@ function checkName(
   return {
     kind: "blocked",
     status: "incomplete",
-    notice: makeNotice("error", "panel/missing-name", "Give the panel a name."),
+    notice: makeNotice("error", "panel/missing-name", t`Give the panel a name.`),
   };
 }
 
@@ -163,13 +180,16 @@ function buildGenome(genome: GenomeChoice, context: BuildContext): GenomeResult 
     case "none":
       return { kind: "ok", genomes: null };
     case "manual": {
-      const checked = checkRecords(GENOME_FORM_FIELDS, fromForms([genome.manual], "Genome"));
+      const checked = checkRecords(
+        GENOME_FORM_FIELDS,
+        fromForms([genome.manual], (position) => t`Genome ${position}`),
+      );
       if (checked.status === "empty") {
         return {
           kind: "blocked",
           status: "incomplete",
           notices: [
-            makeNotice("error", "genome/missing", "Fill in the genome, or choose no genome."),
+            makeNotice("error", "genome/missing", t`Fill in the genome, or choose no genome.`),
           ],
         };
       }
@@ -183,7 +203,10 @@ function buildGenome(genome: GenomeChoice, context: BuildContext): GenomeResult 
           fields: GENOME_FORM_FIELDS,
           mapped: genome.table,
           fieldSetId: "genomes",
-          tableLabel: "genome table",
+          tableLabel: t({
+            message: "genome table",
+            comment: "Names a table inside other messages, such as 'The genome table has no rows.'",
+          }),
         },
         context,
       );
@@ -196,7 +219,7 @@ function buildGenome(genome: GenomeChoice, context: BuildContext): GenomeResult 
               makeNotice(
                 "error",
                 "genome/missing",
-                "Import the genome table, or choose no genome.",
+                t`Import the genome table, or choose no genome.`,
               ),
             ],
           };
@@ -209,7 +232,7 @@ function buildGenome(genome: GenomeChoice, context: BuildContext): GenomeResult 
           kind: "blocked",
           status: "incomplete",
           notices: [
-            makeNotice("error", "table/no-rows", "The genome table has no rows with values."),
+            makeNotice("error", "table/no-rows", t`The genome table has no rows with values.`),
           ],
         };
       }
@@ -230,9 +253,10 @@ function buildEntry(entry: PanelEntry, context: BuildContext): EntryResult {
       return {
         kind: "blocked",
         status: "incomplete",
-        notices: [makeNotice("error", "panel/no-saved-panel", "Choose a saved panel.")],
+        notices: [makeNotice("error", "panel/no-saved-panel", t`Choose a saved panel.`)],
       };
     }
+    const savedName = saved.name;
     // Checks the stored fragment the same way a merge would, and returns a clean copy.
     let checkedSaved: PanelInfoFragment;
     let savedWarnings: readonly PmoWarning[];
@@ -251,7 +275,11 @@ function buildEntry(entry: PanelEntry, context: BuildContext): EntryResult {
             "error",
             error instanceof PmoError ? error.code : "build/unexpected",
             withLibraryDetail(
-              `The saved panel "${saved.name}" is damaged or was saved by an older version, so it cannot be used. Choose "From a target table", import the panel's target table again, and save it to the library again.`,
+              t({
+                message: `The saved panel "${savedName}" is damaged or was saved by an older version, so it cannot be used. Choose "From a target table", import the panel's target table again, and save it to the library again.`,
+                comment:
+                  '"From a target table" is the name of a choice on the Panel step; use the same words as there.',
+              }),
               error instanceof Error ? error.message : String(error),
             ),
           ),
@@ -265,7 +293,7 @@ function buildEntry(entry: PanelEntry, context: BuildContext): EntryResult {
           "warning",
           warning.code,
           withLibraryDetail(
-            `The saved panel "${saved.name}" has something to check. If it looks wrong, build the panel again from its target table.`,
+            t`The saved panel "${savedName}" has something to check. If it looks wrong, build the panel again from its target table.`,
             warning.message,
           ),
         ),
@@ -300,11 +328,15 @@ function buildEntry(entry: PanelEntry, context: BuildContext): EntryResult {
     status = worstStatus([status, genome.status]);
   }
   if (entry.table === null) {
-    notices.push(makeNotice("error", "table/not-imported", "Import the target table."));
+    notices.push(makeNotice("error", "table/not-imported", t`Import the target table.`));
     status = worstStatus([status, "incomplete"]);
     return { kind: "blocked", status: status === "error" ? "error" : "incomplete", notices };
   }
-  const tableLabel = "target table";
+  const tableLabel = t({
+    message: "target table",
+    comment:
+      "Names a panel's table of targets inside other messages, such as 'The target table has no rows.'",
+  });
   const prepared = prepareTable(
     { mapped: entry.table, fieldSetId: "panelTargets", tableLabel },
     context,
@@ -365,7 +397,10 @@ export function buildPanel(section: PanelDraft, context: BuildContext): SectionR
           makeNotice(
             "error",
             "panel/empty",
-            `${label} is empty. Import its target table or remove it.`,
+            t({
+              message: `${label} is empty. Import its target table or remove it.`,
+              comment: "{label} names a panel, such as 'Panel \"P1\"' or 'Panel 2'.",
+            }),
             { panelId: entry.id },
           ),
         );
@@ -385,11 +420,12 @@ export function buildPanel(section: PanelDraft, context: BuildContext): SectionR
   const names = built.map((item) => item.name);
   const repeated = names.filter((name, index) => names.indexOf(name) !== index);
   if (repeated.length > 0) {
+    const panelNames = quoteItems([...new Set(repeated)]);
     notices.push(
       makeNotice(
         "error",
         "panel/duplicate-panel-names",
-        `Each panel needs its own name, but ${quoteItems([...new Set(repeated)])} is used more than once.`,
+        t`Each panel needs its own name, but ${panelNames} is used more than once.`,
       ),
     );
     statuses.push("error");
@@ -415,14 +451,15 @@ export function buildPanel(section: PanelDraft, context: BuildContext): SectionR
         const target = warning.details["target"];
         const source = typeof index === "number" ? built[index] : undefined;
         const panelName = source?.name;
+        const targetName = String(target);
         notices.push(
           makeNotice(
             "warning",
             warning.code,
             warning.code === "panel/conflicting-target-definition" && panelName !== undefined
-              ? `Target "${String(target)}" is defined differently in panel "${panelName}" than in an earlier panel. The first definition is kept.`
+              ? t`Target "${targetName}" is defined differently in panel "${panelName}" than in an earlier panel. The first definition is kept.`
               : withLibraryDetail(
-                  "Something differs between the panels. Check that targets shared by two panels have the same primers and location in both.",
+                  t`Something differs between the panels. Check that targets shared by two panels have the same primers and location in both.`,
                   warning.message,
                 ),
             source === undefined ? {} : { panelId: source.entry.id },
@@ -436,7 +473,7 @@ export function buildPanel(section: PanelDraft, context: BuildContext): SectionR
           "error",
           error instanceof PmoError ? error.code : "build/unexpected",
           withLibraryDetail(
-            "The panels could not be combined into one. Check that each target appears with the same primers and location in every panel that has it, or remove the extra panel.",
+            t`The panels could not be combined into one. Check that each target appears with the same primers and location in every panel that has it, or remove the extra panel.`,
             message,
           ),
         ),

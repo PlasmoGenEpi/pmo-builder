@@ -3,6 +3,8 @@
  * matches are worth checking, what is wrong with each row, and the counts.
  * Pure functions; the components render what these return.
  */
+import { plural, t } from "@lingui/core/macro";
+
 import type {
   ColumnMapping,
   FieldMatch,
@@ -12,6 +14,8 @@ import type {
   MappingProblem,
   RawRow,
 } from "@/domain/types";
+
+import { intlLocale } from "@/i18n/languages";
 
 import { confirmationKey } from "./confirmations";
 
@@ -75,16 +79,15 @@ function labelOf(fieldSet: FieldSetSpec, key: string): string {
   return fieldSet.fields.find((field) => field.key === key)?.label ?? key;
 }
 
+/** Joins labels for a sentence in the interface language: "a, b and c". */
 function listLabels(labels: readonly string[]): string {
-  if (labels.length <= 1) return labels.join("");
-  return `${labels.slice(0, -1).join(", ")} and ${labels.at(-1) ?? ""}`;
+  return new Intl.ListFormat(intlLocale(), { type: "conjunction" }).format(labels);
 }
 
 function requirementText(fieldSet: FieldSetSpec, requirement: FieldRequirement): string {
   if (typeof requirement === "string") return labelOf(fieldSet, requirement);
   const labels = requirement.anyOf.map((key) => labelOf(fieldSet, key));
-  if (labels.length <= 1) return labels.join("");
-  return `${labels.slice(0, -1).join(", ")} or ${labels.at(-1) ?? ""}`;
+  return new Intl.ListFormat(intlLocale(), { type: "disjunction" }).format(labels);
 }
 
 function requirementKeys(requirement: FieldRequirement): readonly string[] {
@@ -102,46 +105,59 @@ export function problemsForField(
     switch (problem.kind) {
       case "missing-required":
         if (problem.fieldKey === key) {
-          messages.push("Choose a column. This field is needed to build the table.");
+          messages.push(t`Choose a column. This field is needed to build the table.`);
         }
         break;
       case "duplicate-column":
         if (problem.fieldKeys.includes(key)) {
-          const others = problem.fieldKeys
-            .filter((other) => other !== key)
-            .map((other) => labelOf(fieldSet, other));
+          const column = problem.column;
+          const otherFields = listLabels(
+            problem.fieldKeys
+              .filter((other) => other !== key)
+              .map((other) => labelOf(fieldSet, other)),
+          );
           messages.push(
-            `"${problem.column}" is also chosen for ${listLabels(others)}. A column can feed only one field, so choose another for one of them.`,
+            t`"${column}" is also chosen for ${otherFields}. A column can feed only one field, so choose another for one of them.`,
           );
         }
         break;
       case "unknown-column":
         if (problem.fieldKey === key) {
-          messages.push(`This table has no column "${problem.column}". Choose another.`);
+          const column = problem.column;
+          messages.push(t`This table has no column "${column}". Choose another.`);
         }
         break;
       case "incomplete-group": {
-        const missing = problem.missing.map((requirement) =>
-          requirementText(fieldSet, requirement),
+        const neededFields = listLabels(
+          problem.missing.map((requirement) => requirementText(fieldSet, requirement)),
         );
-        const mapped = problem.mappedKeys.map((other) => labelOf(fieldSet, other));
+        const matchedFields = listLabels(
+          problem.mappedKeys.map((other) => labelOf(fieldSet, other)),
+        );
         if (problem.mappedKeys.includes(key)) {
           messages.push(
-            `This needs ${listLabels(missing)} as well. Match ${problem.missing.length === 1 ? "it" : "them"} too, or set this field to "Not in this table".`,
+            plural(problem.missing.length, {
+              one: `This needs ${neededFields} as well. Match it too, or set this field to "Not in this table".`,
+              other: `This needs ${neededFields} as well. Match them too, or set this field to "Not in this table".`,
+            }),
           );
         } else if (
           problem.missing.some((requirement) => requirementKeys(requirement).includes(key))
         ) {
           messages.push(
-            `Needed because ${listLabels(mapped)} ${problem.mappedKeys.length === 1 ? "is" : "are"} matched.`,
+            plural(problem.mappedKeys.length, {
+              one: `Needed because ${matchedFields} is matched.`,
+              other: `Needed because ${matchedFields} are matched.`,
+            }),
           );
         }
         break;
       }
       case "additional-column-mapped":
         if (problem.fieldKey === key) {
+          const column = problem.column;
           messages.push(
-            `"${problem.column}" is also ticked under Extra columns. Untick it there, since this field already carries it.`,
+            t`"${column}" is also ticked under Extra columns. Untick it there, since this field already carries it.`,
           );
         }
         break;
@@ -166,12 +182,10 @@ export function extraColumnProblems(
   const messages = new Map<string, string>();
   for (const problem of problems) {
     if (problem.kind === "unknown-additional-column") {
-      messages.set(problem.column, "This table no longer has this column. Untick it.");
+      messages.set(problem.column, t`This table no longer has this column. Untick it.`);
     } else if (problem.kind === "additional-column-mapped") {
-      messages.set(
-        problem.column,
-        `Also matched to ${labelOf(fieldSet, problem.fieldKey)}. Untick it here.`,
-      );
+      const fieldLabel = labelOf(fieldSet, problem.fieldKey);
+      messages.set(problem.column, t`Also matched to ${fieldLabel}. Untick it here.`);
     }
   }
   return messages;
@@ -218,23 +232,19 @@ export function describeMapping(input: DescribeMappingInput): MappingModel {
   };
 }
 
-function plural(count: number, one: string, many: string): string {
-  return `${count} ${count === 1 ? one : many}`;
-}
-
-/** The one-line summary, such as "4 of 4 required fields matched, 6 optional fields matched". */
+/**
+ * The summary in one or two sentences, such as "4 of 4 required fields
+ * matched, 6 optional fields matched. 2 matches to check."
+ */
 export function summaryLine(counts: MatchCounts): string {
-  const parts = [
-    `${counts.requiredMatched} of ${plural(counts.requiredTotal, "required field", "required fields")} matched`,
-  ];
-  if (counts.optionalTotal > 0) {
-    parts.push(`${plural(counts.optionalMatched, "optional field", "optional fields")} matched`);
-  }
-  let line = parts.join(", ");
-  if (counts.toCheck > 0) {
-    line += `. ${plural(counts.toCheck, "match", "matches")} to check`;
-  }
-  return line;
+  const { requiredMatched, requiredTotal, optionalMatched, toCheck } = counts;
+  const matched =
+    counts.optionalTotal > 0
+      ? t`${requiredMatched} of ${plural(requiredTotal, { one: "# required field", other: "# required fields" })} matched, ${plural(optionalMatched, { one: "# optional field", other: "# optional fields" })} matched.`
+      : t`${requiredMatched} of ${plural(requiredTotal, { one: "# required field", other: "# required fields" })} matched.`;
+  if (toCheck === 0) return matched;
+  const checks = plural(toCheck, { one: "# match to check.", other: "# matches to check." });
+  return `${matched} ${checks}`;
 }
 
 /**
@@ -312,11 +322,21 @@ export function groupOptionalRows(
   const shown = rows.filter((row) => rowMatchesFilter(row, options.filter));
   const groups: FieldGroup[] = [];
   const matched = shown.filter((row) => options.matchedFirst.has(row.field.key));
-  if (matched.length > 0) groups.push({ title: "Matched", rows: matched });
+  if (matched.length > 0) {
+    groups.push({
+      title: t({
+        message: "Matched",
+        comment: "Heading over the optional fields already matched to a column",
+      }),
+      rows: matched,
+    });
+  }
   const byGroup = new Map<string, FieldRowModel[]>();
   for (const row of shown) {
     if (options.matchedFirst.has(row.field.key)) continue;
-    const title = row.field.group ?? "Other";
+    const title =
+      row.field.group ??
+      t({ message: "Other", comment: "Heading over optional fields that belong to no group" });
     const list = byGroup.get(title);
     if (list === undefined) byGroup.set(title, [row]);
     else list.push(row);

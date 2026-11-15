@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { Plus, X } from "lucide-react";
 import { useId } from "react";
 
@@ -40,9 +42,9 @@ function EntryRow({
   return (
     <li className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)_auto]">
       <TextField
-        label={`Name of detail ${number}`}
+        label={t`Name of detail ${number}`}
         hideLabel
-        placeholder="Name, such as funding"
+        placeholder={t`Name, such as funding`}
         mono
         value={key.value}
         onChange={(event) => key.onChange(event.target.value)}
@@ -52,9 +54,12 @@ function EntryRow({
         spellCheck={false}
       />
       <TextField
-        label={`Value of detail ${number}`}
+        label={t`Value of detail ${number}`}
         hideLabel
-        placeholder="Value"
+        placeholder={t({
+          message: "Value",
+          comment: "Placeholder: the value of a name and value pair",
+        })}
         value={value.value}
         onChange={(event) => value.onChange(event.target.value)}
         onBlur={value.flush}
@@ -63,7 +68,7 @@ function EntryRow({
       />
       <IconButton
         icon={X}
-        label={`Remove detail ${number}`}
+        label={t`Remove detail ${number}`}
         onClick={onRemove}
         className="col-start-2 row-start-1 sm:col-start-auto"
       />
@@ -87,11 +92,13 @@ export function ExtraDetails({ entries, onUpdate, fieldKeys }: ExtraDetailsProps
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <div className="flex flex-col gap-0.5">
         <h4 id={headingId} className="text-base font-medium text-text">
-          Other details
+          <Trans>Other details</Trans>
         </h4>
         <p className="text-sm text-text-muted">
-          Anything else worth keeping, as a name and a value. Each is added to the PMO under its
-          name.
+          <Trans>
+            Anything else worth keeping, as a name and a value. Each is added to the PMO under its
+            name.
+          </Trans>
         </p>
       </div>
       {entries.length > 0 ? (
@@ -116,7 +123,7 @@ export function ExtraDetails({ entries, onUpdate, fieldKeys }: ExtraDetailsProps
           icon={Plus}
           onClick={() => onUpdate((current) => [...current, createKeyValue()])}
         >
-          Add a detail
+          <Trans>Add a detail</Trans>
         </Button>
       </div>
     </section>

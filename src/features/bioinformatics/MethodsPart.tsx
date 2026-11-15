@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { Workflow } from "lucide-react";
 
 import {
@@ -26,8 +28,8 @@ const METHODS = { list: "methods" } as const;
 /** The method name is not a PMO record field of its own, so it has a spec here. */
 const METHOD_NAME: FormFieldSpec = {
   key: "bioinformatics_method_name",
-  label: "Method name",
-  description: "A name for the pipeline, such as MAD4HATTER v0.2. Needed to tell several apart.",
+  label: t`Method name`,
+  description: t`A name for the pipeline, such as MAD4HATTER v0.2. Needed to tell several apart.`,
   required: false,
   kind: "text",
   format: null,
@@ -36,40 +38,46 @@ const METHOD_NAME: FormFieldSpec = {
 
 function stepTitle(step: MethodStepRecord, index: number): string {
   const program = step.values.program.trim();
-  return program === "" ? `Step ${index + 1}` : `Step ${index + 1}: ${program}`;
+  const number = index + 1;
+  return program === "" ? t`Step ${number}` : t`Step ${number}: ${program}`;
 }
 
 /** The steps of one method, in the order they ran. */
 function MethodSteps({ method }: { readonly method: MethodRecord }) {
   const actions = useActions();
   const path = { list: "methodSteps", methodId: method.id } as const;
+  const methodName = method.name.trim();
   return (
     <section
-      aria-label={`Steps of ${method.name.trim() || "this method"}`}
+      aria-label={methodName === "" ? t`Steps of this method` : t`Steps of ${methodName}`}
       className="flex flex-col gap-3"
     >
       <div className="flex flex-col gap-0.5">
-        <h4 className="text-base font-medium text-text">Steps</h4>
+        <h4 className="text-base font-medium text-text">
+          <Trans>Steps</Trans>
+        </h4>
         <p className="text-sm text-text-muted">
-          Each program the pipeline ran, in order. Most pipelines need only the main one.
+          <Trans>
+            Each program the pipeline ran, in order. Most pipelines need only the main one.
+          </Trans>
         </p>
       </div>
       <RecordList
         items={method.steps}
         variant="inset"
         headingLevel={4}
-        noun="step"
+        noun={t`step`}
         title={stepTitle}
         isBlank={isBlankRecord}
         state={(step) => recordState(METHOD_STEP_FORM_FIELDS, step.values, step.extra)}
         onAdd={() => actions.addItem(path)}
         onRemove={(id) => actions.removeItem(path, id)}
         onMove={(id, to) => actions.moveItem(path, id, to)}
-        addLabel="Add a step"
+        addLabel={t`Add a step`}
         empty={{
           icon: Workflow,
-          title: "No steps yet",
-          description: "Add the program this method ran, with its version.",
+          title: t`No steps yet`,
+          description: t`Add the program this method ran, with its version.`,
         }}
       >
         {(step) => (
@@ -78,7 +86,7 @@ function MethodSteps({ method }: { readonly method: MethodRecord }) {
             values={step.values}
             onValueChange={(key, value) => actions.setValue({ ...path, id: step.id, key, value })}
             fixes={{ program_url: removeScheme }}
-            optionalTitle="Arguments and link"
+            optionalTitle={t`Arguments and link`}
             extra={{
               entries: step.extra,
               onUpdate: (recipe) =>
@@ -107,7 +115,8 @@ function MethodRecords() {
       const uses =
         run.methodRef === method.id ||
         (run.methodRef === null && records.length === 1 && !isBlankRecord(run));
-      return uses ? [run.values.bioinformatics_run_name.trim() || `Run ${index + 1}`] : [];
+      const number = index + 1;
+      return uses ? [run.values.bioinformatics_run_name.trim() || t`Run ${number}`] : [];
     });
 
   const add = (): string => {
@@ -129,7 +138,7 @@ function MethodRecords() {
   return (
     <RecordList
       items={records}
-      noun="method"
+      noun={t`method`}
       title={methodTitle}
       isBlank={isBlankMethod}
       state={(method) => methodState(method)}
@@ -138,15 +147,19 @@ function MethodRecords() {
       removeWarning={(method) => {
         const using = runsUsing(method);
         if (using.length === 0) return null;
+        const runName = using[0] ?? "";
         return using.length === 1
-          ? `The run ${using[0] ?? ""} uses this method and will need another one.`
-          : `${using.length} runs use this method and will need another one.`;
+          ? t`The run ${runName} uses this method and will need another one.`
+          : plural(using.length, {
+              one: "# run uses this method and will need another one.",
+              other: "# runs use this method and will need another one.",
+            });
       }}
-      addLabel="Add a method"
+      addLabel={t`Add a method`}
       empty={{
         icon: Workflow,
-        title: "No methods yet",
-        description: "Add the pipeline that produced your allele table: its programs and versions.",
+        title: t`No methods yet`,
+        description: t`Add the pipeline that produced your allele table: its programs and versions.`,
       }}
     >
       {(method) => (
@@ -170,6 +183,35 @@ function MethodRecords() {
   );
 }
 
+/**
+ * The hint under the method name column once its values are read: how many
+ * methods it names, the first few, and that runs refer to them by name.
+ */
+function methodListHint(names: readonly string[], truncated: boolean): string {
+  const total = names.length;
+  const methodNames = names.slice(0, 5).join(", ");
+  const atLeast = truncated && total !== 1;
+  if (total > 5)
+    return atLeast
+      ? plural(total, {
+          one: `More than # method: ${methodNames}, and more. Runs refer to a method by this name.`,
+          other: `More than # methods: ${methodNames}, and more. Runs refer to a method by this name.`,
+        })
+      : plural(total, {
+          one: `# method: ${methodNames}, and more. Runs refer to a method by this name.`,
+          other: `# methods: ${methodNames}, and more. Runs refer to a method by this name.`,
+        });
+  return atLeast
+    ? plural(total, {
+        one: `More than # method: ${methodNames}. Runs refer to a method by this name.`,
+        other: `More than # methods: ${methodNames}. Runs refer to a method by this name.`,
+      })
+    : plural(total, {
+        one: `# method: ${methodNames}. Runs refer to a method by this name.`,
+        other: `# methods: ${methodNames}. Runs refer to a method by this name.`,
+      });
+}
+
 /** For a methods table: the column, if any, that splits its rows into methods. */
 function GroupColumn({ matching }: { readonly matching: ColumnMatching }) {
   const { methods } = useDraftSection("bioinformatics");
@@ -180,24 +222,24 @@ function GroupColumn({ matching }: { readonly matching: ColumnMatching }) {
   const values = useColumnValues(column === null ? null : table, column, 50);
   const hint =
     column === null
-      ? "Every row is one step of a single method."
+      ? t`Every row is one step of a single method.`
       : values?.kind === "ready"
-        ? `${values.values.length === 1 ? "1 method" : `${values.truncated ? "More than " : ""}${values.values.length} methods`}: ${values.values.slice(0, 5).join(", ")}${values.values.length > 5 ? ", and more" : ""}. Runs refer to a method by this name.`
-        : "Rows with the same value form one method, named by that value.";
+        ? methodListHint(values.values, values.truncated)
+        : t`Rows with the same value form one method, named by that value.`;
   return (
     <section aria-labelledby="method-group-heading" className="flex flex-col gap-4">
       <SectionHeading
         id="method-group-heading"
         level={3}
-        title="One method or several"
-        description="If the table holds more than one pipeline, choose the column that names each row's method."
+        title={t`One method or several`}
+        description={t`If the table holds more than one pipeline, choose the column that names each row's method.`}
       />
-      <Field label="Method name column" hint={hint} className="sm:max-w-md">
+      <Field label={t`Method name column`} hint={hint} className="sm:max-w-md">
         <Combobox
           mono
           options={options}
           value={column}
-          noneLabel="One method for the whole table"
+          noneLabel={t`One method for the whole table`}
           onChange={(groupColumn) =>
             actions.updateSection("bioinformatics", (current) => ({
               ...current,
@@ -218,11 +260,11 @@ export function MethodsPart() {
     <section aria-labelledby="methods-heading" className="flex flex-col gap-6">
       <SectionHeading
         id="methods-heading"
-        title="Methods"
-        description="A method is a pipeline: the programs it ran and their versions. Start here, since each run names its method."
+        title={t`Methods`}
+        description={t`A method is a pipeline: the programs it ran and their versions. Start here, since each run names its method.`}
       />
       <EntryModeSwitch
-        label="How to enter methods"
+        label={t`How to enter methods`}
         mode={methods.mode}
         onModeChange={(mode) => actions.setMode({ target: "bioinformaticsMethods", mode })}
         manualHasContent={methods.records.some((method) => !isBlankMethod(method))}
@@ -231,9 +273,9 @@ export function MethodsPart() {
         table={
           <TableImport
             slot={{ section: "bioinformatics", part: "methods" }}
-            label="Methods table"
+            label={t`Methods table`}
             headingLevel={3}
-            description="One row for each step: the program and its version, and optionally a column naming the method."
+            description={t`One row for each step: the program and its version, and optionally a column naming the method.`}
           >
             {(matching) => <GroupColumn matching={matching} />}
           </TableImport>

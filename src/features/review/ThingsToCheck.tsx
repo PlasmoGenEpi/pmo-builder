@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { CircleCheck } from "lucide-react";
 import { StepLink } from "@/app/StepLink";
 import { useId, useState } from "react";
@@ -39,12 +41,24 @@ function FixLinks({ sections }: { readonly sections: readonly SectionId[] }) {
   if (sections.length === 0) return null;
   return (
     <span className="flex flex-wrap gap-x-4 gap-y-1">
-      {sections.map((section) => (
-        <StepLink key={section} step={section} variant="arrow">
-          Fix on {getStep(section).title}
-        </StepLink>
-      ))}
+      {sections.map((section) => {
+        const stepTitle = getStep(section).title;
+        return (
+          <StepLink key={section} step={section} variant="arrow">
+            <Trans>Fix on {stepTitle}</Trans>
+          </StepLink>
+        );
+      })}
     </span>
+  );
+}
+
+/** Where in the PMO file a notice is about. */
+function PathDetails({ path }: { readonly path: string }) {
+  return (
+    <Trans>
+      Details: place in the PMO file <code className="font-mono">{path}</code>
+    </Trans>
   );
 }
 
@@ -60,7 +74,7 @@ function NoticeItem({
       <span className="break-words">{notice.message}</span>
       {notice.path === undefined || notice.path === "" ? null : (
         <span className="text-sm break-all text-text-muted">
-          Details: place in the PMO file <code className="font-mono">{notice.path}</code>
+          <PathDetails path={notice.path} />
         </span>
       )}
       {withLinks ? <FixLinks sections={linkedSections(notice)} /> : null}
@@ -96,7 +110,7 @@ function GroupCallout({ group }: { readonly group: NoticeGroup }) {
                 aria-controls={listId}
                 onClick={() => setExpanded((open) => !open)}
               >
-                {expanded ? "Show fewer" : `Show all ${total}`}
+                {expanded ? t`Show fewer` : t`Show all ${total}`}
               </Button>
             ) : null}
           </span>
@@ -109,7 +123,7 @@ function GroupCallout({ group }: { readonly group: NoticeGroup }) {
         ))}
         {hidden > 0 ? (
           <li className="text-text-muted">
-            and {hidden} more like {hidden === 1 ? "this" : "these"}.
+            {plural(hidden, { one: "and # more like this.", other: "and # more like these." })}
           </li>
         ) : null}
       </ul>
@@ -136,12 +150,12 @@ export function ThingsToCheck({ notices, built }: ThingsToCheckProps) {
     <Card as="section" aria-labelledby="review-check-heading">
       <div className="flex flex-col gap-4">
         <h2 id="review-check-heading" className="text-lg font-semibold tracking-tight text-text">
-          Things to check
+          <Trans>Things to check</Trans>
         </h2>
         {groups.length === 0 ? (
           <p className="flex items-center gap-2 text-base text-text-muted">
             <CircleCheck aria-hidden="true" className="size-4 shrink-0 text-success" />
-            Nothing to check. The PMO matches the format and every table links up.
+            <Trans>Nothing to check. The PMO matches the format and every table links up.</Trans>
           </p>
         ) : (
           <div className="flex flex-col gap-3">

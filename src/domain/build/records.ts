@@ -5,6 +5,7 @@
  * A table row is turned into the same values a form holds, so both are
  * checked by one function: required fields, schema formats, blanks dropped.
  */
+import { plural, t } from "@lingui/core/macro";
 import type { ProjectInfo, SequencingInfo } from "pmotools-ts";
 
 import {
@@ -22,7 +23,7 @@ import {
 import type { FieldSetId, Notice, RawTable, SectionId, SectionStatus } from "@/domain/types";
 
 import type { BuildContext } from "./context";
-import { describeRows, listItems, makeNotice, quoteItems } from "./notices";
+import { listItems, makeNotice, quoteItems } from "./notices";
 import {
   notReady,
   ready,
@@ -105,29 +106,45 @@ export function checkRecords<K extends string, E extends EnteredRecord<K>>(
       const value = entry.value.trim();
       if (key === "" && value === "") continue;
       if (key === "") {
-        problems.push(`An extra field with the value "${value}" has no name.`);
+        problems.push(t`An extra field with the value "${value}" has no name.`);
       } else if (fieldKeys.has(key)) {
         problems.push(
-          `The extra field "${key}" has the same name as a field above. Fill in that field instead.`,
+          t`The extra field "${key}" has the same name as a field above. Fill in that field instead.`,
         );
       } else if (value !== "") {
         extra[key] = value;
       }
     }
     if (values.size === 0 && Object.keys(extra).length === 0 && problems.length === 0) continue;
+    const label = record.label;
     if (blanks.length > 0) {
       missing = true;
+      const fieldList = listItems(blanks);
       notices.push(
         makeNotice(
           "error",
           "form/missing-required",
-          `${record.label}: fill in the ${listItems(blanks)}.`,
+          t({
+            message: `${label}: fill in the ${fieldList}.`,
+            comment:
+              "{label} names a record, such as 'Project 2' or 'Row 5'. {fieldList} is a list of fields, such as 'project name and description'.",
+          }),
         ),
       );
     }
     for (const problem of problems) {
       invalid = true;
-      notices.push(makeNotice("error", "form/invalid-value", `${record.label}: ${problem}`));
+      notices.push(
+        makeNotice(
+          "error",
+          "form/invalid-value",
+          t({
+            message: `${label}: ${problem}`,
+            comment:
+              "{label} names a record, such as 'Project 2' or 'Row 5'. {problem} is a translated message about one of its values.",
+          }),
+        ),
+      );
     }
     records.push({ label: record.label, values, extra, source: record });
   }
@@ -151,15 +168,19 @@ export interface TableEntry<K extends string> extends EnteredRecord<K> {
   readonly rowIndex: number;
 }
 
-/** Form records as entered records. Blank records are left out. */
+/**
+ * Form records as entered records. Blank records are left out. `label`
+ * names a record for messages from its position, counting from 1, such as
+ * "Project 2".
+ */
 export function fromForms<K extends string, R extends FormRecord<K>>(
   records: readonly R[],
-  noun: string,
+  label: (position: number) => string,
 ): FormEntry<K, R>[] {
   return records
     .filter((record) => !isBlankRecord(record))
     .map((record, index) => ({
-      label: `${noun} ${index + 1}`,
+      label: label(index + 1),
       values: record.values,
       extra: record.extra,
       origin: "form",
@@ -185,7 +206,7 @@ export function fromTable<K extends string>(
       value: row[column] ?? "",
     }));
     return {
-      label: capitalise(describeRows([index])),
+      label: rowLabel(index),
       values,
       extra,
       origin: "table",
@@ -194,8 +215,14 @@ export function fromTable<K extends string>(
   });
 }
 
-function capitalise(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
+/** "Row 5", naming a table row in messages, from its 0-based data row index. */
+export function rowLabel(index: number): string {
+  const row = index + 2;
+  return t({
+    message: `Row ${row}`,
+    comment:
+      "A spreadsheet row, starting a message about it, such as 'Row 5: fill in the program.'",
+  });
 }
 
 /** Copies a checked record's values and extra fields onto a PMO record. */
@@ -213,8 +240,14 @@ export function requiredText<K extends string>(record: CheckedRecord<K>, key: K)
   return typeof value === "string" ? value : "";
 }
 
-/** Notices for names that appear more than once among records. */
-export function duplicateNameNotices(names: readonly string[], noun: string): Notice[] {
+/**
+ * Notices for names that appear more than once among records. `message`
+ * words the notice from the quoted names and how many there are.
+ */
+export function duplicateNameNotices(
+  names: readonly string[],
+  message: (repeatedNames: string, count: number) => string,
+): Notice[] {
   const seen = new Set<string>();
   const repeated = new Set<string>();
   for (const name of names) {
@@ -223,11 +256,7 @@ export function duplicateNameNotices(names: readonly string[], noun: string): No
   }
   if (repeated.size === 0) return [];
   return [
-    makeNotice(
-      "error",
-      "form/duplicate-name",
-      `Each ${noun} needs its own name, but ${quoteItems([...repeated])} ${repeated.size === 1 ? "is" : "are"} used more than once.`,
-    ),
+    makeNotice("error", "form/duplicate-name", message(quoteItems([...repeated]), repeated.size)),
   ];
 }
 
@@ -265,7 +294,10 @@ interface RecordSectionConfig<S extends SectionId, K extends string, T> {
   readonly section: S;
   readonly fields: readonly FormFieldSpec<K>[];
   readonly fieldSetId: FieldSetId;
-  readonly noun: string;
+  /** Names a typed-in record from its position, such as "Project 2". */
+  readonly recordLabel: (position: number) => string;
+  /** Words the notice for repeated names. */
+  readonly duplicateMessage: (repeatedNames: string, count: number) => string;
   readonly tableLabel: string;
   readonly nameKey: K;
   readonly toRecord: (record: CheckedRecord<K>) => T;
@@ -286,7 +318,7 @@ function buildRecordSection<S extends SectionId, K extends string, T>(
     | EnteredRecords<K>
     | { readonly kind: "records"; readonly records: readonly EnteredRecord<K>[] } =
     draft.mode === "manual"
-      ? { kind: "records", records: fromForms(draft.records, config.noun) }
+      ? { kind: "records", records: fromForms(draft.records, config.recordLabel) }
       : enteredFromTable(
           {
             fields: config.fields,
@@ -301,12 +333,20 @@ function buildRecordSection<S extends SectionId, K extends string, T>(
   const names = checked.records
     .map((record) => requiredText(record, config.nameKey))
     .filter((name) => name !== "");
-  const duplicates = duplicateNameNotices(names, config.noun.toLowerCase());
+  const duplicates = duplicateNameNotices(names, config.duplicateMessage);
   const notices = [...checked.notices, ...duplicates];
   if (checked.status === "empty") {
+    const table = config.tableLabel;
     return draft.mode === "table"
       ? notReady(config.section, "incomplete", [
-          makeNotice("error", "table/no-rows", `The ${config.tableLabel} has no rows with values.`),
+          makeNotice(
+            "error",
+            "table/no-rows",
+            t({
+              message: `The ${table} has no rows with values.`,
+              comment: "{table} is the name of a table, such as 'project table'.",
+            }),
+          ),
         ])
       : notReady(config.section, "empty");
   }
@@ -337,8 +377,17 @@ export function buildProject(
       section: "project",
       fields: PROJECT_FORM_FIELDS,
       fieldSetId: "project",
-      noun: "Project",
-      tableLabel: "project table",
+      recordLabel: (position) => t`Project ${position}`,
+      duplicateMessage: (repeatedNames, count) =>
+        plural(count, {
+          one: `Each project needs its own name, but ${repeatedNames} is used more than once.`,
+          other: `Each project needs its own name, but ${repeatedNames} are used more than once.`,
+        }),
+      tableLabel: t({
+        message: "project table",
+        comment:
+          "Names a table inside other messages, such as 'The project table has no rows with values.'",
+      }),
       nameKey: "project_name",
       toRecord: (record): ProjectInfo => {
         const info: ProjectInfo = {
@@ -373,8 +422,17 @@ export function buildSequencing(
       section: "sequencing",
       fields: SEQUENCING_FORM_FIELDS,
       fieldSetId: "sequencing",
-      noun: "Sequencing run",
-      tableLabel: "sequencing table",
+      recordLabel: (position) => t`Sequencing run ${position}`,
+      duplicateMessage: (repeatedNames, count) =>
+        plural(count, {
+          one: `Each sequencing run needs its own name, but ${repeatedNames} is used more than once.`,
+          other: `Each sequencing run needs its own name, but ${repeatedNames} are used more than once.`,
+        }),
+      tableLabel: t({
+        message: "sequencing table",
+        comment:
+          "Names a table inside other messages, such as 'The sequencing table has no rows with values.'",
+      }),
       nameKey: "sequencing_info_name",
       toRecord: (record): SequencingInfo => {
         const info: SequencingInfo = {

@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { CircleCheck, CircleDashed, CircleDot, CircleX, type LucideIcon } from "lucide-react";
 
 import type { SectionStatus } from "@/domain/types";
@@ -16,19 +17,29 @@ interface StatusMeta {
 /** Words, icon and tone for each section status. Shared by the badge and the sidebar. */
 export const STATUS_META: Readonly<Record<SectionStatus, StatusMeta>> = {
   empty: {
-    label: "Not started",
+    label: t({ message: "Not started", comment: "Status of a step" }),
     icon: CircleDashed,
     tone: "neutral",
     iconClass: "text-text-subtle",
   },
   incomplete: {
-    label: "Incomplete",
+    label: t({ message: "Incomplete", comment: "Status of a step" }),
     icon: CircleDot,
     tone: "warning",
     iconClass: "text-warning",
   },
-  ready: { label: "Ready", icon: CircleCheck, tone: "success", iconClass: "text-success" },
-  error: { label: "Has errors", icon: CircleX, tone: "danger", iconClass: "text-danger" },
+  ready: {
+    label: t({ message: "Ready", comment: "Status of a step" }),
+    icon: CircleCheck,
+    tone: "success",
+    iconClass: "text-success",
+  },
+  error: {
+    label: t({ message: "Has errors", comment: "Status of a step" }),
+    icon: CircleX,
+    tone: "danger",
+    iconClass: "text-danger",
+  },
 };
 
 /** Props for {@link StatusBadge}. */

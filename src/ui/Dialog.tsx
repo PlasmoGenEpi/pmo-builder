@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { X } from "lucide-react";
 import { Dialog as RadixDialog } from "radix-ui";
 import type { ReactElement, ReactNode } from "react";
@@ -61,7 +62,13 @@ export function Dialog({
               ) : null}
             </div>
             <RadixDialog.Close asChild>
-              <IconButton label="Close" icon={X} size="sm" showTooltip={false} className="-mr-2" />
+              <IconButton
+                label={t`Close`}
+                icon={X}
+                size="sm"
+                showTooltip={false}
+                className="-mr-2"
+              />
             </RadixDialog.Close>
           </div>
           {children ? (

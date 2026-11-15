@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { CircleCheck, CircleExclamationPoint, TriangleExclamationPoint } from "lucide-react";
 import { useId, useState } from "react";
 
@@ -36,7 +38,7 @@ export function MatchSummary({ matching }: MatchingPartProps) {
           tone === "danger" ? "text-danger" : tone === "warning" ? "text-warning" : "text-success",
         )}
       />
-      <span>{summaryLine(counts)}.</span>
+      <span>{summaryLine(counts)}</span>
     </p>
   );
 }
@@ -78,7 +80,7 @@ export function RequiredFields({ matching, headingLevel = 3 }: RequiredFieldsPro
   return (
     <section aria-labelledby={id} className="flex flex-col gap-4">
       <Heading id={id} className="text-md font-semibold text-text">
-        Required fields
+        <Trans>Required fields</Trans>
       </Heading>
       <Rows rows={matching.model.required} matching={matching} />
     </section>
@@ -107,14 +109,15 @@ export function OptionalFields({ matching }: MatchingPartProps) {
   if (optional.length === 0) return null;
   const groups = groupOptionalRows(optional, { filter, matchedFirst });
   const problemCount = optional.filter((row) => row.problems.length > 0).length;
+  const { optionalMatched, optionalTotal } = counts;
 
   return (
     <Disclosure
-      title="Optional fields"
+      title={t`Optional fields`}
       summary={
         problemCount > 0
-          ? `${counts.optionalMatched} of ${counts.optionalTotal} matched, ${problemCount} to fix`
-          : `${counts.optionalMatched} of ${counts.optionalTotal} matched`
+          ? t`${optionalMatched} of ${optionalTotal} matched, ${problemCount} to fix`
+          : t`${optionalMatched} of ${optionalTotal} matched`
       }
       defaultOpen={problemCount > 0}
       onOpenChange={(open) => {
@@ -126,17 +129,17 @@ export function OptionalFields({ matching }: MatchingPartProps) {
     >
       <div className="flex flex-col gap-6">
         <TextField
-          label="Filter optional fields"
+          label={t`Filter optional fields`}
           hideLabel
           type="search"
-          placeholder="Filter by name or column"
+          placeholder={t`Filter by name or column`}
           value={filter}
           onChange={(event) => setFilter(event.target.value)}
           className="sm:max-w-xs"
         />
         {groups.length === 0 ? (
           <p className="text-base text-text-muted">
-            No optional field matches &quot;{filter}&quot;.
+            <Trans>No optional field matches &quot;{filter}&quot;.</Trans>
           </p>
         ) : (
           groups.map((group) => (
@@ -161,17 +164,22 @@ export function ExtraColumns({ matching }: MatchingPartProps) {
   const current = matching.mapped.mapping.additionalColumns;
   const chosen = new Set(current);
   const included = unmappedColumns.filter((column) => chosen.has(column));
+  const includedCount = included.length;
+  const columnCount = unmappedColumns.length;
+  const problemCount = extraProblems.size;
   const summary =
-    extraProblems.size > 0
-      ? `${included.length} of ${unmappedColumns.length} included, ${extraProblems.size} to fix`
-      : `${included.length} of ${unmappedColumns.length} included`;
+    problemCount > 0
+      ? t`${includedCount} of ${columnCount} included, ${problemCount} to fix`
+      : t`${includedCount} of ${columnCount} included`;
   return (
-    <Disclosure title="Extra columns" summary={summary} defaultOpen={extraProblems.size > 0}>
+    <Disclosure title={t`Extra columns`} summary={summary} defaultOpen={problemCount > 0}>
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <p className="max-w-prose text-base text-text-muted">
-            These columns are not matched to a field. Tick the ones to carry into the PMO as they
-            are.
+            <Trans>
+              These columns are not matched to a field. Tick the ones to carry into the PMO as they
+              are.
+            </Trans>
           </p>
           <div className="flex gap-1">
             <Button
@@ -180,7 +188,7 @@ export function ExtraColumns({ matching }: MatchingPartProps) {
               disabled={included.length === unmappedColumns.length}
               onClick={() => matching.setAdditionalColumns([...current, ...unmappedColumns])}
             >
-              Select all
+              <Trans>Select all</Trans>
             </Button>
             <Button
               size="sm"
@@ -188,7 +196,7 @@ export function ExtraColumns({ matching }: MatchingPartProps) {
               disabled={current.length === 0}
               onClick={() => matching.setAdditionalColumns([])}
             >
-              Select none
+              <Trans>Select none</Trans>
             </Button>
           </div>
         </div>
@@ -203,7 +211,9 @@ export function ExtraColumns({ matching }: MatchingPartProps) {
                   description={
                     problem === undefined ? (
                       example === undefined ? undefined : (
-                        <span className="block truncate">For example {example}</span>
+                        <span className="block truncate">
+                          <Trans>For example {example}</Trans>
+                        </span>
                       )
                     ) : (
                       <span className="flex items-start gap-1.5 text-danger-text">
@@ -249,8 +259,8 @@ export function ColumnMatcher({ matching, headingLevel = 2 }: ColumnMatcherProps
         <SectionHeading
           id={id}
           level={headingLevel}
-          title="Match columns"
-          description="Each field of the PMO is matched to a column of your table. Check the matches and change any that are wrong."
+          title={t`Match columns`}
+          description={t`Each field of the PMO is matched to a column of your table. Check the matches and change any that are wrong.`}
         />
         <MatchSummary matching={matching} />
       </div>

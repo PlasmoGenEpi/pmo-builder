@@ -10,6 +10,8 @@
  * `forms.test.ts` in `@/domain/draft` checks the keys against the generated
  * PMO types and the formats against the schema.
  */
+import { t } from "@lingui/core/macro";
+
 import type { FieldKind } from "../types";
 import type { KeyedFieldSpec } from "./define";
 
@@ -106,31 +108,59 @@ export const SEQUENCING_VOCABULARIES = {
 // They are copied as written so the form accepts exactly what validation accepts.
 const NAME: FormatRule = {
   pattern: /^[A-z\-._0-9 ]+$/,
-  hint: "letters, numbers, spaces and . _ -",
+  hint: t({
+    message: "letters, numbers, spaces and . _ -",
+    comment:
+      "Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop",
+  }),
 };
 const NAME_NO_SPACE: FormatRule = {
   pattern: /^[A-z\-._0-9]+$/,
-  hint: "letters, numbers and . _ - (no spaces)",
+  hint: t({
+    message: "letters, numbers and . _ - (no spaces)",
+    comment:
+      "Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop",
+  }),
 };
 const PLAIN_TEXT: FormatRule = {
   pattern: /^[A-z\-._0-9(),/ ]+$/,
-  hint: "letters, numbers, spaces and . _ - ( ) , /",
+  hint: t({
+    message: "letters, numbers, spaces and . _ - ( ) , /",
+    comment:
+      "Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop",
+  }),
 };
 const PEOPLE: FormatRule = {
   pattern: /^[A-z\-._0-9;|(),/ ]+$/,
-  hint: "letters, numbers, spaces and . _ - ; | ( ) , /",
+  hint: t({
+    message: "letters, numbers, spaces and . _ - ; | ( ) , /",
+    comment:
+      "Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop",
+  }),
 };
 const ARGUMENT: FormatRule = {
   pattern: /^[A-z\-._0-9{}(),/ ]+$/,
-  hint: "letters, numbers, spaces and . _ - { } ( ) , /",
+  hint: t({
+    message: "letters, numbers, spaces and . _ - { } ( ) , /",
+    comment:
+      "Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop",
+  }),
 };
 const URL_RULE: FormatRule = {
   pattern: /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/,
-  hint: "a web address starting with http://, https:// or ftp://",
+  hint: t({
+    message: "a web address starting with http://, https:// or ftp://",
+    comment:
+      "Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop",
+  }),
 };
 const GENOME_URL: FormatRule = {
   pattern: /^(?:NA|(https?|ftp):\/\/[^\s/$.?#].[^\s]*)$/,
-  hint: "a web address starting with http://, https:// or ftp://, or NA",
+  hint: t({
+    message: "a web address starting with http://, https:// or ftp://, or NA",
+    comment:
+      "Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop",
+  }),
 };
 /**
  * Every date in the schema has the pattern
@@ -140,7 +170,11 @@ const GENOME_URL: FormatRule = {
  */
 const DATE: FormatRule = {
   pattern: /^\d{4}-(?:0[1-9]|1[0-2])(?:-(?:0[1-9]|[12][0-9]|3[01]))?$/,
-  hint: "a date written YYYY-MM or YYYY-MM-DD",
+  hint: t({
+    message: "a date written YYYY-MM or YYYY-MM-DD",
+    comment:
+      "Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop",
+  }),
 };
 /**
  * The schema gives `program_url` the plain-text pattern, which has no colon,
@@ -149,16 +183,28 @@ const DATE: FormatRule = {
  */
 const PROGRAM_URL: FormatRule = {
   pattern: PLAIN_TEXT.pattern,
-  hint: "letters, numbers, spaces and . _ - ( ) , / (the PMO format does not allow a colon here, so leave out https://)",
+  hint: t({
+    message:
+      "letters, numbers, spaces and . _ - ( ) , / (the PMO format does not allow a colon here, so leave out https://)",
+    comment:
+      "Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop",
+  }),
 };
-const WHOLE_NUMBER: FormatRule = { pattern: /^\d+$/, hint: "whole numbers" };
+const WHOLE_NUMBER: FormatRule = {
+  pattern: /^\d+$/,
+  hint: t({
+    message: "whole numbers",
+    comment:
+      "Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop",
+  }),
+};
 
 /** Project fields (`ProjectInfo`). */
 export const PROJECT_RECORD_FIELDS = [
   {
     key: "project_name",
-    label: "Project name",
-    description: "A short name for the project, which no other project may use.",
+    label: t`Project name`,
+    description: t`A short name for the project, which no other project may use.`,
     required: true,
     kind: "text",
     format: NAME,
@@ -167,8 +213,8 @@ export const PROJECT_RECORD_FIELDS = [
   },
   {
     key: "project_description",
-    label: "Description",
-    description: "A short description of the project.",
+    label: t({ message: "Description", comment: "Field label: a short description" }),
+    description: t`A short description of the project.`,
     required: true,
     kind: "multiline",
     format: null,
@@ -177,47 +223,62 @@ export const PROJECT_RECORD_FIELDS = [
   },
   {
     key: "BioProject_accession",
-    label: "BioProject accession",
-    description: "The NCBI BioProject accession, such as PRJNA33823.",
+    label: t`BioProject accession`,
+    description: t`The NCBI BioProject accession, such as PRJNA33823.`,
     required: false,
     kind: "text",
     format: NAME,
     example: "PRJNA33823",
     aliases: ["bioproject", "bioproject_id", "ncbi_bioproject", "bioproject_accession_number"],
-    group: "Details",
+    group: t({
+      message: "Details",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "project_collector_chief_scientist",
-    label: "Chief scientist",
-    description: "The person who leads the project, or several names separated by semicolons.",
+    label: t`Chief scientist`,
+    description: t`The person who leads the project, or several names separated by semicolons.`,
     required: false,
     kind: "text",
     format: PEOPLE,
     example: "Jane Doe; John Smith",
     aliases: ["chief_scientist", "collector", "principal_investigator", "pi", "lead_scientist"],
-    group: "Details",
+    group: t({
+      message: "Details",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "project_contributors",
-    label: "Contributors",
-    description: "People who contributed to the project.",
+    label: t({
+      message: "Contributors",
+      comment: "Field label: people who contributed to the project",
+    }),
+    description: t`People who contributed to the project.`,
     required: false,
     kind: "list",
     format: NAME,
     example: "Jane Doe",
     aliases: ["contributors", "collaborators", "project_collaborators", "team_members", "authors"],
-    group: "Details",
+    group: t({
+      message: "Details",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "project_type",
-    label: "Project type",
-    description: "The kind of project, such as TES, surveillance or transmission.",
+    label: t`Project type`,
+    description: t`The kind of project, such as TES, surveillance or transmission.`,
     required: false,
     kind: "text",
     format: NAME,
     example: "surveillance",
     aliases: ["study_type", "project_category", "research_type", "type"],
-    group: "Details",
+    group: t({
+      message: "Details",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
 ] as const satisfies readonly RecordFieldDefinition[];
 
@@ -225,8 +286,8 @@ export const PROJECT_RECORD_FIELDS = [
 export const SEQUENCING_RECORD_FIELDS = [
   {
     key: "sequencing_info_name",
-    label: "Sequencing run name",
-    description: "A name for this sequencing run, as the library sample table gives it.",
+    label: t`Sequencing run name`,
+    description: t`A name for this sequencing run, as the library sample table gives it.`,
     required: true,
     kind: "text",
     format: NAME,
@@ -243,8 +304,8 @@ export const SEQUENCING_RECORD_FIELDS = [
   },
   {
     key: "seq_platform",
-    label: "Platform",
-    description: "The sequencing technology, such as ILLUMINA, OXFORD_NANOPORE or PACBIO_SMRT.",
+    label: t({ message: "Platform", comment: "Field label: the sequencing technology" }),
+    description: t`The sequencing technology, such as ILLUMINA, OXFORD_NANOPORE or PACBIO_SMRT.`,
     required: true,
     kind: "text",
     format: NAME,
@@ -254,8 +315,8 @@ export const SEQUENCING_RECORD_FIELDS = [
   },
   {
     key: "seq_instrument_model",
-    label: "Instrument model",
-    description: "The sequencer model, such as NextSeq 2000, MinION or Revio.",
+    label: t`Instrument model`,
+    description: t`The sequencer model, such as NextSeq 2000, MinION or Revio.`,
     required: true,
     kind: "text",
     format: NAME,
@@ -264,8 +325,8 @@ export const SEQUENCING_RECORD_FIELDS = [
   },
   {
     key: "library_layout",
-    label: "Library layout",
-    description: "How reads are arranged: PAIRED or SINGLE.",
+    label: t`Library layout`,
+    description: t`How reads are arranged: PAIRED or SINGLE.`,
     required: true,
     kind: "text",
     format: NAME,
@@ -275,8 +336,8 @@ export const SEQUENCING_RECORD_FIELDS = [
   },
   {
     key: "library_strategy",
-    label: "Library strategy",
-    description: "The sequencing strategy, such as AMPLICON or WGS.",
+    label: t`Library strategy`,
+    description: t`The sequencing strategy, such as AMPLICON or WGS.`,
     required: true,
     kind: "text",
     format: NAME,
@@ -286,8 +347,8 @@ export const SEQUENCING_RECORD_FIELDS = [
   },
   {
     key: "library_source",
-    label: "Library source",
-    description: "The source material, such as GENOMIC or TRANSCRIPTOMIC.",
+    label: t`Library source`,
+    description: t`The source material, such as GENOMIC or TRANSCRIPTOMIC.`,
     required: true,
     kind: "text",
     format: NAME,
@@ -297,8 +358,8 @@ export const SEQUENCING_RECORD_FIELDS = [
   },
   {
     key: "library_selection",
-    label: "Library selection",
-    description: "How the material was selected, such as PCR or RANDOM.",
+    label: t`Library selection`,
+    description: t`How the material was selected, such as PCR or RANDOM.`,
     required: true,
     kind: "text",
     format: NAME,
@@ -308,85 +369,106 @@ export const SEQUENCING_RECORD_FIELDS = [
   },
   {
     key: "library_kit",
-    label: "Library kit",
-    description: "The kit used to prepare libraries, with its version and part number if known.",
+    label: t`Library kit`,
+    description: t`The kit used to prepare libraries, with its version and part number if known.`,
     required: false,
     kind: "text",
     format: PLAIN_TEXT,
     example: "MiSeq Reagent Kit v3 (150-cycle)",
     aliases: ["kit", "library_preparation_kit", "prep_kit", "library_prep_kit"],
-    group: "Library preparation",
+    group: t({
+      message: "Library preparation",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "library_screen",
-    label: "Library screening",
-    description: "Enrichment, screening or normalisation applied to the libraries.",
+    label: t`Library screening`,
+    description: t`Enrichment, screening or normalisation applied to the libraries.`,
     required: false,
     kind: "text",
     format: PLAIN_TEXT,
     example: "size selection 390bp",
     aliases: ["screen", "normalization", "normalisation", "enrichment"],
-    group: "Library preparation",
+    group: t({
+      message: "Library preparation",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "pcr_cond",
-    label: "PCR conditions",
-    description: "The PCR method and conditions, such as the number of cycles.",
+    label: t`PCR conditions`,
+    description: t`The PCR method and conditions, such as the number of cycles.`,
     required: false,
     kind: "text",
     format: PLAIN_TEXT,
     example: "30 cycles",
     aliases: ["pcr_conditions", "pcr_cycles", "pcr_protocol"],
-    group: "Library preparation",
+    group: t({
+      message: "Library preparation",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "nucl_acid_ext",
-    label: "Extraction method link",
-    description: "A link to the method or kit used to extract nucleic acids.",
+    label: t`Extraction method link`,
+    description: t`A link to the method or kit used to extract nucleic acids.`,
     required: false,
     kind: "url",
     format: URL_RULE,
     example: "https://example.org/extraction",
     aliases: ["extraction", "extraction_method", "nucleic_acid_extraction", "ext_method"],
-    group: "Extraction and amplification",
+    group: t({
+      message: "Extraction and amplification",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "nucl_acid_ext_date",
-    label: "Extraction date",
-    description: "When nucleic acids were extracted.",
+    label: t`Extraction date`,
+    description: t`When nucleic acids were extracted.`,
     required: false,
     kind: "date",
     format: DATE,
     example: "2024-01-15",
     aliases: ["extraction_date", "ext_date"],
-    group: "Extraction and amplification",
+    group: t({
+      message: "Extraction and amplification",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "nucl_acid_amp",
-    label: "Amplification method link",
-    description: "A link to the method or kit used to amplify nucleic acids.",
+    label: t`Amplification method link`,
+    description: t`A link to the method or kit used to amplify nucleic acids.`,
     required: false,
     kind: "url",
     format: URL_RULE,
     example: "https://example.org/amplification",
     aliases: ["amplification", "amplification_method", "nucleic_acid_amplification", "amp_method"],
-    group: "Extraction and amplification",
+    group: t({
+      message: "Extraction and amplification",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "nucl_acid_amp_date",
-    label: "Amplification date",
-    description: "When nucleic acids were amplified.",
+    label: t`Amplification date`,
+    description: t`When nucleic acids were amplified.`,
     required: false,
     kind: "date",
     format: DATE,
     example: "2024-01-16",
     aliases: ["amplification_date", "amp_date"],
-    group: "Extraction and amplification",
+    group: t({
+      message: "Extraction and amplification",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "seq_center",
-    label: "Sequencing centre",
-    description: "The lab, core facility or company that did the sequencing.",
+    label: t`Sequencing centre`,
+    description: t`The lab, core facility or company that did the sequencing.`,
     required: false,
     kind: "text",
     format: PLAIN_TEXT,
@@ -399,18 +481,24 @@ export const SEQUENCING_RECORD_FIELDS = [
       "facility",
       "core_facility",
     ],
-    group: "Sequencing",
+    group: t({
+      message: "Sequencing",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "seq_date",
-    label: "Sequencing date",
-    description: "When the sequencing was done.",
+    label: t`Sequencing date`,
+    description: t`When the sequencing was done.`,
     required: false,
     kind: "date",
     format: DATE,
     example: "2024-02",
     aliases: ["sequencing_date", "date_sequenced", "run_date", "date"],
-    group: "Sequencing",
+    group: t({
+      message: "Sequencing",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
 ] as const satisfies readonly RecordFieldDefinition[];
 
@@ -418,8 +506,11 @@ export const SEQUENCING_RECORD_FIELDS = [
 export const METHOD_STEP_RECORD_FIELDS = [
   {
     key: "program",
-    label: "Program",
-    description: "The program used for this step.",
+    label: t({
+      message: "Program",
+      comment: "Field label: the software program used in a bioinformatics step",
+    }),
+    description: t`The program used for this step.`,
     required: true,
     kind: "text",
     format: NAME,
@@ -428,8 +519,8 @@ export const METHOD_STEP_RECORD_FIELDS = [
   },
   {
     key: "program_version",
-    label: "Version",
-    description: "The program's version, ideally written v1.2.3.",
+    label: t({ message: "Version", comment: "Field label: a software program's version" }),
+    description: t`The program's version, ideally written v1.2.3.`,
     required: true,
     kind: "text",
     format: NAME,
@@ -438,36 +529,45 @@ export const METHOD_STEP_RECORD_FIELDS = [
   },
   {
     key: "program_description",
-    label: "Description",
-    description: "A short description of what this step does.",
+    label: t({ message: "Description", comment: "Field label: a short description" }),
+    description: t`A short description of what this step does.`,
     required: false,
     kind: "text",
     format: PLAIN_TEXT,
     example: "denoising",
     aliases: ["description", "method_description", "tool_description", "step"],
-    group: "Details",
+    group: t({
+      message: "Details",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "additional_argument",
-    label: "Additional arguments",
-    description: "Arguments that differ from the program's defaults.",
+    label: t`Additional arguments`,
+    description: t`Arguments that differ from the program's defaults.`,
     required: false,
     kind: "list",
     format: ARGUMENT,
     example: "--maxEE 2",
     aliases: ["arguments", "args", "parameters", "params", "additional_arguments", "options"],
-    group: "Details",
+    group: t({
+      message: "Details",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "program_url",
-    label: "Program link",
-    description: "Where the program's code can be found, such as a GitHub page.",
+    label: t`Program link`,
+    description: t`Where the program's code can be found, such as a GitHub page.`,
     required: false,
     kind: "text",
     format: PROGRAM_URL,
     example: "github.com/benjjneb/dada2",
     aliases: ["url", "tool_url", "software_url", "program_link", "link", "github"],
-    group: "Details",
+    group: t({
+      message: "Details",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
 ] as const satisfies readonly RecordFieldDefinition[];
 
@@ -478,8 +578,8 @@ export const METHOD_STEP_RECORD_FIELDS = [
 export const RUN_RECORD_FIELDS = [
   {
     key: "bioinformatics_run_name",
-    label: "Run name",
-    description: "A name for this run of the pipeline, as used in the allele table.",
+    label: t`Run name`,
+    description: t`A name for this run of the pipeline, as used in the allele table.`,
     required: true,
     kind: "text",
     format: NAME,
@@ -497,14 +597,17 @@ export const RUN_RECORD_FIELDS = [
   },
   {
     key: "run_date",
-    label: "Run date",
-    description: "When the pipeline was run.",
+    label: t`Run date`,
+    description: t`When the pipeline was run.`,
     required: false,
     kind: "date",
     format: DATE,
     example: "2024-03-01",
     aliases: ["date", "analysis_date", "pipeline_date", "bioinformatics_run_date"],
-    group: "Details",
+    group: t({
+      message: "Details",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
 ] as const satisfies readonly RecordFieldDefinition[];
 
@@ -512,8 +615,8 @@ export const RUN_RECORD_FIELDS = [
 export const GENOME_RECORD_FIELDS = [
   {
     key: "name",
-    label: "Genome name",
-    description: "The name of the reference genome, such as 3D7.",
+    label: t`Genome name`,
+    description: t`The name of the reference genome, such as 3D7.`,
     required: true,
     kind: "text",
     format: NAME_NO_SPACE,
@@ -522,8 +625,8 @@ export const GENOME_RECORD_FIELDS = [
   },
   {
     key: "genome_version",
-    label: "Genome version",
-    description: "The version of the genome.",
+    label: t`Genome version`,
+    description: t`The version of the genome.`,
     required: true,
     kind: "text",
     format: NAME_NO_SPACE,
@@ -532,9 +635,8 @@ export const GENOME_RECORD_FIELDS = [
   },
   {
     key: "taxon_id",
-    label: "Taxon ID",
-    description:
-      "The NCBI taxonomy number of the organism, such as 5833, or several for a combined genome.",
+    label: t`Taxon ID`,
+    description: t`The NCBI taxonomy number of the organism, such as 5833, or several for a combined genome.`,
     required: true,
     kind: "integerList",
     format: WHOLE_NUMBER,
@@ -543,8 +645,8 @@ export const GENOME_RECORD_FIELDS = [
   },
   {
     key: "url",
-    label: "Genome link",
-    description: "Where the genome file can be downloaded, or NA.",
+    label: t`Genome link`,
+    description: t`Where the genome file can be downloaded, or NA.`,
     required: true,
     kind: "url",
     format: GENOME_URL,
@@ -554,26 +656,35 @@ export const GENOME_RECORD_FIELDS = [
   },
   {
     key: "gff_url",
-    label: "Annotation link",
-    description: "Where the genome's annotation (GFF) file can be downloaded.",
+    label: t`Annotation link`,
+    description: t`Where the genome's annotation (GFF) file can be downloaded.`,
     required: false,
     kind: "url",
     format: URL_RULE,
     example:
       "https://plasmodb.org/common/downloads/release-65/Pfalciparum3D7/gff/data/PlasmoDB-65_Pfalciparum3D7.gff",
     aliases: ["gff_link", "gff", "annotation_url", "gff_file"],
-    group: "Details",
+    group: t({
+      message: "Details",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
   {
     key: "chromosomes",
-    label: "Chromosomes",
-    description: "The chromosomes or contigs in the genome.",
+    label: t({
+      message: "Chromosomes",
+      comment: "Field label: the chromosomes of a reference genome",
+    }),
+    description: t`The chromosomes or contigs in the genome.`,
     required: false,
     kind: "list",
     format: NAME_NO_SPACE,
     example: "Pf3D7_01_v3",
     aliases: ["chroms", "chromosome", "contigs", "chromosome_names"],
-    group: "Details",
+    group: t({
+      message: "Details",
+      comment: "Heading for a group of optional fields in the column-matching editor",
+    }),
   },
 ] as const satisfies readonly RecordFieldDefinition[];
 
@@ -593,12 +704,27 @@ const COLUMN_KINDS: Readonly<Record<FormFieldKind, FieldKind>> = {
  * YYYY-MM or YYYY-MM-DD. Still one sentence.
  */
 function describe(field: FormFieldSpec, where: "form" | "column"): string {
-  const sentence = field.description.replace(/\.$/, "");
+  const description = field.description.replace(/\.$/, "");
   if (field.kind === "list" || field.kind === "integerList") {
-    return `${sentence}, ${where === "form" ? "one per line" : "separated by commas"}.`;
+    return where === "form"
+      ? t({
+          message: `${description}, one per line.`,
+          comment:
+            "{description} is a field's description, already translated, without its full stop",
+        })
+      : t({
+          message: `${description}, separated by commas.`,
+          comment:
+            "{description} is a field's description, already translated, without its full stop",
+        });
   }
-  if (field.kind === "date") return `${sentence}, as YYYY-MM or YYYY-MM-DD.`;
-  return `${sentence}.`;
+  if (field.kind === "date") {
+    return t({
+      message: `${description}, as YYYY-MM or YYYY-MM-DD.`,
+      comment: "{description} is a field's description, already translated, without its full stop",
+    });
+  }
+  return `${description}.`;
 }
 
 /** The fields a form shows, from their definitions. */

@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+
 import { defineFieldSet } from "./define";
 
 /**
@@ -7,13 +9,13 @@ import { defineFieldSet } from "./define";
  */
 export const PANEL_TARGET_FIELDS = defineFieldSet({
   id: "panelTargets",
-  title: "Panel targets",
+  title: t`Panel targets`,
   allowsAdditionalColumns: true,
   fields: [
     {
       key: "targetName",
-      label: "Target name",
-      description: "The name of the target (amplicon or locus).",
+      label: t`Target name`,
+      description: t`The name of the target (amplicon or locus).`,
       required: true,
       kind: "text",
       aliases: [
@@ -30,8 +32,8 @@ export const PANEL_TARGET_FIELDS = defineFieldSet({
     },
     {
       key: "forwardPrimersSeq",
-      label: "Forward primer",
-      description: "The sequence of the forward primer.",
+      label: t`Forward primer`,
+      description: t`The sequence of the forward primer.`,
       required: true,
       kind: "text",
       aliases: [
@@ -49,8 +51,8 @@ export const PANEL_TARGET_FIELDS = defineFieldSet({
     },
     {
       key: "reversePrimersSeq",
-      label: "Reverse primer",
-      description: "The sequence of the reverse primer.",
+      label: t`Reverse primer`,
+      description: t`The sequence of the reverse primer.`,
       required: true,
       kind: "text",
       aliases: [
@@ -68,17 +70,23 @@ export const PANEL_TARGET_FIELDS = defineFieldSet({
     },
     {
       key: "reactionName",
-      label: "Reaction",
-      description: "The PCR reaction or pool the target is amplified in.",
+      label: t({
+        message: "Reaction",
+        comment: "Field label: the PCR reaction or pool a target is amplified in",
+      }),
+      description: t`The PCR reaction or pool the target is amplified in.`,
       required: false,
       kind: "text",
       aliases: ["reaction", "reaction_id", "reactions", "pcr_reaction_name", "pool", "primer_pool"],
-      group: "Reactions",
+      group: t({
+        message: "Reactions",
+        comment: "Heading for a group of optional fields in the column-matching editor",
+      }),
     },
     {
       key: "forwardPrimersStart",
-      label: "Forward primer start",
-      description: "Where the forward primer starts on the chromosome.",
+      label: t`Forward primer start`,
+      description: t`Where the forward primer starts on the chromosome.`,
       required: false,
       kind: "integer",
       aliases: [
@@ -87,12 +95,15 @@ export const PANEL_TARGET_FIELDS = defineFieldSet({
         "genomic_forward_primer_start",
         "forward_primer_genomic_start_coordinate",
       ],
-      group: "Primer locations",
+      group: t({
+        message: "Primer locations",
+        comment: "Heading for a group of optional fields in the column-matching editor",
+      }),
     },
     {
       key: "forwardPrimersEnd",
-      label: "Forward primer end",
-      description: "Where the forward primer ends on the chromosome.",
+      label: t`Forward primer end`,
+      description: t`Where the forward primer ends on the chromosome.`,
       required: false,
       kind: "integer",
       aliases: [
@@ -101,12 +112,15 @@ export const PANEL_TARGET_FIELDS = defineFieldSet({
         "genomic_forward_primer_end",
         "forward_primer_genomic_end_coordinate",
       ],
-      group: "Primer locations",
+      group: t({
+        message: "Primer locations",
+        comment: "Heading for a group of optional fields in the column-matching editor",
+      }),
     },
     {
       key: "reversePrimersStart",
-      label: "Reverse primer start",
-      description: "Where the reverse primer starts on the chromosome.",
+      label: t`Reverse primer start`,
+      description: t`Where the reverse primer starts on the chromosome.`,
       required: false,
       kind: "integer",
       aliases: [
@@ -115,12 +129,15 @@ export const PANEL_TARGET_FIELDS = defineFieldSet({
         "genomic_reverse_primer_start",
         "reverse_primer_genomic_start_coordinate",
       ],
-      group: "Primer locations",
+      group: t({
+        message: "Primer locations",
+        comment: "Heading for a group of optional fields in the column-matching editor",
+      }),
     },
     {
       key: "reversePrimersEnd",
-      label: "Reverse primer end",
-      description: "Where the reverse primer ends on the chromosome.",
+      label: t`Reverse primer end`,
+      description: t`Where the reverse primer ends on the chromosome.`,
       required: false,
       kind: "integer",
       aliases: [
@@ -129,12 +146,15 @@ export const PANEL_TARGET_FIELDS = defineFieldSet({
         "genomic_reverse_primer_end",
         "reverse_primer_genomic_end_coordinate",
       ],
-      group: "Primer locations",
+      group: t({
+        message: "Primer locations",
+        comment: "Heading for a group of optional fields in the column-matching editor",
+      }),
     },
     {
       key: "insertStart",
-      label: "Insert start",
-      description: "Where the stretch between the two primers starts on the chromosome.",
+      label: t`Insert start`,
+      description: t`Where the stretch between the two primers starts on the chromosome.`,
       required: false,
       kind: "integer",
       aliases: [
@@ -143,12 +163,15 @@ export const PANEL_TARGET_FIELDS = defineFieldSet({
         "insert_genomic_start_coordinate",
         "insert_location_start",
       ],
-      group: "Target location",
+      group: t({
+        message: "Target location",
+        comment: "Heading for a group of optional fields in the column-matching editor",
+      }),
     },
     {
       key: "insertEnd",
-      label: "Insert end",
-      description: "Where the stretch between the two primers ends on the chromosome.",
+      label: t`Insert end`,
+      description: t`Where the stretch between the two primers ends on the chromosome.`,
       required: false,
       kind: "integer",
       aliases: [
@@ -157,58 +180,78 @@ export const PANEL_TARGET_FIELDS = defineFieldSet({
         "insert_genomic_end_coordinate",
         "insert_location_end",
       ],
-      group: "Target location",
+      group: t({
+        message: "Target location",
+        comment: "Heading for a group of optional fields in the column-matching editor",
+      }),
     },
     {
       key: "chrom",
-      label: "Chromosome",
-      description: "The chromosome the target lies on, needed when any location is given.",
+      label: t({
+        message: "Chromosome",
+        comment: "Field label: the chromosome a target or allele lies on",
+      }),
+      description: t`The chromosome the target lies on, needed when any location is given.`,
       required: false,
       kind: "text",
       aliases: ["chromosome", "chr", "contig", "amplicon_chrom", "gene_chrom"],
-      group: "Target location",
+      group: t({
+        message: "Target location",
+        comment: "Heading for a group of optional fields in the column-matching editor",
+      }),
     },
     {
       key: "strand",
-      label: "Strand",
-      description: "The strand the target lies on, + or -.",
+      label: t({ message: "Strand", comment: "Field label: the DNA strand, + or -" }),
+      description: t`The strand the target lies on, + or -.`,
       required: false,
       kind: "text",
       aliases: ["amplicon_strand", "gene_strand", "gene_genomic_strand", "orientation"],
-      group: "Target location",
+      group: t({
+        message: "Target location",
+        comment: "Heading for a group of optional fields in the column-matching editor",
+      }),
     },
     {
       key: "refSeq",
-      label: "Reference sequence",
-      description: "The reference genome sequence of the target.",
+      label: t`Reference sequence`,
+      description: t`The reference genome sequence of the target.`,
       required: false,
       kind: "text",
       aliases: ["reference_sequence", "reference_seq", "ref_sequence"],
-      group: "Target location",
+      group: t({
+        message: "Target location",
+        comment: "Heading for a group of optional fields in the column-matching editor",
+      }),
     },
     {
       key: "genomeId",
-      label: "Genome number",
-      description: "Which reference genome the location refers to, counting from 0.",
+      label: t`Genome number`,
+      description: t`Which reference genome the location refers to, counting from 0.`,
       required: false,
       kind: "integer",
       aliases: ["genome_index", "genome"],
-      group: "Target location",
+      group: t({
+        message: "Target location",
+        comment: "Heading for a group of optional fields in the column-matching editor",
+      }),
     },
     {
       key: "geneName",
-      label: "Gene",
-      description: "The gene the target covers, if any.",
+      label: t({ message: "Gene", comment: "Field label: the gene a target covers" }),
+      description: t`The gene the target covers, if any.`,
       required: false,
       kind: "text",
       aliases: ["gene", "gene_id", "amplicon_gene"],
-      group: "Target details",
+      group: t({
+        message: "Target details",
+        comment: "Heading for a group of optional fields in the column-matching editor",
+      }),
     },
     {
       key: "targetAttributes",
-      label: "Target type",
-      description:
-        "Labels for the kind of target, such as diversity or resistance, separated by commas.",
+      label: t`Target type`,
+      description: t`Labels for the kind of target, such as diversity or resistance, separated by commas.`,
       required: false,
       kind: "list",
       aliases: [
@@ -219,7 +262,10 @@ export const PANEL_TARGET_FIELDS = defineFieldSet({
         "gene_type",
         "target_category",
       ],
-      group: "Target details",
+      group: t({
+        message: "Target details",
+        comment: "Heading for a group of optional fields in the column-matching editor",
+      }),
     },
   ],
   // The checks `panelInfoTableToPmo` makes on its location options.

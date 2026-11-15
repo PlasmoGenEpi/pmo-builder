@@ -9,6 +9,8 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { useState } from "react";
 import { Link as RouterLink, useLocation } from "wouter";
 
@@ -32,32 +34,32 @@ interface Need {
 const NEEDS: readonly Need[] = [
   {
     icon: Dna,
-    title: "Allele table",
-    description: "The microhaplotypes called in each sample, with their read counts.",
+    title: t`Allele table`,
+    description: t`The microhaplotypes called in each sample, with their read counts.`,
     required: true,
   },
   {
     icon: Table2,
-    title: "Panel table",
-    description: "Each target in your panel with its forward and reverse primer.",
+    title: t`Panel table`,
+    description: t`Each target in your panel with its forward and reverse primer.`,
     required: true,
   },
   {
     icon: Microscope,
-    title: "Sample metadata",
-    description: "Where and when specimens were collected, and how libraries link to them.",
+    title: t`Sample metadata`,
+    description: t`Where and when specimens were collected, and how libraries link to them.`,
     required: false,
   },
   {
     icon: FlaskConical,
-    title: "Study and methods",
-    description: "Project, sequencing and bioinformatics details, typed in or from a file.",
+    title: t`Study and methods`,
+    description: t`Project, sequencing and bioinformatics details, typed in or from a file.`,
     required: false,
   },
   {
     icon: Workflow,
-    title: "Read counts by stage",
-    description: "How many reads each sample kept at each step of your pipeline.",
+    title: t`Read counts by stage`,
+    description: t`How many reads each sample kept at each step of your pipeline.`,
     required: false,
   },
 ];
@@ -83,6 +85,7 @@ export function HomePage({
   const [example, setExample] = useState<ExampleLoad>({ kind: "idle" });
   const [confirmingExample, setConfirmingExample] = useState(false);
   const loadingExample = example.kind === "loading";
+  const exampleMessage = example.kind === "failed" ? example.message : "";
   const firstStep = STEPS[0];
   const firstPath = firstStep?.path ?? "/";
 
@@ -96,7 +99,7 @@ export function HomePage({
       console.error(error);
       setExample({
         kind: "failed",
-        message: error instanceof Error ? error.message : "The example could not be loaded.",
+        message: error instanceof Error ? error.message : t`The example could not be loaded.`,
       });
     }
   }
@@ -110,20 +113,20 @@ export function HomePage({
             id="home-title"
             className="text-3xl font-semibold tracking-tight text-balance text-text"
           >
-            Turn your lab&apos;s tables into a PMO file
+            <Trans>Turn your lab&apos;s tables into a PMO file</Trans>
           </h1>
           <p className="max-w-2xl text-md text-pretty text-text-muted">
-            PMO Builder reads your allele table, panel table and sample metadata, matches their
-            columns to the fields of a Portable Microhaplotype Object, and builds a PMO file you can
-            download. You can fill in the steps in any order, and your work is saved as you go.
+            {t`PMO Builder reads your allele table, panel table and sample metadata, matches their columns to the fields of a Portable Microhaplotype Object, and builds a PMO file you can download. You can fill in the steps in any order, and your work is saved as you go.`}
           </p>
         </div>
 
         <div className="flex items-start gap-3 rounded-lg border border-success/30 bg-success-subtle px-4 py-3">
           <ShieldCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-success" />
           <p className="text-base text-text">
-            <span className="font-semibold">Your data stays on this device.</span> Files are read
-            inside this browser and are never uploaded.
+            <Trans>
+              <span className="font-semibold">Your data stays on this device.</span> Files are read
+              inside this browser and are never uploaded.
+            </Trans>
           </p>
         </div>
 
@@ -134,7 +137,7 @@ export function HomePage({
             onClick={() => navigate(firstPath)}
             className="max-sm:w-full"
           >
-            {hasDraft ? "Continue where you left off" : "Start"}
+            {hasDraft ? t`Continue where you left off` : t`Start`}
             <ArrowRight aria-hidden="true" className="size-4.5" />
           </Button>
           <Button
@@ -146,7 +149,7 @@ export function HomePage({
             }}
             className="max-sm:w-full"
           >
-            Try with example data
+            {t`Try with example data`}
           </Button>
           {hasDraft ? (
             <StartOverButton variant="ghost" size="lg" className="max-sm:w-full" />
@@ -154,31 +157,33 @@ export function HomePage({
         </div>
         {showPublished ? (
           <p className="text-base text-text-muted">
-            Looking for data?{" "}
-            <RouterLink
-              href="/published"
-              className="font-medium text-accent-text underline-offset-2 hover:underline"
-            >
-              Browse the published PMOs
-            </RouterLink>
-            . Have a PMO file already?{" "}
-            <RouterLink
-              href="/publish"
-              className="font-medium text-accent-text underline-offset-2 hover:underline"
-            >
-              Publish it
-            </RouterLink>
-            .
+            <Trans>
+              Looking for data?{" "}
+              <RouterLink
+                href="/published"
+                className="font-medium text-accent-text underline-offset-2 hover:underline"
+              >
+                Browse the published PMOs
+              </RouterLink>
+              . Have a PMO file already?{" "}
+              <RouterLink
+                href="/publish"
+                className="font-medium text-accent-text underline-offset-2 hover:underline"
+              >
+                Publish it
+              </RouterLink>
+              .
+            </Trans>
           </p>
         ) : null}
         {example.kind === "loading" ? (
-          <ProgressBar label="Loading the example tables" value={null} className="max-w-md" />
+          <ProgressBar label={t`Loading the example tables`} value={null} className="max-w-md" />
         ) : null}
         {example.kind === "failed" ? (
           <Callout
             tone="error"
             live
-            title="The example data could not be loaded"
+            title={t`The example data could not be loaded`}
             action={
               <Button
                 size="sm"
@@ -186,19 +191,19 @@ export function HomePage({
                   void tryExample();
                 }}
               >
-                Try again
+                {t`Try again`}
               </Button>
             }
           >
-            {example.message} Check your connection to this site, then try again.
+            {t`${exampleMessage} Check your connection to this site, then try again.`}
           </Callout>
         ) : null}
         <ConfirmDialog
           open={confirmingExample}
           onOpenChange={setConfirmingExample}
-          title="Replace your draft with the example?"
-          description="The example tables take the place of the tables and choices in your draft. This cannot be undone."
-          confirmLabel="Use the example"
+          title={t`Replace your draft with the example?`}
+          description={t`The example tables take the place of the tables and choices in your draft. This cannot be undone.`}
+          confirmLabel={t`Use the example`}
           tone="danger"
           onConfirm={() => {
             void tryExample();
@@ -210,10 +215,10 @@ export function HomePage({
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
           <div className="flex flex-col gap-1">
             <h2 id="needs-title" className="text-lg font-semibold tracking-tight text-text">
-              What you will need
+              {t`What you will need`}
             </h2>
             <p className="text-base text-text-muted">
-              Tables can be CSV, TSV, plain text or Excel files.
+              {t`Tables can be CSV, TSV, plain text or Excel files.`}
             </p>
           </div>
           <Link
@@ -223,10 +228,10 @@ export function HomePage({
             className="inline-flex items-center gap-1.5 text-base"
           >
             <Download aria-hidden="true" className="size-4" />
-            Download the Excel template
+            {t`Download the Excel template`}
           </Link>
         </div>
-        <Card padding="none" as="section" aria-label="Tables and details">
+        <Card padding="none" as="section" aria-label={t`Tables and details`}>
           <ul className="divide-y divide-border">
             {NEEDS.map((need) => {
               const Icon = need.icon;
@@ -239,9 +244,16 @@ export function HomePage({
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-base font-medium text-text">{need.title}</h3>
                       {need.required ? (
-                        <Badge tone="accent">Required</Badge>
+                        <Badge tone="accent">
+                          {t({ message: "Required", comment: "Marks a table a PMO file needs" })}
+                        </Badge>
                       ) : (
-                        <Badge>Optional</Badge>
+                        <Badge>
+                          {t({
+                            message: "Optional",
+                            comment: "Marks a table a PMO file can do without",
+                          })}
+                        </Badge>
                       )}
                     </div>
                     <p className="text-base text-text-muted">{need.description}</p>

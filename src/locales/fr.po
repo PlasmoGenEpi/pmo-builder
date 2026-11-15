@@ -1,0 +1,5953 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-11-14 21:37-0800\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: fr\n"
+
+#: src/features/table-import/mappingModel.ts
+msgid "\"{column}\" is also chosen for {otherFields}. A column can feed only one field, so choose another for one of them."
+msgstr ""
+
+#: src/features/table-import/mappingModel.ts
+msgid "\"{column}\" is also ticked under Extra columns. Untick it there, since this field already carries it."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "\"{file}\" could not be read as an Excel workbook, so it may be damaged. Open it in Excel, save it again as .xlsx, and add that file."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "\"{file}\" could not be read."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "\"{file}\" could not be read. Check that it is a table saved as .csv, .tsv, .txt or .xlsx, and try again."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "\"{file}\" has a header row but no rows of data. Add the data below the header, or choose another file."
+msgstr ""
+
+#. {limit} is a size, such as '50 MB'.
+#: src/domain/import/messages.ts
+msgid "\"{file}\" is a workbook over {limit}, too large to open in the browser. Save the sheet as a .csv or .tsv file and add that instead."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "\"{file}\" is an old Excel file (.xls), which cannot be read. Open it in Excel, choose Save As, pick Excel Workbook (.xlsx), and add that file."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "\"{file}\" is empty. Choose a file with a header row and at least one row of data."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "\"{file}\" is not a type of file that can be read. Choose a .csv, .tsv, .txt or .xlsx file. A .gz of a text file also works."
+msgstr ""
+
+#. {limit} is a size, such as '200 MB'.
+#: src/domain/import/messages.ts
+msgid "\"{file}\" is too large to open in the browser (the limit is {limit} of text). Split it into smaller files, or remove columns you do not need, and try again."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "\"{file}\" is too large to open in the browser. Split it into smaller files, or remove columns you do not need, and try again."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "\"{file}\" looks compressed but could not be unpacked, so it may be damaged or incomplete. Download or copy it again, or add it uncompressed."
+msgstr ""
+
+#: src/features/records/checks.ts
+msgid "\"{key}\" is already a field above. Fill in that field instead."
+msgstr ""
+
+#: src/features/records/checks.ts
+msgid "\"{key}\" is used twice. Give each detail its own name."
+msgstr ""
+
+#: src/ui/Combobox.tsx
+msgid "(current choice)"
+msgstr ""
+
+#: src/features/published/DatasetPage.tsx
+#: src/features/review/PublishToZenodo.tsx
+#: src/ui/Link.tsx
+msgid "(opens in a new tab)"
+msgstr ""
+
+#. placeholder {0}: method.steps
+#: src/features/bioinformatics/methodOptions.ts
+msgid "{0, plural, one {{name} (# step)} other {{name} (# steps)}}"
+msgstr ""
+
+#. placeholder {0}: datasets.length
+#: src/features/published/PublishedPage.tsx
+msgid "{0, plural, one {{shownCount} of # dataset} other {{shownCount} of # datasets}}"
+msgstr ""
+
+#. placeholder {0}: datasets.length
+#: src/features/published/PublishedPage.tsx
+msgid "{0, plural, one {# dataset} other {# datasets}}"
+msgstr ""
+
+#. placeholder {0}: state.count
+#: src/features/records/RecordBadge.tsx
+msgid "{0, plural, one {# field to fill in} other {# fields to fill in}}"
+msgstr ""
+
+#. placeholder {0}: summary.librarySamples
+#: src/features/review/reviewModel.ts
+msgid "{0, plural, one {# library sample} other {# library samples}}"
+msgstr ""
+
+#. placeholder {0}: optional.length
+#: src/features/records/RecordForm.tsx
+msgid "{0, plural, one {# optional field} other {# optional fields}}"
+msgstr ""
+
+#. placeholder {0}: panels.length
+#: src/features/panel/PanelStep.tsx
+msgid "{0, plural, one {# panel. Targets that appear in more than one panel are kept once in the PMO, so panels that share targets are merged.} other {# panels. Targets that appear in more than one panel are kept once in the PMO, so panels that share targets are merged.}}"
+msgstr ""
+
+#. placeholder {0}: summary.projects
+#: src/features/review/reviewModel.ts
+msgid "{0, plural, one {# project} other {# projects}}"
+msgstr ""
+
+#. placeholder {0}: using.length
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "{0, plural, one {# run uses this method and will need another one.} other {# runs use this method and will need another one.}}"
+msgstr ""
+
+#. placeholder {0}: summary.runNames.length
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "{0, plural, one {# run} other {# runs}}"
+msgstr ""
+
+#. placeholder {0}: summary.runs
+#: src/features/review/reviewModel.ts
+msgid "{0, plural, one {# sequencing run} other {# sequencing runs}}"
+msgstr ""
+
+#. placeholder {0}: dataset.summary.specimens
+#. placeholder {0}: summary.specimens
+#: src/features/published/PublishedPage.tsx
+#: src/features/review/reviewModel.ts
+msgid "{0, plural, one {# specimen} other {# specimens}}"
+msgstr ""
+
+#. placeholder {0}: saved.targetCount
+#: src/features/panel/SavedPanelList.tsx
+msgid "{0, plural, one {# target, saved {savedDate}} other {# targets, saved {savedDate}}}"
+msgstr ""
+
+#. placeholder {0}: dataset.summary.targets
+#: src/features/published/PublishedPage.tsx
+msgid "{0, plural, one {# target} other {# targets}}"
+msgstr ""
+
+#. placeholder {0}: state.count
+#: src/features/records/RecordBadge.tsx
+msgid "{0, plural, one {# value to check} other {# values to check}}"
+msgstr ""
+
+#. placeholder {0}: dataset.bioProjects.length
+#: src/features/published/DatasetPage.tsx
+msgid "{0, plural, one {BioProject} other {BioProjects}}"
+msgstr ""
+
+#. placeholder {0}: countries.length
+#. placeholder {0}: dataset.countries.length
+#. placeholder {0}: totals.countries
+#: src/features/published/DatasetPage.tsx
+#: src/features/published/PublishedPage.tsx
+#: src/features/specimens/SpecimensStep.tsx
+msgid "{0, plural, one {Country} other {Countries}}"
+msgstr ""
+
+#. placeholder {0}: totals.datasets
+#: src/features/published/PublishedPage.tsx
+msgid "{0, plural, one {Dataset} other {Datasets}}"
+msgstr ""
+
+#. placeholder {0}: summary.genomes
+#: src/features/panel/PanelStep.tsx
+msgid "{0, plural, one {Genome} other {Genomes}}"
+msgstr ""
+
+#. placeholder {0}: summary.methods.length
+#: src/features/bioinformatics/BioinformaticsStep.tsx
+msgid "{0, plural, one {Method} other {Methods}}"
+msgstr ""
+
+#. placeholder {0}: problem.mappedKeys.length
+#: src/features/table-import/mappingModel.ts
+msgid "{0, plural, one {Needed because {matchedFields} is matched.} other {Needed because {matchedFields} are matched.}}"
+msgstr ""
+
+#. placeholder {0}: verdict.blockers.length
+#: src/features/review/VerdictCard.tsx
+msgid "{0, plural, one {One step needs your attention before a PMO can be built.} other {# steps need your attention before a PMO can be built.}}"
+msgstr ""
+
+#. placeholder {0}: dataset.panels.length
+#. placeholder {0}: summary.panels.length
+#: src/features/panel/PanelStep.tsx
+#: src/features/published/DatasetPage.tsx
+msgid "{0, plural, one {Panel} other {Panels}}"
+msgstr ""
+
+#. placeholder {0}: summary.projects
+#: src/features/review/reviewModel.ts
+msgid "{0, plural, one {Project {projectNames}} other {Projects {projectNames}}}"
+msgstr ""
+
+#. placeholder {0}: projectNames.length
+#. placeholder {0}: summary.projects
+#: src/features/project/ProjectStep.tsx
+#: src/features/specimens/SpecimensStep.tsx
+msgid "{0, plural, one {Project} other {Projects}}"
+msgstr ""
+
+#. placeholder {0}: summary.runs
+#: src/features/bioinformatics/BioinformaticsStep.tsx
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "{0, plural, one {Run} other {Runs}}"
+msgstr ""
+
+#. placeholder {0}: summary.runs
+#: src/features/sequencing/SequencingStep.tsx
+msgid "{0, plural, one {Sequencing run} other {Sequencing runs}}"
+msgstr ""
+
+#. placeholder {0}: dataset.summary.specimens
+#: src/features/published/PublishedPage.tsx
+msgid "{0, plural, one {specimen} other {specimens}}"
+msgstr ""
+
+#. placeholder {0}: totals.specimens
+#: src/features/published/PublishedPage.tsx
+msgid "{0, plural, one {Specimen} other {Specimens}}"
+msgstr ""
+
+#. placeholder {0}: missing.length
+#: src/features/records/NameCoverage.tsx
+msgid "{0, plural, one {The {source} names a {noun} with no record here} other {The {source} names # {noun}s with no record here}}"
+msgstr ""
+
+#. placeholder {0}: panelNames.length
+#: src/features/panel/PanelNameField.tsx
+msgid "{0, plural, one {The library sample table names its panel {tableNames}, not \"{name}\". Its samples link to this panel only if the names match.} other {The library sample table names its panels {tableNames}, not \"{name}\". Its samples link to this panel only if the names match.}}"
+msgstr ""
+
+#. placeholder {0}: problem.missing.length
+#: src/features/table-import/mappingModel.ts
+msgid "{0, plural, one {This needs {neededFields} as well. Match it too, or set this field to \"Not in this table\".} other {This needs {neededFields} as well. Match them too, or set this field to \"Not in this table\".}}"
+msgstr ""
+
+#. placeholder {0}: sheets.length
+#: src/features/table-import/TableFile.tsx
+msgid "{0, plural, one {This workbook has # sheet. Choose the one that holds the {tableName}.} other {This workbook has # sheets. Choose the one that holds the {tableName}.}}"
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "{alleleCalls, plural, one {# allele call} other {# allele calls}} for {samples, plural, one {# sample} other {# samples}} at {targets, plural, one {# target} other {# targets}}, {alleles, plural, one {# distinct allele} other {# distinct alleles}}"
+msgstr ""
+
+#. {column} names a column, such as 'Column "Host taxon"'. {row} is such as 'row 5'.
+#: src/domain/build/notices.ts
+msgid "{column} must hold NCBI taxonomy numbers such as 5833, separated by commas, but {row} holds \"{value}\". Correct it, or unmap the column if the field is optional."
+msgstr ""
+
+#. {column} names a column, such as 'Column "Density"'. {row} is such as 'row 5'.
+#: src/domain/build/notices.ts
+msgid "{column} must hold numbers, but {row} holds \"{value}\". Correct it, or unmap the column if the field is optional."
+msgstr ""
+
+#. {column} names a column, such as 'Column "Well"'. {values} is a list of quoted values.
+#: src/domain/build/notices.ts
+msgid "{column} must hold wells such as A01 or H12 (a letter A to H, then 1 to 12), but holds {values}."
+msgstr ""
+
+#. {column} names a column, such as 'Column "Masking"'. {rows} is such as 'rows 5 and 9'.
+#: src/domain/build/notices.ts
+msgid "{column} must hold whole numbers separated by commas, but holds \"{value}\" ({rows})."
+msgstr ""
+
+#. {column} names a column, such as 'Column "Masking"'.
+#: src/domain/build/notices.ts
+msgid "{column} must hold whole numbers separated by commas, but holds \"{value}\"."
+msgstr ""
+
+#. {column} names a column, such as 'Column "Age"'. {row} is such as 'row 5'.
+#: src/domain/build/notices.ts
+msgid "{column} must hold whole numbers, but {row} holds \"{value}\". Correct it, or unmap the column if the field is optional."
+msgstr ""
+
+#. {column} names a column, such as 'Column "Start"'.
+#: src/domain/build/notices.ts
+msgid "{column} must hold whole numbers, but target \"{target}\" has \"{value}\"."
+msgstr ""
+
+#. {issueTable} is the name of a table, such as 'allele table'. {columns} is a list of quoted column names.
+#: src/domain/build/notices.ts
+msgid "{columnCount, plural, one {The {issueTable} has no column {columns}. Check the column mapping.} other {The {issueTable} has no columns {columns}. Check the column mapping.}}"
+msgstr ""
+
+#: src/domain/build/microhaplotypes.ts
+msgid "{columnCount, plural, one {The allele table has no column {columns}, chosen to carry onto each microhaplotype. Untick it.} other {The allele table has no columns {columns}, chosen to carry onto each microhaplotype. Untick them.}}"
+msgstr ""
+
+#. {issueTable} is the name of a table, such as 'allele table'. {columns} is a list of quoted column names.
+#: src/domain/build/notices.ts
+msgid "{columnCount, plural, one {The extra column {columns} chosen to carry into the PMO is not in the {issueTable}. Untick it.} other {The extra columns {columns} chosen to carry into the PMO are not in the {issueTable}. Untick them.}}"
+msgstr ""
+
+#: src/ui/FileDropzone.tsx
+msgid "{columns, plural, one {{columnCount} column} other {{columnCount} columns}}"
+msgstr ""
+
+#. A column and the rows where it is blank, such as 'column "Date" (rows 5 and 9)'.
+#: src/domain/build/notices.ts
+msgid "{columnText} ({rows})"
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "{count, plural, one {# similar note} other {# similar notes}}"
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "{count, plural, one {# similar problem} other {# similar problems}}"
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "{count, plural, one {# similar warning} other {# similar warnings}}"
+msgstr ""
+
+#: src/domain/build/bioinformatics.ts
+msgid "{count, plural, one {Each method needs its own name, but {repeatedNames} is used more than once.} other {Each method needs its own name, but {repeatedNames} are used more than once.}}"
+msgstr ""
+
+#: src/domain/build/records.ts
+msgid "{count, plural, one {Each project needs its own name, but {repeatedNames} is used more than once.} other {Each project needs its own name, but {repeatedNames} are used more than once.}}"
+msgstr ""
+
+#: src/domain/build/bioinformatics.ts
+msgid "{count, plural, one {Each run needs its own name, but {repeatedNames} is used more than once.} other {Each run needs its own name, but {repeatedNames} are used more than once.}}"
+msgstr ""
+
+#: src/domain/build/records.ts
+msgid "{count, plural, one {Each sequencing run needs its own name, but {repeatedNames} is used more than once.} other {Each sequencing run needs its own name, but {repeatedNames} are used more than once.}}"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "{count, plural, one {Note} other {Notes}}"
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "{count, plural, one {Panel} other {Panels}}"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "{count, plural, one {Problem} other {Problems}}"
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "{count, plural, one {Sequencing run} other {Sequencing runs}}"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "{count, plural, one {Warning} other {Warnings}}"
+msgstr ""
+
+#. {description} is a field's description, already translated, without its full stop
+#: src/domain/fields/records.ts
+msgid "{description}, as YYYY-MM or YYYY-MM-DD."
+msgstr ""
+
+#. {description} is a field's description, already translated, without its full stop
+#: src/domain/fields/records.ts
+msgid "{description}, one per line."
+msgstr ""
+
+#. {description} is a field's description, already translated, without its full stop
+#: src/domain/fields/records.ts
+msgid "{description}, separated by commas."
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+msgid "{description}, such as {example}."
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "{errors, plural, one {Your PMO can be downloaded, but it does not fully match the PMO format, so other tools may not read it. See the # problem below.} other {Your PMO can be downloaded, but it does not fully match the PMO format, so other tools may not read it. See the # problems below.}}"
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "{errors, plural, one {Your PMO can be downloaded. There is # problem worth a look below.} other {Your PMO can be downloaded. There are # problems worth a look below.}}"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "{exampleMessage} Check your connection to this site, then try again."
+msgstr ""
+
+#. {field} is a field label, such as 'Contributors'. {values} is a list of quoted values. {allowed} says what the field takes, such as 'letters, numbers and . _ -'.
+#: src/domain/draft/forms.ts
+msgid "{field} has {values}, but it can only hold {allowed}."
+msgstr ""
+
+#. {field} is a field label, such as 'Panel name'. {allowed} says what the field takes, such as 'letters, numbers and . _ -'.
+#: src/domain/draft/forms.ts
+msgid "{field} is \"{text}\", but it can only hold {allowed}."
+msgstr ""
+
+#. {field} is a field label, such as 'Collection date'. {allowed} says what the value must be, such as 'a date as YYYY-MM-DD'.
+#: src/domain/draft/forms.ts
+msgid "{field} is \"{text}\", but it must be {allowed}."
+msgstr ""
+
+#: src/features/table-import/FieldRow.tsx
+msgid "{fieldLabel}: keep this match"
+msgstr ""
+
+#: src/app/RestoreNotice.tsx
+msgid "{fileCount, plural, one {One file was not kept} other {# files were not kept}}"
+msgstr ""
+
+#: src/app/RestoreNotice.tsx
+msgid "{fileCount, plural, one {Your draft is back, but {files} was not saved in this browser. Import it again.} other {Your draft is back, but {files} were not saved in this browser. Import them again.}}"
+msgstr ""
+
+#: src/ui/FileDropzone.tsx
+msgid "{fileName} is not a file type this step can read. Choose a {fileTypes} file."
+msgstr ""
+
+#: src/features/published/DatasetPage.tsx
+#: src/features/review/VerdictCard.tsx
+msgid "{fileName}, {fileSize}"
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "{fileName}. Its size is worked out when you download it."
+msgstr ""
+
+#: src/features/records/RecordForm.tsx
+msgid "{filled, plural, one {# filled in} other {# filled in}}"
+msgstr ""
+
+#. A field that another field can stand in for, such as 'Chromosome (or Pseudo-CIGAR chromosome)'.
+#: src/domain/build/notices.ts
+msgid "{first} (or {alternatives})"
+msgstr ""
+
+#: src/features/specimens/SpecimensStep.tsx
+msgid "{first} to {last}"
+msgstr ""
+
+#: src/features/published/catalogue.ts
+msgid "{firstYear} to {lastYear}"
+msgstr ""
+
+#: src/features/review/ThingsToCheck.tsx
+msgid "{hidden, plural, one {and # more like this.} other {and # more like these.}}"
+msgstr ""
+
+#: src/ui/CodeBlock.tsx
+msgid "{hiddenSize} not shown"
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "{includedCount} of {columnCount} included"
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "{includedCount} of {columnCount} included, {problemCount} to fix"
+msgstr ""
+
+#. {issueTable} is the name of a table, starting the sentence, such as 'Totals table'. {rows} is such as 'row 5'.
+#: src/domain/build/notices.ts
+msgid "{issueTable} {rows} has no value in column \"{column}\"."
+msgstr ""
+
+#. {examples} quotes some of the specimens. {kind} is 'all' when it quotes every one, 'some' when it quotes only some, and 'none' when it is empty.
+#: src/domain/build/merge.ts
+msgid "{kind, select, all {{missingCount, plural, one {Projects are entered, but # specimen has no project name ({examples}). Fill in the project name column of the specimen table in every row.} other {Projects are entered, but # specimens have no project name ({examples}). Fill in the project name column of the specimen table in every row.}}} some {{missingCount, plural, one {Projects are entered, but # specimen has no project name (such as {examples}). Fill in the project name column of the specimen table in every row.} other {Projects are entered, but # specimens have no project name (such as {examples}). Fill in the project name column of the specimen table in every row.}}} other {{missingCount, plural, one {Projects are entered, but # specimen has no project name. Fill in the project name column of the specimen table in every row.} other {Projects are entered, but # specimens have no project name. Fill in the project name column of the specimen table in every row.}}}}"
+msgstr ""
+
+#. {examples} quotes some of the library samples. {kind} is 'all' when it quotes every one, 'some' when it quotes only some, and 'none' when it is empty.
+#: src/domain/build/merge.ts
+msgid "{kind, select, all {{missingCount, plural, one {Sequencing runs are entered, but # library sample has no sequencing run name ({examples}). Fill in the sequencing run name column of the library sample table in every row.} other {Sequencing runs are entered, but # library samples have no sequencing run name ({examples}). Fill in the sequencing run name column of the library sample table in every row.}}} some {{missingCount, plural, one {Sequencing runs are entered, but # library sample has no sequencing run name (such as {examples}). Fill in the sequencing run name column of the library sample table in every row.} other {Sequencing runs are entered, but # library samples have no sequencing run name (such as {examples}). Fill in the sequencing run name column of the library sample table in every row.}}} other {{missingCount, plural, one {Sequencing runs are entered, but # library sample has no sequencing run name. Fill in the sequencing run name column of the library sample table in every row.} other {Sequencing runs are entered, but # library samples have no sequencing run name. Fill in the sequencing run name column of the library sample table in every row.}}}}"
+msgstr ""
+
+#. {label} names a panel, such as 'Panel "P1"' or 'Panel 2'.
+#: src/domain/build/panel.ts
+msgid "{label} is empty. Import its target table or remove it."
+msgstr ""
+
+#. Before a fact about a dataset, for screen readers
+#: src/features/published/PublishedPage.tsx
+msgid "{label}:"
+msgstr ""
+
+#. {label} names a panel, such as 'Panel "P1"' or 'Panel 2'. {message} is a translated message about it.
+#: src/domain/build/panel.ts
+msgid "{label}: {message}"
+msgstr ""
+
+#. {label} names a record, such as 'Project 2' or 'Row 5'. {problem} is a translated message about one of its values.
+#: src/domain/build/records.ts
+msgid "{label}: {problem}"
+msgstr ""
+
+#. {label} names a run, such as 'Run 2', 'Row 5' or 'Runs table'.
+#: src/domain/build/bioinformatics.ts
+msgid "{label}: add the method this run used."
+msgstr ""
+
+#. {label} names a run, such as 'Run 2', 'Row 5' or 'Runs table'.
+#: src/domain/build/bioinformatics.ts
+msgid "{label}: choose the method this run used."
+msgstr ""
+
+#. {label} names a record, such as 'Project 2' or 'Row 5'. {fieldList} is a list of fields, such as 'project name and description'.
+#: src/domain/build/records.ts
+msgid "{label}: fill in the {fieldList}."
+msgstr ""
+
+#. {label} names a run, such as 'Run 2', 'Row 5' or 'Runs table'.
+#: src/domain/build/bioinformatics.ts
+msgid "{label}: the method chosen for this run is no longer there. Choose its method again."
+msgstr ""
+
+#. {leadIn} is a translated message saying what went wrong and what to do. {detail} is the technical message from the PMO library, in English.
+#: src/domain/build/notices.ts
+msgid "{leadIn} Details: {detail}"
+msgstr ""
+
+#: src/features/review/PmoContents.tsx
+msgid "{librarySamples, plural, one {# library sample} other {# library samples}} from {specimens, plural, one {# specimen} other {# specimens}}, with alleles found in {samplesWithAlleles} of them at {targetsWithAlleles} of the panel's {targets, plural, one {# target} other {# targets}}."
+msgstr ""
+
+#. Fields that only work together. {mappedFields} and {mappedCount} are the fields matched to a column; {missingFields} and {missingCount} are the ones still to match.
+#: src/domain/build/notices.ts
+msgid "{mappedCount, plural, one {{missingCount, plural, one {{mappedFields} is mapped, but {missingFields} is not.} other {{mappedFields} is mapped, but {missingFields} are not.}}} other {{missingCount, plural, one {{mappedFields} are mapped, but {missingFields} is not.} other {{mappedFields} are mapped, but {missingFields} are not.}}}}"
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "{message} Reload the page to try again."
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "{methods, plural, one {# method} other {# methods}}, {runs, plural, one {# run} other {# runs}}"
+msgstr ""
+
+#. Advice for fields that only work together: match the missing fields to columns too, or unmatch {mappedFields}.
+#: src/domain/build/notices.ts
+msgid "{missingCount, plural, one {Map it too, or unmap {mappedFields}.} other {Map them too, or unmap {mappedFields}.}}"
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "{more, plural, one {{firstNames} and # more} other {{firstNames} and # more}}"
+msgstr ""
+
+#. {shown} is a list of quoted values, cut short.
+#: src/domain/draft/forms.ts
+msgid "{more, plural, one {{shown} and # more} other {{shown} and # more}}"
+msgstr ""
+
+#: src/features/panel/PanelNameField.tsx
+#: src/features/shared/NameCheck.tsx
+msgid "{more, plural, one {{shownNames} and # more} other {{shownNames} and # more}}"
+msgstr ""
+
+#. A record in the PMO, by its name, such as 'Specimen "S1"'.
+#: src/domain/build/merge.ts
+msgid "{noun} \"{name}\""
+msgstr ""
+
+#. A record in the PMO, by its position, such as 'Specimen 3'.
+#: src/domain/build/merge.ts
+msgid "{noun} {position}"
+msgstr ""
+
+#: src/features/records/RecordList.tsx
+msgid "{noun}s"
+msgstr ""
+
+#. {libraryMessage} is a technical message from the PMO library, in English.
+#: src/domain/build/merge.ts
+msgid "{omitted, plural, one {{libraryMessage} (and # more like it)} other {{libraryMessage} (and # more like it)}}"
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "{optionalMatched} of {optionalTotal} matched"
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "{optionalMatched} of {optionalTotal} matched, {problemCount} to fix"
+msgstr ""
+
+#: src/ui/Combobox.tsx
+msgid "{optionCount, plural, one {{optionTotal} match} other {{optionTotal} matches}}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{panelCount, plural, one {There is # panel but no library sample table, so every sample is put on panel \"{firstPanel}\". Add a library sample table to say which panel each sample used.} other {There are # panels but no library sample table, so every sample is put on panel \"{firstPanel}\". Add a library sample table to say which panel each sample used.}}"
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "{panels, plural, one {# panel} other {# panels}} with {targets, plural, one {# target} other {# targets}}, {genomes, plural, one {# genome} other {# genomes}}"
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "{panels, plural, one {# panel} other {# panels}} with {targets, plural, one {# target} other {# targets}}, no genome"
+msgstr ""
+
+#: src/state/store.ts
+msgid "{path} could not be fetched ({status})."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{projectCount, plural, one {The specimen table names the project {nameList}, but no project is entered, so the PMO keeps the name without linking it to a project. Add the project on the Project step, or unmap the project name column.} other {The specimen table names the projects {nameList}, but no project is entered, so the PMO keeps the names without linking them to a project. Add the project on the Project step, or unmap the project name column.}}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{projectCount, plural, one {The specimen table names the project {nameList}, but the Project step is not finished, so the PMO keeps the name without linking it to a project. Add the project on the Project step, or unmap the project name column.} other {The specimen table names the projects {nameList}, but the Project step is not finished, so the PMO keeps the names without linking them to a project. Add the project on the Project step, or unmap the project name column.}}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{projectCount, plural, one {There is # project, so each specimen needs to name its project. Add a specimen table with a project name column on the Specimens step.} other {There are # projects, so each specimen needs to name its project. Add a specimen table with a project name column on the Specimens step.}}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{projectCount, plural, one {There is # project, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.} other {There are # projects, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.}}"
+msgstr ""
+
+#: src/app/SaveStatus.tsx
+msgid "{reason} Download your PMO file before you close the tab."
+msgstr ""
+
+#: src/app/SaveStatus.tsx
+msgid "{reason} Your work is still here while this tab stays open."
+msgstr ""
+
+#. A place in the PMO file, such as 'Specimen "S1", field "collection_country"'. {place} uses the PMO's own field names.
+#: src/domain/build/merge.ts
+msgid "{record}, {place}"
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "{remaining, plural, one {and # more like this.} other {and # more like this.}}"
+msgstr ""
+
+#: src/features/table-import/mappingModel.ts
+msgid "{requiredMatched} of {requiredTotal, plural, one {# required field} other {# required fields}} matched, {optionalMatched, plural, one {# optional field} other {# optional fields}} matched."
+msgstr ""
+
+#: src/features/table-import/mappingModel.ts
+msgid "{requiredMatched} of {requiredTotal, plural, one {# required field} other {# required fields}} matched."
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "{rest, plural, one {{shownNames} and # more} other {{shownNames} and # more}}"
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "{rest, plural, one {# more problem is not listed.} other {# more problems are not listed.}}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{rest, plural, one {# more problem with the PMO format is not listed.} other {# more problems with the PMO format are not listed.}}"
+msgstr ""
+
+#. The last item of a list of names that is cut short, such as '"S1", "S2" and 3 more'.
+#: src/domain/build/notices.ts
+msgid "{rest, plural, one {# more} other {# more}}"
+msgstr ""
+
+#. {columnText} names a column, such as 'Column "Target"'. {rowList} is such as 'rows 5 and 9'. {fieldName} is a field, such as 'target name'. The 'an' or 'a' choice follows English spelling; use whatever your language needs.
+#. placeholder {0}: englishArticle(fieldName)
+#. placeholder {1}: englishArticle(fieldName)
+#: src/domain/build/table.ts
+msgid "{rowCount, plural, one {{0, select, an {{columnText} is blank in {rowList}. Every row needs an {fieldName}. Fill it in.} other {{columnText} is blank in {rowList}. Every row needs a {fieldName}. Fill it in.}}} other {{1, select, an {{columnText} is blank in {rowList}. Every row needs an {fieldName}. Fill them in.} other {{columnText} is blank in {rowList}. Every row needs a {fieldName}. Fill them in.}}}}"
+msgstr ""
+
+#. {columnText} names a column, such as 'Column "Present"'. {rowList} is such as 'rows 5 and 9'. {valueList} is a list of quoted values. TRUE, FALSE, yes, no, 1 and 0 are the values a file may hold; keep them in English.
+#: src/domain/build/table.ts
+msgid "{rowCount, plural, one {{columnText} must hold yes or no (such as TRUE, FALSE, yes, no, 1 or 0), but {rowList} holds {valueList}. Correct it, leave it blank, or unmap the column.} other {{columnText} must hold yes or no (such as TRUE, FALSE, yes, no, 1 or 0), but {rowList} hold {valueList}. Correct them, leave them blank, or unmap the column.}}"
+msgstr ""
+
+#: src/features/table-import/TablePreviewPanel.tsx
+msgid "{rowCount, plural, one {{totalRows} row} other {{totalRows} rows}}"
+msgstr ""
+
+#. {rowList} is such as 'rows 5 and 9'.
+#: src/domain/build/microhaplotypes.ts
+msgid "{rowCount, plural, one {# row repeats the sample, target and sequence of an earlier row in the same run: {rowList} (sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.} other {# rows repeat the sample, target and sequence of an earlier row in the same run: {rowList} (such as sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.}}"
+msgstr ""
+
+#. {rowList} is such as 'rows 5 and 9'.
+#: src/domain/build/microhaplotypes.ts
+msgid "{rowCount, plural, one {# row repeats the sample, target and sequence of an earlier row: {rowList} (sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.} other {# rows repeat the sample, target and sequence of an earlier row: {rowList} (such as sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.}}"
+msgstr ""
+
+#: src/features/table-import/TablePreviewPanel.tsx
+msgid "{rowCount, plural, one {First {shownRows} of {totalRows} row} other {First {shownRows} of {totalRows} rows}}"
+msgstr ""
+
+#. Spreadsheet rows, used inside other messages, such as 'is blank in rows 5, 9 and 12'. {rowList} is the list of row numbers.
+#: src/domain/build/notices.ts
+msgid "{rowCount, plural, one {row {rowList}} other {rows {rowList}}}"
+msgstr ""
+
+#: src/ui/FileDropzone.tsx
+msgid "{rows, plural, one {{rowCount} row} other {{rowCount} rows}}"
+msgstr ""
+
+#: src/features/table-import/TablePreviewPanel.tsx
+msgid "{rowSummary}. Highlighted columns are matched to a field."
+msgstr ""
+
+#: src/features/shared/RunNameChoice.tsx
+msgid "{runCount, plural, one {# run: {runNames}, and {more} more.} other {# runs: {runNames}, and {more} more.}}"
+msgstr ""
+
+#: src/features/shared/RunNameChoice.tsx
+msgid "{runCount, plural, one {More than # run: {runNames}, and more.} other {More than # runs: {runNames}, and more.}}"
+msgstr ""
+
+#: src/features/shared/RunNameChoice.tsx
+msgid "{runCount, plural, one {One run: {runNames}.} other {# runs: {runNames}.}}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{runCount, plural, one {The library sample table names the sequencing run {nameList}, but no sequencing run is entered, so the PMO keeps the name without linking it to a run. Add the run on the Sequencing step, or unmap the sequencing run name column.} other {The library sample table names the sequencing runs {nameList}, but no sequencing run is entered, so the PMO keeps the names without linking them to a run. Add the run on the Sequencing step, or unmap the sequencing run name column.}}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{runCount, plural, one {The library sample table names the sequencing run {nameList}, but the Sequencing step is not finished, so the PMO keeps the name without linking it to a run. Add the run on the Sequencing step, or unmap the sequencing run name column.} other {The library sample table names the sequencing runs {nameList}, but the Sequencing step is not finished, so the PMO keeps the names without linking them to a run. Add the run on the Sequencing step, or unmap the sequencing run name column.}}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{runCount, plural, one {There is # sequencing run, so each library sample needs to name its run. Add a library sample table with a sequencing run name column on the Library samples step.} other {There are # sequencing runs, so each library sample needs to name its run. Add a library sample table with a sequencing run name column on the Library samples step.}}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{runCount, plural, one {There is # sequencing run, so each library sample needs to name its run. Choose the sequencing run name column of the library sample table, and fill it in for every library sample.} other {There are # sequencing runs, so each library sample needs to name its run. Choose the sequencing run name column of the library sample table, and fill it in for every library sample.}}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{sampleCount, plural, one {Sequencing run \"{run}\" is applied to all # library sample, because the library sample table names no sequencing run.} other {Sequencing run \"{run}\" is applied to all # library samples, because the library sample table names no sequencing run.}}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{sampleCount, plural, one {Sequencing run \"{run}\" is applied to all # library sample, because there is no library sample table to name a run for each.} other {Sequencing run \"{run}\" is applied to all # library samples, because there is no library sample table to name a run for each.}}"
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "{samples, plural, one {# sample} other {# samples}} over {stages, plural, one {# stage} other {# stages}}"
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "{samples, plural, one {# sample} other {# samples}} over {stages, plural, one {# stage} other {# stages}} ({stageNames})"
+msgstr ""
+
+#. {section} is the name of a step, such as 'Specimens'.
+#: src/domain/build/merge.ts
+msgid "{section} is not finished, so it is left out of the PMO."
+msgstr ""
+
+#: src/ui/DataTable.tsx
+msgid "{shown, plural, one {{shownCount} row} other {{shownCount} rows}}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{specimenCount, plural, one {Project \"{project}\" is applied to all # specimen, because the specimen table names no project.} other {Project \"{project}\" is applied to all # specimens, because the specimen table names no project.}}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "{specimenCount, plural, one {Project \"{project}\" is applied to all # specimen, because there is no specimen table to name a project for each.} other {Project \"{project}\" is applied to all # specimens, because there is no specimen table to name a project for each.}}"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "{specimens, plural, one {{fieldLabel}, in # specimen} other {{fieldLabel}, in # specimens}}"
+msgstr ""
+
+#: src/features/panel/PanelStep.tsx
+msgid "{targetCount} before merging"
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "{targets, plural, one {# target, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.} other {# targets, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.}}"
+msgstr ""
+
+#. Joins what is wrong with one value of the PMO, as in 'should be integer, and it has characters the PMO format does not allow there'.
+#: src/domain/build/merge.ts
+msgid "{text}, and it {reason}"
+msgstr ""
+
+#: src/features/table-import/mappingModel.ts
+msgid "{toCheck, plural, one {# match to check.} other {# matches to check.}}"
+msgstr ""
+
+#. Read out before a message, such as Warning:
+#: src/ui/Callout.tsx
+msgid "{toneLabel}:"
+msgstr ""
+
+#. Advice for fields that only work together: match all of them to columns, or none.
+#: src/domain/build/notices.ts
+msgid "{total, plural, =2 {Map both or neither.} =3 {Map all three or none.} =4 {Map all four or none.} =5 {Map all five or none.} =6 {Map all six or none.} other {Map all # or none.}}"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "{total, plural, one {# method: {methodNames}, and more. Runs refer to a method by this name.} other {# methods: {methodNames}, and more. Runs refer to a method by this name.}}"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "{total, plural, one {# method: {methodNames}. Runs refer to a method by this name.} other {# methods: {methodNames}. Runs refer to a method by this name.}}"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "{total, plural, one {More than # method: {methodNames}, and more. Runs refer to a method by this name.} other {More than # methods: {methodNames}, and more. Runs refer to a method by this name.}}"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "{total, plural, one {More than # method: {methodNames}. Runs refer to a method by this name.} other {More than # methods: {methodNames}. Runs refer to a method by this name.}}"
+msgstr ""
+
+#: src/ui/DataTable.tsx
+msgid "{total, plural, one {Showing {shownCount} of {totalCount} row} other {Showing {shownCount} of {totalCount} rows}}"
+msgstr ""
+
+#: src/features/review/SectionChecklist.tsx
+msgid "{warnings, plural, one {{line}. # warning to check.} other {{line}. # warnings to check.}}"
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "{warnings, plural, one {Your PMO can be downloaded, but it does not fully match the PMO format, so other tools may not read it. See the # warning below.} other {Your PMO can be downloaded, but it does not fully match the PMO format, so other tools may not read it. See the # warnings below.}}"
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "{warnings, plural, one {Your PMO can be downloaded. There is # warning worth a look below.} other {Your PMO can be downloaded. There are # warnings worth a look below.}}"
+msgstr ""
+
+#. {where} is a place in the PMO, such as 'Specimen "S1", field "collection_country"'.
+#: src/domain/build/merge.ts
+msgid "{where} does not match the PMO format."
+msgstr ""
+
+#. {where} is a place in the PMO, such as 'Specimen "S1", field "collection_country"'. {section} is the name of a step, such as 'Specimens'.
+#: src/domain/build/merge.ts
+msgid "{where} does not match the PMO format. Check it on the {section} step."
+msgstr ""
+
+#. {where} is a place in the PMO, such as 'Specimen "S1", field "collection_country"'. {value} is the value there.
+#: src/domain/build/merge.ts
+msgid "{where} is {value}, which has characters the PMO format does not allow there."
+msgstr ""
+
+#. {where} is a place in the PMO, such as 'Specimen "S1", field "host_taxon_id"'. {value} is the value there. {reasonText} says what is wrong, such as 'should be integer'.
+#: src/domain/build/merge.ts
+msgid "{where} is {value}. It {reasonText}."
+msgstr ""
+
+#. {where} is a place in the PMO, such as 'Specimen "S1", field "collection_country"'.
+#: src/domain/build/merge.ts
+msgid "{where} is blank. The PMO format needs a value there."
+msgstr ""
+
+#. {where} is a place in the PMO, such as 'Specimen "S1"'. {field} is a PMO field name.
+#: src/domain/build/merge.ts
+msgid "{where} is missing {field}."
+msgstr ""
+
+#. {where} is a place in the PMO, such as 'Specimen "S1", field "host_taxon_id"'. {type} is a PMO value type, in English, such as 'integer'. {value} is the value there.
+#: src/domain/build/merge.ts
+msgid "{where} should be {type}, but is {value}."
+msgstr ""
+
+#. {where} is a place in the PMO, such as 'Specimen "S1"'. {reasonText} says what is wrong, such as 'is missing specimen_name'.
+#: src/domain/build/merge.ts
+msgid "{where}. It {reasonText}."
+msgstr ""
+
+#: src/ui/FileDropzone.tsx
+msgid "<0>. Accepts</0> {fileTypes}"
+msgstr ""
+
+#: src/features/records/NameCoverage.tsx
+msgid "<0>{shownNames}</0> and {more} more"
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "<0>{stepTitle}</0> has problems to fix."
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "<0>{stepTitle}</0> is needed and has nothing in it yet."
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "<0>{stepTitle}</0> is needed and is not finished yet."
+msgstr ""
+
+#. Under a column name: the field it is matched to
+#: src/ui/DataTable.tsx
+msgid "<0>mapped to </0>{mapped}"
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "<0>Panel</0> must match the name of a panel on the Panel step."
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "<0>Sequencing run</0>, if you have it, must match a run on the Sequencing step."
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "<0>Specimen name</0> must match a name in the table on the Specimens step."
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "<0>Your data stays on this device.</0> Files are read inside this browser and are never uploaded."
+msgstr ""
+
+#. Stands for a column inside other messages, when its name is not known.
+#: src/domain/build/notices.ts
+msgid "a column"
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "A column holds each run's method name, as given in the methods above."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "A curator of the {communityName} community checks each record before it joins the community's PMO files. Nothing goes to Zenodo until you choose to deposit below."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "A curator of the {communityName} community checks each record before it joins the community's PMO files. PMO Builder sends nothing to Zenodo: you upload the file there yourself."
+msgstr ""
+
+#. Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop
+#: src/domain/fields/records.ts
+msgid "a date written YYYY-MM or YYYY-MM-DD"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "A deposit is under way."
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "A different panel called \"{name}\" is already saved in this browser, saved {savedDate}. Replacing it keeps one panel with this name. To keep both, give this panel another name first."
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "A different panel called \"{name}\" is already saved in this browser. Replacing it keeps one panel with this name. To keep both, give this panel another name first."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "A draft was started. You can finish it on Zenodo, or delete it there and try again."
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "A library sample is one sequencing library made from a specimen. A specimen sequenced twice has two library samples. The library sample name is the sample name in your allele table."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "A link to the method or kit used to amplify nucleic acids."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "A link to the method or kit used to extract nucleic acids."
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "A location needs the chromosome, start and end columns. Map all three, or unmap the strand and reference sequence columns."
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "A method is a pipeline: the programs it ran and their versions. Start here, since each run names its method."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "A name for the allele."
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "A name for the pipeline, such as MAD4HATTER v0.2. Needed to tell several apart."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "A name for the specimen that is unique in this table."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "A name for this run of the pipeline, as used in the allele table."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "A name for this sequencing run, as the library sample table gives it."
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "A needed step is not finished"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "A new record"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "A new version of a record I published"
+msgstr ""
+
+#: src/features/review/WhatNext.tsx
+msgid "A PMO file holds your samples, panel and allele calls in one shared format, so you can share them, archive them, or open them in other analysis tools. Read about the format and the tools that use it in the <0>PMO documentation</0>."
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "A PMO file in version {publishableVersion}, saved as .json or .json.gz."
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "A PMO needs an allele table and a panel. Nothing has been added yet."
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "A pseudo-CIGAR column is mapped, so the location it refers to is needed too. Map the chromosome, start and end columns (or the pseudo-CIGAR ones), or unmap the pseudo-CIGAR column."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "A published record is public and cannot be withdrawn. Check that you may share each of these. To leave one out, set its column to None on the Specimens step."
+msgstr ""
+
+#. Stands for a field of the PMO whose name is not known.
+#: src/domain/build/merge.ts
+msgid "a required field"
+msgstr ""
+
+#. Stands for a row inside other messages, when its number is not known.
+#: src/domain/build/notices.ts
+msgid "a row"
+msgstr ""
+
+#. {column} names a column, such as 'column "ASV"'. {rows} is such as 'rows 5 and 9'.
+#: src/domain/build/notices.ts
+msgid "A row for target \"{target}\" has no sequence in {column} ({rows})."
+msgstr ""
+
+#. {column} names a column, such as 'column "ASV"'.
+#: src/domain/build/notices.ts
+msgid "A row for target \"{target}\" has no sequence in {column}."
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "A run is one time the pipeline was run. Name runs as the allele table does, so its alleles are linked to the method that called them."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "A short code describing how the allele differs from the reference."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "A short description of the project."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "A short description of what this step does."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "A short name for the project, which no other project may use."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "A short note on how the pseudo-CIGAR was generated."
+msgstr ""
+
+#: src/features/specimens/SpecimensStep.tsx
+msgid "A specimen is the physical sample as it was collected, such as a blood spot, with where and when it was taken and from whom. A library sample is one sequencing of a specimen, so one specimen can have several library samples."
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+msgid "A table with one row for each reference genome, for panels that use several."
+msgstr ""
+
+#. Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop
+#: src/domain/fields/records.ts
+msgid "a web address starting with http://, https:// or ftp://"
+msgstr ""
+
+#. Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop
+#: src/domain/fields/records.ts
+msgid "a web address starting with http://, https:// or ftp://, or NA"
+msgstr ""
+
+#: src/features/published/DatasetPage.tsx
+msgid "About the data"
+msgstr ""
+
+#: src/features/records/NameCoverage.tsx
+msgid "Add {onlyName}"
+msgstr ""
+
+#: src/features/records/ExtraDetails.tsx
+msgid "Add a detail"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Add a method"
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Add a method above first."
+msgstr ""
+
+#: src/features/project/ProjectStep.tsx
+msgid "Add a project"
+msgstr ""
+
+#: src/features/records/NameCoverage.tsx
+msgid "Add a record for each"
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Add a run"
+msgstr ""
+
+#: src/features/sequencing/SequencingStep.tsx
+msgid "Add a sequencing run"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Add a step"
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Add a target table instead"
+msgstr ""
+
+#: src/features/panel/PanelStep.tsx
+msgid "Add another panel"
+msgstr ""
+
+#: src/features/project/ProjectStep.tsx
+msgid "Add another project"
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Add each run of the pipeline, named as in the allele table."
+msgstr ""
+
+#: src/app/steps.ts
+msgid "Add how many reads each sample kept at each stage of the pipeline."
+msgstr ""
+
+#: src/features/sequencing/SequencingStep.tsx
+msgid "Add one for each sequencing run, with its platform, instrument and library details."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Add the authors, read the draft through and choose Submit for review. It is published once a curator of the community accepts it."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Add the file, choose Dataset as the resource type, and copy in the title, description and keywords. Add each keyword on its own. Choose a licence. The community prefers CC BY 4.0."
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Add the pipeline that produced your allele table: its programs and versions."
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Add the program this method ran, with its version."
+msgstr ""
+
+#: src/features/project/ProjectStep.tsx
+msgid "Add the project this data belongs to: its name and a short description."
+msgstr ""
+
+#: src/app/steps.ts
+msgid "Add the targets and primers of your panel, and the reference genome if you have it."
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "Add the totals table first. You can then add reads at each stage here, if your pipeline reports them."
+msgstr ""
+
+#: src/features/specimens/SpecimensStep.tsx
+msgid "Add them there to keep the link."
+msgstr ""
+
+#: src/app/steps.ts
+msgid "Add your allele table: the microhaplotypes found in each sample and their reads."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Additional arguments"
+msgstr ""
+
+#: src/features/review/zenodo.ts
+msgid "Age"
+msgstr ""
+
+#: src/features/shared/NameCheck.tsx
+msgid "All found on the {stepTitle} step."
+msgstr ""
+
+#: src/features/published/DatasetPage.tsx
+msgid "All published PMOs"
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "All runs used the same pipeline."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Allele name"
+msgstr ""
+
+#. Names the table of microhaplotypes inside other messages, such as 'The allele table has no rows.'
+#: src/domain/build/microhaplotypes.ts
+#: src/features/bioinformatics/RunsPart.tsx
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "allele table"
+msgstr ""
+
+#: src/app/HomePage.tsx
+#: src/domain/fields/microhaplotypes.ts
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "Allele table"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Alleles counted twice for one sample"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Alleles listed twice"
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "Already have a PMO file, built here earlier or with pmotools? Check it and deposit it in the <0>{communityName} community</0> on Zenodo. The file is checked in this browser, and nothing is sent until you choose to deposit."
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "Already have a PMO file, built here earlier or with pmotools? Check it and deposit it on Zenodo. The file is checked in this browser, and nothing is sent until you choose to deposit."
+msgstr ""
+
+#: src/features/table-import/mappingModel.ts
+msgid "Also matched to {fieldLabel}. Untick it here."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Amplification date"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Amplification method link"
+msgstr ""
+
+#: src/domain/build/records.ts
+msgid "An extra field with the value \"{value}\" has no name."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "An identifier for the person or animal the specimen came from."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Annotation link"
+msgstr ""
+
+#. Field label: extra labels for an allele
+#: src/domain/fields/microhaplotypes.ts
+msgid "Annotations"
+msgstr ""
+
+#. Stands for a kind of value in the PMO, such as 'integer', when it is not known.
+#: src/domain/build/merge.ts
+msgid "another type"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Any country"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Any drugs the host took, separated by commas."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Any notes about the specimen, separated by commas."
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Any panel"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Any year"
+msgstr ""
+
+#: src/features/records/ExtraDetails.tsx
+msgid "Anything else worth keeping, as a name and a value. Each is added to the PMO under its name."
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Arguments and link"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Arguments that differ from the program's defaults."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Asking the community to review it"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "At most two small records are sent per visit. They say things like \"the panel step was opened\", \"a table of 100 to 999 rows was imported\" or \"a deposit on Zenodo was started\". They never contain your file names, column names, sample names, cell values or error messages, or which published dataset you looked at, and they carry no identifier, so two visits cannot be linked."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Authors"
+msgstr ""
+
+#: src/app/StepPage.tsx
+msgid "Back"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Base quality"
+msgstr ""
+
+#. Step title, shown in the sidebar and as the page heading
+#. The name of a step of the app
+#: src/app/steps.ts
+#: src/domain/build/merge.ts
+msgid "Bioinformatics"
+msgstr ""
+
+#: src/domain/fields/study.ts
+msgid "Bioinformatics methods"
+msgstr ""
+
+#. A record type in the PMO, starting a place in the file, such as 'Bioinformatics run "R1"'.
+#: src/domain/build/merge.ts
+msgid "Bioinformatics run"
+msgstr ""
+
+#: src/features/shared/RunNameChoice.tsx
+msgid "Bioinformatics run name"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Bioinformatics run records in the PMO have a problem. Check the Bioinformatics step."
+msgstr ""
+
+#: src/domain/fields/study.ts
+#: src/features/review/PmoContents.tsx
+msgid "Bioinformatics runs"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Bioinformatics runs are entered, but no method. Add the method the runs used on the Bioinformatics step."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Bioinformatics runs are entered, but the allele table gives no run name. Set the run name on the Microhaplotypes step."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Bioinformatics runs are entered, but the read counts give no run name. Set the run name on the Read counts step."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "BioProject accession"
+msgstr ""
+
+#. Shown in an empty table cell
+#: src/ui/DataTable.tsx
+msgid "blank"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Broad environment"
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+#: src/features/published/PublishedPage.tsx
+msgid "Build a PMO"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Build a PMO from your tables, or publish a PMO file you already have."
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Build a PMO from your tables, or publish a PMO file you already have. It appears here once a curator accepts it."
+msgstr ""
+
+#. The table of reads per sample, target and processing stage, named inside other messages.
+#. The table of reads per sample, target and processing stage, named inside other messages.
+#: src/domain/build/notices.ts
+#: src/domain/build/readCounts.ts
+msgid "by-stage table"
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "By-stage table"
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+#: src/features/review/PublishToZenodo.tsx
+#: src/ui/ConfirmDialog.tsx
+msgid "Cancel"
+msgstr ""
+
+#: src/app/privacy/UsageNotice.tsx
+msgid "Change this any time under “Your data stays on this device” at the top."
+msgstr ""
+
+#: src/app/OtherTabNotice.tsx
+msgid "Changes you make here are not saved, so the two tabs do not overwrite each other. Use this tab instead to carry on here: the other tab saves your work and stops saving."
+msgstr ""
+
+#: src/app/SaveStatus.tsx
+msgid "Changes you make here are not saved, so the two tabs do not overwrite each other. Use this tab instead to carry on here."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Check the authors, read the draft through and choose Submit for review. It is published once a curator of the community accepts it."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Check what you are sharing"
+msgstr ""
+
+#: src/features/published/CatalogueProblem.tsx
+msgid "Check your connection and reload the page."
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "Checking the file"
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "Checking your draft"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Chief scientist"
+msgstr ""
+
+#: src/ui/Combobox.tsx
+#: src/ui/Select.tsx
+msgid "Choose"
+msgstr ""
+
+#: src/ui/FileDropzone.tsx
+msgid "Choose {fileLabel} file"
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+#: src/features/shared/RunNameChoice.tsx
+#: src/features/table-import/FieldRow.tsx
+msgid "Choose a column"
+msgstr ""
+
+#: src/features/table-import/mappingModel.ts
+msgid "Choose a column. This field is needed to build the table."
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Choose a method"
+msgstr ""
+
+#: src/domain/build/panel.ts
+msgid "Choose a saved panel."
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Choose another saved panel"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Choose Submit for review. The record is published once a curator accepts it."
+msgstr ""
+
+#. {table} is the name of a table, such as 'allele table'. {field} is a field, such as 'sample name'.
+#: src/domain/build/notices.ts
+msgid "Choose the column of the {table} that holds the {field}."
+msgstr ""
+
+#. {table} is the name of a table, such as 'allele table'.
+#: src/domain/build/runName.ts
+msgid "Choose the column of the {table} that holds the run name."
+msgstr ""
+
+#: src/domain/build/bioinformatics.ts
+msgid "Choose the column of the runs table that names each run's method."
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Choose the method this run used."
+msgstr ""
+
+#. Field label: the chromosome a target or allele lies on
+#. Field label: the chromosome a target or allele lies on
+#: src/domain/fields/microhaplotypes.ts
+#: src/domain/fields/panel.ts
+msgid "Chromosome"
+msgstr ""
+
+#. Field label: the chromosomes of a reference genome
+#: src/domain/fields/records.ts
+msgid "Chromosomes"
+msgstr ""
+
+#. Completes "Copy {label}": the citation
+#: src/features/published/DatasetPage.tsx
+msgid "citation"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Clear the filters"
+msgstr ""
+
+#: src/app/StepNav.tsx
+msgid "Clears this draft for a new PMO."
+msgstr ""
+
+#: src/ui/Dialog.tsx
+msgid "Close"
+msgstr ""
+
+#: src/app/Layout.tsx
+msgid "Close the step list"
+msgstr ""
+
+#. Stat label: the years the specimens were collected
+#: src/features/published/DatasetPage.tsx
+#: src/features/published/PublishedPage.tsx
+#: src/features/specimens/SpecimensStep.tsx
+msgid "Collected"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Collected in"
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/samples.ts
+msgid "Collection"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Collection date"
+msgstr ""
+
+#: src/features/review/zenodo.ts
+msgid "Collection dates that name the day"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Collection method"
+msgstr ""
+
+#. Names a column of the user's table inside other messages, such as 'column "SampleID" must hold whole numbers'. {column} is the column's name in the file.
+#: src/domain/build/notices.ts
+msgid "column \"{column}\""
+msgstr ""
+
+#. Names a column of the user's table inside other messages. {column} is the column's name in the file; {field} is the field it is matched to, such as 'sample name'.
+#: src/domain/build/notices.ts
+msgid "column \"{column}\" ({field})"
+msgstr ""
+
+#. {field} is a field, such as 'sample name'.
+#: src/domain/build/notices.ts
+msgid "Column \"{column}\" is chosen for {field} and also to carry into the PMO as it is. Untick it, or choose another column for the field."
+msgstr ""
+
+#. {column} is a column of the user's table. {fields} is a list of fields, such as 'sample name and target name'.
+#: src/domain/build/notices.ts
+msgid "Column \"{column}\" is chosen for {fields}. Each column can feed only one field."
+msgstr ""
+
+#. {unknown} and {known} are lists of quoted method names.
+#: src/domain/build/bioinformatics.ts
+msgid "Column \"{column}\" names methods that are not in the methods: {unknown}. The method names are {known}."
+msgstr ""
+
+#. {rows} is such as 'rows 5 and 9'.
+#: src/domain/build/bioinformatics.ts
+msgid "Column \"{column}\" names the method of each step, but it is blank in {rows}."
+msgstr ""
+
+#. {issueTable} is the name of a table, such as 'totals table'. {rows} is such as 'row 5'.
+#: src/domain/build/notices.ts
+msgid "Column \"{column}\" of the {issueTable} needs a whole number in {rows}, but holds \"{value}\"."
+msgstr ""
+
+#. {issueTable} is the name of a table, such as 'totals table'.
+#: src/domain/build/notices.ts
+msgid "Column \"{column}\" of the {issueTable} needs a whole number, but holds \"{value}\"."
+msgstr ""
+
+#. "Bioinformatics run name" is the label of a field on the page; use the same words as there.
+#: src/domain/build/microhaplotypes.ts
+msgid "Column \"{runLike}\" tells them apart, so the table probably holds several analysis runs. Choose that column under \"Bioinformatics run name\"."
+msgstr ""
+
+#. Field label: notes about a specimen
+#: src/domain/fields/samples.ts
+msgid "Comments"
+msgstr ""
+
+#. Badge: every required field of the record is filled in
+#: src/features/records/RecordBadge.tsx
+msgid "Complete"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Continue where you left off"
+msgstr ""
+
+#. Field label: people who contributed to the project
+#: src/domain/fields/records.ts
+msgid "Contributors"
+msgstr ""
+
+#: src/features/review/zenodo.ts
+msgid "Coordinates"
+msgstr ""
+
+#. After a keyword was copied to the clipboard
+#. Button, after the value was copied to the clipboard
+#: src/features/review/PublishToZenodo.tsx
+#: src/features/shared/CopyValue.tsx
+#: src/ui/CodeBlock.tsx
+msgid "Copied"
+msgstr ""
+
+#. Button: copy the value to the clipboard
+#: src/features/shared/CopyValue.tsx
+#: src/ui/CodeBlock.tsx
+msgid "Copy"
+msgstr ""
+
+#: src/features/shared/CopyValue.tsx
+msgid "Copy {label}"
+msgstr ""
+
+#: src/features/records/RecordList.tsx
+msgid "Copy {name} into a new {noun}"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Copy keyword {keyword}"
+msgstr ""
+
+#. Field label: the country a specimen was collected in
+#: src/domain/fields/samples.ts
+#: src/features/published/PublishedPage.tsx
+msgid "Country"
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/microhaplotypes.ts
+msgid "Counts"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Creating the draft"
+msgstr ""
+
+#. Theme name
+#: src/app/TopBar.tsx
+msgid "Dark"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Datasets"
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Date and other details"
+msgstr ""
+
+#: src/features/panel/SavedPanelList.tsx
+msgid "Delete panel"
+msgstr ""
+
+#: src/features/panel/SavedPanelList.tsx
+msgid "Delete the saved panel \"{deletingName}\"?"
+msgstr ""
+
+#: src/features/panel/SavedPanelList.tsx
+msgid "Delete the saved panel {panelName}"
+msgstr ""
+
+#. Heading: send the file to Zenodo
+#: src/features/review/PublishToZenodo.tsx
+msgid "Deposit"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Deposit as"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Deposit in the {communityName} community"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Depositing on Zenodo"
+msgstr ""
+
+#: src/app/steps.ts
+msgid "Describe each specimen: where and when it was collected, and from which host."
+msgstr ""
+
+#: src/app/steps.ts
+msgid "Describe the pipeline and the runs that produced your allele table."
+msgstr ""
+
+#. Completes "Copy {label}": the record's description
+#: src/features/review/PublishToZenodo.tsx
+msgid "description"
+msgstr ""
+
+#. Field label: a short description
+#. Field label: a short description
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/microhaplotypes.ts
+#: src/domain/fields/records.ts
+#: src/features/review/PublishToZenodo.tsx
+msgid "Description"
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/records.ts
+msgid "Details"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Details to copy"
+msgstr ""
+
+#: src/features/review/ThingsToCheck.tsx
+msgid "Details: place in the PMO file <0>{path}</0>"
+msgstr ""
+
+#. A part of the PMO, starting a place in the file, such as 'Detected microhaplotypes 1'.
+#: src/domain/build/merge.ts
+msgid "Detected microhaplotypes"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Detected microhaplotypes records in the PMO have a problem. Check the Microhaplotypes step."
+msgstr ""
+
+#: src/ui/Toast.tsx
+msgid "Dismiss"
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "Distinct alleles"
+msgstr ""
+
+#. Field label: an area within a region
+#: src/domain/fields/samples.ts
+msgid "District"
+msgstr ""
+
+#. Part of a sentence: follows 'It', as in 'It does not match the PMO format'.
+#: src/domain/build/merge.ts
+msgid "does not match the PMO format"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Does not match the PMO format"
+msgstr ""
+
+#: src/app/privacy/UsageNotice.tsx
+msgid "Don't send"
+msgstr ""
+
+#. Read out before a success message
+#: src/ui/Callout.tsx
+msgid "Done"
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "Download as plain JSON"
+msgstr ""
+
+#: src/features/published/DatasetPage.tsx
+msgid "Download from Zenodo"
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "Download PMO"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Download PMO for Zenodo"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Download the Excel template"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Download the PMO file."
+msgstr ""
+
+#: src/ui/FileDropzone.tsx
+msgid "Drag a file here or <0>choose a file</0>"
+msgstr ""
+
+#: src/ui/FileDropzone.tsx
+msgid "Drop to use this file"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Drugs taken"
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "Each field of the PMO is matched to a column of your table. Check the matches and change any that are wrong."
+msgstr ""
+
+#: src/domain/build/panel.ts
+msgid "Each panel needs its own name, but {panelNames} is used more than once."
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Each program the pipeline ran, in order. Most pipelines need only the main one."
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "Each row links to other steps by name:"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Each target in your panel with its forward and reverse primer."
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Each value must be one of the method names: {methodNames}."
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Each value must be the name of a method above."
+msgstr ""
+
+#. Field label: where an allele ends on the chromosome
+#: src/domain/fields/microhaplotypes.ts
+msgid "End"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Enrichment, screening or normalisation applied to the libraries."
+msgstr ""
+
+#: src/ui/NumberField.tsx
+msgid "Enter {max} or less."
+msgstr ""
+
+#: src/ui/NumberField.tsx
+msgid "Enter {min} or more."
+msgstr ""
+
+#: src/ui/NumberField.tsx
+msgid "Enter a number."
+msgstr ""
+
+#: src/ui/NumberField.tsx
+msgid "Enter a whole number."
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+msgid "Enter by hand"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Enter the record's Zenodo address, such as https://zenodo.org/records/12345678, or its DOI."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Environment medium"
+msgstr ""
+
+#. Read out before an error message
+#: src/ui/Callout.tsx
+msgid "Error"
+msgstr ""
+
+#: src/features/records/NameCoverage.tsx
+msgid "Every {noun} the {source} names has a record here."
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "Every count came from the same analysis run."
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "Every row came from the same analysis run."
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Every row is one step of a single method."
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Every sample is put on the first panel"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Everything you type and every column you match."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Experiment accession"
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "Extra columns"
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "Extra columns are stored with each detection: one sample's reads of one allele. Tick the ones that describe the allele itself, the same in every sample, to store them once with the allele instead."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Extra labels for the allele, such as wildtype, separated by commas."
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/records.ts
+msgid "Extraction and amplification"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Extraction date"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Extraction method link"
+msgstr ""
+
+#. Sidebar heading: optional extra steps
+#: src/app/steps.ts
+msgid "Extras"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "FASTQ location"
+msgstr ""
+
+#. A field of the PMO, by its name in the file, such as 'field "seq"'.
+#: src/domain/build/merge.ts
+msgid "field \"{segment}\""
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Fields the PMO format needs are missing"
+msgstr ""
+
+#: src/features/records/checks.ts
+msgid "Fill in the {fieldLabel}. The PMO needs it."
+msgstr ""
+
+#: src/domain/build/panel.ts
+msgid "Fill in the genome, or choose no genome."
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+msgid "Fill this in, or set the reference genome to None."
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "Filter by name or column"
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "Filter optional fields"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Finding the community on Zenodo"
+msgstr ""
+
+#. Sidebar heading: the last step
+#: src/app/steps.ts
+msgid "Finish"
+msgstr ""
+
+#: src/features/review/ThingsToCheck.tsx
+msgid "Fix on {stepTitle}"
+msgstr ""
+
+#. {sections} is a list of step names, such as 'Panel and Specimens'.
+#: src/domain/build/merge.ts
+msgid "Fix the problems in {sections} before the PMO can be built."
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "For example {example}"
+msgstr ""
+
+#: src/features/panel/PanelStep.tsx
+msgid "For runs that use more than one panel. Panels that share targets are merged."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Forward primer"
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Forward primer end"
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Forward primer start"
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "Found by comparing tables"
+msgstr ""
+
+#: src/features/review/zenodo.ts
+msgid "Free-text comments"
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+#: src/features/records/EntryModeSwitch.tsx
+msgid "From a file"
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "From the Bioinformatics step:"
+msgstr ""
+
+#: src/features/panel/PanelNameField.tsx
+msgid "From the library sample table:"
+msgstr ""
+
+#. Field label: the gene a target covers
+#: src/domain/fields/panel.ts
+msgid "Gene"
+msgstr ""
+
+#. A record type in the PMO, starting a place in the file, such as 'Genome "3D7"'.
+#: src/domain/build/merge.ts
+msgid "Genome"
+msgstr ""
+
+#: src/domain/build/panel.ts
+msgid "Genome {position}"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Genome link"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Genome name"
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Genome number"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Genome records in the PMO have a problem. Check the Panel step."
+msgstr ""
+
+#. Names a table inside other messages, such as 'The genome table has no rows.'
+#: src/domain/build/panel.ts
+msgid "genome table"
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+msgid "Genome table"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Genome version"
+msgstr ""
+
+#: src/features/review/PmoContents.tsx
+msgid "Genomes"
+msgstr ""
+
+#: src/domain/build/panel.ts
+msgid "Give the panel a name."
+msgstr ""
+
+#: src/features/records/checks.ts
+msgid "Give this detail a name."
+msgstr ""
+
+#: src/app/StepLink.tsx
+#: src/features/review/VerdictCard.tsx
+msgid "Go to {stepTitle}"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Go to Specimens"
+msgstr ""
+
+#: src/app/ErrorBoundary.tsx
+#: src/app/NotFoundPage.tsx
+msgid "Go to the home page"
+msgstr ""
+
+#: src/app/privacy/PrivacyIndicator.tsx
+msgid "Got it"
+msgstr ""
+
+#. Part of a sentence: follows 'It', as in 'It has characters ...'.
+#: src/domain/build/merge.ts
+msgid "has characters the PMO format does not allow there"
+msgstr ""
+
+#. Status of a step
+#: src/features/review/SectionChecklist.tsx
+#: src/ui/StatusBadge.tsx
+msgid "Has errors"
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "Has problems to fix before a PMO can be built."
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Have data to share?"
+msgstr ""
+
+#: src/features/project/ProjectStep.tsx
+msgid "Have several projects in a spreadsheet? Use a file."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Have your file ready: <0>{fileName}</0>."
+msgstr ""
+
+#: src/app/privacy/UsageNotice.tsx
+msgid "Help improve PMO Builder"
+msgstr ""
+
+#: src/app/StepNav.tsx
+#: src/app/StepPage.tsx
+msgid "Home"
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/samples.ts
+msgid "Host"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Host age"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Host ID"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Host sex"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Host taxon ID"
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "How is the method given?"
+msgstr ""
+
+#: src/features/shared/RunNameChoice.tsx
+msgid "How is the run named?"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "How long each masked stretch of the sequence is, separated by commas."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "How long the replacement for each masked stretch is, separated by commas."
+msgstr ""
+
+#: src/domain/fields/readCounts.ts
+msgid "How many reads came off the sequencer for this sample."
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "How many reads each sample kept at each step of your pipeline."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "How many reads support the allele in this sample."
+msgstr ""
+
+#: src/domain/fields/readCounts.ts
+msgid "How many reads were left for this sample and target at this stage."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "How many times the host has been pregnant."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "How many unique molecular identifiers support the allele."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "How reads are arranged: PAIRED or SINGLE."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "How the material was selected, such as PCR or RANDOM."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "How the parasite density was measured, such as microscopy or qPCR."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "How the parasite density was measured."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "How the pseudo-CIGAR was made"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "How the specimen was collected, such as dried blood spot or whole blood."
+msgstr ""
+
+#: src/features/published/DatasetPage.tsx
+msgid "How to cite"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "How to enter methods"
+msgstr ""
+
+#: src/features/project/ProjectStep.tsx
+msgid "How to enter projects"
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "How to enter runs"
+msgstr ""
+
+#: src/features/sequencing/SequencingStep.tsx
+msgid "How to enter sequencing runs"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "How to publish"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "If the table holds more than one pipeline, choose the column that names each row's method."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "If you choose to deposit on the review step, you sign in to Zenodo in its own window, and your PMO file, the record details and the authors you list go from this browser straight to Zenodo. Nothing goes to Zenodo before you choose that, and nothing passes through a server of ours. The sign-in is forgotten when you close or reload the page."
+msgstr ""
+
+#: src/features/published/DatasetPage.tsx
+msgid "If you use this data, cite the record so its authors get the credit."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "If your browser does not let the app store data, as in some private windows, the draft lasts only until you close or reload the page."
+msgstr ""
+
+#: src/domain/build/microhaplotypes.ts
+msgid "Import the allele table."
+msgstr ""
+
+#: src/domain/build/panel.ts
+msgid "Import the genome table, or choose no genome."
+msgstr ""
+
+#: src/domain/build/readCounts.ts
+msgid "Import the table of total reads per sample."
+msgstr ""
+
+#: src/domain/build/panel.ts
+msgid "Import the target table."
+msgstr ""
+
+#. A place in the PMO file, starting a sentence, such as 'In the PMO, field "pmo_header"'. {place} uses the PMO's own field names.
+#: src/domain/build/merge.ts
+msgid "In the PMO, {place}"
+msgstr ""
+
+#. Status of a step
+#: src/ui/StatusBadge.tsx
+msgid "Incomplete"
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Insert end"
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Insert start"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Instrument model"
+msgstr ""
+
+#. Part of a sentence: follows 'It', as in 'It is missing specimen_name'. {field} is a PMO field name.
+#: src/domain/build/merge.ts
+msgid "is missing {field}"
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "It cannot be published as it is. Build the PMO again from your tables in PMO Builder, which checks it as you go."
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "It is offered on this page the next time you build a PMO in this browser."
+msgstr ""
+
+#: src/features/panel/SavedPanelList.tsx
+msgid "It is removed from this browser and will not be offered again. Drafts that already use it keep their targets."
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "It matches PMO version {publishableVersion} and its tables link up."
+msgstr ""
+
+#: src/features/published/DatasetPage.tsx
+msgid "It may have been withdrawn from the community, or the address may be mistyped."
+msgstr ""
+
+#: src/app/RestoreNotice.tsx
+msgid "It was kept aside in this browser and a new draft was started. Load your tables again to carry on."
+msgstr ""
+
+#. An entry of a list in the PMO, by its position, such as 'item 2'.
+#: src/domain/build/merge.ts
+msgid "item {position}"
+msgstr ""
+
+#: src/features/panel/PanelStep.tsx
+msgid "Its target table, genome and column choices are removed from this draft. Saved panels stay in this browser."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Its Zenodo address or DOI, such as https://zenodo.org/records/12345678"
+msgstr ""
+
+#: src/features/table-import/FieldRow.tsx
+msgid "Keep it"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Keywords"
+msgstr ""
+
+#: src/features/sequencing/SequencingStep.tsx
+msgid "Kit, dates and other details"
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Labels for the kind of target, such as diversity or resistance, separated by commas."
+msgstr ""
+
+#: src/app/TopBar.tsx
+msgid "Language"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Latitude and longitude"
+msgstr ""
+
+#: src/features/review/SectionChecklist.tsx
+msgid "Left out"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Left out because they are not finished"
+msgstr ""
+
+#. Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop
+#. Finishes a sentence such as 'Panel name can only hold ...', in lower case with no full stop.
+#: src/domain/build/panel.ts
+#: src/domain/fields/records.ts
+msgid "letters, numbers and . _ - (no spaces)"
+msgstr ""
+
+#: src/features/panel/PanelNameField.tsx
+msgid "Letters, numbers and . _ - with no spaces. If you add a library sample table, it refers to the panel by this name."
+msgstr ""
+
+#. Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop
+#: src/domain/fields/records.ts
+msgid "letters, numbers, spaces and . _ -"
+msgstr ""
+
+#. Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop
+#: src/domain/fields/records.ts
+msgid "letters, numbers, spaces and . _ - ; | ( ) , /"
+msgstr ""
+
+#. Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop
+#: src/domain/fields/records.ts
+msgid "letters, numbers, spaces and . _ - ( ) , /"
+msgstr ""
+
+#. Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop
+#: src/domain/fields/records.ts
+msgid "letters, numbers, spaces and . _ - ( ) , / (the PMO format does not allow a colon here, so leave out https://)"
+msgstr ""
+
+#. Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop
+#: src/domain/fields/records.ts
+msgid "letters, numbers, spaces and . _ - { } ( ) , /"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Library kit"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Library layout"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Library plate"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Library plate column"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Library plate position"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Library plate row"
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/records.ts
+msgid "Library preparation"
+msgstr ""
+
+#. A record type in the PMO, starting a place in the file, such as 'Library sample "L1"'.
+#: src/domain/build/merge.ts
+msgid "Library sample"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+#: src/domain/fields/readCounts.ts
+#: src/domain/fields/samples.ts
+msgid "Library sample name"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Library sample records in the PMO have a problem. Check the Library samples step."
+msgstr ""
+
+#. Names a table inside other messages, such as 'The library sample table has no rows.'
+#: src/domain/build/samples.ts
+#: src/features/sequencing/SequencingStep.tsx
+msgid "library sample table"
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "Library sample table"
+msgstr ""
+
+#. Step title, shown in the sidebar and as the page heading
+#. The name of a step of the app
+#: src/app/steps.ts
+#: src/domain/build/merge.ts
+#: src/domain/fields/samples.ts
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+#: src/features/review/PmoContents.tsx
+msgid "Library samples"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Library screening"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Library selection"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Library source"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Library strategy"
+msgstr ""
+
+#: src/features/published/DatasetPage.tsx
+msgid "Licence"
+msgstr ""
+
+#. Theme name
+#: src/app/TopBar.tsx
+msgid "Light"
+msgstr ""
+
+#: src/app/steps.ts
+msgid "Link each sequenced library to its specimen, panel and sequencing run."
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Links inside the PMO that do not add up"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Links that are not whole numbers"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Links that point at nothing"
+msgstr ""
+
+#: src/app/App.tsx
+#: src/app/privacy/PrivacyIndicator.tsx
+#: src/features/published/CatalogueProblem.tsx
+#: src/ui/Spinner.tsx
+msgid "Loading"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Loading the example tables"
+msgstr ""
+
+#: src/features/review/PreviewSkeleton.tsx
+#: src/features/table-import/TablePreviewPanel.tsx
+msgid "Loading the preview"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Local environment"
+msgstr ""
+
+#. A target's place on the genome.
+#: src/domain/build/notices.ts
+msgid "location"
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/microhaplotypes.ts
+#: src/domain/fields/samples.ts
+msgid "Location"
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "Location columns are mapped without the chromosome column. Map the chromosome column, or unmap the start and end columns."
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Locations that end before they start"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Looking for data? <0>Browse the published PMOs</0>. Have a PMO file already? <1>Publish it</1>."
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "Many labs keep specimens and library samples in one sheet. If yours does, add the same file here and on the <0>Specimens step</0>."
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/microhaplotypes.ts
+msgid "Masking"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Masking length"
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "Masking needs three columns: masking start, segment size and replacement size. Map all three, or none."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Masking replacement length"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Masking start"
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "Match columns"
+msgstr ""
+
+#: src/app/TopBar.tsx
+msgid "Match my device"
+msgstr ""
+
+#. Heading over the optional fields already matched to a column
+#: src/features/table-import/mappingModel.ts
+msgid "Matched"
+msgstr ""
+
+#: src/features/table-import/FieldRow.tsx
+msgid "Matched by a similar name. Check it is right."
+msgstr ""
+
+#: src/app/privacy/UsageNotice.tsx
+msgid "May this site send anonymous usage counts, such as which steps are used and whether deposits work? They never include your files, sample names or anything you type, and nothing in them identifies you. Nothing is sent until you choose."
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "method"
+msgstr ""
+
+#. A bioinformatics method record in the PMO, starting a place in the file, such as 'Method 1'.
+#: src/domain/build/merge.ts
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Method"
+msgstr ""
+
+#: src/domain/build/bioinformatics.ts
+msgid "Method \"{name}\" needs at least one step."
+msgstr ""
+
+#. Starts a message about one step of a bioinformatics method.
+#: src/domain/build/bioinformatics.ts
+msgid "Method \"{name}\", step {position}"
+msgstr ""
+
+#: src/domain/build/bioinformatics.ts
+msgid "Method {methodPosition} needs at least one step."
+msgstr ""
+
+#. Starts a message about one step of a bioinformatics method.
+#: src/domain/build/bioinformatics.ts
+msgid "Method {methodPosition}, step {position}"
+msgstr ""
+
+#: src/features/bioinformatics/methodOptions.ts
+msgid "Method {number}"
+msgstr ""
+
+#. A bioinformatics method with no name, by its place in the list.
+#: src/domain/build/bioinformatics.ts
+msgid "Method {position}"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Method name"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Method name column"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Method records in the PMO have a problem. Check the Bioinformatics step."
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Methods"
+msgstr ""
+
+#. Names a table inside other messages, such as 'The methods table has no rows.'
+#: src/domain/build/bioinformatics.ts
+msgid "methods table"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Methods table"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Microhaplotype datasets published in the {name} community on Zenodo. Each one has a DOI to cite."
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Microhaplotype datasets published in the <0>{name} community</0> on Zenodo. Each one has a DOI to cite."
+msgstr ""
+
+#. A part of the PMO, starting a place in the file, such as 'Microhaplotypes, target 1'.
+#. Step title, shown in the sidebar and as the page heading
+#. The name of a step of the app
+#: src/app/steps.ts
+#: src/domain/build/merge.ts
+msgid "Microhaplotypes"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Microhaplotypes is needed and is not finished yet. Import the allele table on the Microhaplotypes step."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Microhaplotypes records in the PMO have a problem. Check the Microhaplotypes step."
+msgstr ""
+
+#: src/features/records/RecordForm.tsx
+msgid "More details"
+msgstr ""
+
+#: src/app/TopBar.tsx
+msgid "More options"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "More problems with the PMO format"
+msgstr ""
+
+#. {field} is a PMO field name. {columns} is a list of quoted column names.
+#: src/domain/build/notices.ts
+msgid "More than one column would be written as \"{field}\": {columns}. Untick the extra column or change the mapping."
+msgstr ""
+
+#: src/features/records/RecordList.tsx
+msgid "Move {name} down"
+msgstr ""
+
+#: src/features/records/RecordList.tsx
+msgid "Move {name} up"
+msgstr ""
+
+#: src/features/records/ExtraDetails.tsx
+msgid "Name of detail {number}"
+msgstr ""
+
+#: src/app/steps.ts
+msgid "Name the project this data belongs to and the people behind it."
+msgstr ""
+
+#: src/features/records/ExtraDetails.tsx
+msgid "Name, such as funding"
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "named panels"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Names missing that link tables together"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Names that do not match between tables"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Names used more than once"
+msgstr ""
+
+#: src/features/published/catalogue.ts
+msgid "NCBI taxon {taxon}"
+msgstr ""
+
+#: src/features/review/SectionChecklist.tsx
+msgid "Needed"
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "Needed for a PMO, and not finished yet."
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "Needed for this step. One row for each sample, with its sample name and its number of raw reads."
+msgstr ""
+
+#: src/app/StepPage.tsx
+msgid "Next"
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "No method is ready yet. Finish the methods table above."
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "No methods yet"
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "No optional field matches \"{filter}\"."
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "No panel column is matched yet."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "No personal details found"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "No PMO has been published yet"
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+msgid "No position columns are matched in the target table, so the genome is stored with the panel but no target points to it. Match the start and end columns above if your table has them."
+msgstr ""
+
+#: src/features/specimens/SpecimensStep.tsx
+msgid "No project column is matched yet."
+msgstr ""
+
+#: src/features/project/ProjectStep.tsx
+msgid "No project yet"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "No published PMO matches"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "No record has been made yet on this visit."
+msgstr ""
+
+#: src/features/shared/RunNameChoice.tsx
+msgid "No run name"
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "No runs yet"
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "No sequencing run column. That is fine: it is optional."
+msgstr ""
+
+#: src/features/sequencing/SequencingStep.tsx
+msgid "No sequencing runs yet"
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "No specimen name column is matched yet."
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "No steps yet"
+msgstr ""
+
+#: src/app/privacy/UsageNotice.tsx
+msgid "No usage counts will be sent"
+msgstr ""
+
+#. Reference genome choice: no genome
+#. The choice of nothing in a list
+#: src/features/panel/GenomeSection.tsx
+#: src/ui/Combobox.tsx
+msgid "None"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "None of the specimen fields that most often identify a person have values. A published record is public and cannot be withdrawn, so look through the file once more before you publish."
+msgstr ""
+
+#: src/features/review/SectionChecklist.tsx
+msgid "Not added"
+msgstr ""
+
+#: src/features/review/SectionChecklist.tsx
+msgid "Not finished"
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "Not finished, so it is left out of the PMO."
+msgstr ""
+
+#: src/features/table-import/FieldRow.tsx
+msgid "Not in this table"
+msgstr ""
+
+#: src/app/SaveStatus.tsx
+msgid "Not kept after you close this tab"
+msgstr ""
+
+#: src/features/shared/NameCheck.tsx
+msgid "Not on the {stepTitle} step: {missingNames}."
+msgstr ""
+
+#: src/features/review/ReviewStep.tsx
+#: src/features/review/VerdictCard.tsx
+msgid "Not ready yet"
+msgstr ""
+
+#: src/app/SaveStatus.tsx
+msgid "Not saved"
+msgstr ""
+
+#. Status of a step
+#: src/ui/StatusBadge.tsx
+msgid "Not started"
+msgstr ""
+
+#. Read out before an information message
+#: src/ui/Callout.tsx
+msgid "Note"
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "Nothing added yet. A PMO needs this step."
+msgstr ""
+
+#: src/features/bioinformatics/BioinformaticsStep.tsx
+msgid "Nothing here yet. Add a method and a run above to add them to the PMO."
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "Nothing here yet. Add a table above to see what goes into the PMO."
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "Nothing here yet. Add your allele table above to see what goes into the PMO."
+msgstr ""
+
+#: src/features/sequencing/SequencingStep.tsx
+msgid "Nothing here yet. Fill in a sequencing run above to add it to the PMO."
+msgstr ""
+
+#: src/features/project/ProjectStep.tsx
+msgid "Nothing here yet. Fill in the project name and description above to add them to the PMO."
+msgstr ""
+
+#: src/features/panel/PanelStep.tsx
+msgid "Nothing here yet. Name your panel and add its target table above to see what goes into the PMO."
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "Nothing here yet. This step is optional: skip it if you do not have read counts."
+msgstr ""
+
+#: src/features/specimens/SpecimensStep.tsx
+msgid "Nothing here yet. This step is optional. Without it, the PMO has no collection dates, places or host details."
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "Nothing here yet. This step is optional. Without it, the samples come from the allele table and all use one panel, so add it if you have several panels."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Nothing is sent until you choose whether to send anonymous usage counts."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Nothing is sent."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Nothing leaves this copy. These are the records it would send if usage counts were set up, so you can see what they hold."
+msgstr ""
+
+#: src/ui/Combobox.tsx
+msgid "Nothing matches your search."
+msgstr ""
+
+#: src/features/review/ThingsToCheck.tsx
+msgid "Nothing to check. The PMO matches the format and every table links up."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Nothing yet. It fills in as you use the app."
+msgstr ""
+
+#: src/ui/Toast.tsx
+msgid "Notification"
+msgstr ""
+
+#. Screen-reader name of the area where messages appear. The placeholder becomes a key such as F8.
+#: src/ui/Toast.tsx
+msgid "Notifications ({RADIX_HOTKEY})"
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "One method for every run"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "One method for the whole table"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "One method or several"
+msgstr ""
+
+#: src/features/shared/RunNameChoice.tsx
+msgid "One name for the whole table"
+msgstr ""
+
+#: src/features/records/checks.ts
+msgid "One per line."
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "One project for every specimen"
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "One row for each allele found in each sample, with its read count."
+msgstr ""
+
+#: src/features/project/ProjectStep.tsx
+msgid "One row for each project, with its name and description."
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+msgid "One row for each reference genome, with its name, version, taxon ID and link."
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "One row for each run, with its name and optionally its date."
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "One row for each sample, target and pipeline stage, with the reads left at that stage."
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "One row for each sample, target and stage, such as demultiplexed or filtered."
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "One row for each sample, with its total raw reads."
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "One row for each sequenced library, with its specimen and panel."
+msgstr ""
+
+#: src/features/sequencing/SequencingStep.tsx
+msgid "One row for each sequencing run, with its name, platform and library details."
+msgstr ""
+
+#: src/features/specimens/SpecimensStep.tsx
+msgid "One row for each specimen, with its name and any collection, place and host details."
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "One row for each step: the program and its version, and optionally a column naming the method."
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "One row for each target, with its forward and reverse primer."
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "One sequencing run for every library sample"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "One to a line, as Family name, Given names. Taken from your PMO's project. Leave it empty to add them on Zenodo."
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+msgid "Only needed when the target table says where each target sits on the genome."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Only the account that owns a record can add a version to it. Sign in to Zenodo as its owner."
+msgstr ""
+
+#: src/features/specimens/SpecimensStep.tsx
+msgid "Only the specimen name is needed. Many labs keep specimens and library samples in one sheet. If yours does, add the same file here and on the <0>Library samples step</0>. Without a library sample table, the specimen names must be the sample names in your allele table."
+msgstr ""
+
+#: src/app/SaveStatus.tsx
+msgid "Open in another tab"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Open the draft on Zenodo"
+msgstr ""
+
+#: src/app/TopBar.tsx
+msgid "Open the step list"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Open the upload page and sign in to Zenodo. The community is already chosen."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Open the Zenodo upload page"
+msgstr ""
+
+#: src/app/SaveStatus.tsx
+msgid "Opening your draft"
+msgstr ""
+
+#. Marks a field that may be left blank
+#. Marks a step a PMO file can do without
+#. Marks a table a PMO file can do without
+#: src/app/HomePage.tsx
+#: src/app/StepPage.tsx
+#: src/features/readCounts/ReadCountsStep.tsx
+#: src/ui/Field.tsx
+msgid "Optional"
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "Optional fields"
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "Optional."
+msgstr ""
+
+#: src/features/sequencing/SequencingStep.tsx
+msgid "Optional. Sequencing runs tell readers of the PMO which platform, instrument and library preparation produced the reads. The library sample table links each sample to a run by its name."
+msgstr ""
+
+#: src/features/project/ProjectStep.tsx
+msgid "Optional. The project gives the PMO a name and description for your study, and the people behind it, so others can tell where the data came from."
+msgstr ""
+
+#: src/features/bioinformatics/BioinformaticsStep.tsx
+msgid "Optional. This tells readers of the PMO which programs and versions turned the reads into alleles, and links each run in the allele table to its pipeline."
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading over optional fields that belong to no group
+#: src/domain/fields/samples.ts
+#: src/features/table-import/mappingModel.ts
+msgid "Other"
+msgstr ""
+
+#: src/features/records/ExtraDetails.tsx
+msgid "Other details"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Other names"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Other names for the library, separated by commas."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Other names for the specimen, separated by commas."
+msgstr ""
+
+#: src/features/review/zenodo.ts
+msgid "Other specimen identifiers"
+msgstr ""
+
+#: src/app/NotFoundPage.tsx
+msgid "Page not found"
+msgstr ""
+
+#. A record type in the PMO, starting a place in the file, such as 'Panel "P1"'.
+#. Field label: the name of the sequencing panel
+#. Step title, shown in the sidebar and as the page heading
+#. The name of a step of the app
+#: src/app/steps.ts
+#: src/domain/build/merge.ts
+#: src/domain/fields/samples.ts
+#: src/features/published/PublishedPage.tsx
+#: src/features/review/PmoContents.tsx
+msgid "Panel"
+msgstr ""
+
+#. A panel, by its name.
+#: src/domain/draft/panels.ts
+msgid "Panel \"{name}\""
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "Panel \"{panelName}\" with {targets, plural, one {# target} other {# targets}}, {genomes, plural, one {# genome} other {# genomes}}"
+msgstr ""
+
+#: src/features/review/reviewModel.ts
+msgid "Panel \"{panelName}\" with {targets, plural, one {# target} other {# targets}}, no genome"
+msgstr ""
+
+#: src/features/panel/panelModel.ts
+msgid "Panel {number}"
+msgstr ""
+
+#. A panel with no name yet, by its place in the list.
+#: src/domain/draft/panels.ts
+msgid "Panel {position}"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Panel is needed and is not finished yet. Add the panel's target table on the Panel step."
+msgstr ""
+
+#: src/domain/build/panel.ts
+#: src/features/panel/PanelNameField.tsx
+msgid "Panel name"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Panel records in the PMO have a problem. Check the Panel step."
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Panel saved"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Panel table"
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Panel targets"
+msgstr ""
+
+#: src/features/review/PmoContents.tsx
+msgid "Panels"
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "Panels named in this table"
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/samples.ts
+msgid "Parasite density"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Parasite density (qPCR)"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Parasite density method"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Parasites per microlitre measured from this extraction, for example by qPCR."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Parasites per microlitre of blood."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "PCR conditions"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "People who contributed to the project."
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Pick one to skip the steps below, or add the target table as usual."
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Picking one replaces the target table below for this panel. The table is kept in case you switch back."
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/samples.ts
+msgid "Plate"
+msgstr ""
+
+#. {table} is the name of a table, such as 'specimen table'.
+#: src/domain/build/notices.ts
+msgid "Plate columns of the {table} are mapped twice over: give the plate position, or the plate row and column, not both. Unmap one of them."
+msgstr ""
+
+#. Field label: the sequencing technology
+#: src/domain/fields/records.ts
+msgid "Platform"
+msgstr ""
+
+#: src/app/TopBar.tsx
+msgid "PMO Builder home"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "PMO Builder reads your allele table, panel table and sample metadata, matches their columns to the fields of a Portable Microhaplotype Object, and builds a PMO file you can download. You can fill in the steps in any order, and your work is saved as you go."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "PMO Builder runs entirely in your browser. Your files, tables, sample names, sequences and metadata stay on this device. They are never uploaded, and the app has no server to upload them to."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "PMO Builder runs entirely in your browser. Your files, tables, sample names, sequences and metadata stay on this device. They leave it only if you choose to deposit a PMO on Zenodo. The app has no server of its own to upload them to."
+msgstr ""
+
+#: src/features/review/PmoPreviewBody.tsx
+msgid "PMO preview"
+msgstr ""
+
+#: src/features/review/zenodo.ts
+msgid "Pregnancy"
+msgstr ""
+
+#. Field label: whether the host was pregnant
+#: src/domain/fields/samples.ts
+msgid "Pregnant"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Preparing the file"
+msgstr ""
+
+#. Noun: the first rows of the table
+#: src/features/table-import/TablePreviewPanel.tsx
+msgid "Preview"
+msgstr ""
+
+#: src/features/table-import/TablePreviewPanel.tsx
+msgid "Preview of the {tableName}"
+msgstr ""
+
+#: src/features/review/PmoPreview.tsx
+msgid "Preview the PMO"
+msgstr ""
+
+#: src/app/StepPage.tsx
+msgid "Previous and next step"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Previous pregnancies"
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/panel.ts
+msgid "Primer locations"
+msgstr ""
+
+#. Field label: the software program used in a bioinformatics step
+#: src/domain/fields/records.ts
+msgid "Program"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Program link"
+msgstr ""
+
+#: src/features/project/ProjectStep.tsx
+msgid "project"
+msgstr ""
+
+#. A record type in the PMO, starting a place in the file, such as 'Project "Study 1"'.
+#. Field label: the name of the research project
+#. Step title, shown in the sidebar and as the page heading
+#. The name of a step of the app
+#. Title of the project table
+#: src/app/steps.ts
+#: src/domain/build/merge.ts
+#: src/domain/fields/samples.ts
+#: src/domain/fields/study.ts
+msgid "Project"
+msgstr ""
+
+#: src/features/project/ProjectStep.tsx
+msgid "Project {number}"
+msgstr ""
+
+#: src/domain/build/records.ts
+msgid "Project {position}"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Project name"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Project names that link to nothing"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Project records in the PMO have a problem. Check the Project step."
+msgstr ""
+
+#. Names a table inside other messages, such as 'The project table has no rows with values.'
+#: src/domain/build/records.ts
+msgid "project table"
+msgstr ""
+
+#: src/features/project/ProjectStep.tsx
+msgid "Project table"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Project type"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Project, sequencing and bioinformatics details, typed in or from a file."
+msgstr ""
+
+#: src/features/specimens/SpecimensStep.tsx
+msgid "projects"
+msgstr ""
+
+#: src/features/review/PmoContents.tsx
+msgid "Projects"
+msgstr ""
+
+#: src/features/specimens/SpecimensStep.tsx
+msgid "Projects named in this table"
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/microhaplotypes.ts
+msgid "Pseudo-CIGAR"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Pseudo-CIGAR chromosome"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Pseudo-CIGAR end"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Pseudo-CIGAR reference sequence"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Pseudo-CIGAR start"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Pseudo-CIGAR strand"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Publish a file"
+msgstr ""
+
+#: src/app/StepNav.tsx
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "Publish a PMO file"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Publish to Zenodo"
+msgstr ""
+
+#: src/features/published/DatasetPage.tsx
+msgid "Published {publishedDate}"
+msgstr ""
+
+#: src/app/StepNav.tsx
+#: src/features/published/PublishedPage.tsx
+msgid "Published PMOs"
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "Publishing needs the app to be set up with a Zenodo community."
+msgstr ""
+
+#: src/features/records/checks.ts
+msgid "Put each one on its own line"
+msgstr ""
+
+#. Field label: the PCR reaction or pool a target is amplified in
+#: src/domain/fields/panel.ts
+msgid "Reaction"
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/panel.ts
+msgid "Reactions"
+msgstr ""
+
+#. A part of the PMO, starting a place in the file, such as 'Read counts 1'.
+#. The name of a step of the app
+#: src/domain/build/merge.ts
+msgid "Read counts"
+msgstr ""
+
+#. Step title, shown in the sidebar and as the page heading
+#: src/app/HomePage.tsx
+#: src/app/steps.ts
+msgid "Read counts by stage"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Read counts records in the PMO have a problem. Check the Read counts step."
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "Read counts show how many reads each sample had when it came off the sequencer, and, if you have them, how many were left for each target after each stage of your pipeline. Others use them to judge how deep and how clean each sample's data is."
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Read from Zenodo on {harvestDate}. A newly accepted PMO shows up within a day."
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+#: src/features/shared/RunNameChoice.tsx
+msgid "Read it from a column"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Read it through and choose Publish. It joins the community straight away, as the record is already in it."
+msgstr ""
+
+#: src/features/table-import/TableFile.tsx
+msgid "Reading {importingFile}"
+msgstr ""
+
+#: src/features/table-import/TableFile.tsx
+msgid "Reading sheet {choosingSheet}"
+msgstr ""
+
+#: src/ui/FileDropzone.tsx
+msgid "Reading the file"
+msgstr ""
+
+#: src/features/shared/NameCheck.tsx
+msgid "Reading the table."
+msgstr ""
+
+#. Field label: a count of sequencing reads
+#. Field label: a count of sequencing reads
+#: src/domain/fields/microhaplotypes.ts
+#: src/domain/fields/readCounts.ts
+msgid "Reads"
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "Reads at each stage"
+msgstr ""
+
+#: src/domain/fields/readCounts.ts
+msgid "Reads per stage"
+msgstr ""
+
+#. Status of a step
+#: src/features/review/ReviewStep.tsx
+#: src/features/review/SectionChecklist.tsx
+#: src/ui/StatusBadge.tsx
+msgid "Ready"
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "Ready to download"
+msgstr ""
+
+#: src/features/review/ReviewStep.tsx
+#: src/features/review/VerdictCard.tsx
+msgid "Ready, with things to check"
+msgstr ""
+
+#: src/features/review/SectionChecklist.tsx
+msgid "Ready."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Recent blood meal"
+msgstr ""
+
+#: src/app/steps.ts
+msgid "Record how and where the libraries were sequenced."
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+msgid "Reference genome"
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+msgid "Reference genome <0>(optional)</0>"
+msgstr ""
+
+#: src/domain/fields/study.ts
+msgid "Reference genomes"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+#: src/domain/fields/panel.ts
+msgid "Reference sequence"
+msgstr ""
+
+#. Field label: the largest area within a country
+#: src/domain/fields/samples.ts
+msgid "Region"
+msgstr ""
+
+#: src/app/ErrorBoundary.tsx
+msgid "Reload the page"
+msgstr ""
+
+#: src/app/StartOver.tsx
+msgid "Reload the page and try again."
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "Reload the page to try again."
+msgstr ""
+
+#. Button: remove this file
+#: src/features/records/RecordList.tsx
+#: src/features/table-import/TableFile.tsx
+#: src/ui/FileDropzone.tsx
+msgid "Remove"
+msgstr ""
+
+#: src/ui/FileDropzone.tsx
+msgid "Remove {fileLabel} file"
+msgstr ""
+
+#: src/features/records/RecordList.tsx
+msgid "Remove {name}"
+msgstr ""
+
+#: src/features/records/RecordList.tsx
+msgid "Remove {name}?"
+msgstr ""
+
+#: src/features/records/checks.ts
+msgid "Remove {scheme}"
+msgstr ""
+
+#: src/features/records/ExtraDetails.tsx
+msgid "Remove detail {number}"
+msgstr ""
+
+#: src/features/panel/PanelStep.tsx
+msgid "Remove panel"
+msgstr ""
+
+#: src/features/table-import/TableFile.tsx
+msgid "Remove the {tableName}?"
+msgstr ""
+
+#: src/features/panel/PanelStep.tsx
+msgid "Remove the panel \"{title}\"?"
+msgstr ""
+
+#: src/domain/build/microhaplotypes.ts
+msgid "Remove the repeated rows."
+msgstr ""
+
+#. "Bioinformatics run name" is the label of a field on the page; use the same words as there.
+#: src/domain/build/microhaplotypes.ts
+msgid "Remove the repeated rows. If the table holds several analysis runs, choose the column that names the run under \"Bioinformatics run name\"."
+msgstr ""
+
+#: src/features/panel/PanelStep.tsx
+msgid "Remove this panel"
+msgstr ""
+
+#: src/features/panel/PanelNameField.tsx
+msgid "Renaming it here changes this draft only, not the saved panel."
+msgstr ""
+
+#. Button: choose another file in place of this one
+#: src/ui/FileDropzone.tsx
+msgid "Replace"
+msgstr ""
+
+#: src/ui/FileDropzone.tsx
+msgid "Replace {fileLabel} file"
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Replace saved panel"
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Replace the saved panel \"{name}\"?"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Replace your draft with the example?"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Replaces the file and keeps the record's details and authors. It gets its own DOI, and the record's overall DOI points to it. It is already in the community, so there is no review."
+msgstr ""
+
+#. Marks a field that must be filled in
+#. Marks a step a PMO file needs
+#. Marks a step a PMO file needs
+#. Marks a table a PMO file needs
+#. Sidebar heading: the steps a PMO file needs
+#: src/app/HomePage.tsx
+#: src/app/StepNav.tsx
+#: src/app/StepPage.tsx
+#: src/app/steps.ts
+#: src/features/review/SectionChecklist.tsx
+#: src/ui/Field.tsx
+msgid "Required"
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "Required fields"
+msgstr ""
+
+#. Heading: what this step puts into the PMO
+#: src/features/shared/SectionResult.tsx
+msgid "Result"
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Reverse primer"
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Reverse primer end"
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Reverse primer start"
+msgstr ""
+
+#. Step title, shown in the sidebar and as the page heading
+#: src/app/steps.ts
+msgid "Review and download"
+msgstr ""
+
+#. Header of the row number column
+#: src/ui/DataTable.tsx
+msgid "Row"
+msgstr ""
+
+#. A spreadsheet row, starting a message about it, such as 'Row 5: fill in the program.'
+#: src/domain/build/records.ts
+msgid "Row {row}"
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "Rows read"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Rows with the same value form one method, named by that value."
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "run"
+msgstr ""
+
+#. Noun: an analysis run
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "Run"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Run {number}"
+msgstr ""
+
+#: src/domain/build/bioinformatics.ts
+msgid "Run {position}"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Run accession"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Run date"
+msgstr ""
+
+#: src/domain/fields/records.ts
+#: src/features/shared/RunNameChoice.tsx
+msgid "Run name"
+msgstr ""
+
+#: src/features/shared/RunNameChoice.tsx
+msgid "Run name column"
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "Run names already given:"
+msgstr ""
+
+#. Sequencing runs, in: The Sequencing step has no runs yet.
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "runs"
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Runs"
+msgstr ""
+
+#. Names the table of bioinformatics runs inside other messages, such as 'The runs table has no rows.'
+#: src/domain/build/bioinformatics.ts
+msgid "runs table"
+msgstr ""
+
+#. Starts a message about every run of the runs table, such as 'Runs table: choose the method this run used.'
+#: src/domain/build/bioinformatics.ts
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Runs table"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Runs without a method"
+msgstr ""
+
+#. {column} names a column, such as 'column "Reads"'. {rows} is such as 'rows 5 and 9'.
+#: src/domain/build/notices.ts
+msgid "Sample \"{sample}\" has no read count in {column} ({rows}). Every row needs a read count."
+msgstr ""
+
+#. {column} names a column, such as 'column "Reads"'.
+#: src/domain/build/notices.ts
+msgid "Sample \"{sample}\" has no read count in {column}. Every row needs a read count."
+msgstr ""
+
+#. {column} names a column, such as 'column "Reads"'. {rows} is such as 'rows 5 and 9'.
+#: src/domain/build/notices.ts
+msgid "Sample \"{sample}\", target \"{target}\" has no read count in {column} ({rows}). Every row needs a read count."
+msgstr ""
+
+#. {column} names a column, such as 'column "Reads"'.
+#: src/domain/build/notices.ts
+msgid "Sample \"{sample}\", target \"{target}\" has no read count in {column}. Every row needs a read count."
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Sample metadata"
+msgstr ""
+
+#. Sidebar heading
+#: src/app/steps.ts
+#: src/features/readCounts/ReadCountsStep.tsx
+#: src/features/review/PmoContents.tsx
+msgid "Samples"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Samples added as specimens with no details"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Samples counted twice in one run"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Samples that appear twice"
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Save this panel for next time"
+msgstr ""
+
+#. Status: this panel is saved in this browser
+#: src/features/panel/PanelEditor.tsx
+msgid "Saved"
+msgstr ""
+
+#: src/features/review/usePmoDownload.ts
+msgid "Saved {fileName}"
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead."
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Saved in this browser after an earlier run."
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Saved in this browser. Next time, pick it instead of adding the file again."
+msgstr ""
+
+#: src/app/SaveStatus.tsx
+msgid "Saved on this device"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Search"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Search datasets"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+#: src/app/privacy/UsageNotice.tsx
+msgid "See exactly what is sent"
+msgstr ""
+
+#: src/features/published/DatasetPage.tsx
+msgid "See the record on Zenodo"
+msgstr ""
+
+#: src/app/steps.ts
+msgid "See what is ready, fix what is missing, and download your PMO file."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "See what the draft will say"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Select a keyword to copy it. Keep the first one as it is written: it places the record with the other PMO files."
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "Select all"
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "Select none"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Send anonymous usage counts"
+msgstr ""
+
+#: src/app/privacy/UsageNotice.tsx
+msgid "Send usage counts"
+msgstr ""
+
+#. Field label: an allele's DNA sequence
+#: src/domain/fields/microhaplotypes.ts
+msgid "Sequence"
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Step title, shown in the sidebar and as the page heading
+#. The name of a step of the app
+#: src/app/steps.ts
+#: src/domain/build/merge.ts
+#: src/domain/fields/records.ts
+#: src/domain/fields/samples.ts
+msgid "Sequencing"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Sequencing centre"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Sequencing date"
+msgstr ""
+
+#: src/features/sequencing/SequencingStep.tsx
+msgid "sequencing run"
+msgstr ""
+
+#. A record type in the PMO, starting a place in the file, such as 'Sequencing run "Run 1"'.
+#: src/domain/build/merge.ts
+#: src/domain/fields/samples.ts
+msgid "Sequencing run"
+msgstr ""
+
+#: src/features/sequencing/SequencingStep.tsx
+msgid "Sequencing run {number}"
+msgstr ""
+
+#: src/domain/build/records.ts
+msgid "Sequencing run {position}"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Sequencing run name"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Sequencing run names that link to nothing"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Sequencing run records in the PMO have a problem. Check the Sequencing step."
+msgstr ""
+
+#: src/domain/fields/study.ts
+#: src/features/review/PmoContents.tsx
+msgid "Sequencing runs"
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "Sequencing runs named in this table"
+msgstr ""
+
+#. Names a table inside other messages, such as 'The sequencing table has no rows with values.'
+#: src/domain/build/records.ts
+msgid "sequencing table"
+msgstr ""
+
+#: src/features/sequencing/SequencingStep.tsx
+msgid "Sequencing table"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Session record so far"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Session record so far, sent when you close the page"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Session record, not sent"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Session record, sent to {destination}"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Several panels without a library sample table"
+msgstr ""
+
+#: src/features/review/zenodo.ts
+msgid "Sex"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Share your data"
+msgstr ""
+
+#. A sheet of a spreadsheet workbook
+#: src/features/table-import/TableFile.tsx
+msgid "Sheet"
+msgstr ""
+
+#: src/features/table-import/TableFile.tsx
+msgid "Sheet {shownSheet}"
+msgstr ""
+
+#. Part of a sentence: follows 'It', as in 'It should be integer or null'. {type} is a PMO value type, in English.
+#: src/domain/build/merge.ts
+msgid "should be {type}"
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "Show all {count}"
+msgstr ""
+
+#: src/features/review/ThingsToCheck.tsx
+msgid "Show all {total}"
+msgstr ""
+
+#: src/features/review/ThingsToCheck.tsx
+#: src/features/shared/SectionResult.tsx
+msgid "Show fewer"
+msgstr ""
+
+#: src/ui/CodeBlock.tsx
+msgid "Show more"
+msgstr ""
+
+#: src/ui/CodeBlock.tsx
+msgid "Showing {visibleSize} of {totalSize}"
+msgstr ""
+
+#: src/ui/Combobox.tsx
+msgid "Showing the first {shownLimit} of {optionTotal}. Type to narrow the list."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Sign in to Zenodo and deposit"
+msgstr ""
+
+#: src/app/Layout.tsx
+msgid "Skip to content"
+msgstr ""
+
+#: src/features/review/zenodo.ts
+msgid "Smallest administrative area"
+msgstr ""
+
+#. {table} is the name of a table, such as 'allele table'. {fields} is a list of quoted field keys.
+#: src/domain/build/table.ts
+msgid "Some fields of the {table} are not used when building: {fields}."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Some names in one table do not match the names in another ({nameList}). Check that each name is spelled the same way in every table that uses it."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Some records are missing a name that links them to another step. Fill in the name columns in every row of the tables involved."
+msgstr ""
+
+#. {targetGroups} lists groups of quoted target names, the groups separated by semicolons.
+#: src/domain/build/notices.ts
+msgid "Some targets have exactly the same primers and location as another target: {targetGroups}. Each target needs its own primers or location. Remove the repeated rows or correct them."
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "Some targets list the same sequence more than once with different details ({targets}). Reads are counted against the last copy. Check the extra columns carried onto each microhaplotype."
+msgstr ""
+
+#: src/features/review/usePmoDownload.ts
+msgid "Something changed. Check the steps listed above."
+msgstr ""
+
+#: src/domain/build/panel.ts
+msgid "Something differs between the panels. Check that targets shared by two panels have the same primers and location in both."
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "Something this part needs is missing. See below."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Something to check came up while putting the steps together into one PMO. The PMO was still made."
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Something went wrong"
+msgstr ""
+
+#: src/app/ErrorBoundary.tsx
+msgid "Something went wrong on this page"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Something went wrong while putting the steps together into one PMO. Check the results on each step for problems, then try again."
+msgstr ""
+
+#. {table} is the name of a table, such as 'allele table'.
+#: src/domain/build/notices.ts
+msgid "Something went wrong while reading the {table}. Check its column mapping and the values in the mapped columns, then try again."
+msgstr ""
+
+#: src/state/store.ts
+msgid "Something went wrong while working out the PMO: {message}"
+msgstr ""
+
+#: src/features/published/DatasetPage.tsx
+msgid "Species"
+msgstr ""
+
+#. A record type in the PMO, starting a place in the file, such as 'Specimen "S1"'.
+#: src/domain/build/merge.ts
+msgid "Specimen"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Specimen accession"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Specimen name"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Specimen names are not used"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Specimen records in the PMO have a problem. Check the Specimens step."
+msgstr ""
+
+#. Names a table inside other messages, such as 'The specimen table has no rows.'
+#: src/domain/build/samples.ts
+#: src/features/project/ProjectStep.tsx
+msgid "specimen table"
+msgstr ""
+
+#: src/features/specimens/SpecimensStep.tsx
+msgid "Specimen table"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Specimen taxon ID"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Specimen type"
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "specimens"
+msgstr ""
+
+#. Step title, shown in the sidebar and as the page heading
+#. The name of a step of the app
+#: src/app/steps.ts
+#: src/domain/build/merge.ts
+#: src/domain/fields/samples.ts
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+#: src/features/review/PmoContents.tsx
+#: src/features/specimens/SpecimensStep.tsx
+msgid "Specimens"
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "Specimens named in this table"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Specimens with no results"
+msgstr ""
+
+#. Field label: a step of the bioinformatics pipeline
+#: src/domain/fields/readCounts.ts
+msgid "Stage"
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "Stages"
+msgstr ""
+
+#. Field label: where an allele starts on the chromosome
+#: src/app/HomePage.tsx
+#: src/domain/fields/microhaplotypes.ts
+msgid "Start"
+msgstr ""
+
+#: src/app/StartOver.tsx
+#: src/app/TopBar.tsx
+msgid "Start over"
+msgstr ""
+
+#: src/features/review/WhatNext.tsx
+msgid "Start over for a new PMO"
+msgstr ""
+
+#: src/app/StartOver.tsx
+msgid "Start over?"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Starting a new version of the record"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "step"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Step {number}"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Step {number}: {program}"
+msgstr ""
+
+#: src/app/StepPage.tsx
+msgid "Step {stepNumber} of {stepCount}"
+msgstr ""
+
+#. Heading for a count of pipeline steps
+#. Heading of the step list on narrow screens
+#. Name of the sidebar navigation
+#: src/app/Layout.tsx
+#: src/app/StepNav.tsx
+#: src/features/bioinformatics/BioinformaticsStep.tsx
+#: src/features/bioinformatics/MethodsPart.tsx
+#: src/features/review/SectionChecklist.tsx
+msgid "Steps"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Steps of {methodName}"
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "Steps of this method"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Steps with problems to fix"
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/samples.ts
+msgid "Storage"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Storage plate"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Storage plate column"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Storage plate position"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Storage plate row"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Storage site"
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "Stored with each detection"
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "Stored with the allele"
+msgstr ""
+
+#. Field label: the DNA strand, + or -
+#. Field label: the DNA strand, + or -
+#: src/domain/fields/microhaplotypes.ts
+#: src/domain/fields/panel.ts
+msgid "Strand"
+msgstr ""
+
+#. Sidebar heading
+#: src/app/HomePage.tsx
+#: src/app/steps.ts
+#: src/features/review/PmoContents.tsx
+msgid "Study and methods"
+msgstr ""
+
+#: src/features/review/zenodo.ts
+msgid "Subject names or codes"
+msgstr ""
+
+#: src/app/ThemeToggle.tsx
+msgid "Switch to dark theme"
+msgstr ""
+
+#: src/app/ThemeToggle.tsx
+msgid "Switch to light theme"
+msgstr ""
+
+#: src/app/OtherTabNotice.tsx
+msgid "Switching to this tab"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Tables and details"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Tables can be CSV, TSV, plain text or Excel files."
+msgstr ""
+
+#. A record type in the PMO, starting a place in the file, such as 'Target "t1"'.
+#: src/domain/build/merge.ts
+msgid "Target"
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "Target \"{target}\" has a chromosome but no start or end in its first row. Fill in the location or unmap the location columns."
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "Target \"{target}\" has a location, so the panel needs genome information. Add a genome, or unmap the location columns."
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "Target \"{target}\" has a pseudo-CIGAR but its chromosome, start or end is blank."
+msgstr ""
+
+#: src/domain/build/panel.ts
+msgid "Target \"{targetName}\" is defined differently in panel \"{panelName}\" than in an earlier panel. The first definition is kept."
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/panel.ts
+msgid "Target details"
+msgstr ""
+
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/panel.ts
+msgid "Target location"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+#: src/domain/fields/panel.ts
+#: src/domain/fields/readCounts.ts
+msgid "Target name"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Target records in the PMO have a problem. Check the Panel step."
+msgstr ""
+
+#. Names a panel's table of targets inside other messages, such as 'The target table has no rows.'
+#: src/domain/build/panel.ts
+msgid "target table"
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Target table"
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Target type"
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+#: src/features/panel/PanelStep.tsx
+#: src/features/review/PmoContents.tsx
+msgid "Targets"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Targets counted twice for one sample"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Targets listed twice among the alleles"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Targets that are not in the panel"
+msgstr ""
+
+#: src/features/review/PmoContents.tsx
+msgid "Targets with alleles"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Taxon ID"
+msgstr ""
+
+#: src/app/ErrorBoundary.tsx
+msgid "Technical details"
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "That file is no longer loaded. Add it again."
+msgstr ""
+
+#: src/state/store.ts
+msgid "That panel is no longer in the draft."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "That record is not in the community, so a new version of it cannot be added here."
+msgstr ""
+
+#: src/state/store.ts
+msgid "That saved panel could not be found. It may have been deleted."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "That sheet is not in \"{file}\" any more. Choose another sheet, or add the file again."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "That sheet is not in this file any more. Choose another sheet, or add the file again."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "That Zenodo record could not be found. Check its address or DOI."
+msgstr ""
+
+#. {location} is the part of a target's location left out, in English, such as 'strand'.
+#: src/domain/build/notices.ts
+msgid "The {location} was left out for targets with blank location cells: {targets}."
+msgstr ""
+
+#: src/features/shared/NameCheck.tsx
+msgid "The {stepTitle} step has no {things} yet."
+msgstr ""
+
+#. {table} is the name of a table, such as 'allele table'. {detail} is a technical message from the PMO library, in English.
+#: src/domain/build/table.ts
+msgid "The {table} could not be read: {detail}"
+msgstr ""
+
+#. {table} is the name of a table, such as 'allele table'.
+#: src/domain/build/notices.ts
+msgid "The {table} could not be turned into its part of the PMO. Check the column mapping of the {table} and the values in the mapped columns."
+msgstr ""
+
+#. {table} is the name of a table, such as 'allele table'.
+#: src/domain/build/runName.ts
+msgid "The {table} has no column \"{column}\" for the run name. Choose another column."
+msgstr ""
+
+#. {table} is the name of a table, such as 'allele table'.
+#: src/domain/build/notices.ts
+msgid "The {table} has no column \"{column}\", chosen to carry into the PMO. Untick it."
+msgstr ""
+
+#. {table} is the name of a table, such as 'allele table'. {field} is a field, such as 'sample name'.
+#: src/domain/build/notices.ts
+msgid "The {table} has no column \"{column}\", which is chosen for {field}. Choose another column."
+msgstr ""
+
+#. {table} is the name of a table, such as 'project table'.
+#: src/domain/build/records.ts
+msgid "The {table} has no rows with values."
+msgstr ""
+
+#. {table} is the name of a table, such as 'target table'.
+#: src/domain/build/notices.ts
+msgid "The {table} has no rows."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The accession number if the specimen is in a public database."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The age of the host in years, with decimals for babies such as 0.25."
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "The analysis run that produced this table. The same name links it to a run on the Bioinformatics step."
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "The analysis run these counts come from. Use the same name as on the Bioinformatics step to link them."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "The app stopped while reading \"{file}\", probably because it needed more memory than the browser allows. Try a smaller file, or close other tabs and try again."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "The app stopped while reading the file, probably because it needed more memory than the browser allows. Try a smaller file, or close other tabs and try again."
+msgstr ""
+
+#: src/worker/client.ts
+msgid "The background worker stopped, probably because it ran out of memory. It starts again on the next change; if a table is very large, try a smaller one."
+msgstr ""
+
+#. {detail} is the browser's own error message, in its language.
+#: src/worker/client.ts
+msgid "The background worker stopped, probably because it ran out of memory. It starts again on the next change; if a table is very large, try a smaller one. ({detail})"
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "The by-stage table has a row with no target or stage, for sample \"{sample}\"."
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "The by-stage table has reads for runs that are not in the totals table, and they were left out: {runs}."
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "The by-stage table has reads for samples that are not in the totals table, and they were left out: {samples}."
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "The by-stage table repeats some sample, target and stage combinations. The last count of each was kept."
+msgstr ""
+
+#: src/domain/build/readCounts.ts
+msgid "The by-stage table takes sample names from column \"{stageSample}\" but also has a column \"{sampleColumn}\", the totals table's sample column. Rename one of them in the file."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "The chromosome the allele lies on."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "The chromosome the pseudo-CIGAR refers to, if it differs from the allele's."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "The chromosome the target lies on, needed when any location is given."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The chromosomes or contigs in the genome."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The column number of the library on its plate, such as 1."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The column number of the specimen on its storage plate, such as 1."
+msgstr ""
+
+#: src/features/shared/RunNameChoice.tsx
+msgid "The column of the {tableName} that holds each row's run name."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "The community could not be asked to review the draft. Choose the community on the draft yourself."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "The community could not be found on Zenodo."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The country the specimen was collected in."
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "The counts are not tied to an analysis run."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "The deposit could not be finished. Try again. If it keeps failing, reload the page."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "The deposit was not finished"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "The DNA sequence of the allele."
+msgstr ""
+
+#: src/state/store.ts
+msgid "The draft could not be saved."
+msgstr ""
+
+#: src/worker/client.ts
+msgid "The engine was closed."
+msgstr ""
+
+#: src/state/store.ts
+msgid "The example could not be loaded: {detail}"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "The example could not be loaded."
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "The example data could not be loaded"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "The example tables take the place of the tables and choices in your draft. This cannot be undone."
+msgstr ""
+
+#: src/domain/build/records.ts
+msgid "The extra field \"{key}\" has the same name as a field above. Fill in that field instead."
+msgstr ""
+
+#. {table} is the name of a table, such as 'allele table'. {reason} is a translated message saying why the file could not be read, or a technical message in English.
+#: src/domain/build/table.ts
+msgid "The file \"{fileName}\" for the {table} could not be read: {reason}"
+msgstr ""
+
+#. {table} is the name of a table, such as 'allele table'.
+#: src/domain/build/table.ts
+msgid "The file \"{fileName}\" for the {table} is not loaded. Import it again."
+msgstr ""
+
+#: src/features/table-import/TableFile.tsx
+msgid "The file and your column choices for it are removed from this draft. You can add the file again later."
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "The file could not be checked. Reload the page and try again."
+msgstr ""
+
+#: src/features/review/PmoPreviewBody.tsx
+msgid "The file is {fileSize}. The first {shownSize} are shown here; the download has all of it."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "The file is larger than Zenodo accepts."
+msgstr ""
+
+#: src/features/table-import/TablePreviewPanel.tsx
+msgid "The file is no longer loaded. Import it again."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "The files you open and everything in them."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "The gene the target covers, if any."
+msgstr ""
+
+#: src/domain/build/panel.ts
+msgid "The genome table has no rows with values."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The immediate setting of the collection site, such as urban or rural."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The kind of project, such as TES, surveillance or transmission."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The kit used to prepare libraries, with its version and part number if known."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The lab, core facility or company that did the sequencing."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The largest area within the country, such as a region or province."
+msgstr ""
+
+#: src/app/NotFoundPage.tsx
+msgid "The link may be out of date. Your work is still saved."
+msgstr ""
+
+#: src/features/published/CatalogueProblem.tsx
+msgid "The list is made when the app is set up with a Zenodo community."
+msgstr ""
+
+#: src/features/published/CatalogueProblem.tsx
+msgid "The list of published PMOs could not be loaded"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The material the specimen was taken from."
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "The method above this run used."
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "The method chosen was removed. Choose another one."
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "The method this run used was removed. Choose another one."
+msgstr ""
+
+#: src/domain/build/bioinformatics.ts
+msgid "The methods table has no column \"{group}\" to split it into methods. Choose another column."
+msgstr ""
+
+#: src/domain/build/bioinformatics.ts
+msgid "The methods table has no rows with values."
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "The microhaplotypes called in each sample, with their read counts."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The name of the panel used to sequence this library."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The name of the plate the library was prepared on."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The name of the plate the specimen is stored in."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The name of the project the specimen belongs to."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The name of the reference genome, such as 3D7."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "The name of the sequenced sample each allele was found in."
+msgstr ""
+
+#: src/domain/fields/readCounts.ts
+#: src/domain/fields/samples.ts
+msgid "The name of the sequenced sample, as used in the allele table."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The name of the sequencing run, as given on the sequencing page."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "The name of the target (amplicon or locus) the allele belongs to."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+#: src/domain/fields/readCounts.ts
+msgid "The name of the target (amplicon or locus)."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The NCBI BioProject accession, such as PRJNA33823."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The NCBI taxonomy number of the host, such as 9606 for humans."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The NCBI taxonomy number of the organism in the specimen, such as 5833."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The NCBI taxonomy number of the organism, such as 5833, or several for a combined genome."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The next smaller area, such as a district or county."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The next smaller area, such as a town or health facility."
+msgstr ""
+
+#: src/features/review/PmoContents.tsx
+msgid "The numbers appear here once a PMO can be built."
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "The only method above, so it is used."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The outcome of any treatment, separated by commas."
+msgstr ""
+
+#: src/state/store.ts
+msgid "The panel has not built yet. Fix its problems, then save it."
+msgstr ""
+
+#: src/state/store.ts
+msgid "The panel is saved for this session only, because this browser is not letting the app keep data."
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "The panel was not saved"
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "The panel's genome information is incomplete or not in the right form. Check the genome's name, version, taxon ID and web address on the Panel step."
+msgstr ""
+
+#: src/domain/build/panel.ts
+msgid "The panels could not be combined into one. Check that each target appears with the same primers and location in every panel that has it, or remove the extra panel."
+msgstr ""
+
+#. {table} is the name of a table, such as 'specimen table'.
+#: src/domain/build/notices.ts
+msgid "The parasite density method of the {table} is mapped without the parasite density. Map both or neither."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The PCR method and conditions, such as the number of cycles."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "The PCR reaction or pool the target is amplified in."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The person who leads the project, or several names separated by semicolons."
+msgstr ""
+
+#. {table} is the name of a table, such as 'specimen table'.
+#: src/domain/build/notices.ts
+msgid "The plate row and plate column of the {table} go together. Map both or neither."
+msgstr ""
+
+#: src/features/review/usePmoDownload.ts
+msgid "The PMO could not be saved"
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "The PMO could not be worked out"
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "The PMO does not say which analysis run found these alleles."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "The PMO file you build. It is made in the browser and saved straight to your computer."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "The PMO has a problem in how its parts refer to each other."
+msgstr ""
+
+#: src/features/table-import/TablePreviewPanel.tsx
+msgid "The preview could not be shown"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The program used for this step."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The program's version, ideally written v1.2.3."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "The quality score of each base, written as in a FASTQ file."
+msgstr ""
+
+#. Stands for a column inside other messages, when its name is not known.
+#: src/domain/build/notices.ts
+msgid "the read count column"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "The record"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "The reference genome sequence at the allele's location."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "The reference genome sequence of the target."
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+msgid "The reference genome the target positions refer to."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "The reference sequence the pseudo-CIGAR refers to."
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "The result could not be worked out"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The row letter of the library on its plate, such as A."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The row letter of the specimen on its storage plate, such as A."
+msgstr ""
+
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "The run {runName} uses this method and will need another one."
+msgstr ""
+
+#. {table} is the name of a table, such as 'allele table'. "from a column" is the name of a choice on the page; use the same words as there.
+#: src/domain/build/runName.ts
+msgid "The run name \"{runName}\" is also the name of a column in the {table}, so it would be read as that column. Choose \"from a column\" instead, or use another name."
+msgstr ""
+
+#. {column} names a column, such as 'column "Run"'. {rows} is such as 'rows 5 and 9'.
+#: src/domain/build/notices.ts
+msgid "The run name comes from {column}, but it is blank in some rows ({rows}). Fill them in or give one run name for the whole table."
+msgstr ""
+
+#. {column} names a column, such as 'column "Run"'.
+#: src/domain/build/notices.ts
+msgid "The run name comes from {column}, but it is blank in some rows. Fill them in or give one run name for the whole table."
+msgstr ""
+
+#: src/domain/build/runName.ts
+msgid "The run name is not valid."
+msgstr ""
+
+#: src/domain/build/bioinformatics.ts
+msgid "The runs table has no column \"{methodColumn}\". Choose another column for the method."
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "The same column is chosen for more than one field: {columns}. Each column can feed only one field."
+msgstr ""
+
+#: src/domain/build/panel.ts
+msgid "The saved panel \"{savedName}\" has something to check. If it looks wrong, build the panel again from its target table."
+msgstr ""
+
+#. "From a target table" is the name of a choice on the Panel step; use the same words as there.
+#: src/domain/build/panel.ts
+msgid "The saved panel \"{savedName}\" is damaged or was saved by an older version, so it cannot be used. Choose \"From a target table\", import the panel's target table again, and save it to the library again."
+msgstr ""
+
+#: src/features/panel/SavedPanelList.tsx
+msgid "The saved panel could not be used"
+msgstr ""
+
+#. Stands for a column inside other messages, when its name is not known.
+#: src/domain/build/notices.ts
+msgid "the sequence column"
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "The sequence of the forward primer."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "The sequence of the reverse primer."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The sequencer model, such as NextSeq 2000, MinION or Revio."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The sequencing strategy, such as AMPLICON or WGS."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The sequencing technology, such as ILLUMINA, OXFORD_NANOPORE or PACBIO_SMRT."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The sex of the host."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "The sign-in was not finished in time. Try again."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The source material, such as GENOMIC or TRANSCRIPTOMIC."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The specimen this library was made from, as named in the specimen table."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The SRA or ENA experiment accession, if the data was submitted."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The SRA or ENA run accession, such as SRR123456, if the data was submitted."
+msgstr ""
+
+#: src/domain/fields/readCounts.ts
+msgid "The step of the pipeline the count was taken at, such as demultiplexed or filtered."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "The steps could not be put together into one PMO. Check that names match between tables (samples, targets, runs), then look at the results on each step."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "The strand of the location, + or -."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "The strand of the reference stretch the pseudo-CIGAR refers to."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "The strand the target lies on, + or -."
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "The table holds several runs, with the run name in one column."
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "The tables could not be put together"
+msgstr ""
+
+#. Stands for a column inside other messages, when its name is not known.
+#: src/domain/build/notices.ts
+msgid "the target name column"
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+msgid "The target positions need a genome"
+msgstr ""
+
+#: src/features/panel/GenomeSection.tsx
+msgid "The target table gives the {positionFields} of each target. Add the reference genome they refer to, or set those fields to \"Not in this table\" above."
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "The totals table holds several runs, with the run name in one column."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "The version of the genome."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The well of the library on its plate, such as A01, instead of row and column."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The well of the specimen on its storage plate, such as A01, instead of row and column."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "The wider setting of the collection site, such as highlands or lowlands."
+msgstr ""
+
+#: src/app/TopBar.tsx
+msgid "Theme"
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "There are problems to fix before this part can go into the PMO. See below."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "There are several panels, so a library sample table is needed to say which panel each sample used. Add one on the Library samples step, or use a single panel."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "There is no PMO to deposit. Something changed. Check the steps on the page."
+msgstr ""
+
+#: src/features/review/usePmoDownload.ts
+msgid "There is no PMO to download"
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "There may be more."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "These are the exact records from this visit, as sent or as they would have been sent."
+msgstr ""
+
+#: src/features/table-import/MatchingParts.tsx
+msgid "These columns are not matched to a field. Tick the ones to carry into the PMO as they are."
+msgstr ""
+
+#. {table} is the name of a table, such as 'specimen table'. {columns} lists the columns and their blank rows.
+#: src/domain/build/notices.ts
+msgid "These columns of the {table} have blank cells, which these fields do not allow: {columns}. Fill them in, or unmap the column if the field is optional."
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "These come from checking this part against the other steps. Fix them here or on the step they name."
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "These names must match the other steps exactly, or the links are lost."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These panel names are in the library sample table but no panel has that name: {nameList}. Rename the panel on the Panel step or correct the table."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These project names are in the specimen table but not in the Project step: {nameList}. Add the projects or correct the names."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These run names are in the allele table but not among the bioinformatics runs: {nameList}. Add the runs or correct the names."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These run names have read counts but are not among the bioinformatics runs: {nameList}."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These samples appear more than once in one run of the allele table: {samples}."
+msgstr ""
+
+#: src/domain/build/notices.ts
+msgid "These samples appear more than once in the totals table: {samples}. Each sample needs one row."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These samples are in the allele table but not in the library sample table: {nameList}. Add them to the library sample table or correct the names."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These samples have read counts but are not in the allele table: {nameList}."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These samples have read counts but are not in the library sample table: {nameList}."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These samples in the allele table are not in the specimen table, so they were added with no details: {samples}."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These sequencing run names are in the library sample table but not in the Sequencing step: {nameList}. Add the runs or correct the names."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These specimen names are in the library sample table but not in the specimen table: {nameList}. Add them to the specimen table or correct the names."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These specimens are in the specimen table but have no results in the allele table: {samples}."
+msgstr ""
+
+#. {column} names a column, such as 'column "Target"'.
+#: src/domain/build/notices.ts
+msgid "These targets appear more than once in {column}: {targets}. Each target needs one row."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These targets are in the allele table but not in the panel: {nameList}. Check that the panel's target table lists every target."
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "These targets have read counts but are not in the panel: {nameList}."
+msgstr ""
+
+#: src/features/review/ThingsToCheck.tsx
+msgid "Things to check"
+msgstr ""
+
+#: src/app/SaveStatus.tsx
+msgid "This browser is not keeping your work"
+msgstr ""
+
+#. {detail} is the browser's own error message.
+#: src/domain/draft/persistence.ts
+msgid "This browser is not letting the app save data ({detail}). Your work is kept until you close this tab."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "This copy of PMO Builder does not send usage counts. Nothing is sent at all."
+msgstr ""
+
+#: src/features/published/CatalogueProblem.tsx
+msgid "This copy of PMO Builder has no list of published PMOs"
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "This copy of PMO Builder is not set up for publishing"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "This copy sends anonymous usage counts to {destination}. They help its maintainers see how much the app is used and where people get stuck."
+msgstr ""
+
+#: src/app/OtherTabNotice.tsx
+#: src/app/SaveStatus.tsx
+msgid "This draft is open in another tab"
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "This file could not be read as an Excel workbook, so it may be damaged. Open it in Excel, save it again as .xlsx, and add that file."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "This file could not be read."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "This file could not be read. Check that it is a table saved as .csv, .tsv, .txt or .xlsx, and try again."
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "This file does not match the PMO format"
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "This file does not say which PMO version it is. Only version {publishableVersion} files can be published. Build it again from your tables in PMO Builder to get a {publishableVersion} file."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "This file has a header row but no rows of data. Add the data below the header, or choose another file."
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "This file is a valid PMO"
+msgstr ""
+
+#. {limit} is a size, such as '50 MB'.
+#: src/domain/import/messages.ts
+msgid "This file is a workbook over {limit}, too large to open in the browser. Save the sheet as a .csv or .tsv file and add that instead."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "This file is an old Excel file (.xls), which cannot be read. Open it in Excel, choose Save As, pick Excel Workbook (.xlsx), and add that file."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "This file is built from the example data, so it cannot be published. With your own tables, you can add your PMO to the <0>{communityName} community</0> on Zenodo from here and get a DOI that others can cite."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "This file is empty. Choose a file with a header row and at least one row of data."
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "This file is in PMO version {declaredVersion}. Only version {publishableVersion} files can be published. Build it again from your tables in PMO Builder to get a {publishableVersion} file."
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "This file is larger than {sizeLimit}, more than this browser can check."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "This file is not a type of file that can be read. Choose a .csv, .tsv, .txt or .xlsx file. A .gz of a text file also works."
+msgstr ""
+
+#. {limit} is a size, such as '200 MB'.
+#: src/domain/import/messages.ts
+msgid "This file is too large to open in the browser (the limit is {limit} of text). Split it into smaller files, or remove columns you do not need, and try again."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "This file is too large to open in the browser. Split it into smaller files, or remove columns you do not need, and try again."
+msgstr ""
+
+#: src/domain/import/messages.ts
+msgid "This file looks compressed but could not be unpacked, so it may be damaged or incomplete. Download or copy it again, or add it uncompressed."
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "This file looks gzipped but could not be unpacked. Check that it downloaded completely."
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "This is not a PMO file. A PMO file holds JSON and is saved as .json or .json.gz."
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "This JSON file is not a PMO: it has no PMO header."
+msgstr ""
+
+#: src/app/NotFoundPage.tsx
+msgid "This page does not exist"
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "This part is ready to go into the PMO."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "This PMO holds details about the people sampled"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "This PMO is built from the example data, so it cannot be published. With your own tables, you can add your PMO to the <0>{communityName} community</0> on Zenodo from here and get a DOI that others can cite."
+msgstr ""
+
+#: src/features/published/DatasetPage.tsx
+msgid "This PMO is not in the list"
+msgstr ""
+
+#: src/app/StartOver.tsx
+msgid "This removes from this browser your tables, your column choices, everything you typed in, and any earlier draft that could not be opened. Saved panels are kept: delete them on the Panel step. This cannot be undone."
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "This step is optional. To use it, add a table of total reads per sample. The reads at each stage are a second, optional table."
+msgstr ""
+
+#: src/features/table-import/mappingModel.ts
+msgid "This table has no column \"{column}\". Choose another."
+msgstr ""
+
+#: src/features/table-import/mappingModel.ts
+msgid "This table no longer has this column. Untick it."
+msgstr ""
+
+#: src/app/LanguagePreviewNotice.tsx
+msgid "This translation is a preview and may be incomplete. <0>Leave the preview</0>"
+msgstr ""
+
+#. Completes "Copy {label}": the record's title
+#: src/features/review/PublishToZenodo.tsx
+msgid "title"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Title"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "To remove your draft and its files, choose Start over, in the step list or the menu. To remove everything, including saved panels, clear this site's data in your browser's settings."
+msgstr ""
+
+#: src/domain/fields/readCounts.ts
+msgid "Total raw reads"
+msgstr ""
+
+#: src/domain/fields/readCounts.ts
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "Total reads per sample"
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "Totals only"
+msgstr ""
+
+#. The table of total reads per sample, named inside other messages.
+#. The table of total reads per sample, named inside other messages.
+#: src/domain/build/notices.ts
+#: src/domain/build/readCounts.ts
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "totals table"
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "Totals table"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Town or site"
+msgstr ""
+
+#: src/features/review/zenodo.ts
+msgid "Travel history"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Travelled in last six months"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Treatment outcome"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Try again"
+msgstr ""
+
+#: src/features/review/usePmoDownload.ts
+msgid "Try again. If it keeps failing, reload the page."
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Try fewer words or a wider choice."
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Try with example data"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Turn your lab's tables into a PMO file"
+msgstr ""
+
+#: src/features/records/EntryModeSwitch.tsx
+msgid "Type it in"
+msgstr ""
+
+#: src/domain/build/runName.ts
+msgid "Type the bioinformatics run name, or choose no run name."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "UMI count"
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+#: src/features/shared/SectionResult.tsx
+msgid "Updating"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Upload it yourself instead"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Uploading the file"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Uploading the file, {sentSize} of {totalSize}"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Usage counts"
+msgstr ""
+
+#: src/app/privacy/UsageNotice.tsx
+msgid "Usage counts are on"
+msgstr ""
+
+#. Button: use this saved panel
+#: src/features/panel/SavedPanelList.tsx
+msgid "Use"
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Use a panel you saved before"
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Use a saved panel instead"
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Use the example"
+msgstr ""
+
+#: src/features/panel/PanelNameField.tsx
+msgid "Use the panel name {suggested}"
+msgstr ""
+
+#: src/features/shared/RunNameChoice.tsx
+msgid "Use the run name {name}"
+msgstr ""
+
+#: src/features/panel/SavedPanelList.tsx
+msgid "Use the saved panel {panelName}"
+msgstr ""
+
+#: src/app/OtherTabNotice.tsx
+msgid "Use this tab instead"
+msgstr ""
+
+#: src/features/records/checks.ts
+msgid "Use YYYY-MM-DD, or YYYY-MM."
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Using the same panel for every run? Save it in this browser and pick it next time instead of adding the file again."
+msgstr ""
+
+#: src/features/panel/PanelEditor.tsx
+msgid "Using the saved panel <0>{libraryName}</0>"
+msgstr ""
+
+#. Placeholder: the value of a name and value pair
+#: src/features/records/ExtraDetails.tsx
+msgid "Value"
+msgstr ""
+
+#: src/features/records/ExtraDetails.tsx
+msgid "Value of detail {number}"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Values of the wrong kind for the PMO format"
+msgstr ""
+
+#: src/features/review/noticeKinds.ts
+msgid "Values with characters the PMO format does not allow"
+msgstr ""
+
+#. Field label: a software program's version
+#: src/domain/fields/records.ts
+#: src/features/published/DatasetPage.tsx
+msgid "Version"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Visit record, not sent"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Visit record, sent to {destination}"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Waiting for you to sign in to Zenodo in the other window."
+msgstr ""
+
+#. Read out before a warning message
+#: src/ui/Callout.tsx
+msgid "Warning"
+msgstr ""
+
+#: src/features/review/PmoContents.tsx
+msgid "What is in the PMO"
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "What kind of specimen this is, such as field sample or negative control."
+msgstr ""
+
+#: src/features/review/WhatNext.tsx
+msgid "What next"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "What stays on this device"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "What this browser keeps"
+msgstr ""
+
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "What this table refers to"
+msgstr ""
+
+#: src/features/records/RecordList.tsx
+msgid "What you typed for it will be gone. This cannot be undone."
+msgstr ""
+
+#: src/features/records/EntryModeSwitch.tsx
+msgid "What you typed is kept, but only the file goes into the PMO."
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "What you will need"
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "When nucleic acids were amplified."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "When nucleic acids were extracted."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "When the pipeline was run."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "When the sequencing was done."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "When the specimen was collected, as YYYY, YYYY-MM or YYYY-MM-DD."
+msgstr ""
+
+#: src/app/HomePage.tsx
+msgid "Where and when specimens were collected, and how libraries link to them."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Where each masked stretch of the sequence starts, separated by commas."
+msgstr ""
+
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "Where extra columns go"
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Where the allele ends on the chromosome."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Where the allele starts on the chromosome, counting from 0."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Where the FASTQ files for this library are, as a path or link."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Where the forward primer ends on the chromosome."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Where the forward primer starts on the chromosome."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Where the genome file can be downloaded, or NA."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Where the genome's annotation (GFF) file can be downloaded."
+msgstr ""
+
+#: src/domain/fields/records.ts
+msgid "Where the program's code can be found, such as a GitHub page."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Where the reference stretch the pseudo-CIGAR refers to ends."
+msgstr ""
+
+#: src/domain/fields/microhaplotypes.ts
+msgid "Where the reference stretch the pseudo-CIGAR refers to starts."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Where the reverse primer ends on the chromosome."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Where the reverse primer starts on the chromosome."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Where the specimen is stored, such as a lab or freezer."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Where the specimen was collected, as latitude and longitude separated by a comma."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Where the stretch between the two primers ends on the chromosome."
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Where the stretch between the two primers starts on the chromosome."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Whether the host had a recent blood meal, TRUE or FALSE."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Whether the host travelled away from the area in the last six months, TRUE or FALSE."
+msgstr ""
+
+#: src/domain/fields/samples.ts
+msgid "Whether the host was pregnant at collection, TRUE or FALSE."
+msgstr ""
+
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Which method each run used"
+msgstr ""
+
+#: src/domain/fields/panel.ts
+msgid "Which reference genome the location refers to, counting from 0."
+msgstr ""
+
+#. Completes a sentence: a field can only hold, or must be, this. Lower case, no full stop
+#: src/domain/fields/records.ts
+msgid "whole numbers"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "With a title, description and keywords written from your PMO, the authors below and the CC BY 4.0 licence. A curator reviews it."
+msgstr ""
+
+#: src/features/review/PmoContents.tsx
+msgid "With alleles found"
+msgstr ""
+
+#: src/features/readCounts/ReadCountsStep.tsx
+#: src/features/review/PmoContents.tsx
+msgid "With read counts"
+msgstr ""
+
+#: src/domain/build/merge.ts
+msgid "Without a specimen table, each library sample becomes its own specimen, so the specimen names in the library sample table are not used. Add a specimen table to keep them."
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "Working out the result."
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "Working out the size"
+msgstr ""
+
+#: src/features/review/SectionChecklist.tsx
+msgid "Working out where this step stands."
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "Working out whether a PMO can be built from what you added."
+msgstr ""
+
+#: src/features/publish-file/PublishFilePage.tsx
+msgid "Worth a look before you publish"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Written from what is in your PMO. Change them on Zenodo as you see fit."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Written from what is in your PMO. You can change them on Zenodo before you submit."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "You sign in to Zenodo in a new window. PMO Builder then sends your file from this browser straight to Zenodo and makes a draft. Nothing is published until you publish it on Zenodo."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "You switched usage counts off in this browser, so nothing is sent."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Your browser sends Do Not Track, so nothing is sent."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Your browser sends Global Privacy Control, so nothing is sent."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Your browser setting stops them being sent, whatever this switch says."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Your browser stopped the Zenodo sign-in window. Allow pop-ups for this site and try again."
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Your choice is remembered in this browser."
+msgstr ""
+
+#: src/app/privacy/PrivacyIndicator.tsx
+msgid "Your data stays on this device"
+msgstr ""
+
+#: src/app/StartOver.tsx
+msgid "Your draft could not be removed"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Your draft is ready on Zenodo"
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Your draft is ready."
+msgstr ""
+
+#: src/features/review/WhatNext.tsx
+msgid "Your draft stays in this browser, so you can come back and change it. When you are done with it, start over to clear it for the next PMO."
+msgstr ""
+
+#: src/app/StartOver.tsx
+msgid "Your draft was removed"
+msgstr ""
+
+#: src/app/privacy/PrivacyDetails.tsx
+msgid "Your draft, including the files you opened, is saved in this browser so you can pick up where you left off. Panels you save to your library are kept there too, along with your theme and your choice about usage counts. A saved draft that could not be opened is kept aside until you save a new draft on a later visit, then deleted."
+msgstr ""
+
+#: src/features/records/EntryModeSwitch.tsx
+msgid "Your file is kept, but only what you type here goes into the PMO."
+msgstr ""
+
+#: src/app/SaveStatus.tsx
+msgid "Your latest changes were not saved"
+msgstr ""
+
+#: src/features/panel/PanelNameField.tsx
+msgid "Your library sample table refers to the panel by this name, so use the same one."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Your new version is ready on Zenodo"
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "Your PMO can be downloaded, but it does not fully match the PMO format, so other tools may not read it. See the {errors, plural, one {# problem} other {# problems}} and {warnings, plural, one {# warning} other {# warnings}} below."
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "Your PMO can be downloaded. There are {errors, plural, one {# problem} other {# problems}} and {warnings, plural, one {# warning} other {# warnings}} worth a look below."
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "Your PMO matches the PMO format and every table links up. Nothing to check."
+msgstr ""
+
+#: src/features/project/ProjectStep.tsx
+msgid "Your project"
+msgstr ""
+
+#: src/app/RestoreNotice.tsx
+msgid "Your saved draft could not be opened"
+msgstr ""
+
+#: src/app/SaveStatus.tsx
+msgid "Your saved work is being read from this browser."
+msgstr ""
+
+#: src/features/review/VerdictCard.tsx
+msgid "Your tables could not be put together into a PMO. The problems are listed under Things to check below."
+msgstr ""
+
+#: src/app/SaveStatus.tsx
+msgid "Your tables, column choices and everything you type are saved in this browser as you go. Come back later and carry on where you left off."
+msgstr ""
+
+#: src/app/ErrorBoundary.tsx
+msgid "Your work is saved in this browser, so reloading will not lose it. If this keeps happening, note what you did just before and tell the PMO Builder team."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Your Zenodo account may not do this."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Zenodo could not be reached. Check your connection and try again."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Zenodo did not accept the request. Try again in a few minutes."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Zenodo did not sign you in. Try again."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Zenodo is a free research archive. Add your PMO to the <0>{communityName} community</0> there and it gets a DOI that others can cite."
+msgstr ""
+
+#: src/features/review/PublishToZenodo.tsx
+msgid "Zenodo no longer accepts the sign-in. Try again to sign in once more."
+msgstr ""

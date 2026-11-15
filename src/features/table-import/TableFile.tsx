@@ -1,3 +1,4 @@
+import { plural, t } from "@lingui/core/macro";
 import { useState } from "react";
 
 import { fieldSetForSlot, type TableSlot } from "@/domain/draft";
@@ -31,6 +32,7 @@ export interface TableFileProps {
 export function TableFile({ slot, description, label, accept = TABLE_FILE_TYPES }: TableFileProps) {
   const fieldSetId = fieldSetForSlot(slot);
   const name = label ?? getFieldSet(fieldSetId).title;
+  const tableName = name.toLowerCase();
   const mapped = useSlotTable(slot);
   const importState = useImportState(slot);
   const actions = useActions();
@@ -38,6 +40,7 @@ export function TableFile({ slot, description, label, accept = TABLE_FILE_TYPES 
   const [choosingSheet, setChoosingSheet] = useState<string | null>(null);
 
   const table = mapped?.table ?? null;
+  const shownSheet = table?.sheetName ?? null;
   const file: ChosenFile | null =
     table === null
       ? null
@@ -47,15 +50,16 @@ export function TableFile({ slot, description, label, accept = TABLE_FILE_TYPES 
           rows: table.rowCount,
           columns: table.columns.length,
           detail:
-            table.sheetName !== null && (table.sheetNames?.length ?? 0) > 1
-              ? `Sheet ${table.sheetName}`
+            shownSheet !== null && (table.sheetNames?.length ?? 0) > 1
+              ? t`Sheet ${shownSheet}`
               : undefined,
         };
+  const importingFile = importState?.kind === "importing" ? importState.fileName : null;
   const busy =
-    importState?.kind === "importing"
-      ? `Reading ${importState.fileName}`
+    importingFile !== null
+      ? t`Reading ${importingFile}`
       : choosingSheet !== null
-        ? `Reading sheet ${choosingSheet}`
+        ? t`Reading sheet ${choosingSheet}`
         : false;
   const error =
     importState?.kind === "failed"
@@ -95,8 +99,11 @@ export function TableFile({ slot, description, label, accept = TABLE_FILE_TYPES 
       {sheets !== null && sheets.length > 1 && table !== null ? (
         <Field
           layout="inline"
-          label="Sheet"
-          hint={`This workbook has ${sheets.length} sheets. Choose the one that holds the ${name.toLowerCase()}.`}
+          label={t({ message: "Sheet", comment: "A sheet of a spreadsheet workbook" })}
+          hint={plural(sheets.length, {
+            one: `This workbook has # sheet. Choose the one that holds the ${tableName}.`,
+            other: `This workbook has # sheets. Choose the one that holds the ${tableName}.`,
+          })}
         >
           <Select
             options={sheets.map((sheet) => ({ value: sheet, label: sheet }))}
@@ -111,9 +118,9 @@ export function TableFile({ slot, description, label, accept = TABLE_FILE_TYPES 
       <ConfirmDialog
         open={confirmingRemove}
         onOpenChange={setConfirmingRemove}
-        title={`Remove the ${name.toLowerCase()}?`}
-        description="The file and your column choices for it are removed from this draft. You can add the file again later."
-        confirmLabel="Remove"
+        title={t`Remove the ${tableName}?`}
+        description={t`The file and your column choices for it are removed from this draft. You can add the file again later.`}
+        confirmLabel={t`Remove`}
         tone="danger"
         onConfirm={() => actions.removeTable(slot)}
       />

@@ -1,3 +1,6 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
+
 import { StepPage } from "@/app/StepPage";
 import { StepIntro } from "@/features/records";
 import { SectionResult } from "@/features/shared";
@@ -14,25 +17,27 @@ export function BioinformaticsStep() {
     <StepPage stepId="bioinformatics">
       <div className="flex flex-col gap-12">
         <StepIntro>
-          Optional. This tells readers of the PMO which programs and versions turned the reads into
-          alleles, and links each run in the allele table to its pipeline.
+          <Trans>
+            Optional. This tells readers of the PMO which programs and versions turned the reads
+            into alleles, and links each run in the allele table to its pipeline.
+          </Trans>
         </StepIntro>
         <MethodsPart />
         <RunsPart />
         <SectionResult
           section="bioinformatics"
-          emptyMessage="Nothing here yet. Add a method and a run above to add them to the PMO."
+          emptyMessage={t`Nothing here yet. Add a method and a run above to add them to the PMO.`}
           stats={(summary) => [
             {
-              label: summary.methods.length === 1 ? "Method" : "Methods",
+              label: plural(summary.methods.length, { one: "Method", other: "Methods" }),
               value: summary.methods.length,
             },
             {
-              label: "Steps",
+              label: t({ message: "Steps", comment: "Heading for a count of pipeline steps" }),
               value: summary.methods.reduce((sum, method) => sum + method.steps, 0),
             },
             {
-              label: summary.runs === 1 ? "Run" : "Runs",
+              label: plural(summary.runs, { one: "Run", other: "Runs" }),
               value: summary.runs,
               hint:
                 summary.runNames.length > 0 ? summary.runNames.slice(0, 3).join(", ") : undefined,

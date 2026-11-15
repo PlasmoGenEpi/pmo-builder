@@ -1,39 +1,66 @@
-import type { MergeSummary } from "@/domain/build";
-import { Card, Stat } from "@/ui";
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 
-import { count } from "./reviewModel";
+import type { MergeSummary } from "@/domain/build";
+import { Card, Stat, formatCount } from "@/ui";
 
 interface Group {
+  /** Stays English: a key and a test id. */
+  readonly id: string;
   readonly title: string;
-  readonly stats: readonly { readonly label: string; readonly value: number }[];
+  readonly stats: readonly {
+    /** Stays English: a key and a test id. */
+    readonly id: string;
+    readonly label: string;
+    readonly value: number;
+  }[];
 }
 
 function groups(summary: MergeSummary): readonly Group[] {
   return [
     {
-      title: "Samples",
+      id: "Samples",
+      title: t`Samples`,
       stats: [
-        { label: "Specimens", value: summary.specimens },
-        { label: "Library samples", value: summary.librarySamples },
-        { label: "With alleles found", value: summary.librarySamplesWithDetections },
-        { label: "With read counts", value: summary.librarySamplesWithReadCounts },
+        { id: "Specimens", label: t`Specimens`, value: summary.specimens },
+        { id: "Library samples", label: t`Library samples`, value: summary.librarySamples },
+        {
+          id: "With alleles found",
+          label: t`With alleles found`,
+          value: summary.librarySamplesWithDetections,
+        },
+        {
+          id: "With read counts",
+          label: t`With read counts`,
+          value: summary.librarySamplesWithReadCounts,
+        },
       ],
     },
     {
-      title: "Panel",
+      id: "Panel",
+      title: t`Panel`,
       stats: [
-        { label: "Panels", value: summary.panels },
-        { label: "Targets", value: summary.targets },
-        { label: "Targets with alleles", value: summary.targetsWithCalls },
-        { label: "Genomes", value: summary.genomes },
+        { id: "Panels", label: t`Panels`, value: summary.panels },
+        { id: "Targets", label: t`Targets`, value: summary.targets },
+        {
+          id: "Targets with alleles",
+          label: t`Targets with alleles`,
+          value: summary.targetsWithCalls,
+        },
+        { id: "Genomes", label: t`Genomes`, value: summary.genomes },
       ],
     },
     {
-      title: "Study and methods",
+      id: "Study and methods",
+      title: t`Study and methods`,
       stats: [
-        { label: "Projects", value: summary.projects },
-        { label: "Sequencing runs", value: summary.sequencingRuns },
-        { label: "Bioinformatics runs", value: summary.bioinformaticsRuns },
+        { id: "Projects", label: t`Projects`, value: summary.projects },
+        { id: "Sequencing runs", label: t`Sequencing runs`, value: summary.sequencingRuns },
+        {
+          id: "Bioinformatics runs",
+          label: t`Bioinformatics runs`,
+          value: summary.bioinformaticsRuns,
+        },
       ],
     },
   ];
@@ -41,10 +68,12 @@ function groups(summary: MergeSummary): readonly Group[] {
 
 /** One sentence that reads the main numbers out. */
 function lead(summary: MergeSummary): string {
-  const samples = `${count(summary.librarySamples, "library sample")} from ${count(summary.specimens, "specimen")}`;
-  const found = `alleles found in ${new Intl.NumberFormat("en-US").format(summary.librarySamplesWithDetections)} of them`;
-  const targets = `at ${new Intl.NumberFormat("en-US").format(summary.targetsWithCalls)} of the panel's ${count(summary.targets, "target")}`;
-  return `${samples}, with ${found} ${targets}.`;
+  const librarySamples = summary.librarySamples;
+  const specimens = summary.specimens;
+  const targets = summary.targets;
+  const samplesWithAlleles = formatCount(summary.librarySamplesWithDetections);
+  const targetsWithAlleles = formatCount(summary.targetsWithCalls);
+  return t`${plural(librarySamples, { one: "# library sample", other: "# library samples" })} from ${plural(specimens, { one: "# specimen", other: "# specimens" })}, with alleles found in ${samplesWithAlleles} of them at ${targetsWithAlleles} of the panel's ${plural(targets, { one: "# target", other: "# targets" })}.`;
 }
 
 /** What the built PMO holds: a sentence, then the merge summary numbers in three groups. */
@@ -57,24 +86,24 @@ export function PmoContents({ summary }: { readonly summary: MergeSummary | null
             id="review-contents-heading"
             className="text-lg font-semibold tracking-tight text-text"
           >
-            What is in the PMO
+            <Trans>What is in the PMO</Trans>
           </h2>
           <p className="text-base text-text-muted">
-            {summary === null ? "The numbers appear here once a PMO can be built." : lead(summary)}
+            {summary === null ? t`The numbers appear here once a PMO can be built.` : lead(summary)}
           </p>
         </div>
         {summary === null ? null : (
           <div className="flex flex-col gap-6">
             {groups(summary).map((group) => (
               <section
-                key={group.title}
+                key={group.id}
                 aria-label={group.title}
                 className="flex flex-col gap-3 border-t border-border pt-4"
               >
                 <h3 className="text-sm font-medium text-text-subtle">{group.title}</h3>
                 <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
                   {group.stats.map((stat) => (
-                    <div key={stat.label} data-stat={stat.label}>
+                    <div key={stat.id} data-stat={stat.id}>
                       <Stat label={stat.label} value={stat.value} />
                     </div>
                   ))}

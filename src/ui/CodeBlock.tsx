@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { Check, Copy } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 
@@ -42,6 +43,9 @@ export function CodeBlock({
   const visible = cut(code, limit);
   const truncated = visible.length < code.length;
   const totalBytes = useMemo(() => new TextEncoder().encode(code).length, [code]);
+  const visibleSize = formatBytes(visible.length);
+  const totalSize = formatBytes(totalBytes);
+  const hiddenSize = formatBytes(code.length - visible.length);
 
   async function copy() {
     try {
@@ -62,9 +66,7 @@ export function CodeBlock({
     >
       <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-1.5">
         <span id={statusId} className="text-sm text-text-muted">
-          {truncated
-            ? `Showing ${formatBytes(visible.length)} of ${formatBytes(totalBytes)}`
-            : formatBytes(totalBytes)}
+          {truncated ? t`Showing ${visibleSize} of ${totalSize}` : totalSize}
         </span>
         {copyable ? (
           <Button
@@ -75,7 +77,7 @@ export function CodeBlock({
               void copy();
             }}
           >
-            {copied ? "Copied" : "Copy"}
+            {copied ? t`Copied` : t`Copy`}
           </Button>
         ) : null}
       </div>
@@ -94,11 +96,9 @@ export function CodeBlock({
       {truncated ? (
         <div className="flex items-center gap-3 border-t border-border px-3 py-2">
           <Button size="sm" onClick={() => setLimit((current) => current + chunkSize * 4)}>
-            Show more
+            {t`Show more`}
           </Button>
-          <span className="text-sm text-text-muted">
-            {formatBytes(code.length - visible.length)} not shown
-          </span>
+          <span className="text-sm text-text-muted">{t`${hiddenSize} not shown`}</span>
         </div>
       ) : null}
     </div>

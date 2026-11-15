@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { createElement, lazy, type ComponentType } from "react";
 
 import type { SectionId } from "@/domain/types";
@@ -5,7 +6,7 @@ import type { SectionId } from "@/domain/types";
 /** Every step in the app: the eight data sections and the review step. */
 export type StepId = SectionId | "review";
 
-/** Sidebar groups, in order. */
+/** Sidebar groups, in order. These are identifiers; show {@link STEP_GROUP_LABELS}. */
 export const STEP_GROUPS = [
   "Required",
   "Samples",
@@ -16,6 +17,15 @@ export const STEP_GROUPS = [
 
 /** One sidebar group. */
 export type StepGroup = (typeof STEP_GROUPS)[number];
+
+/** The heading shown for each sidebar group, in the interface language. */
+export const STEP_GROUP_LABELS: Readonly<Record<StepGroup, string>> = {
+  Required: t({ message: "Required", comment: "Sidebar heading: the steps a PMO file needs" }),
+  Samples: t({ message: "Samples", comment: "Sidebar heading" }),
+  "Study and methods": t({ message: "Study and methods", comment: "Sidebar heading" }),
+  Extras: t({ message: "Extras", comment: "Sidebar heading: optional extra steps" }),
+  Finish: t({ message: "Finish", comment: "Sidebar heading: the last step" }),
+};
 
 /** One step of the app. */
 export interface StepDefinition {
@@ -85,8 +95,11 @@ export const STEPS: readonly StepDefinition[] = [
   {
     id: "microhaplotypes",
     path: "/microhaplotypes",
-    title: "Microhaplotypes",
-    description: "Add your allele table: the microhaplotypes found in each sample and their reads.",
+    title: t({
+      message: "Microhaplotypes",
+      comment: "Step title, shown in the sidebar and as the page heading",
+    }),
+    description: t`Add your allele table: the microhaplotypes found in each sample and their reads.`,
     group: "Required",
     required: true,
     ...page(() =>
@@ -98,9 +111,11 @@ export const STEPS: readonly StepDefinition[] = [
   {
     id: "panel",
     path: "/panel",
-    title: "Panel",
-    description:
-      "Add the targets and primers of your panel, and the reference genome if you have it.",
+    title: t({
+      message: "Panel",
+      comment: "Step title, shown in the sidebar and as the page heading",
+    }),
+    description: t`Add the targets and primers of your panel, and the reference genome if you have it.`,
     group: "Required",
     required: true,
     ...page(() => import("@/features/panel/PanelStep").then((module) => module.PanelStep)),
@@ -108,8 +123,11 @@ export const STEPS: readonly StepDefinition[] = [
   {
     id: "specimens",
     path: "/specimens",
-    title: "Specimens",
-    description: "Describe each specimen: where and when it was collected, and from which host.",
+    title: t({
+      message: "Specimens",
+      comment: "Step title, shown in the sidebar and as the page heading",
+    }),
+    description: t`Describe each specimen: where and when it was collected, and from which host.`,
     group: "Samples",
     required: false,
     ...page(() =>
@@ -119,8 +137,11 @@ export const STEPS: readonly StepDefinition[] = [
   {
     id: "librarySamples",
     path: "/library-samples",
-    title: "Library samples",
-    description: "Link each sequenced library to its specimen, panel and sequencing run.",
+    title: t({
+      message: "Library samples",
+      comment: "Step title, shown in the sidebar and as the page heading",
+    }),
+    description: t`Link each sequenced library to its specimen, panel and sequencing run.`,
     group: "Samples",
     required: false,
     ...page(() =>
@@ -132,8 +153,11 @@ export const STEPS: readonly StepDefinition[] = [
   {
     id: "project",
     path: "/project",
-    title: "Project",
-    description: "Name the project this data belongs to and the people behind it.",
+    title: t({
+      message: "Project",
+      comment: "Step title, shown in the sidebar and as the page heading",
+    }),
+    description: t`Name the project this data belongs to and the people behind it.`,
     group: "Study and methods",
     required: false,
     ...page(() => import("@/features/project/ProjectStep").then((module) => module.ProjectStep)),
@@ -141,8 +165,11 @@ export const STEPS: readonly StepDefinition[] = [
   {
     id: "sequencing",
     path: "/sequencing",
-    title: "Sequencing",
-    description: "Record how and where the libraries were sequenced.",
+    title: t({
+      message: "Sequencing",
+      comment: "Step title, shown in the sidebar and as the page heading",
+    }),
+    description: t`Record how and where the libraries were sequenced.`,
     group: "Study and methods",
     required: false,
     ...page(() =>
@@ -152,8 +179,11 @@ export const STEPS: readonly StepDefinition[] = [
   {
     id: "bioinformatics",
     path: "/bioinformatics",
-    title: "Bioinformatics",
-    description: "Describe the pipeline and the runs that produced your allele table.",
+    title: t({
+      message: "Bioinformatics",
+      comment: "Step title, shown in the sidebar and as the page heading",
+    }),
+    description: t`Describe the pipeline and the runs that produced your allele table.`,
     group: "Study and methods",
     required: false,
     ...page(() =>
@@ -165,8 +195,11 @@ export const STEPS: readonly StepDefinition[] = [
   {
     id: "readCounts",
     path: "/read-counts",
-    title: "Read counts by stage",
-    description: "Add how many reads each sample kept at each stage of the pipeline.",
+    title: t({
+      message: "Read counts by stage",
+      comment: "Step title, shown in the sidebar and as the page heading",
+    }),
+    description: t`Add how many reads each sample kept at each stage of the pipeline.`,
     group: "Extras",
     required: false,
     ...page(() =>
@@ -176,8 +209,11 @@ export const STEPS: readonly StepDefinition[] = [
   {
     id: "review",
     path: "/review",
-    title: "Review and download",
-    description: "See what is ready, fix what is missing, and download your PMO file.",
+    title: t({
+      message: "Review and download",
+      comment: "Step title, shown in the sidebar and as the page heading",
+    }),
+    description: t`See what is ready, fix what is missing, and download your PMO file.`,
     group: "Finish",
     required: false,
     ...page(() => import("@/features/review/ReviewStep").then((module) => module.ReviewStep)),

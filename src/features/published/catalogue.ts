@@ -2,6 +2,9 @@
  * Reading and searching the catalogue of published PMOs. The catalogue is a
  * file on this site, written by the harvester; nothing here contacts Zenodo.
  */
+import { t } from "@lingui/core/macro";
+
+import { intlLocale } from "@/i18n/languages";
 import {
   INDEX_VERSION,
   REPOSITORY_PATH,
@@ -149,14 +152,16 @@ const TAXA: Readonly<Record<number, string>> = {
 
 /** A species name for the common malaria parasites, or the identifier itself. */
 export function taxonName(taxon: number): string {
-  return TAXA[taxon] ?? `NCBI taxon ${taxon}`;
+  return TAXA[taxon] ?? t`NCBI taxon ${taxon}`;
 }
 
 /** "2019", or "2015 to 2019". */
 export function yearsText(dataset: PublishedDataset): string | null {
   const years = dataset.collectionYears;
   if (years === null) return null;
-  return years.first === years.last ? String(years.first) : `${years.first} to ${years.last}`;
+  const firstYear = years.first;
+  const lastYear = years.last;
+  return firstYear === lastYear ? String(firstYear) : t`${firstYear} to ${lastYear}`;
 }
 
 /** A date such as "14 November 2026" from `YYYY-MM-DD`, or the text as given. */
@@ -164,7 +169,7 @@ export function longDate(value: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
   if (match === null) return value;
   const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(intlLocale(), {
     day: "numeric",
     month: "long",
     year: "numeric",

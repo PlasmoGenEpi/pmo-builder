@@ -7,6 +7,8 @@
  * meant, so a fixed name that happens to equal a column name is refused here
  * rather than silently read as a column.
  */
+import { t } from "@lingui/core/macro";
+
 import {
   RUN_FORM_FIELDS,
   formField,
@@ -53,7 +55,7 @@ export function resolveRunName(
           notice: makeNotice(
             "error",
             "run-name/missing",
-            "Type the bioinformatics run name, or choose no run name.",
+            t`Type the bioinformatics run name, or choose no run name.`,
           ),
         };
       }
@@ -64,24 +66,31 @@ export function resolveRunName(
           notice: makeNotice(
             "error",
             "run-name/invalid",
-            value.kind === "invalid" ? value.message : "The run name is not valid.",
+            value.kind === "invalid" ? value.message : t`The run name is not valid.`,
           ),
         };
       }
       if (columns.includes(value.value)) {
+        const runName = value.value;
+        const table = tableLabel;
         return {
           kind: "blocked",
           status: "error",
           notice: makeNotice(
             "error",
             "run-name/same-as-column",
-            `The run name "${value.value}" is also the name of a column in the ${tableLabel}, so it would be read as that column. Choose "from a column" instead, or use another name.`,
+            t({
+              message: `The run name "${runName}" is also the name of a column in the ${table}, so it would be read as that column. Choose "from a column" instead, or use another name.`,
+              comment:
+                "{table} is the name of a table, such as 'allele table'. \"from a column\" is the name of a choice on the page; use the same words as there.",
+            }),
           ),
         };
       }
       return { kind: "ok", option: value.value, textColumn: null };
     }
     case "column": {
+      const table = tableLabel;
       if (choice.column === null || choice.column === "") {
         return {
           kind: "blocked",
@@ -89,18 +98,25 @@ export function resolveRunName(
           notice: makeNotice(
             "error",
             "run-name/missing-column",
-            `Choose the column of the ${tableLabel} that holds the run name.`,
+            t({
+              message: `Choose the column of the ${table} that holds the run name.`,
+              comment: "{table} is the name of a table, such as 'allele table'.",
+            }),
           ),
         };
       }
       if (!columns.includes(choice.column)) {
+        const column = choice.column;
         return {
           kind: "blocked",
           status: "error",
           notice: makeNotice(
             "error",
             "run-name/unknown-column",
-            `The ${tableLabel} has no column "${choice.column}" for the run name. Choose another column.`,
+            t({
+              message: `The ${table} has no column "${column}" for the run name. Choose another column.`,
+              comment: "{table} is the name of a table, such as 'allele table'.",
+            }),
           ),
         };
       }

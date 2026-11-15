@@ -1,3 +1,5 @@
+import { plural } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { CircleCheck, CircleDashed, CircleExclamationPoint } from "lucide-react";
 
 import { Badge } from "@/ui";
@@ -17,19 +19,19 @@ export function RecordBadge({ state }: RecordBadgeProps) {
     case "complete":
       return (
         <Badge tone="success" icon={CircleCheck}>
-          Complete
+          <Trans comment="Badge: every required field of the record is filled in">Complete</Trans>
         </Badge>
       );
     case "missing":
       return (
         <Badge tone="warning" icon={CircleDashed}>
-          {state.count === 1 ? "1 field to fill in" : `${state.count} fields to fill in`}
+          {plural(state.count, { one: "# field to fill in", other: "# fields to fill in" })}
         </Badge>
       );
     case "invalid":
       return (
         <Badge tone="danger" icon={CircleExclamationPoint}>
-          {state.count === 1 ? "1 value to check" : `${state.count} values to check`}
+          {plural(state.count, { one: "# value to check", other: "# values to check" })}
         </Badge>
       );
     default:

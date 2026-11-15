@@ -1,7 +1,13 @@
 /**
  * Publishing a PMO to Zenodo by hand: where the community's upload page is,
  * and the record details the app suggests. Nothing here talks to Zenodo.
+ *
+ * The record's title, description and keywords stay in English whatever the
+ * interface language, so the community's records read alike. Only the labels
+ * shown on screen are translated.
  */
+import { t } from "@lingui/core/macro";
+
 import type { MergeSummary, PersonalField, PublicationSummary } from "@/domain/build";
 
 import { count } from "./reviewModel";
@@ -70,16 +76,16 @@ export function uploadUrl(community: string): string {
 
 /** What each personal field is called on screen. */
 export const PERSONAL_FIELD_LABELS: Readonly<Record<PersonalField, string>> = {
-  host_subject_name: "Subject names or codes",
-  alternate_identifiers: "Other specimen identifiers",
-  lat_lon: "Coordinates",
-  geo_admin3: "Smallest administrative area",
-  collection_date: "Collection dates that name the day",
-  host_age: "Age",
-  host_sex: "Sex",
-  gravidity: "Pregnancy",
-  travel_out_six_month: "Travel history",
-  specimen_comments: "Free-text comments",
+  host_subject_name: t`Subject names or codes`,
+  alternate_identifiers: t`Other specimen identifiers`,
+  lat_lon: t`Coordinates`,
+  geo_admin3: t`Smallest administrative area`,
+  collection_date: t`Collection dates that name the day`,
+  host_age: t`Age`,
+  host_sex: t`Sex`,
+  gravidity: t`Pregnancy`,
+  travel_out_six_month: t`Travel history`,
+  specimen_comments: t`Free-text comments`,
 };
 
 /** A person who made the data, as Zenodo stores an author. */

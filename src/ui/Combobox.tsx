@@ -1,3 +1,4 @@
+import { plural, t } from "@lingui/core/macro";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { Popover as RadixPopover } from "radix-ui";
 import {
@@ -88,10 +89,10 @@ export function Combobox({
   options,
   value,
   onChange,
-  noneLabel = "None",
+  noneLabel = t({ message: "None", comment: "The choice of nothing in a list" }),
   noneDescription,
   placeholder,
-  emptyMessage = "Nothing matches your search.",
+  emptyMessage = t`Nothing matches your search.`,
   mono = false,
   disabled = false,
   className,
@@ -220,6 +221,8 @@ export function Combobox({
   }, [open, activeIndex, inputId]);
 
   const optionCount = matches.length;
+  const optionTotal = formatCount(optionCount);
+  const shownLimit = formatCount(RENDER_LIMIT);
   const truncated = matches.length > RENDER_LIMIT;
 
   return (
@@ -249,7 +252,7 @@ export function Combobox({
             autoComplete="off"
             spellCheck={false}
             disabled={disabled}
-            placeholder={placeholder ?? (noneLabel === false ? "Choose" : noneLabel)}
+            placeholder={placeholder ?? (noneLabel === false ? t`Choose` : noneLabel)}
             value={open ? query : selectedLabel}
             onChange={(event) => {
               const next = event.target.value;
@@ -348,7 +351,7 @@ export function Combobox({
                     {isCurrent ? (
                       <>
                         <Check aria-hidden="true" className="size-4 text-accent-text" />
-                        <span className="sr-only">(current choice)</span>
+                        <span className="sr-only">{t`(current choice)`}</span>
                       </>
                     ) : null}
                   </span>
@@ -376,8 +379,7 @@ export function Combobox({
             ) : null}
             {truncated ? (
               <li role="presentation" className="px-3 py-2 text-sm text-text-muted">
-                Showing the first {formatCount(RENDER_LIMIT)} of {formatCount(optionCount)}. Type to
-                narrow the list.
+                {t`Showing the first ${shownLimit} of ${optionTotal}. Type to narrow the list.`}
               </li>
             ) : null}
           </ul>
@@ -385,7 +387,7 @@ export function Combobox({
       </RadixPopover.Portal>
       <output aria-live="polite" className="sr-only">
         {open && needle !== ""
-          ? `${formatCount(optionCount)} ${optionCount === 1 ? "match" : "matches"}`
+          ? plural(optionCount, { one: `${optionTotal} match`, other: `${optionTotal} matches` })
           : ""}
       </output>
     </RadixPopover.Root>

@@ -1,6 +1,7 @@
 /**
  * The microhaplotypes section: the allele table, through `mhapTableToPmo`.
  */
+import { plural, t } from "@lingui/core/macro";
 import { mhapTableToPmo, type MhapTableToPmoOptions, type MhapTableToPmoResult } from "pmotools-ts";
 
 import type { MicrohaplotypesDraft } from "@/domain/draft";
@@ -45,7 +46,11 @@ export const MHAP_COLUMN_OPTIONS = [
   "qualityCol",
 ] as const satisfies readonly (keyof MhapTableToPmoOptions)[];
 
-const TABLE_LABEL = "allele table";
+const TABLE_LABEL = t({
+  message: "allele table",
+  comment:
+    "Names the table of microhaplotypes inside other messages, such as 'The allele table has no rows.'",
+});
 
 /**
  * Builds the microhaplotypes section.
@@ -61,7 +66,7 @@ export function buildMicrohaplotypes(
   if (section.table === null) {
     return runNameStarted(section.runName) || section.representativeColumns.length > 0
       ? notReady("microhaplotypes", "incomplete", [
-          makeNotice("error", "table/not-imported", "Import the allele table."),
+          makeNotice("error", "table/not-imported", t`Import the allele table.`),
         ])
       : notReady("microhaplotypes", "empty");
   }
@@ -93,13 +98,16 @@ export function buildMicrohaplotypes(
     (c) => !prepared.raw.columns.includes(c),
   );
   if (missingRepresentative.length > 0) {
+    const columnCount = missingRepresentative.length;
+    const columns = quoteItems(missingRepresentative);
     return notReady("microhaplotypes", "error", [
       makeNotice(
         "error",
         "mapping/unknown-additional-column",
-        `The allele table has no ${missingRepresentative.length === 1 ? "column" : "columns"} ${quoteItems(
-          missingRepresentative,
-        )}, chosen to carry onto each microhaplotype. Untick ${missingRepresentative.length === 1 ? "it" : "them"}.`,
+        plural(columnCount, {
+          one: `The allele table has no column ${columns}, chosen to carry onto each microhaplotype. Untick it.`,
+          other: `The allele table has no columns ${columns}, chosen to carry onto each microhaplotype. Untick them.`,
+        }),
       ),
     ]);
   }
@@ -191,25 +199,46 @@ function repeatedRowsNotice(
   const [first] = rows;
   if (first === undefined) return null;
   const firstRow = raw.rows[first] ?? {};
-  const one = rows.length === 1;
-  const example = `${one ? "" : "such as "}sample "${cell(firstRow, sample)}", target "${cell(firstRow, target)}"`;
+  const sampleName = cell(firstRow, sample);
+  const targetName = cell(firstRow, target);
   const used = new Set([...Object.values(columns), ...(runColumn === null ? [] : [runColumn])]);
   const runLike = raw.columns.find((column) => {
     if (used.has(column)) return false;
     const values = new Set(raw.rows.map((row) => cell(row, column)));
     return values.size > 1 && values.size <= MAX_RUN_VALUES && repeats(column).length === 0;
   });
+  const rowCount = rows.length;
+  const rowList = describeRows(rows);
+  const repeatedText =
+    runColumn === null
+      ? t({
+          message: plural(rowCount, {
+            one: `# row repeats the sample, target and sequence of an earlier row: ${rowList} (sample "${sampleName}", target "${targetName}"), so their reads would be counted twice.`,
+            other: `# rows repeat the sample, target and sequence of an earlier row: ${rowList} (such as sample "${sampleName}", target "${targetName}"), so their reads would be counted twice.`,
+          }),
+          comment: "{rowList} is such as 'rows 5 and 9'.",
+        })
+      : t({
+          message: plural(rowCount, {
+            one: `# row repeats the sample, target and sequence of an earlier row in the same run: ${rowList} (sample "${sampleName}", target "${targetName}"), so their reads would be counted twice.`,
+            other: `# rows repeat the sample, target and sequence of an earlier row in the same run: ${rowList} (such as sample "${sampleName}", target "${targetName}"), so their reads would be counted twice.`,
+          }),
+          comment: "{rowList} is such as 'rows 5 and 9'.",
+        });
   const cause =
     runColumn === null && runLike !== undefined
-      ? `Column "${runLike}" tells them apart, so the table probably holds several analysis runs. Choose that column under "Bioinformatics run name".`
+      ? t({
+          message: `Column "${runLike}" tells them apart, so the table probably holds several analysis runs. Choose that column under "Bioinformatics run name".`,
+          comment:
+            '"Bioinformatics run name" is the label of a field on the page; use the same words as there.',
+        })
       : runColumn === null
-        ? 'Remove the repeated rows. If the table holds several analysis runs, choose the column that names the run under "Bioinformatics run name".'
-        : "Remove the repeated rows.";
-  return makeNotice(
-    "error",
-    "table/repeated-rows",
-    `${rows.length} ${one ? "row repeats" : "rows repeat"} the sample, target and sequence of an earlier row${
-      runColumn === null ? "" : " in the same run"
-    }: ${describeRows(rows)} (${example}), so their reads would be counted twice. ${cause}`,
-  );
+        ? t({
+            message:
+              'Remove the repeated rows. If the table holds several analysis runs, choose the column that names the run under "Bioinformatics run name".',
+            comment:
+              '"Bioinformatics run name" is the label of a field on the page; use the same words as there.',
+          })
+        : t`Remove the repeated rows.`;
+  return makeNotice("error", "table/repeated-rows", `${repeatedText} ${cause}`);
 }

@@ -2,6 +2,7 @@
  * The read counts section: a totals table and an optional by-stage table,
  * through `readCountByStageTableToPmo`.
  */
+import { t } from "@lingui/core/macro";
 import {
   readCountByStageTableToPmo,
   type ReadCountByStageOptions,
@@ -69,15 +70,24 @@ export function buildReadCounts(
     if (section.byStage === null && !runNameStarted(section.runName))
       return notReady("readCounts", "empty");
     return notReady("readCounts", "incomplete", [
-      makeNotice("error", "read-counts/no-totals", "Import the table of total reads per sample."),
+      makeNotice("error", "read-counts/no-totals", t`Import the table of total reads per sample.`),
     ]);
   }
-  const runName = resolveRunName(section.runName, section.totals.table.columns, "totals table");
+  const totalsLabel = t({
+    message: "totals table",
+    comment: "The table of total reads per sample, named inside other messages.",
+  });
+  const byStageLabel = t({
+    message: "by-stage table",
+    comment:
+      "The table of reads per sample, target and processing stage, named inside other messages.",
+  });
+  const runName = resolveRunName(section.runName, section.totals.table.columns, totalsLabel);
   const totals = prepareTable(
     {
       mapped: section.totals,
       fieldSetId: "readCountTotals",
-      tableLabel: "totals table",
+      tableLabel: totalsLabel,
       extraTextColumns:
         runName.kind === "ok" && runName.textColumn !== null ? [runName.textColumn] : [],
     },
@@ -90,7 +100,7 @@ export function buildReadCounts(
           {
             mapped: section.byStage,
             fieldSetId: "readCountsByStage",
-            tableLabel: "by-stage table",
+            tableLabel: byStageLabel,
           },
           context,
         );
@@ -124,7 +134,7 @@ export function buildReadCounts(
 
   const totalOptions = columnOptions(totals.columns, READ_COUNT_TOTAL_OPTIONS);
   const sampleColumn = totalOptions.options.librarySampleNameCol ?? "library_sample_name";
-  const notices: Notice[] = [...unknownKeysNotice(totalOptions.unknownKeys, "totals table")];
+  const notices: Notice[] = [...unknownKeysNotice(totalOptions.unknownKeys, totalsLabel)];
   let readsByStageTable: Table | null = null;
   let stageOptions: Partial<Record<(typeof READ_COUNT_STAGE_OPTIONS)[number], string>> = {};
   if (stage !== null) {
@@ -138,7 +148,7 @@ export function buildReadCounts(
         makeNotice(
           "error",
           "read-counts/sample-column-clash",
-          `The by-stage table takes sample names from column "${stageSample}" but also has a column "${sampleColumn}", the totals table's sample column. Rename one of them in the file.`,
+          t`The by-stage table takes sample names from column "${stageSample}" but also has a column "${sampleColumn}", the totals table's sample column. Rename one of them in the file.`,
         ),
       ]);
     }
@@ -148,7 +158,7 @@ export function buildReadCounts(
         : renameColumn(stage.typed, stageSample, sampleColumn);
     const converted = columnOptions(stage.columns, READ_COUNT_STAGE_OPTIONS, ["librarySampleName"]);
     stageOptions = converted.options;
-    notices.push(...unknownKeysNotice(converted.unknownKeys, "by-stage table"));
+    notices.push(...unknownKeysNotice(converted.unknownKeys, byStageLabel));
   }
 
   const run = runBuilder(totals.issues, (onWarning) =>

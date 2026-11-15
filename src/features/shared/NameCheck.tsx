@@ -1,3 +1,4 @@
+import { plural, t } from "@lingui/core/macro";
 import { CircleCheck, TriangleExclamationPoint } from "lucide-react";
 
 import { StepLink } from "@/app/StepLink";
@@ -10,7 +11,10 @@ const SHOWN = 6;
 export function listNames(names: readonly string[], count = SHOWN): string {
   const shown = names.slice(0, count);
   const more = names.length - shown.length;
-  return more > 0 ? `${shown.join(", ")} and ${more} more` : shown.join(", ");
+  const shownNames = shown.join(", ");
+  return more > 0
+    ? plural(more, { one: `${shownNames} and # more`, other: `${shownNames} and # more` })
+    : shownNames;
 }
 
 /** Props for {@link NameCheck}. */
@@ -46,25 +50,24 @@ export function NameCheck({
   things,
   emptyAdvice,
 }: NameCheckProps) {
-  const step = getStep(stepId);
+  const stepTitle = getStep(stepId).title;
   const link = <StepLink step={stepId} className="whitespace-nowrap" />;
   let check: { readonly ok: boolean; readonly text: string } | null = null;
   if (names !== null && names.length > 0) {
     if (known === null || known.length === 0) {
+      const empty = t`The ${stepTitle} step has no ${things} yet.`;
       check = {
         ok: false,
-        text: `The ${step.title} step has no ${things} yet.${emptyAdvice === undefined ? "" : ` ${emptyAdvice}`}`,
+        text: emptyAdvice === undefined ? empty : `${empty} ${emptyAdvice}`,
       };
     } else {
       const knownSet = new Set(known);
       const missing = names.filter((name) => !knownSet.has(name));
+      const missingNames = listNames(missing);
       check =
         missing.length === 0
-          ? { ok: true, text: `All found on the ${step.title} step.` }
-          : {
-              ok: false,
-              text: `Not on the ${step.title} step: ${listNames(missing)}.`,
-            };
+          ? { ok: true, text: t`All found on the ${stepTitle} step.` }
+          : { ok: false, text: t`Not on the ${stepTitle} step: ${missingNames}.` };
     }
   }
   const Icon = check?.ok === true ? CircleCheck : TriangleExclamationPoint;
@@ -73,7 +76,7 @@ export function NameCheck({
       <dt className="text-sm font-medium text-text-muted">{label}</dt>
       <dd className="flex flex-col gap-1">
         {names === null ? (
-          <span className="text-base text-text-muted">Reading the table.</span>
+          <span className="text-base text-text-muted">{t`Reading the table.`}</span>
         ) : names.length === 0 ? (
           <span className="text-base text-text-muted">{noneMessage}</span>
         ) : (

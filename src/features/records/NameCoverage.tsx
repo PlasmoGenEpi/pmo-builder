@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { CircleCheck, Plus } from "lucide-react";
 
 import { Button, Callout } from "@/ui";
@@ -40,17 +42,21 @@ export function NameCoverage({ referenced, defined, source, noun, onCreate }: Na
       <p className="flex items-start gap-1.5 text-base text-text-muted">
         <CircleCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-success" />
         <span>
-          Every {noun} the {source} names has a record here.
+          <Trans>
+            Every {noun} the {source} names has a record here.
+          </Trans>
         </span>
       </p>
     );
   }
   const shown = missing.slice(0, SHOWN);
   const more = missing.length - shown.length;
-  const title =
-    missing.length === 1
-      ? `The ${source} names a ${noun} with no record here`
-      : `The ${source} names ${missing.length} ${noun}s with no record here`;
+  const title = plural(missing.length, {
+    one: `The ${source} names a ${noun} with no record here`,
+    other: `The ${source} names # ${noun}s with no record here`,
+  });
+  const onlyName = missing[0] ?? "";
+  const shownNames = shown.join(", ");
   return (
     <Callout
       tone="info"
@@ -58,14 +64,19 @@ export function NameCoverage({ referenced, defined, source, noun, onCreate }: Na
       action={
         onCreate === undefined ? undefined : (
           <Button size="sm" icon={Plus} onClick={() => onCreate(missing)}>
-            {missing.length === 1 ? `Add ${missing[0] ?? ""}` : `Add a record for each`}
+            {missing.length === 1 ? t`Add ${onlyName}` : t`Add a record for each`}
           </Button>
         )
       }
     >
       <p>
-        <span className="font-mono text-sm break-words">{shown.join(", ")}</span>
-        {more > 0 ? ` and ${more} more` : null}
+        {more > 0 ? (
+          <Trans>
+            <span className="font-mono text-sm break-words">{shownNames}</span> and {more} more
+          </Trans>
+        ) : (
+          <span className="font-mono text-sm break-words">{shownNames}</span>
+        )}
       </p>
     </Callout>
   );

@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { ArrowDown, ArrowUp, Copy, Plus, Trash2, type LucideIcon } from "lucide-react";
 import {
   useCallback,
@@ -85,15 +86,15 @@ function RemoveButton({
     <>
       <IconButton
         icon={Trash2}
-        label={`Remove ${name}`}
+        label={t`Remove ${name}`}
         onClick={() => (needsConfirm || warning !== null ? setOpen(true) : onRemove())}
       />
       <ConfirmDialog
         open={open}
         onOpenChange={setOpen}
-        title={`Remove ${name}?`}
-        description={`${warning === null ? "" : `${warning} `}What you typed for it will be gone. This cannot be undone.`}
-        confirmLabel="Remove"
+        title={t`Remove ${name}?`}
+        description={`${warning === null ? "" : `${warning} `}${t`What you typed for it will be gone. This cannot be undone.`}`}
+        confirmLabel={t`Remove`}
         tone="danger"
         onConfirm={onRemove}
       />
@@ -157,7 +158,7 @@ export function RecordList<T extends { readonly id: string }>({
 
   return (
     <div className="flex flex-col gap-5">
-      <ol className="flex flex-col gap-5" aria-label={`${noun}s`}>
+      <ol className="flex flex-col gap-5" aria-label={t`${noun}s`}>
         {items.map((item, index) => {
           const name = title(item, index);
           const headingId = `record-${item.id}-title`;
@@ -180,13 +181,13 @@ export function RecordList<T extends { readonly id: string }>({
                         <>
                           <IconButton
                             icon={ArrowUp}
-                            label={`Move ${name} up`}
+                            label={t`Move ${name} up`}
                             disabled={index === 0}
                             onClick={() => onMove(item.id, index - 1)}
                           />
                           <IconButton
                             icon={ArrowDown}
-                            label={`Move ${name} down`}
+                            label={t`Move ${name} down`}
                             disabled={index === items.length - 1}
                             onClick={() => onMove(item.id, index + 1)}
                           />
@@ -195,7 +196,7 @@ export function RecordList<T extends { readonly id: string }>({
                       {onDuplicate === undefined || isBlank(item) ? null : (
                         <IconButton
                           icon={Copy}
-                          label={`Copy ${name} into a new ${noun}`}
+                          label={t`Copy ${name} into a new ${noun}`}
                           onClick={() => focusCard(onDuplicate(item.id))}
                         />
                       )}

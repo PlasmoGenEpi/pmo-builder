@@ -1,3 +1,6 @@
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
+
 import { usePmoPreview } from "@/state";
 import { CodeBlock, formatBytes } from "@/ui";
 
@@ -10,15 +13,19 @@ const PREVIEW_LENGTH = 400_000;
 export function PmoPreviewBody() {
   const preview = usePmoPreview(PREVIEW_LENGTH);
   if (preview === null) return <PreviewSkeleton />;
+  const fileSize = formatBytes(preview.length);
+  const shownSize = formatBytes(preview.text.length);
   return (
     <div className="flex flex-col gap-2">
       {preview.truncated ? (
         <p className="text-sm text-text-muted">
-          The file is {formatBytes(preview.length)}. The first {formatBytes(preview.text.length)}{" "}
-          are shown here; the download has all of it.
+          <Trans>
+            The file is {fileSize}. The first {shownSize} are shown here; the download has all of
+            it.
+          </Trans>
         </p>
       ) : null}
-      <CodeBlock label="PMO preview" code={preview.text} />
+      <CodeBlock label={t`PMO preview`} code={preview.text} />
     </div>
   );
 }

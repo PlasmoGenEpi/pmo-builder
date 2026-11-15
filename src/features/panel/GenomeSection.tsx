@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { useId, useState } from "react";
 
 import {
@@ -11,29 +13,36 @@ import {
 import { getFieldSet } from "@/domain/fields";
 import type { Notice } from "@/domain/types";
 import { TableImport } from "@/features/table-import";
+import { intlLocale } from "@/i18n/languages";
 import { useActions } from "@/state";
 import { Callout, SegmentedControl, TextArea, TextField, type Segment } from "@/ui";
 
 import { genomeNotices, mappedPositionFields } from "./panelModel";
 
 const MODES: readonly Segment<GenomeMode>[] = [
-  { value: "none", label: "None" },
-  { value: "manual", label: "Enter by hand" },
-  { value: "table", label: "From a file" },
+  { value: "none", label: t({ message: "None", comment: "Reference genome choice: no genome" }) },
+  { value: "manual", label: t`Enter by hand` },
+  { value: "table", label: t`From a file` },
 ];
 
 const MODE_LINE: Readonly<Record<GenomeMode, string>> = {
-  none: "Only needed when the target table says where each target sits on the genome.",
-  manual: "The reference genome the target positions refer to.",
-  table: "A table with one row for each reference genome, for panels that use several.",
+  none: t`Only needed when the target table says where each target sits on the genome.`,
+  manual: t`The reference genome the target positions refer to.`,
+  table: t`A table with one row for each reference genome, for panels that use several.`,
 };
 
 function positionLabels(keys: readonly string[]): string {
   const fields = getFieldSet("panelTargets").fields;
   const labels = keys.map((key) => fields.find((field) => field.key === key)?.label ?? key);
   const lower = labels.map((label) => label.toLowerCase());
-  const last = lower.at(-1) ?? "";
-  return lower.length <= 1 ? last : `${lower.slice(0, -1).join(", ")} and ${last}`;
+  return new Intl.ListFormat(intlLocale(), { type: "conjunction" }).format(lower);
+}
+
+/** A text field's hint with its example: "The genome's name, such as GRCh38." */
+function exampleHint(field: { readonly description: string; readonly example: string }): string {
+  const description = field.description.replace(/\.$/, "");
+  const example = field.example;
+  return t`${description}, such as ${example}.`;
 }
 
 /** The hand-entered genome: one field for each key, checked as the user types. */
@@ -69,14 +78,11 @@ function GenomeForm({ entry }: { readonly entry: PanelEntry }) {
           read.kind === "invalid"
             ? read.message
             : read.kind === "blank" && field.required && started && visited.has(field.key)
-              ? "Fill this in, or set the reference genome to None."
+              ? t`Fill this in, or set the reference genome to None.`
               : null;
         const common = {
           label: field.label,
-          hint:
-            field.kind !== "text"
-              ? field.description
-              : `${field.description.replace(/\.$/, "")}, such as ${field.example}.`,
+          hint: field.kind !== "text" ? field.description : exampleHint(field),
           required: field.required,
           optional: !field.required,
           value: raw,
@@ -140,6 +146,7 @@ export function GenomeSection({ entry, notices, headingLevel }: GenomeSectionPro
       !(mode === "none" && notice.code === "panel/location-without-genome"),
   );
   const needsGenome = mode === "none" && positions.length > 0;
+  const positionFields = positionLabels(positions);
   const unused = mode !== "none" && entry.table !== null && positions.length === 0;
 
   return (
@@ -147,12 +154,14 @@ export function GenomeSection({ entry, notices, headingLevel }: GenomeSectionPro
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div className="flex min-w-0 flex-col gap-1">
           <Heading id={headingId} className="text-md font-semibold text-text">
-            Reference genome <span className="font-normal text-text-muted">(optional)</span>
+            <Trans>
+              Reference genome <span className="font-normal text-text-muted">(optional)</span>
+            </Trans>
           </Heading>
           <p className="max-w-prose text-sm text-text-muted">{MODE_LINE[mode]}</p>
         </div>
         <SegmentedControl
-          label="Reference genome"
+          label={t`Reference genome`}
           size="sm"
           segments={MODES}
           value={mode}
@@ -162,16 +171,17 @@ export function GenomeSection({ entry, notices, headingLevel }: GenomeSectionPro
         />
       </div>
       {needsGenome ? (
-        <Callout tone="warning" title="The target positions need a genome">
-          The target table gives the {positionLabels(positions)} of each target. Add the reference
-          genome they refer to, or set those fields to "Not in this table" above.
+        <Callout tone="warning" title={t`The target positions need a genome`}>
+          {t`The target table gives the ${positionFields} of each target. Add the reference genome they refer to, or set those fields to "Not in this table" above.`}
         </Callout>
       ) : null}
       {unused ? (
         <p className="max-w-prose text-sm text-text-muted">
-          No position columns are matched in the target table, so the genome is stored with the
-          panel but no target points to it. Match the start and end columns above if your table has
-          them.
+          <Trans>
+            No position columns are matched in the target table, so the genome is stored with the
+            panel but no target points to it. Match the start and end columns above if your table
+            has them.
+          </Trans>
         </p>
       ) : null}
       {problems.map((notice) => (
@@ -186,8 +196,8 @@ export function GenomeSection({ entry, notices, headingLevel }: GenomeSectionPro
       {mode === "table" ? (
         <TableImport
           slot={{ section: "panel", panelId: entry.id, part: "genome" }}
-          label="Genome table"
-          description="One row for each reference genome, with its name, version, taxon ID and link."
+          label={t`Genome table`}
+          description={t`One row for each reference genome, with its name, version, taxon ID and link.`}
           headingLevel={3}
         />
       ) : null}

@@ -39,6 +39,11 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # Fails when text in the code and the translation catalogs disagree.
+      # Run `pnpm i18n:extract` and commit the catalogs to fix it.
+      - name: Translation catalogs in sync
+        run: pnpm i18n:check
+
       - name: Typecheck
         run: pnpm typecheck
 

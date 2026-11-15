@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { Check, CloudUpload, Copy, Download, ExternalLink } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -22,7 +24,6 @@ import {
 
 import { CopyValue, useCopy } from "@/features/shared/CopyValue";
 
-import { count } from "./reviewModel";
 import { usePmoDownload } from "./usePmoDownload";
 import {
   communityUrl,
@@ -68,7 +69,9 @@ function NewTab() {
   return (
     <>
       <ExternalLink aria-hidden="true" className="size-4" />
-      <span className="sr-only">(opens in a new tab)</span>
+      <span className="sr-only">
+        <Trans>(opens in a new tab)</Trans>
+      </span>
     </>
   );
 }
@@ -81,11 +84,13 @@ function KeywordChip({ keyword }: { readonly keyword: string }) {
       size="sm"
       icon={copied ? Check : Copy}
       onClick={() => void copy()}
-      aria-label={`Copy keyword ${keyword}`}
+      aria-label={t`Copy keyword ${keyword}`}
     >
       {keyword}
       <span className="sr-only" aria-live="polite">
-        {copied ? "Copied" : ""}
+        {copied
+          ? t({ message: "Copied", comment: "After a keyword was copied to the clipboard" })
+          : ""}
       </span>
     </Button>
   );
@@ -94,34 +99,44 @@ function KeywordChip({ keyword }: { readonly keyword: string }) {
 function PersonalDetails({ publication }: { readonly publication: PublicationSummary }) {
   if (publication.personalFields.length === 0) {
     return (
-      <Callout tone="info" title="No personal details found">
-        None of the specimen fields that most often identify a person have values. A published
-        record is public and cannot be withdrawn, so look through the file once more before you
-        publish.
+      <Callout tone="info" title={t`No personal details found`}>
+        <Trans>
+          None of the specimen fields that most often identify a person have values. A published
+          record is public and cannot be withdrawn, so look through the file once more before you
+          publish.
+        </Trans>
       </Callout>
     );
   }
   return (
     <Callout
       tone="warning"
-      title="This PMO holds details about the people sampled"
+      title={t`This PMO holds details about the people sampled`}
       action={
         <StepLink step="specimens" variant="arrow">
-          Go to Specimens
+          <Trans>Go to Specimens</Trans>
         </StepLink>
       }
     >
       <div className="flex flex-col gap-2">
         <p>
-          A published record is public and cannot be withdrawn. Check that you may share each of
-          these. To leave one out, set its column to None on the Specimens step.
+          <Trans>
+            A published record is public and cannot be withdrawn. Check that you may share each of
+            these. To leave one out, set its column to None on the Specimens step.
+          </Trans>
         </p>
         <ul className="list-disc pl-5">
-          {publication.personalFields.map(({ field, specimens }) => (
-            <li key={field}>
-              {PERSONAL_FIELD_LABELS[field]}, in {count(specimens, "specimen")}
-            </li>
-          ))}
+          {publication.personalFields.map(({ field, specimens }) => {
+            const fieldLabel = PERSONAL_FIELD_LABELS[field];
+            return (
+              <li key={field}>
+                {plural(specimens, {
+                  one: `${fieldLabel}, in # specimen`,
+                  other: `${fieldLabel}, in # specimens`,
+                })}
+              </li>
+            );
+          })}
         </ul>
       </div>
     </Callout>
@@ -140,18 +155,35 @@ function RecordDetails({
     <>
       <p className="max-w-prose text-base text-text-muted">{note}</p>
       <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-text">Title</span>
-        <CopyValue label="title" value={record.title} />
+        <span className="text-sm font-medium text-text">
+          <Trans>Title</Trans>
+        </span>
+        <CopyValue
+          label={t({ message: "title", comment: 'Completes "Copy {label}": the record\'s title' })}
+          value={record.title}
+        />
       </div>
       <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-text">Description</span>
-        <CopyValue label="description" value={record.description} />
+        <span className="text-sm font-medium text-text">
+          <Trans>Description</Trans>
+        </span>
+        <CopyValue
+          label={t({
+            message: "description",
+            comment: 'Completes "Copy {label}": the record\'s description',
+          })}
+          value={record.description}
+        />
       </div>
       <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-text">Keywords</span>
+        <span className="text-sm font-medium text-text">
+          <Trans>Keywords</Trans>
+        </span>
         <p className="text-sm text-text-muted">
-          Select a keyword to copy it. Keep the first one as it is written: it places the record
-          with the other PMO files.
+          <Trans>
+            Select a keyword to copy it. Keep the first one as it is written: it places the record
+            with the other PMO files.
+          </Trans>
         </p>
         <ul className="flex flex-wrap gap-2">
           {record.keywords.map((keyword) => (
@@ -162,6 +194,17 @@ function RecordDetails({
         </ul>
       </div>
     </>
+  );
+}
+
+/** The first step by hand when the user has a file: have it ready. */
+function FileReady({ fileName }: { readonly fileName: string }) {
+  return (
+    <span>
+      <Trans>
+        Have your file ready: <span className="font-mono text-sm">{fileName}</span>.
+      </Trans>
+    </span>
   );
 }
 
@@ -178,32 +221,40 @@ function ManualSteps({
     <ol className="flex list-decimal flex-col gap-4 pl-5 text-base text-text">
       <li>
         {source.kind === "file" ? (
-          <span>
-            Have your file ready: <span className="font-mono text-sm">{source.fileName}</span>.
-          </span>
+          <FileReady fileName={source.fileName} />
         ) : (
           <div className="flex flex-col items-start gap-2">
-            <span>Download the PMO file.</span>
+            <span>
+              <Trans>Download the PMO file.</Trans>
+            </span>
             <Button icon={Download} loading={busy === "gzip"} onClick={() => void download(true)}>
-              Download PMO for Zenodo
+              <Trans>Download PMO for Zenodo</Trans>
             </Button>
           </div>
         )}
       </li>
       <li>
         <div className="flex flex-col items-start gap-2">
-          <span>Open the upload page and sign in to Zenodo. The community is already chosen.</span>
+          <span>
+            <Trans>
+              Open the upload page and sign in to Zenodo. The community is already chosen.
+            </Trans>
+          </span>
           <ButtonLink href={uploadUrl(community)} target="_blank" rel="noreferrer noopener">
-            Open the Zenodo upload page
+            <Trans>Open the Zenodo upload page</Trans>
             <NewTab />
           </ButtonLink>
         </div>
       </li>
       <li>
-        Add the file, choose Dataset as the resource type, and copy in the title, description and
-        keywords. Add each keyword on its own. Choose a licence. The community prefers CC BY 4.0.
+        <Trans>
+          Add the file, choose Dataset as the resource type, and copy in the title, description and
+          keywords. Add each keyword on its own. Choose a licence. The community prefers CC BY 4.0.
+        </Trans>
       </li>
-      <li>Choose Submit for review. The record is published once a curator accepts it.</li>
+      <li>
+        <Trans>Choose Submit for review. The record is published once a curator accepts it.</Trans>
+      </li>
     </ol>
   );
 }
@@ -229,11 +280,11 @@ type Phase =
   | { readonly kind: "failed"; readonly message: string; readonly draftUrl: string | null };
 
 const STEP_TEXT: Readonly<Record<DepositStep, string>> = {
-  community: "Finding the community on Zenodo",
-  version: "Starting a new version of the record",
-  draft: "Creating the draft",
-  file: "Uploading the file",
-  review: "Asking the community to review it",
+  community: t`Finding the community on Zenodo`,
+  version: t`Starting a new version of the record`,
+  draft: t`Creating the draft`,
+  file: t`Uploading the file`,
+  review: t`Asking the community to review it`,
 };
 
 /** How a failed sign-in is counted. */
@@ -249,11 +300,11 @@ const SIGN_IN_OUTCOMES: Readonly<
 function signInMessage(reason: Exclude<SignInResult, { ok: true }>["reason"]): string | null {
   switch (reason) {
     case "blocked":
-      return "Your browser stopped the Zenodo sign-in window. Allow pop-ups for this site and try again.";
+      return t`Your browser stopped the Zenodo sign-in window. Allow pop-ups for this site and try again.`;
     case "refused":
-      return "Zenodo did not sign you in. Try again.";
+      return t`Zenodo did not sign you in. Try again.`;
     case "timed-out":
-      return "The sign-in was not finished in time. Try again.";
+      return t`The sign-in was not finished in time. Try again.`;
     case "cancelled":
       return null;
     default:
@@ -264,25 +315,25 @@ function signInMessage(reason: Exclude<SignInResult, { ok: true }>["reason"]): s
 function depositMessage(failure: DepositFailure, step: DepositStep): string {
   switch (failure) {
     case "signed-out":
-      return "Zenodo no longer accepts the sign-in. Try again to sign in once more.";
+      return t`Zenodo no longer accepts the sign-in. Try again to sign in once more.`;
     case "not-allowed":
       return step === "review"
-        ? "The community could not be asked to review the draft. Choose the community on the draft yourself."
-        : "Your Zenodo account may not do this.";
+        ? t`The community could not be asked to review the draft. Choose the community on the draft yourself.`
+        : t`Your Zenodo account may not do this.`;
     case "no-community":
-      return "The community could not be found on Zenodo.";
+      return t`The community could not be found on Zenodo.`;
     case "too-large":
-      return "The file is larger than Zenodo accepts.";
+      return t`The file is larger than Zenodo accepts.`;
     case "offline":
-      return "Zenodo could not be reached. Check your connection and try again.";
+      return t`Zenodo could not be reached. Check your connection and try again.`;
     case "refused":
-      return "Zenodo did not accept the request. Try again in a few minutes.";
+      return t`Zenodo did not accept the request. Try again in a few minutes.`;
     case "no-record":
-      return "That Zenodo record could not be found. Check its address or DOI.";
+      return t`That Zenodo record could not be found. Check its address or DOI.`;
     case "not-owner":
-      return "Only the account that owns a record can add a version to it. Sign in to Zenodo as its owner.";
+      return t`Only the account that owns a record can add a version to it. Sign in to Zenodo as its owner.`;
     case "other-community":
-      return "That record is not in the community, so a new version of it cannot be added here.";
+      return t`That record is not in the community, so a new version of it cannot be added here.`;
     default:
       return unreachable(failure);
   }
@@ -369,7 +420,7 @@ function useDeposit(
         report("failed");
         setPhase({
           kind: "failed",
-          message: "There is no PMO to deposit. Something changed. Check the steps on the page.",
+          message: t`There is no PMO to deposit. Something changed. Check the steps on the page.`,
           draftUrl: null,
         });
         return;
@@ -408,8 +459,7 @@ function useDeposit(
       report("failed");
       setPhase({
         kind: "failed",
-        message:
-          "The deposit could not be finished. Try again. If it keeps failing, reload the page.",
+        message: t`The deposit could not be finished. Try again. If it keeps failing, reload the page.`,
         draftUrl: null,
       });
     }
@@ -421,7 +471,7 @@ function useDeposit(
 function DraftLink({ draftUrl }: { readonly draftUrl: string }) {
   return (
     <ButtonLink variant="primary" href={draftUrl} target="_blank" rel="noreferrer noopener">
-      Open the draft on Zenodo
+      <Trans>Open the draft on Zenodo</Trans>
       <NewTab />
     </ButtonLink>
   );
@@ -448,7 +498,7 @@ function Deposit({
       const id = zenodoRecordId(versionOf);
       if (id === null) {
         setVersionError(
-          "Enter the record's Zenodo address, such as https://zenodo.org/records/12345678, or its DOI.",
+          t`Enter the record's Zenodo address, such as https://zenodo.org/records/12345678, or its DOI.`,
         );
         return;
       }
@@ -462,33 +512,33 @@ function Deposit({
   return (
     <div className="flex flex-col gap-4">
       <p className="max-w-prose text-base text-text-muted">
-        You sign in to Zenodo in a new window. PMO Builder then sends your file from this browser
-        straight to Zenodo and makes a draft. Nothing is published until you publish it on Zenodo.
+        <Trans>
+          You sign in to Zenodo in a new window. PMO Builder then sends your file from this browser
+          straight to Zenodo and makes a draft. Nothing is published until you publish it on Zenodo.
+        </Trans>
       </p>
       <RadioGroup
-        label="Deposit as"
+        label={t`Deposit as`}
         value={mode}
         onValueChange={setMode}
         disabled={busy}
         options={[
           {
             value: "new",
-            label: "A new record",
-            description:
-              "With a title, description and keywords written from your PMO, the authors below and the CC BY 4.0 licence. A curator reviews it.",
+            label: t`A new record`,
+            description: t`With a title, description and keywords written from your PMO, the authors below and the CC BY 4.0 licence. A curator reviews it.`,
           },
           {
             value: "version",
-            label: "A new version of a record I published",
-            description:
-              "Replaces the file and keeps the record's details and authors. It gets its own DOI, and the record's overall DOI points to it. It is already in the community, so there is no review.",
+            label: t`A new version of a record I published`,
+            description: t`Replaces the file and keeps the record's details and authors. It gets its own DOI, and the record's overall DOI points to it. It is already in the community, so there is no review.`,
           },
         ]}
       />
       {mode === "new" ? (
         <TextArea
-          label="Authors"
-          hint="One to a line, as Family name, Given names. Taken from your PMO's project. Leave it empty to add them on Zenodo."
+          label={t`Authors`}
+          hint={t`One to a line, as Family name, Given names. Taken from your PMO's project. Leave it empty to add them on Zenodo.`}
           value={authors}
           onChange={(event) => setAuthors(event.target.value)}
           rows={Math.min(8, Math.max(3, authors.split("\n").length + 1))}
@@ -496,8 +546,8 @@ function Deposit({
         />
       ) : (
         <TextField
-          label="The record"
-          hint="Its Zenodo address or DOI, such as https://zenodo.org/records/12345678"
+          label={t`The record`}
+          hint={t`Its Zenodo address or DOI, such as https://zenodo.org/records/12345678`}
           value={versionOf}
           onChange={(event) => {
             setVersionOf(event.target.value);
@@ -509,22 +559,24 @@ function Deposit({
       )}
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="primary" size="lg" icon={CloudUpload} loading={busy} onClick={begin}>
-          Sign in to Zenodo and deposit
+          <Trans>Sign in to Zenodo and deposit</Trans>
         </Button>
         {phase.kind === "signing-in" ? (
           <Button variant="ghost" onClick={deposit.cancel}>
-            Cancel
+            <Trans>Cancel</Trans>
           </Button>
         ) : null}
       </div>
       <div aria-live="polite" className="flex flex-col gap-3">
         {phase.kind === "signing-in" ? (
           <p className="text-base text-text-muted">
-            Waiting for you to sign in to Zenodo in the other window.
+            <Trans>Waiting for you to sign in to Zenodo in the other window.</Trans>
           </p>
         ) : null}
         {phase.kind === "preparing" ? (
-          <p className="text-base text-text-muted">Preparing the file</p>
+          <p className="text-base text-text-muted">
+            <Trans>Preparing the file</Trans>
+          </p>
         ) : null}
         {phase.kind === "depositing" && phase.step !== "file" ? (
           <p className="text-base text-text-muted">{STEP_TEXT[phase.step]}</p>
@@ -534,7 +586,7 @@ function Deposit({
             label={
               phase.sent === null || phase.total === null
                 ? STEP_TEXT.file
-                : `${STEP_TEXT.file}, ${formatBytes(phase.sent)} of ${formatBytes(phase.total)}`
+                : uploadProgress(phase.sent, phase.total)
             }
             value={phase.sent}
             max={phase.total ?? 100}
@@ -545,24 +597,26 @@ function Deposit({
             tone="success"
             title={
               phase.version
-                ? "Your new version is ready on Zenodo"
-                : "Your draft is ready on Zenodo"
+                ? t`Your new version is ready on Zenodo`
+                : t`Your draft is ready on Zenodo`
             }
             action={<DraftLink draftUrl={phase.draftUrl} />}
           >
             {phase.version
-              ? "Read it through and choose Publish. It joins the community straight away, as the record is already in it."
-              : `${phase.authors ? "Check the authors" : "Add the authors"}, read the draft through and choose Submit for review. It is published once a curator of the community accepts it.`}
+              ? t`Read it through and choose Publish. It joins the community straight away, as the record is already in it.`
+              : phase.authors
+                ? t`Check the authors, read the draft through and choose Submit for review. It is published once a curator of the community accepts it.`
+                : t`Add the authors, read the draft through and choose Submit for review. It is published once a curator of the community accepts it.`}
           </Callout>
         ) : null}
         {phase.kind === "failed" ? (
           <Callout
             tone="error"
-            title="The deposit was not finished"
+            title={t`The deposit was not finished`}
             action={
               phase.draftUrl === null ? undefined : (
                 <Link href={phase.draftUrl} external variant="standalone">
-                  Open the draft on Zenodo
+                  <Trans>Open the draft on Zenodo</Trans>
                 </Link>
               )
             }
@@ -570,12 +624,19 @@ function Deposit({
             {phase.message}
             {phase.draftUrl === null
               ? null
-              : " A draft was started. You can finish it on Zenodo, or delete it there and try again."}
+              : ` ${t`A draft was started. You can finish it on Zenodo, or delete it there and try again.`}`}
           </Callout>
         ) : null}
       </div>
     </div>
   );
+}
+
+/** The upload step with how much of the file has gone. */
+function uploadProgress(sent: number, total: number): string {
+  const sentSize = formatBytes(sent);
+  const totalSize = formatBytes(total);
+  return t`Uploading the file, ${sentSize} of ${totalSize}`;
 }
 
 function Part({ title, children }: { readonly title: string; readonly children: ReactNode }) {
@@ -603,35 +664,35 @@ function PublishBody({
 }) {
   return (
     <div className="flex flex-col gap-6">
-      <Part title="Check what you are sharing">
+      <Part title={t`Check what you are sharing`}>
         <PersonalDetails publication={publication} />
       </Part>
       {zenodo.clientId === null ? (
         <>
-          <Part title="How to publish">
+          <Part title={t`How to publish`}>
             <ManualSteps community={zenodo.community} source={source} />
           </Part>
-          <Part title="Details to copy">
+          <Part title={t`Details to copy`}>
             <RecordDetails
               record={record}
-              note="Written from what is in your PMO. Change them on Zenodo as you see fit."
+              note={t`Written from what is in your PMO. Change them on Zenodo as you see fit.`}
             />
           </Part>
         </>
       ) : (
         <>
-          <Part title="Deposit">
+          <Part title={t({ message: "Deposit", comment: "Heading: send the file to Zenodo" })}>
             <Deposit deposit={deposit} record={record} />
           </Part>
-          <Disclosure title="See what the draft will say">
+          <Disclosure title={t`See what the draft will say`}>
             <div className="flex flex-col gap-4 pt-3">
               <RecordDetails
                 record={record}
-                note="Written from what is in your PMO. You can change them on Zenodo before you submit."
+                note={t`Written from what is in your PMO. You can change them on Zenodo before you submit.`}
               />
             </div>
           </Disclosure>
-          <Disclosure title="Upload it yourself instead">
+          <Disclosure title={t`Upload it yourself instead`}>
             <div className="pt-3">
               <ManualSteps community={zenodo.community} source={source} />
             </div>
@@ -663,17 +724,32 @@ export function PublishToZenodo({
   const direct = zenodo.clientId !== null;
 
   const Frame = variant === "card" ? CardFrame : InlineFrame;
+  const communityName = zenodo.communityName;
+  const communityLink = communityUrl(zenodo.community);
 
   if (publication.exampleData) {
     return (
       <Frame>
         <p className="max-w-prose text-base text-text-muted">
-          {source.kind === "file" ? "This file is" : "This PMO is"} built from the example data, so
-          it cannot be published. With your own tables, you can add your PMO to the{" "}
-          <Link href={communityUrl(zenodo.community)} external>
-            {zenodo.communityName} community
-          </Link>{" "}
-          on Zenodo from here and get a DOI that others can cite.
+          {source.kind === "file" ? (
+            <Trans>
+              This file is built from the example data, so it cannot be published. With your own
+              tables, you can add your PMO to the{" "}
+              <Link href={communityLink} external>
+                {communityName} community
+              </Link>{" "}
+              on Zenodo from here and get a DOI that others can cite.
+            </Trans>
+          ) : (
+            <Trans>
+              This PMO is built from the example data, so it cannot be published. With your own
+              tables, you can add your PMO to the{" "}
+              <Link href={communityLink} external>
+                {communityName} community
+              </Link>{" "}
+              on Zenodo from here and get a DOI that others can cite.
+            </Trans>
+          )}
         </p>
       </Frame>
     );
@@ -682,11 +758,13 @@ export function PublishToZenodo({
   return (
     <Frame>
       <p className="max-w-prose text-base text-text-muted">
-        Zenodo is a free research archive. Add your PMO to the{" "}
-        <Link href={communityUrl(zenodo.community)} external>
-          {zenodo.communityName} community
-        </Link>{" "}
-        there and it gets a DOI that others can cite.
+        <Trans>
+          Zenodo is a free research archive. Add your PMO to the{" "}
+          <Link href={communityLink} external>
+            {communityName} community
+          </Link>{" "}
+          there and it gets a DOI that others can cite.
+        </Trans>
       </p>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <Dialog
@@ -696,11 +774,11 @@ export function PublishToZenodo({
             setOpen(next);
           }}
           size="lg"
-          title="Publish to Zenodo"
+          title={t`Publish to Zenodo`}
           description={
             direct
-              ? `A curator of the ${zenodo.communityName} community checks each record before it joins the community's PMO files. Nothing goes to Zenodo until you choose to deposit below.`
-              : `A curator of the ${zenodo.communityName} community checks each record before it joins the community's PMO files. PMO Builder sends nothing to Zenodo: you upload the file there yourself.`
+              ? t`A curator of the ${communityName} community checks each record before it joins the community's PMO files. Nothing goes to Zenodo until you choose to deposit below.`
+              : t`A curator of the ${communityName} community checks each record before it joins the community's PMO files. PMO Builder sends nothing to Zenodo: you upload the file there yourself.`
           }
           trigger={
             <Button
@@ -709,7 +787,7 @@ export function PublishToZenodo({
               // A long community name wraps on a phone instead of running off the card.
               className="max-sm:h-auto max-sm:min-h-control-lg max-sm:w-full max-sm:py-2 max-sm:whitespace-normal"
             >
-              {direct ? `Deposit in the ${zenodo.communityName} community` : "Publish to Zenodo"}
+              {direct ? t`Deposit in the ${communityName} community` : t`Publish to Zenodo`}
             </Button>
           }
         >
@@ -723,14 +801,16 @@ export function PublishToZenodo({
         </Dialog>
         {!open && deposit.phase.kind === "done" ? (
           <span className="flex flex-wrap items-center gap-x-2 text-base text-text">
-            Your draft is ready.
+            <Trans>Your draft is ready.</Trans>
             <Link href={deposit.phase.draftUrl} external variant="standalone">
-              Open the draft on Zenodo
+              <Trans>Open the draft on Zenodo</Trans>
             </Link>
           </span>
         ) : null}
         {!open && isBusy(deposit.phase) ? (
-          <span className="text-base text-text-muted">A deposit is under way.</span>
+          <span className="text-base text-text-muted">
+            <Trans>A deposit is under way.</Trans>
+          </span>
         ) : null}
       </div>
     </Frame>
@@ -745,7 +825,7 @@ function InlineFrame({ children }: { readonly children: ReactNode }) {
       className="flex flex-col gap-3 border-t border-border pt-5"
     >
       <h3 id="review-publish-heading" className="text-md font-semibold text-text">
-        Publish to Zenodo
+        <Trans>Publish to Zenodo</Trans>
       </h3>
       {children}
     </section>
@@ -758,7 +838,7 @@ function CardFrame({ children }: { readonly children: ReactNode }) {
     <Card as="section" aria-labelledby="review-publish-heading">
       <div className="flex flex-col gap-3">
         <h2 id="review-publish-heading" className="text-lg font-semibold tracking-tight text-text">
-          Publish to Zenodo
+          <Trans>Publish to Zenodo</Trans>
         </h2>
         {children}
       </div>

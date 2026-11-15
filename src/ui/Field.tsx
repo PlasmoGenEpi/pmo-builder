@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { createContext, useContext, useId, useMemo, type ReactNode } from "react";
 
 import { cn } from "./cn";
@@ -113,9 +114,15 @@ export function Field({
           className="flex items-baseline gap-2 text-base font-medium text-text"
         >
           <span>{label}</span>
-          {required ? <span className="text-xs font-normal text-text-subtle">Required</span> : null}
+          {required ? (
+            <span className="text-xs font-normal text-text-subtle">
+              {t({ message: "Required", comment: "Marks a field that must be filled in" })}
+            </span>
+          ) : null}
           {optional && !required ? (
-            <span className="text-xs font-normal text-text-subtle">Optional</span>
+            <span className="text-xs font-normal text-text-subtle">
+              {t({ message: "Optional", comment: "Marks a field that may be left blank" })}
+            </span>
           ) : null}
         </label>
         {hint ? (

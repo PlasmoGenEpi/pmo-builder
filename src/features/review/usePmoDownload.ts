@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { useState } from "react";
 
 import { useActions } from "@/state";
@@ -23,19 +24,20 @@ export function usePmoDownload(): {
       const file = await actions.downloadPmo({ gzip });
       if (file === null) {
         toast({
-          title: "There is no PMO to download",
-          description: "Something changed. Check the steps listed above.",
+          title: t`There is no PMO to download`,
+          description: t`Something changed. Check the steps listed above.`,
           tone: "warning",
         });
         return;
       }
       saveFile(file.blob, file.fileName);
-      toast({ title: `Saved ${file.fileName}`, tone: "success" });
+      const fileName = file.fileName;
+      toast({ title: t`Saved ${fileName}`, tone: "success" });
     } catch (error) {
       console.error(error);
       toast({
-        title: "The PMO could not be saved",
-        description: "Try again. If it keeps failing, reload the page.",
+        title: t`The PMO could not be saved`,
+        description: t`Try again. If it keeps failing, reload the page.`,
         tone: "error",
       });
     } finally {

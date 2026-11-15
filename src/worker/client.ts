@@ -6,6 +6,9 @@
  * import it only dynamically, for the fallback when no worker can be made,
  * so that none of it lands in the main bundle.
  */
+import { t } from "@lingui/core/macro";
+
+import { currentLocale } from "@/i18n/languages";
 import { isBlob, isJsonValue, type Draft } from "@/domain/draft";
 import { SECTION_IDS, type SectionId } from "@/domain/types";
 
@@ -251,7 +254,7 @@ export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
     return client;
   };
   const engine = (): EngineClient => {
-    if (stopped) throw new EngineStoppedError("The engine was closed.");
+    if (stopped) throw new EngineStoppedError(t`The engine was closed.`);
     return current ?? start();
   };
 
@@ -302,21 +305,31 @@ export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
   };
 }
 
-/** The message for a worker that stopped by itself. */
-const WORKER_STOPPED =
-  "The background worker stopped, probably because it ran out of memory. It starts again on the next change; if a table is very large, try a smaller one.";
+/** The message for a worker that stopped by itself, with the browser's own words when it gives any. */
+function workerStopped(detail?: string): string {
+  return detail === undefined || detail === ""
+    ? t`The background worker stopped, probably because it ran out of memory. It starts again on the next change; if a table is very large, try a smaller one.`
+    : t({
+        message: `The background worker stopped, probably because it ran out of memory. It starts again on the next change; if a table is very large, try a smaller one. (${detail})`,
+        comment: "{detail} is the browser's own error message, in its language.",
+      });
+}
 
 /** Starts one engine worker. */
 function spawnWorker(): WorkerHandle {
-  const worker = new Worker(new URL("./engine.worker.ts", import.meta.url), { type: "module" });
+  // The worker's name is the interface language: it loads that catalog for the messages it builds.
+  const worker = new Worker(new URL("./engine.worker.ts", import.meta.url), {
+    type: "module",
+    name: currentLocale(),
+  });
   return {
     endpoint: worker,
     terminate: () => worker.terminate(),
     onStopped: (listener) => {
       worker.addEventListener("error", (event) => {
-        listener(event.message ? `${WORKER_STOPPED} (${event.message})` : WORKER_STOPPED);
+        listener(workerStopped(event.message));
       });
-      worker.addEventListener("messageerror", () => listener(WORKER_STOPPED));
+      worker.addEventListener("messageerror", () => listener(workerStopped()));
     },
   };
 }
@@ -345,9 +358,13 @@ export function createWorkerEngine(): Engine {
  * dynamic import, so it costs nothing where workers are available.
  */
 export function createLazyInThreadEngine(): Engine {
+  return createLazyEngine(() => import("./engine").then((module) => module.createInThreadEngine()));
+}
+
+/** An engine made by `make` the first time it is used. */
+export function createLazyEngine(make: () => Promise<Engine>): Engine {
   let loading: Promise<Engine> | null = null;
-  const load = (): Promise<Engine> =>
-    (loading ??= import("./engine").then((module) => module.createInThreadEngine()));
+  const load = (): Promise<Engine> => (loading ??= make());
   return {
     importFile: async (...args) => (await load()).importFile(...args),
     restoreFile: async (...args) => (await load()).restoreFile(...args),

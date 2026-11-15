@@ -1,3 +1,6 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
+
 import { StepPage } from "@/app/StepPage";
 import { StepLink } from "@/app/StepLink";
 import { mappedColumns, type MappedTable } from "@/domain/draft";
@@ -38,9 +41,12 @@ function dateRange(values: readonly string[]): ResultStat | null {
   const firstYear = first.slice(0, 4);
   const lastYear = last.slice(0, 4);
   return {
-    label: "Collected",
+    label: t({
+      message: "Collected",
+      comment: "Stat label: the years the specimens were collected",
+    }),
     value: firstYear === lastYear ? firstYear : `${firstYear}–${lastYear.slice(2)}`,
-    hint: first === last ? undefined : `${first} to ${last}`,
+    hint: first === last ? undefined : t`${first} to ${last}`,
   };
 }
 
@@ -52,13 +58,13 @@ function ProjectNames() {
   return (
     <dl>
       <NameCheck
-        label="Projects named in this table"
+        label={t`Projects named in this table`}
         names={projectNames}
-        noneMessage="No project column is matched yet."
+        noneMessage={t`No project column is matched yet.`}
         stepId="project"
         known={known}
-        things="projects"
-        emptyAdvice="Add them there to keep the link."
+        things={t`projects`}
+        emptyAdvice={t`Add them there to keep the link.`}
       />
     </dl>
   );
@@ -69,15 +75,19 @@ function Introduction() {
   return (
     <div className="flex max-w-prose flex-col gap-4 text-md text-text">
       <p>
-        A specimen is the physical sample as it was collected, such as a blood spot, with where and
-        when it was taken and from whom. A library sample is one sequencing of a specimen, so one
-        specimen can have several library samples.
+        <Trans>
+          A specimen is the physical sample as it was collected, such as a blood spot, with where
+          and when it was taken and from whom. A library sample is one sequencing of a specimen, so
+          one specimen can have several library samples.
+        </Trans>
       </p>
       <p className="text-base text-text-muted">
-        Only the specimen name is needed. Many labs keep specimens and library samples in one sheet.
-        If yours does, add the same file here and on the{" "}
-        <StepLink step="librarySamples">Library samples step</StepLink>. Without a library sample
-        table, the specimen names must be the sample names in your allele table.
+        <Trans>
+          Only the specimen name is needed. Many labs keep specimens and library samples in one
+          sheet. If yours does, add the same file here and on the{" "}
+          <StepLink step="librarySamples">Library samples step</StepLink>. Without a library sample
+          table, the specimen names must be the sample names in your allele table.
+        </Trans>
       </p>
     </div>
   );
@@ -105,21 +115,21 @@ export function SpecimensStep() {
         <Introduction />
         <TableImport
           slot={SLOT}
-          label="Specimen table"
-          description="One row for each specimen, with its name and any collection, place and host details."
+          label={t`Specimen table`}
+          description={t`One row for each specimen, with its name and any collection, place and host details.`}
         >
           <ProjectNames />
         </TableImport>
         <SectionResult
           section="specimens"
-          emptyMessage="Nothing here yet. This step is optional. Without it, the PMO has no collection dates, places or host details."
+          emptyMessage={t`Nothing here yet. This step is optional. Without it, the PMO has no collection dates, places or host details.`}
           stats={(summary) => [
-            { label: "Specimens", value: summary.specimens },
+            { label: t`Specimens`, value: summary.specimens },
             ...(countries === null || countries.length === 0
               ? []
               : [
                   {
-                    label: countries.length === 1 ? "Country" : "Countries",
+                    label: plural(countries.length, { one: "Country", other: "Countries" }),
                     value: countries.length,
                     hint: listNames(countries, 3),
                   },
@@ -129,7 +139,7 @@ export function SpecimensStep() {
               ? []
               : [
                   {
-                    label: projectNames.length === 1 ? "Project" : "Projects",
+                    label: plural(projectNames.length, { one: "Project", other: "Projects" }),
                     value: projectNames.length,
                     hint: listNames(projectNames, 3),
                   },

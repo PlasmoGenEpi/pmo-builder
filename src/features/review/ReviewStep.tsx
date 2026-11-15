@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import { CircleCheck, CircleDashed, TriangleExclamationPoint } from "lucide-react";
 
 import { StepPage } from "@/app/StepPage";
@@ -20,19 +21,23 @@ function VerdictBadge({ verdict }: { readonly verdict: Verdict }) {
     case "ready":
       return (
         <Badge tone="success" icon={CircleCheck}>
-          Ready
+          <Trans>Ready</Trans>
         </Badge>
       );
     case "check":
       return (
         <Badge tone="warning" icon={TriangleExclamationPoint}>
-          Ready, with things to check
+          <Trans>Ready, with things to check</Trans>
         </Badge>
       );
     case "waiting":
     case "empty":
     case "not-ready":
-      return <Badge icon={CircleDashed}>Not ready yet</Badge>;
+      return (
+        <Badge icon={CircleDashed}>
+          <Trans>Not ready yet</Trans>
+        </Badge>
+      );
     default:
       return unreachable(verdict);
   }

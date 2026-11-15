@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { useState, type InputHTMLAttributes, type Ref } from "react";
 
 import { cn } from "./cn";
@@ -28,15 +29,16 @@ function parse(text: string, options: { integer: boolean; min?: number; max?: nu
   const trimmed = text.trim();
   if (trimmed === "") return { ok: true, value: null };
   const value = Number(trimmed);
-  if (!Number.isFinite(value)) return { ok: false, message: "Enter a number." };
+  if (!Number.isFinite(value)) return { ok: false, message: t`Enter a number.` };
   if (options.integer && !Number.isInteger(value)) {
-    return { ok: false, message: "Enter a whole number." };
+    return { ok: false, message: t`Enter a whole number.` };
   }
-  if (options.min !== undefined && value < options.min) {
-    return { ok: false, message: `Enter ${options.min} or more.` };
+  const { min, max } = options;
+  if (min !== undefined && value < min) {
+    return { ok: false, message: t`Enter ${min} or more.` };
   }
-  if (options.max !== undefined && value > options.max) {
-    return { ok: false, message: `Enter ${options.max} or less.` };
+  if (max !== undefined && value > max) {
+    return { ok: false, message: t`Enter ${max} or less.` };
   }
   return { ok: true, value };
 }

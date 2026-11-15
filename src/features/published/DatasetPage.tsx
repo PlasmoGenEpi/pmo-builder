@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { ArrowLeft, Download, ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link as RouterLink, useParams } from "wouter";
@@ -24,7 +26,9 @@ function NewTab() {
   return (
     <>
       <ExternalLink aria-hidden="true" className="size-4" />
-      <span className="sr-only">(opens in a new tab)</span>
+      <span className="sr-only">
+        <Trans>(opens in a new tab)</Trans>
+      </span>
     </>
   );
 }
@@ -36,7 +40,7 @@ function BackLink() {
       className="inline-flex items-center gap-1.5 self-start rounded-sm text-base text-text-muted underline-offset-2 hover:text-text hover:underline"
     >
       <ArrowLeft aria-hidden="true" className="size-4" />
-      All published PMOs
+      <Trans>All published PMOs</Trans>
     </RouterLink>
   );
 }
@@ -46,21 +50,27 @@ function detailsOf(dataset: PublishedDataset): KeyValueItem[] {
   const rows: (readonly [string, ReactNode, boolean?] | null)[] = [
     dataset.panels.length === 0
       ? null
-      : [dataset.panels.length === 1 ? "Panel" : "Panels", dataset.panels.join(", ")],
+      : [
+          plural(dataset.panels.length, { one: "Panel", other: "Panels" }),
+          dataset.panels.join(", "),
+        ],
     dataset.countries.length === 0
       ? null
-      : [dataset.countries.length === 1 ? "Country" : "Countries", dataset.countries.join(", ")],
-    yearsText(dataset) === null ? null : ["Collected", yearsText(dataset)],
-    dataset.taxa.length === 0 ? null : ["Species", dataset.taxa.map(taxonName).join(", ")],
+      : [
+          plural(dataset.countries.length, { one: "Country", other: "Countries" }),
+          dataset.countries.join(", "),
+        ],
+    yearsText(dataset) === null ? null : [t`Collected`, yearsText(dataset)],
+    dataset.taxa.length === 0 ? null : [t`Species`, dataset.taxa.map(taxonName).join(", ")],
     dataset.bioProjects.length === 0
       ? null
       : [
-          dataset.bioProjects.length === 1 ? "BioProject" : "BioProjects",
+          plural(dataset.bioProjects.length, { one: "BioProject", other: "BioProjects" }),
           dataset.bioProjects.join(", "),
           true,
         ],
-    dataset.licence === null ? null : ["Licence", dataset.licence.title],
-    dataset.version === null ? null : ["Version", dataset.version],
+    dataset.licence === null ? null : [t`Licence`, dataset.licence.title],
+    dataset.version === null ? null : [t`Version`, dataset.version],
     doi === null
       ? null
       : [
@@ -76,6 +86,9 @@ function detailsOf(dataset: PublishedDataset): KeyValueItem[] {
 }
 
 function Dataset({ dataset }: { readonly dataset: PublishedDataset }) {
+  const publishedDate = longDate(dataset.published);
+  const fileName = dataset.file.name;
+  const fileSize = formatBytes(dataset.file.size);
   return (
     <article className="flex flex-col gap-8">
       <header className="flex flex-col gap-3 border-b border-border pb-6">
@@ -85,7 +98,9 @@ function Dataset({ dataset }: { readonly dataset: PublishedDataset }) {
         {dataset.creators.length === 0 ? null : (
           <p className="text-md text-text">{dataset.creators.join("; ")}</p>
         )}
-        <p className="text-base text-text-muted">Published {longDate(dataset.published)}</p>
+        <p className="text-base text-text-muted">
+          <Trans>Published {publishedDate}</Trans>
+        </p>
         <div className="flex flex-wrap items-start gap-x-4 gap-y-3 pt-2">
           <div className="flex flex-col gap-1.5">
             <ButtonLink
@@ -97,14 +112,14 @@ function Dataset({ dataset }: { readonly dataset: PublishedDataset }) {
               aria-describedby="published-file"
             >
               <Download aria-hidden="true" className="size-4.5" />
-              Download from Zenodo
+              <Trans>Download from Zenodo</Trans>
             </ButtonLink>
             <span id="published-file" className="text-sm break-all text-text-muted">
-              {dataset.file.name}, {formatBytes(dataset.file.size)}
+              {t`${fileName}, ${fileSize}`}
             </span>
           </div>
           <ButtonLink size="lg" href={dataset.zenodoUrl} target="_blank" rel="noreferrer noopener">
-            See the record on Zenodo
+            <Trans>See the record on Zenodo</Trans>
             <NewTab />
           </ButtonLink>
         </div>
@@ -118,7 +133,7 @@ function Dataset({ dataset }: { readonly dataset: PublishedDataset }) {
             id="published-details-heading"
             className="text-lg font-semibold tracking-tight text-text"
           >
-            About the data
+            <Trans>About the data</Trans>
           </h2>
           <KeyValueList items={detailsOf(dataset)} />
         </div>
@@ -126,12 +141,15 @@ function Dataset({ dataset }: { readonly dataset: PublishedDataset }) {
 
       <section aria-labelledby="published-cite-heading" className="flex flex-col gap-3">
         <h2 id="published-cite-heading" className="text-lg font-semibold tracking-tight text-text">
-          How to cite
+          <Trans>How to cite</Trans>
         </h2>
         <p className="max-w-prose text-base text-text-muted">
-          If you use this data, cite the record so its authors get the credit.
+          <Trans>If you use this data, cite the record so its authors get the credit.</Trans>
         </p>
-        <CopyValue label="citation" value={citationOf(dataset)} />
+        <CopyValue
+          label={t({ message: "citation", comment: 'Completes "Copy {label}": the citation' })}
+          value={citationOf(dataset)}
+        />
       </section>
     </article>
   );
@@ -157,8 +175,10 @@ export function DatasetPage({ id, load = loadSharedCatalogue }: DatasetPageProps
         {state.kind !== "ready" ? (
           <CatalogueProblem state={state} />
         ) : dataset === undefined ? (
-          <Callout tone="warning" title="This PMO is not in the list">
-            It may have been withdrawn from the community, or the address may be mistyped.
+          <Callout tone="warning" title={t`This PMO is not in the list`}>
+            <Trans>
+              It may have been withdrawn from the community, or the address may be mistyped.
+            </Trans>
           </Callout>
         ) : (
           <Dataset dataset={dataset} />

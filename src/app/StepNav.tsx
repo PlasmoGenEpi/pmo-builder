@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { FileUp, House, LibraryBig } from "lucide-react";
 import { Link as RouterLink, useLocation } from "wouter";
 
@@ -6,7 +7,7 @@ import { StatusIcon, cn } from "@/ui";
 
 import { useHasSavedDraft } from "./draftHooks";
 import { StartOverButton } from "./StartOver";
-import { stepsByGroup } from "./steps";
+import { STEP_GROUP_LABELS, stepsByGroup } from "./steps";
 import { useStepStatuses } from "./stepStatus";
 
 const itemClass =
@@ -28,7 +29,10 @@ export function StepNav({
   const hasDraft = useHasSavedDraft();
 
   return (
-    <nav aria-label="Steps" className="flex flex-col gap-5">
+    <nav
+      aria-label={t({ message: "Steps", comment: "Name of the sidebar navigation" })}
+      className="flex flex-col gap-5"
+    >
       <RouterLink
         href="/"
         onClick={onNavigate}
@@ -41,7 +45,7 @@ export function StepNav({
         )}
       >
         <House aria-hidden="true" className="size-4 shrink-0" />
-        Home
+        {t`Home`}
       </RouterLink>
       {showPublished ? (
         <div className="-mt-4 flex flex-col gap-0.5">
@@ -57,7 +61,7 @@ export function StepNav({
             )}
           >
             <LibraryBig aria-hidden="true" className="size-4 shrink-0" />
-            Published PMOs
+            {t`Published PMOs`}
           </RouterLink>
           <RouterLink
             href="/publish"
@@ -71,13 +75,15 @@ export function StepNav({
             )}
           >
             <FileUp aria-hidden="true" className="size-4 shrink-0" />
-            Publish a PMO file
+            {t`Publish a PMO file`}
           </RouterLink>
         </div>
       ) : null}
       {groups.map(({ group, steps }) => (
         <div key={group} className="flex flex-col gap-0.5">
-          <h2 className="px-2.5 pb-1 text-xs font-medium text-text-subtle">{group}</h2>
+          <h2 className="px-2.5 pb-1 text-xs font-medium text-text-subtle">
+            {STEP_GROUP_LABELS[group]}
+          </h2>
           <ul className="flex flex-col gap-0.5">
             {steps.map((step) => {
               const active = location === step.path;
@@ -98,7 +104,7 @@ export function StepNav({
                     <span className="min-w-0 flex-1 truncate">{step.title}</span>
                     {step.required ? (
                       <span className="shrink-0 text-xs font-normal text-text-subtle">
-                        Required
+                        {t({ message: "Required", comment: "Marks a step a PMO file needs" })}
                       </span>
                     ) : null}
                   </RouterLink>
@@ -115,7 +121,9 @@ export function StepNav({
             className="w-full justify-start gap-2.5 px-2.5"
             onDone={onNavigate}
           />
-          <p className="px-2.5 pt-1 text-xs text-text-subtle">Clears this draft for a new PMO.</p>
+          <p className="px-2.5 pt-1 text-xs text-text-subtle">
+            {t`Clears this draft for a new PMO.`}
+          </p>
         </div>
       ) : null}
     </nav>

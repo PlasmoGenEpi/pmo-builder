@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { HardDrive, LoaderCircle, TriangleExclamationPoint, type LucideIcon } from "lucide-react";
 
 import { Popover, cn } from "@/ui";
@@ -16,46 +17,48 @@ function describe(state: ReturnType<typeof useSaveState>): SaveStatusView {
   switch (state.kind) {
     case "restoring":
       return {
-        label: "Opening your draft",
+        label: t`Opening your draft`,
         icon: LoaderCircle,
         warning: false,
-        heading: "Opening your draft",
-        detail: "Your saved work is being read from this browser.",
+        heading: t`Opening your draft`,
+        detail: t`Your saved work is being read from this browser.`,
       };
     case "saved":
     case "unsaved":
       return {
-        label: "Saved on this device",
+        label: t`Saved on this device`,
         icon: HardDrive,
         warning: false,
-        heading: "Saved on this device",
-        detail:
-          "Your tables, column choices and everything you type are saved in this browser as you go. Come back later and carry on where you left off.",
+        heading: t`Saved on this device`,
+        detail: t`Your tables, column choices and everything you type are saved in this browser as you go. Come back later and carry on where you left off.`,
       };
-    case "session-only":
+    case "session-only": {
+      const reason = state.reason;
       return {
-        label: "Not kept after you close this tab",
+        label: t`Not kept after you close this tab`,
         icon: TriangleExclamationPoint,
         warning: true,
-        heading: "This browser is not keeping your work",
-        detail: `${state.reason} Download your PMO file before you close the tab.`,
+        heading: t`This browser is not keeping your work`,
+        detail: t`${reason} Download your PMO file before you close the tab.`,
       };
-    case "failed":
+    }
+    case "failed": {
+      const reason = state.reason;
       return {
-        label: "Not saved",
+        label: t`Not saved`,
         icon: TriangleExclamationPoint,
         warning: true,
-        heading: "Your latest changes were not saved",
-        detail: `${state.reason} Your work is still here while this tab stays open.`,
+        heading: t`Your latest changes were not saved`,
+        detail: t`${reason} Your work is still here while this tab stays open.`,
       };
+    }
     case "other-tab":
       return {
-        label: "Open in another tab",
+        label: t`Open in another tab`,
         icon: TriangleExclamationPoint,
         warning: true,
-        heading: "This draft is open in another tab",
-        detail:
-          "Changes you make here are not saved, so the two tabs do not overwrite each other. Use this tab instead to carry on here.",
+        heading: t`This draft is open in another tab`,
+        detail: t`Changes you make here are not saved, so the two tabs do not overwrite each other. Use this tab instead to carry on here.`,
       };
     default:
       return state;

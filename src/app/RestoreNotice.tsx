@@ -1,13 +1,14 @@
+import { plural, t } from "@lingui/core/macro";
 import { useEffect, useRef } from "react";
 
+import { intlLocale } from "@/i18n/languages";
 import { useToast } from "@/ui";
 
 import { useStartupRestore } from "./draftHooks";
 
 function quoteList(names: readonly string[]): string {
   const quoted = names.map((name) => `"${name}"`);
-  if (quoted.length <= 1) return quoted.join("");
-  return `${quoted.slice(0, -1).join(", ")} and ${quoted.at(-1) ?? ""}`;
+  return new Intl.ListFormat(intlLocale(), { type: "conjunction" }).format(quoted);
 }
 
 /**
@@ -32,13 +33,17 @@ export function RestoreNotice() {
         told.current = true;
         if (report.missingFiles.length > 0) {
           const files = quoteList(report.missingFiles);
+          const fileCount = report.missingFiles.length;
           toast({
             tone: "warning",
-            title:
-              report.missingFiles.length === 1
-                ? "One file was not kept"
-                : `${report.missingFiles.length} files were not kept`,
-            description: `Your draft is back, but ${files} ${report.missingFiles.length === 1 ? "was" : "were"} not saved in this browser. Import ${report.missingFiles.length === 1 ? "it" : "them"} again.`,
+            title: plural(fileCount, {
+              one: "One file was not kept",
+              other: "# files were not kept",
+            }),
+            description: plural(fileCount, {
+              one: `Your draft is back, but ${files} was not saved in this browser. Import it again.`,
+              other: `Your draft is back, but ${files} were not saved in this browser. Import them again.`,
+            }),
           });
         }
         return;
@@ -46,9 +51,8 @@ export function RestoreNotice() {
         told.current = true;
         toast({
           tone: "warning",
-          title: "Your saved draft could not be opened",
-          description:
-            "It was kept aside in this browser and a new draft was started. Load your tables again to carry on.",
+          title: t`Your saved draft could not be opened`,
+          description: t`It was kept aside in this browser and a new draft was started. Load your tables again to carry on.`,
         });
         return;
       default:

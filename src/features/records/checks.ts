@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+
 import { readFieldValue, toListText, type FormFieldSpec, type KeyValueEntry } from "@/domain/draft";
 
 /** A one-click fix offered under a field, such as removing `https://`. */
@@ -18,8 +20,10 @@ export function checkFieldValue(
 ): string | null {
   const read = readFieldValue(spec, value, "form");
   if (read.kind === "invalid") return read.message;
-  if (read.kind === "blank" && spec.required && options.showBlank)
-    return `Fill in the ${spec.label.toLowerCase()}. The PMO needs it.`;
+  if (read.kind === "blank" && spec.required && options.showBlank) {
+    const fieldLabel = spec.label.toLowerCase();
+    return t`Fill in the ${fieldLabel}. The PMO needs it.`;
+  }
   return null;
 }
 
@@ -27,12 +31,16 @@ export function checkFieldValue(
 export function fieldHint(spec: FormFieldSpec): string {
   switch (spec.kind) {
     case "date":
-      return `${spec.description} Use YYYY-MM-DD, or YYYY-MM.`;
+      return `${spec.description} ${t`Use YYYY-MM-DD, or YYYY-MM.`}`;
     case "list":
-    case "integerList":
-      return /one per line/i.test(spec.description)
+    case "integerList": {
+      const onePerLine = t`One per line.`;
+      // Leave it out when the description already says so, in any language.
+      const phrase = onePerLine.replace(/[.。]$/, "").toLowerCase();
+      return spec.description.toLowerCase().includes(phrase)
         ? spec.description
-        : `${spec.description} One per line.`;
+        : `${spec.description} ${onePerLine}`;
+    }
     case "text":
     case "multiline":
     case "url":
@@ -46,9 +54,10 @@ export function fieldHint(spec: FormFieldSpec): string {
 export const removeScheme: FieldFixer = (value) => {
   const match = /^\s*(https?|ftp):\/\//i.exec(value);
   if (match === null) return null;
+  const scheme = match[0].trim();
   return {
-    label: `Remove ${match[0].trim()}`,
-    value: value.trim().slice(match[0].trim().length),
+    label: t`Remove ${scheme}`,
+    value: value.trim().slice(scheme.length),
   };
 };
 
@@ -58,7 +67,7 @@ export const splitOneLineList: FieldFixer = (value) => {
   if (text === "" || text.includes("\n")) return null;
   const separator = text.includes(";") ? "semicolon" : text.includes(",") ? "comma" : null;
   if (separator === null) return null;
-  return { label: "Put each one on its own line", value: toListText(text, separator) };
+  return { label: t`Put each one on its own line`, value: toListText(text, separator) };
 };
 
 /** What is wrong with one extra detail, or `null`. */
@@ -68,10 +77,10 @@ export function checkExtraEntry(
   fieldKeys: ReadonlySet<string>,
 ): string | null {
   const key = entry.key.trim();
-  if (key === "") return entry.value.trim() === "" ? null : "Give this detail a name.";
-  if (fieldKeys.has(key)) return `"${key}" is already a field above. Fill in that field instead.`;
+  if (key === "") return entry.value.trim() === "" ? null : t`Give this detail a name.`;
+  if (fieldKeys.has(key)) return t`"${key}" is already a field above. Fill in that field instead.`;
   if (others.some((other) => other.id !== entry.id && other.key.trim() === key))
-    return `"${key}" is used twice. Give each detail its own name.`;
+    return t`"${key}" is used twice. Give each detail its own name.`;
   return null;
 }
 

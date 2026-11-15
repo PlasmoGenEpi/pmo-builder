@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+
 import { cn } from "./cn";
 
 const sizes = {
@@ -15,7 +17,7 @@ export interface SpinnerProps {
 }
 
 /** A small loading indicator. Stops spinning when the user prefers reduced motion. */
-export function Spinner({ size = "md", label = "Loading", className }: SpinnerProps) {
+export function Spinner({ size = "md", label = t`Loading`, className }: SpinnerProps) {
   return (
     <span
       role={label === null ? undefined : "status"}

@@ -2,6 +2,7 @@
  * Test helpers for step pages: a store on the in-thread engine with the real
  * import, fields and matching, and storage in memory. Not used by the app.
  */
+import { I18nProvider } from "@lingui/react";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -11,6 +12,7 @@ import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 
 import { createDraftStorage, createMemoryBackend } from "@/domain/draft";
+import { i18n } from "@/i18n";
 import { AppStoreProvider, createAppStore, type AppStore, type AppStoreOptions } from "@/state";
 import { ToastProvider } from "@/ui";
 import { installDomPolyfills } from "@/ui/testPolyfills";
@@ -62,11 +64,13 @@ export async function renderWithStore(
   await store.getState().actions.initialise();
   const location = memoryLocation({ path: options.path ?? "/" });
   const result = render(
-    <AppStoreProvider store={store}>
-      <ToastProvider>
-        <Router hook={location.hook}>{ui}</Router>
-      </ToastProvider>
-    </AppStoreProvider>,
+    <I18nProvider i18n={i18n}>
+      <AppStoreProvider store={store}>
+        <ToastProvider>
+          <Router hook={location.hook}>{ui}</Router>
+        </ToastProvider>
+      </AppStoreProvider>
+    </I18nProvider>,
   );
   return { ...result, store };
 }

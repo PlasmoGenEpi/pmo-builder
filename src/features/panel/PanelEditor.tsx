@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { Archive, BookmarkPlus, Check } from "lucide-react";
 import { useState } from "react";
 
@@ -9,13 +11,7 @@ import { Button, ConfirmDialog, useToast } from "@/ui";
 
 import { GenomeSection } from "./GenomeSection";
 import { PanelNameField } from "./PanelNameField";
-import {
-  countTargets,
-  formatSavedDate,
-  isPanelEmpty,
-  matchInLibrary,
-  panelName,
-} from "./panelModel";
+import { formatSavedDate, isPanelEmpty, matchInLibrary, panelName } from "./panelModel";
 import { SavedPanelList } from "./SavedPanelList";
 
 /** Props for {@link PanelEditor}. */
@@ -55,6 +51,7 @@ function SavePanel({
   const name = panelName(entry);
   const match = matchInLibrary(library, { name, contentKey });
   const saved = match.kind === "saved";
+  const savedDate = match.kind === "name-taken" ? formatSavedDate(match.existing.savedAt) : null;
 
   async function save(replace?: string) {
     setSaving(true);
@@ -65,12 +62,12 @@ function SavePanel({
       );
       if (result.ok) {
         toast({
-          title: "Panel saved",
-          description: "It is offered on this page the next time you build a PMO in this browser.",
+          title: t`Panel saved`,
+          description: t`It is offered on this page the next time you build a PMO in this browser.`,
           tone: "success",
         });
       } else {
-        toast({ title: "The panel was not saved", description: result.reason, tone: "error" });
+        toast({ title: t`The panel was not saved`, description: result.reason, tone: "error" });
       }
     } finally {
       setSaving(false);
@@ -81,13 +78,13 @@ function SavePanel({
     <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border border-border bg-surface-subtle px-4 py-3">
       <p className="min-w-0 flex-1 basis-64 text-sm text-text-muted">
         {saved
-          ? "Saved in this browser. Next time, pick it instead of adding the file again."
-          : "Using the same panel for every run? Save it in this browser and pick it next time instead of adding the file again."}
+          ? t`Saved in this browser. Next time, pick it instead of adding the file again.`
+          : t`Using the same panel for every run? Save it in this browser and pick it next time instead of adding the file again.`}
       </p>
       {saved ? (
         <span className="flex items-center gap-1.5 text-sm font-medium text-success-text">
           <Check aria-hidden="true" className="size-4" />
-          Saved
+          <Trans comment="Status: this panel is saved in this browser">Saved</Trans>
         </span>
       ) : (
         <Button
@@ -99,17 +96,19 @@ function SavePanel({
             else void save();
           }}
         >
-          Save this panel for next time
+          <Trans>Save this panel for next time</Trans>
         </Button>
       )}
       <ConfirmDialog
         open={confirming}
         onOpenChange={setConfirming}
-        title={`Replace the saved panel "${name}"?`}
-        description={`A different panel called "${name}" is already saved in this browser${
-          match.kind === "name-taken" ? `, saved ${formatSavedDate(match.existing.savedAt)}` : ""
-        }. Replacing it keeps one panel with this name. To keep both, give this panel another name first.`}
-        confirmLabel="Replace saved panel"
+        title={t`Replace the saved panel "${name}"?`}
+        description={
+          savedDate === null
+            ? t`A different panel called "${name}" is already saved in this browser. Replacing it keeps one panel with this name. To keep both, give this panel another name first.`
+            : t`A different panel called "${name}" is already saved in this browser, saved ${savedDate}. Replacing it keeps one panel with this name. To keep both, give this panel another name first.`
+        }
+        confirmLabel={t`Replace saved panel`}
         onConfirm={async () => {
           if (match.kind === "name-taken") await save(match.existing.id);
         }}
@@ -136,19 +135,25 @@ function SavedPanelSource({
       : undefined) ??
     saved?.name ??
     "";
+  const savedDate = saved === null ? "" : formatSavedDate(saved.savedAt);
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface-subtle p-4">
       <div className="flex items-start gap-3">
         <Archive aria-hidden="true" className="mt-0.5 size-4.5 shrink-0 text-text-muted" />
         <div className="flex min-w-0 flex-col gap-0.5">
           <p className="text-base text-text">
-            Using the saved panel{" "}
-            <span className="font-mono font-medium break-all">{libraryName}</span>
+            <Trans>
+              Using the saved panel{" "}
+              <span className="font-mono font-medium break-all">{libraryName}</span>
+            </Trans>
           </p>
           <p className="text-sm text-text-muted">
-            {targets === null ? "" : `${countTargets(targets)}, `}
-            saved {saved === null ? "" : formatSavedDate(saved.savedAt)}. Its targets and genome
-            come from the saved copy. To change them, add the target table instead.
+            {targets === null
+              ? t`saved ${savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.`
+              : plural(targets, {
+                  one: `# target, saved ${savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.`,
+                  other: `# targets, saved ${savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.`,
+                })}
           </p>
         </div>
       </div>
@@ -159,7 +164,7 @@ function SavedPanelSource({
             actions.setMode({ target: "panelSource", panelId: entry.id, mode: "table" })
           }
         >
-          Add a target table instead
+          <Trans>Add a target table instead</Trans>
         </Button>
       </div>
     </div>
@@ -193,19 +198,19 @@ export function PanelEditor({
           <SavedPanelList
             panelId={entry.id}
             panels={library}
-            title="Choose another saved panel"
-            description="Saved in this browser after an earlier run."
+            title={t`Choose another saved panel`}
+            description={t`Saved in this browser after an earlier run.`}
             onApplied={() => setPicking(false)}
             action={
               <Button size="sm" variant="ghost" onClick={() => setPicking(false)}>
-                Cancel
+                <Trans>Cancel</Trans>
               </Button>
             }
           />
         ) : library.length > 1 ? (
           <div>
             <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
-              Choose another saved panel
+              <Trans>Choose another saved panel</Trans>
             </Button>
           </div>
         ) : null}
@@ -225,17 +230,17 @@ export function PanelEditor({
         <SavedPanelList
           panelId={entry.id}
           panels={library}
-          title="Use a panel you saved before"
+          title={t`Use a panel you saved before`}
           description={
             empty
-              ? "Pick one to skip the steps below, or add the target table as usual."
-              : "Picking one replaces the target table below for this panel. The table is kept in case you switch back."
+              ? t`Pick one to skip the steps below, or add the target table as usual.`
+              : t`Picking one replaces the target table below for this panel. The table is kept in case you switch back.`
           }
           onApplied={() => setPicking(false)}
           action={
             empty ? null : (
               <Button size="sm" variant="ghost" onClick={() => setPicking(false)}>
-                Cancel
+                <Trans>Cancel</Trans>
               </Button>
             )
           }
@@ -245,14 +250,14 @@ export function PanelEditor({
         <PanelNameField entry={entry} notices={notices} />
         <TableImport
           slot={{ section: "panel", panelId: entry.id, part: "targets" }}
-          label="Target table"
-          description="One row for each target, with its forward and reverse primer."
+          label={t`Target table`}
+          description={t`One row for each target, with its forward and reverse primer.`}
           headingLevel={headingLevel}
         />
         {!offerSaved && library.length > 0 && entry.table === null ? (
           <div>
             <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
-              Use a saved panel instead
+              <Trans>Use a saved panel instead</Trans>
             </Button>
           </div>
         ) : null}

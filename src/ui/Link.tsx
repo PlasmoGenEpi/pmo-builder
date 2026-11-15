@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { ExternalLink } from "lucide-react";
 import type { AnchorHTMLAttributes, Ref } from "react";
 
@@ -40,7 +41,7 @@ export function Link({
       {external ? (
         <>
           <ExternalLink aria-hidden="true" className="size-3.5" />
-          <span className="sr-only">(opens in a new tab)</span>
+          <span className="sr-only">{t`(opens in a new tab)`}</span>
         </>
       ) : null}
     </a>

@@ -2,6 +2,7 @@
  * The specimens and library samples sections, through
  * `specimenInfoTableToPmo` and `librarySampleInfoTableToPmo`.
  */
+import { t } from "@lingui/core/macro";
 import {
   librarySampleInfoTableToPmo,
   specimenInfoTableToPmo,
@@ -80,7 +81,10 @@ export function buildSpecimens(
   context: BuildContext,
 ): SectionResult<"specimens"> {
   if (section.table === null) return notReady("specimens", "empty");
-  const tableLabel = "specimen table";
+  const tableLabel = t({
+    message: "specimen table",
+    comment: "Names a table inside other messages, such as 'The specimen table has no rows.'",
+  });
   const prepared = prepareTable(
     { mapped: section.table, fieldSetId: "specimens", tableLabel },
     context,
@@ -112,7 +116,10 @@ export function buildLibrarySamples(
   context: BuildContext,
 ): SectionResult<"librarySamples"> {
   if (section.table === null) return notReady("librarySamples", "empty");
-  const tableLabel = "library sample table";
+  const tableLabel = t({
+    message: "library sample table",
+    comment: "Names a table inside other messages, such as 'The library sample table has no rows.'",
+  });
   const prepared = prepareTable(
     { mapped: section.table, fieldSetId: "librarySamples", tableLabel },
     context,

@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+
 import { useSectionState, useDraftSection } from "@/state";
 import { METHOD_STEP_FORM_FIELDS, type MethodRecord } from "@/domain/draft";
 import { recordState, type RecordState } from "@/features/records";
@@ -12,7 +14,8 @@ export interface MethodChoiceOption {
 /** A method's title: its name, or its place in the list. */
 export function methodTitle(method: MethodRecord, index: number): string {
   const name = method.name.trim();
-  return name === "" ? `Method ${index + 1}` : name;
+  const number = index + 1;
+  return name === "" ? t`Method ${number}` : name;
 }
 
 /** Whether a method holds nothing: no name and only blank steps. */
@@ -58,10 +61,13 @@ export function useMethodOptions(): readonly MethodChoiceOption[] {
       value: method.id,
       label: methodTitle(method, index),
     }));
-  return (built ?? []).map((method) => ({
-    value: method.key,
-    label: `${method.name} (${method.steps === 1 ? "1 step" : `${method.steps} steps`})`,
-  }));
+  return (built ?? []).map((method) => {
+    const name = method.name;
+    return {
+      value: method.key,
+      label: plural(method.steps, { one: `${name} (# step)`, other: `${name} (# steps)` }),
+    };
+  });
 }
 
 /** The method a run shows as chosen: its own, or the only method when it has none. */

@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { FileSpreadsheet, Keyboard } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -5,8 +6,8 @@ import type { EntryMode } from "@/domain/draft";
 import { SegmentedControl, type Segment } from "@/ui";
 
 const SEGMENTS: readonly Segment<EntryMode>[] = [
-  { value: "manual", label: "Type it in", icon: Keyboard },
-  { value: "table", label: "From a file", icon: FileSpreadsheet },
+  { value: "manual", label: t`Type it in`, icon: Keyboard },
+  { value: "table", label: t`From a file`, icon: FileSpreadsheet },
 ];
 
 /** Props for {@link EntryModeSwitch}. */
@@ -45,8 +46,8 @@ export function EntryModeSwitch({
   const otherHasContent = mode === "manual" ? tableHasContent : manualHasContent;
   const note = otherHasContent
     ? mode === "manual"
-      ? "Your file is kept, but only what you type here goes into the PMO."
-      : "What you typed is kept, but only the file goes into the PMO."
+      ? t`Your file is kept, but only what you type here goes into the PMO.`
+      : t`What you typed is kept, but only the file goes into the PMO.`
     : null;
   return (
     <div className="flex flex-col gap-6">

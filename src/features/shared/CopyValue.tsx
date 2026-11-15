@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 
@@ -33,9 +34,16 @@ export function CopyValue({ label, value }: { readonly label: string; readonly v
         size="sm"
         icon={copied ? Check : Copy}
         onClick={() => void copy()}
-        aria-label={`Copy ${label}`}
+        aria-label={t`Copy ${label}`}
       >
-        <span aria-live="polite">{copied ? "Copied" : "Copy"}</span>
+        <span aria-live="polite">
+          {copied
+            ? t({
+                message: "Copied",
+                comment: "Button, after the value was copied to the clipboard",
+              })
+            : t({ message: "Copy", comment: "Button: copy the value to the clipboard" })}
+        </span>
       </Button>
     </div>
   );

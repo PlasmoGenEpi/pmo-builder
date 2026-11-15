@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { useState } from "react";
 
 import { useActions, useAppState } from "@/state";
@@ -18,7 +19,7 @@ export function OtherTabNotice() {
     <div className="px-4 pt-4 sm:px-6">
       <Callout
         tone="warning"
-        title="This draft is open in another tab"
+        title={t`This draft is open in another tab`}
         action={
           <Button
             variant="primary"
@@ -29,12 +30,11 @@ export function OtherTabNotice() {
               void actions.takeOverEditing().finally(() => setTaking(false));
             }}
           >
-            {taking ? "Switching to this tab" : "Use this tab instead"}
+            {taking ? t`Switching to this tab` : t`Use this tab instead`}
           </Button>
         }
       >
-        Changes you make here are not saved, so the two tabs do not overwrite each other. Use this
-        tab instead to carry on here: the other tab saves your work and stops saving.
+        {t`Changes you make here are not saved, so the two tabs do not overwrite each other. Use this tab instead to carry on here: the other tab saves your work and stops saving.`}
       </Callout>
     </div>
   );

@@ -7,6 +7,7 @@
  * record are checked the same way. The `satisfies` clauses check every key
  * against the PMO types that pmotools-ts generates from the schema.
  */
+import { plural, t } from "@lingui/core/macro";
 import type {
   BioMethod,
   BioinformaticsRunInfo,
@@ -121,20 +122,39 @@ export function readFieldValue(
     const format = spec.format;
     const bad = format === null ? [] : items.filter((item) => !matches(format, item));
     if (bad.length > 0 && format !== null) {
+      const field = spec.label;
+      const values = quoteList(bad);
+      const allowed = format.hint;
       return {
         kind: "invalid",
-        message: `${spec.label} has ${quoteList(bad)}, but it can only hold ${format.hint}.`,
+        message: t({
+          message: `${field} has ${values}, but it can only hold ${allowed}.`,
+          comment:
+            "{field} is a field label, such as 'Contributors'. {values} is a list of quoted values. {allowed} says what the field takes, such as 'letters, numbers and . _ -'.",
+        }),
       };
     }
     if (spec.kind === "integerList") return { kind: "integers", value: items.map(Number) };
     return { kind: "list", value: items };
   }
   if (spec.format !== null && !matches(spec.format, text)) {
-    const allowed =
-      spec.kind === "date" || spec.kind === "url"
-        ? `must be ${spec.format.hint}`
-        : `can only hold ${spec.format.hint}`;
-    return { kind: "invalid", message: `${spec.label} is "${text}", but it ${allowed}.` };
+    const field = spec.label;
+    const allowed = spec.format.hint;
+    return {
+      kind: "invalid",
+      message:
+        spec.kind === "date" || spec.kind === "url"
+          ? t({
+              message: `${field} is "${text}", but it must be ${allowed}.`,
+              comment:
+                "{field} is a field label, such as 'Collection date'. {allowed} says what the value must be, such as 'a date as YYYY-MM-DD'.",
+            })
+          : t({
+              message: `${field} is "${text}", but it can only hold ${allowed}.`,
+              comment:
+                "{field} is a field label, such as 'Panel name'. {allowed} says what the field takes, such as 'letters, numbers and . _ -'.",
+            }),
+    };
   }
   return { kind: "text", value: text };
 }
@@ -143,10 +163,18 @@ function matches(rule: FormatRule, value: string): boolean {
   return rule.pattern.test(value);
 }
 
+/** The first three values, quoted, and how many more there are. */
 function quoteList(values: readonly string[]): string {
-  const shown = values.slice(0, 3).map((value) => `"${value}"`);
-  const more = values.length > 3 ? ` and ${values.length - 3} more` : "";
-  return `${shown.join(", ")}${more}`;
+  const shown = values
+    .slice(0, 3)
+    .map((value) => `"${value}"`)
+    .join(", ");
+  const more = values.length - 3;
+  if (more <= 0) return shown;
+  return t({
+    message: plural(more, { one: `${shown} and # more`, other: `${shown} and # more` }),
+    comment: "{shown} is a list of quoted values, cut short.",
+  });
 }
 
 /** The separators a pasted contributor list may use. */

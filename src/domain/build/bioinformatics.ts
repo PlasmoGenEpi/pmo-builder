@@ -3,6 +3,7 @@
  * that used them, typed in or imported. No pmotools-ts builder exists for
  * these; the records go to `mergeToPmo` as they are.
  */
+import { plural, t } from "@lingui/core/macro";
 import type { BioMethod, BioinformaticsMethodInfo, BioinformaticsRunInfo } from "pmotools-ts";
 
 import {
@@ -23,6 +24,7 @@ import {
   enteredFromTable,
   fromForms,
   requiredText,
+  rowLabel,
   writeRecord,
   type CheckedRecord,
   type EnteredRecord,
@@ -69,15 +71,34 @@ function manualMethods(records: readonly MethodRecord[]): PartResult<ResolvedMet
     const name = record.name.trim();
     const steps = record.steps.filter((step) => !isBlankRecord(step));
     if (name === "" && steps.length === 0) return;
-    const label = name === "" ? `Method ${index + 1}` : `Method "${name}"`;
+    const methodPosition = index + 1;
     if (steps.length === 0) {
       notices.push(
-        makeNotice("error", "bioinformatics/no-steps", `${label} needs at least one step.`),
+        makeNotice(
+          "error",
+          "bioinformatics/no-steps",
+          name === ""
+            ? t`Method ${methodPosition} needs at least one step.`
+            : t`Method "${name}" needs at least one step.`,
+        ),
       );
       statuses.push("incomplete");
       return;
     }
-    const checked = checkRecords(METHOD_STEP_FORM_FIELDS, fromForms(steps, `${label}, step`));
+    const checked = checkRecords(
+      METHOD_STEP_FORM_FIELDS,
+      fromForms(steps, (position) =>
+        name === ""
+          ? t({
+              message: `Method ${methodPosition}, step ${position}`,
+              comment: "Starts a message about one step of a bioinformatics method.",
+            })
+          : t({
+              message: `Method "${name}", step ${position}`,
+              comment: "Starts a message about one step of a bioinformatics method.",
+            }),
+      ),
+    );
     notices.push(...checked.notices);
     statuses.push(checked.status);
     if (checked.status === "ready")
@@ -86,7 +107,11 @@ function manualMethods(records: readonly MethodRecord[]): PartResult<ResolvedMet
   notices.push(
     ...duplicateNameNotices(
       methods.map((m) => m.name).filter((n) => n !== ""),
-      "method",
+      (repeatedNames, count) =>
+        plural(count, {
+          one: `Each method needs its own name, but ${repeatedNames} is used more than once.`,
+          other: `Each method needs its own name, but ${repeatedNames} are used more than once.`,
+        }),
     ),
   );
   if (notices.some((notice) => notice.code === "form/duplicate-name")) statuses.push("error");
@@ -97,7 +122,10 @@ function tableMethods(
   section: BioinformaticsDraft["methods"]["table"],
   context: BuildContext,
 ): PartResult<ResolvedMethod> {
-  const tableLabel = "methods table";
+  const tableLabel = t({
+    message: "methods table",
+    comment: "Names a table inside other messages, such as 'The methods table has no rows.'",
+  });
   const mapped = section.table;
   if (mapped === null) return { status: "empty", notices: [], items: [] };
   const group = section.groupColumn;
@@ -108,7 +136,7 @@ function tableMethods(
         makeNotice(
           "error",
           "bioinformatics/unknown-group-column",
-          `The methods table has no column "${group}" to split it into methods. Choose another column.`,
+          t`The methods table has no column "${group}" to split it into methods. Choose another column.`,
         ),
       ],
       items: [],
@@ -127,11 +155,16 @@ function tableMethods(
   const notices: Notice[] = [];
   const statuses: SectionStatus[] = [];
   if (entered.blankGroupRows.length > 0) {
+    const column = group ?? "";
+    const rows = describeRows(entered.blankGroupRows);
     notices.push(
       makeNotice(
         "error",
         "bioinformatics/blank-group",
-        `Column "${group ?? ""}" names the method of each step, but it is blank in ${describeRows(entered.blankGroupRows)}.`,
+        t({
+          message: `Column "${column}" names the method of each step, but it is blank in ${rows}.`,
+          comment: "{rows} is such as 'rows 5 and 9'.",
+        }),
       ),
     );
     statuses.push("error");
@@ -149,7 +182,9 @@ function tableMethods(
   if (methods.length === 0 && statuses.every((s) => s === "empty")) {
     return {
       status: "incomplete",
-      notices: [makeNotice("error", "table/no-rows", "The methods table has no rows with values.")],
+      notices: [
+        makeNotice("error", "table/no-rows", t`The methods table has no rows with values.`),
+      ],
       items: [],
     };
   }
@@ -177,14 +212,18 @@ function enteredFromRows(
     }
     const extra = additionalColumns.map((column) => ({ key: column, value: row[column] ?? "" }));
     const list = groups.get(groupValue) ?? [];
-    list.push({ label: capitalise(describeRows([index])), values, extra, origin: "table" });
+    list.push({ label: rowLabel(index), values, extra, origin: "table" });
     groups.set(groupValue, list);
   });
   return { groups, blankGroupRows };
 }
 
-function capitalise(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
+/** A method with no name, by its place in the list, such as "Method 2". */
+function unnamedMethod(position: number): string {
+  return t({
+    message: `Method ${position}`,
+    comment: "A bioinformatics method with no name, by its place in the list.",
+  });
 }
 
 type MethodLookup =
@@ -205,8 +244,14 @@ function findMethodByRef(
         "error",
         methods.length === 0 ? "bioinformatics/no-methods" : "bioinformatics/no-method-chosen",
         methods.length === 0
-          ? `${label}: add the method this run used.`
-          : `${label}: choose the method this run used.`,
+          ? t({
+              message: `${label}: add the method this run used.`,
+              comment: "{label} names a run, such as 'Run 2', 'Row 5' or 'Runs table'.",
+            })
+          : t({
+              message: `${label}: choose the method this run used.`,
+              comment: "{label} names a run, such as 'Run 2', 'Row 5' or 'Runs table'.",
+            }),
       ),
     };
   }
@@ -218,7 +263,10 @@ function findMethodByRef(
     notice: makeNotice(
       "error",
       "bioinformatics/method-gone",
-      `${label}: the method chosen for this run is no longer there. Choose its method again.`,
+      t({
+        message: `${label}: the method chosen for this run is no longer there. Choose its method again.`,
+        comment: "{label} names a run, such as 'Run 2', 'Row 5' or 'Runs table'.",
+      }),
     ),
   };
 }
@@ -236,7 +284,10 @@ function manualRuns(
   section: BioinformaticsDraft["runs"],
   methods: readonly ResolvedMethod[],
 ): PartResult<BioinformaticsRunInfo> {
-  const checked = checkRecords(RUN_FORM_FIELDS, fromForms(section.records, "Run"));
+  const checked = checkRecords(
+    RUN_FORM_FIELDS,
+    fromForms(section.records, (position) => t`Run ${position}`),
+  );
   const notices: Notice[] = [...checked.notices];
   const statuses: SectionStatus[] = [checked.status];
   const runs: BioinformaticsRunInfo[] = [];
@@ -271,8 +322,8 @@ function tableRuns(
           "error",
           "bioinformatics/method-column",
           methodColumn === null
-            ? "Choose the column of the runs table that names each run's method."
-            : `The runs table has no column "${methodColumn}". Choose another column for the method.`,
+            ? t`Choose the column of the runs table that names each run's method.`
+            : t`The runs table has no column "${methodColumn}". Choose another column for the method.`,
         ),
       ],
       items: [],
@@ -283,7 +334,11 @@ function tableRuns(
       fields: RUN_FORM_FIELDS,
       mapped,
       fieldSetId: "bioinformaticsRuns",
-      tableLabel: "runs table",
+      tableLabel: t({
+        message: "runs table",
+        comment:
+          "Names the table of bioinformatics runs inside other messages, such as 'The runs table has no rows.'",
+      }),
     },
     context,
   );
@@ -297,7 +352,17 @@ function tableRuns(
   const runs: BioinformaticsRunInfo[] = [];
   const unknownMethods = new Set<string>();
   const shared =
-    methodColumn === null ? findMethodByRef(methods, section.methodRef, "Runs table") : null;
+    methodColumn === null
+      ? findMethodByRef(
+          methods,
+          section.methodRef,
+          t({
+            message: "Runs table",
+            comment:
+              "Starts a message about every run of the runs table, such as 'Runs table: choose the method this run used.'",
+          }),
+        )
+      : null;
   if (shared !== null && shared.kind === "missing") {
     return { status: shared.status, notices: [...notices, shared.notice], items: [] };
   }
@@ -315,13 +380,17 @@ function tableRuns(
     runs.push(toRun(record, methodIndex));
   });
   if (unknownMethods.size > 0) {
+    const column = methodColumn ?? "";
+    const unknown = quoteItems([...unknownMethods]);
+    const known = quoteItems(methods.map((m) => m.name));
     notices.push(
       makeNotice(
         "error",
         "bioinformatics/unknown-method",
-        `Column "${methodColumn ?? ""}" names methods that are not in the methods: ${quoteItems([
-          ...unknownMethods,
-        ])}. The method names are ${quoteItems(methods.map((m) => m.name))}.`,
+        t({
+          message: `Column "${column}" names methods that are not in the methods: ${unknown}. The method names are ${known}.`,
+          comment: "{unknown} and {known} are lists of quoted method names.",
+        }),
       ),
     );
     statuses.push("error");
@@ -354,7 +423,12 @@ export function buildBioinformatics(
       ? manualRuns(section.runs, methods.items)
       : tableRuns(section.runs.table, methods.items, context);
   const runNames = runs.items.map((run) => run.bioinformatics_run_name);
-  const duplicates = duplicateNameNotices(runNames, "run");
+  const duplicates = duplicateNameNotices(runNames, (repeatedNames, count) =>
+    plural(count, {
+      one: `Each run needs its own name, but ${repeatedNames} is used more than once.`,
+      other: `Each run needs its own name, but ${repeatedNames} are used more than once.`,
+    }),
+  );
   const notices = [...methods.notices, ...runs.notices, ...duplicates];
   const status = worstStatus([
     methods.status,
@@ -363,7 +437,7 @@ export function buildBioinformatics(
   ]);
   const options: MethodOption[] = methods.items.map((method, index) => ({
     key: method.key,
-    name: method.name === "" ? `Method ${index + 1}` : method.name,
+    name: method.name === "" ? unnamedMethod(index + 1) : method.name,
     steps: method.info.methods.length,
   }));
   const summary = { methods: options, runs: runs.items.length, runNames };

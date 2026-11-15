@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { AlertDialog } from "radix-ui";
 import { useState, type ReactElement, type ReactNode } from "react";
 
@@ -34,7 +35,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
-  cancelLabel = "Cancel",
+  cancelLabel = t`Cancel`,
   tone = "default",
   onConfirm,
 }: ConfirmDialogProps) {

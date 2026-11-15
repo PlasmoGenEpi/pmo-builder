@@ -1,3 +1,4 @@
+import { plural, t } from "@lingui/core/macro";
 import { useCallback } from "react";
 
 import { StepPage } from "@/app/StepPage";
@@ -8,7 +9,7 @@ import { useActions, useDraftSection, useSectionState } from "@/state";
 import { Checkbox, SectionHeading } from "@/ui";
 
 const SLOT = { section: "microhaplotypes" } as const;
-const LABEL = "Allele table";
+const LABEL = t`Allele table`;
 
 /**
  * How the allele table names its bioinformatics run. Offers run names typed
@@ -20,15 +21,15 @@ function AlleleRunName({ matching }: { readonly matching: ColumnMatching }) {
     <RunNameChoice
       section="microhaplotypes"
       matching={matching}
-      description="The analysis run that produced this table. The same name links it to a run on the Bioinformatics step."
+      description={t`The analysis run that produced this table. The same name links it to a run on the Bioinformatics step.`}
       modeDescriptions={{
-        none: "The PMO does not say which analysis run found these alleles.",
-        fixed: "Every row came from the same analysis run.",
-        column: "The table holds several runs, with the run name in one column.",
+        none: t`The PMO does not say which analysis run found these alleles.`,
+        fixed: t`Every row came from the same analysis run.`,
+        column: t`The table holds several runs, with the run name in one column.`,
       }}
-      tableName="allele table"
+      tableName={t`allele table`}
       knownNames={runNames}
-      knownLabel="From the Bioinformatics step:"
+      knownLabel={t`From the Bioinformatics step:`}
     />
   );
 }
@@ -47,8 +48,8 @@ function AlleleColumns({ matching }: { readonly matching: ColumnMatching }) {
     <section aria-labelledby="allele-columns-heading" className="flex flex-col gap-4">
       <SectionHeading
         id="allele-columns-heading"
-        title="Where extra columns go"
-        description="Extra columns are stored with each detection: one sample's reads of one allele. Tick the ones that describe the allele itself, the same in every sample, to store them once with the allele instead."
+        title={t`Where extra columns go`}
+        description={t`Extra columns are stored with each detection: one sample's reads of one allele. Tick the ones that describe the allele itself, the same in every sample, to store them once with the allele instead.`}
       />
       <ul className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
         {extra.map((column) => (
@@ -56,7 +57,7 @@ function AlleleColumns({ matching }: { readonly matching: ColumnMatching }) {
             <Checkbox
               label={<span className="font-mono text-sm break-all">{column}</span>}
               description={
-                chosen.has(column) ? "Stored with the allele" : "Stored with each detection"
+                chosen.has(column) ? t`Stored with the allele` : t`Stored with each detection`
               }
               checked={chosen.has(column)}
               onCheckedChange={(checked) =>
@@ -102,7 +103,7 @@ export function MicrohaplotypesStep() {
         <TableImport
           slot={SLOT}
           label={LABEL}
-          description="One row for each allele found in each sample, with its read count."
+          description={t`One row for each allele found in each sample, with its read count.`}
           onMappingChange={keepAlleleColumns}
         >
           {(matching) => (
@@ -114,18 +115,18 @@ export function MicrohaplotypesStep() {
         </TableImport>
         <SectionResult
           section="microhaplotypes"
-          emptyMessage="Nothing here yet. Add your allele table above to see what goes into the PMO."
+          emptyMessage={t`Nothing here yet. Add your allele table above to see what goes into the PMO.`}
           stats={(summary) => [
-            { label: "Library samples", value: summary.librarySamples },
-            { label: "Targets", value: summary.targets },
-            { label: "Distinct alleles", value: summary.microhaplotypes },
+            { label: t`Library samples`, value: summary.librarySamples },
+            { label: t`Targets`, value: summary.targets },
+            { label: t`Distinct alleles`, value: summary.microhaplotypes },
             {
-              label: "Rows read",
+              label: t`Rows read`,
               value: summary.rows,
               hint:
                 summary.runNames.length === 0
                   ? undefined
-                  : `${summary.runNames.length} ${summary.runNames.length === 1 ? "run" : "runs"}`,
+                  : plural(summary.runNames.length, { one: "# run", other: "# runs" }),
             },
           ]}
         />

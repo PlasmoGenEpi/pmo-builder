@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import {
   CircleCheck,
   CircleExclamationPoint,
@@ -48,6 +49,9 @@ let counter = 0;
  * Shows short messages about something that just happened, such as "PMO file
  * downloaded". Put it once near the root. Use `useToast` to show one.
  */
+/** Radix puts the key that jumps to the messages in place of this. */
+const RADIX_HOTKEY = "{hotkey}";
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastEntry[]>([]);
 
@@ -68,7 +72,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   return (
     <ToastContext.Provider value={api}>
-      <RadixToast.Provider swipeDirection="right" label="Notification">
+      <RadixToast.Provider swipeDirection="right" label={t`Notification`}>
         {children}
         {toasts.map((entry) => {
           const tone = entry.tone ?? "info";
@@ -111,7 +115,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 ) : null}
               </div>
               <RadixToast.Close
-                aria-label="Dismiss"
+                aria-label={t`Dismiss`}
                 className="-m-1 inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-text-muted hover:bg-surface-muted hover:text-text"
               >
                 <X aria-hidden="true" className="size-4" />
@@ -119,7 +123,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             </RadixToast.Root>
           );
         })}
-        <RadixToast.Viewport className="fixed right-0 bottom-0 z-[60] m-0 flex w-full max-w-sm list-none flex-col gap-2 p-4 outline-none" />
+        <RadixToast.Viewport
+          // The region's name for screen readers; Radix adds the key that jumps to it.
+          label={t({
+            message: `Notifications (${RADIX_HOTKEY})`,
+            comment:
+              "Screen-reader name of the area where messages appear. The placeholder becomes a key such as F8.",
+          })}
+          className="fixed right-0 bottom-0 z-[60] m-0 flex w-full max-w-sm list-none flex-col gap-2 p-4 outline-none"
+        />
       </RadixToast.Provider>
     </ToastContext.Provider>
   );

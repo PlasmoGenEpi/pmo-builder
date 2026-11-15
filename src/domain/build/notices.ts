@@ -6,7 +6,10 @@
  * Rows are numbered as a spreadsheet shows them: the header is row 1, so the
  * first data row is row 2.
  */
+import { plural, t } from "@lingui/core/macro";
 import { PmoError, isMissing, type IssueDetails, type PmoWarning, type Table } from "pmotools-ts";
+
+import { intlLocale } from "@/i18n/languages";
 
 import type {
   FieldRequirement,
@@ -28,7 +31,12 @@ const MAX_LISTED = 8;
  */
 export function withLibraryDetail(leadIn: string, libraryMessage: string): string {
   const detail = libraryMessage.trim();
-  return detail === "" ? leadIn : `${leadIn} Details: ${detail}`;
+  if (detail === "") return leadIn;
+  return t({
+    message: `${leadIn} Details: ${detail}`,
+    comment:
+      "{leadIn} is a translated message saying what went wrong and what to do. {detail} is the technical message from the PMO library, in English.",
+  });
 }
 
 /** Makes a notice, with pointers to what it is about when they are known. */
@@ -48,14 +56,31 @@ export function makeNotice(
   return notice;
 }
 
-/** Joins items as "a, b and c", listing at most {@link MAX_LISTED} and counting the rest. */
+/**
+ * Joins items as "a, b and c" in the interface language, listing at most
+ * {@link MAX_LISTED} and counting the rest ("a, b and 3 more").
+ */
 export function listItems(items: readonly string[], max = MAX_LISTED): string {
   if (items.length === 0) return "";
   const shown = items.slice(0, max);
   const rest = items.length - shown.length;
-  if (rest > 0) return `${shown.join(", ")} and ${rest} more`;
-  if (shown.length === 1) return shown[0] ?? "";
-  return `${shown.slice(0, -1).join(", ")} and ${shown.at(-1) ?? ""}`;
+  const all =
+    rest > 0
+      ? [
+          ...shown,
+          t({
+            message: plural(rest, { one: "# more", other: "# more" }),
+            comment:
+              'The last item of a list of names that is cut short, such as \'"S1", "S2" and 3 more\'.',
+          }),
+        ]
+      : shown;
+  return new Intl.ListFormat(intlLocale(), { type: "conjunction" }).format(all);
+}
+
+/** Joins items as "a or b" in the interface language. */
+export function listAlternatives(items: readonly string[]): string {
+  return new Intl.ListFormat(intlLocale(), { type: "disjunction" }).format(items);
 }
 
 /** Quotes each value and joins them with {@link listItems}. */
@@ -66,15 +91,15 @@ export function quoteItems(items: readonly unknown[], max = MAX_LISTED): string 
   );
 }
 
-/** "1 specimen" or "50 specimens". */
-export function countText(value: number, singular: string, plural = `${singular}s`): string {
-  return `${value} ${value === 1 ? singular : plural}`;
-}
-
 /** "row 5" or "rows 5, 9 and 12", from 0-based data row indexes. */
 export function describeRows(indexes: readonly number[]): string {
-  const rows = indexes.map((index) => String(index + 2));
-  return `${rows.length === 1 ? "row" : "rows"} ${listItems(rows)}`;
+  const rowCount = indexes.length;
+  const rowList = listItems(indexes.map((index) => String(index + 2)));
+  return t({
+    message: plural(rowCount, { one: `row ${rowList}`, other: `rows ${rowList}` }),
+    comment:
+      "Spreadsheet rows, used inside other messages, such as 'is blank in rows 5, 9 and 12'. {rowList} is the list of row numbers.",
+  });
 }
 
 /** Indexes of the rows whose cell in `column` is missing, optionally only those matching `where`. */
@@ -144,8 +169,19 @@ export function describeColumn(context: TableIssueContext, column: string): stri
   const key = Object.entries(context.columns).find(([, mapped]) => mapped === column)?.[0];
   const label =
     key === undefined ? undefined : context.fieldSet.fields.find((f) => f.key === key)?.label;
-  if (label === undefined || sameWords(label, column)) return `column "${column}"`;
-  return `column "${column}" (${inSentence(label)})`;
+  if (label === undefined || sameWords(label, column)) {
+    return t({
+      message: `column "${column}"`,
+      comment:
+        "Names a column of the user's table inside other messages, such as 'column \"SampleID\" must hold whole numbers'. {column} is the column's name in the file.",
+    });
+  }
+  const field = inSentence(label);
+  return t({
+    message: `column "${column}" (${field})`,
+    comment:
+      "Names a column of the user's table inside other messages. {column} is the column's name in the file; {field} is the field it is matched to, such as 'sample name'.",
+  });
 }
 
 /** A field label as it reads mid-sentence: lower case, except acronyms such as "ID". */
@@ -174,16 +210,19 @@ function columnFor(context: TableIssueContext, key: string): string | null {
   return context.columns[key] ?? null;
 }
 
-function isAre(items: readonly string[]): string {
-  return items.length === 1 ? "is" : "are";
-}
-
-const COUNT_WORDS = ["none", "one", "both", "three", "four", "five", "six"];
+/** The largest group whose size the "map all or none" advice spells out. */
+const MAX_SPELLED_GROUP = 6;
 
 function requirementLabel(context: TableIssueContext, requirement: FieldRequirement): string {
   if (typeof requirement === "string") return fieldLabel(context, requirement);
-  const [first, ...rest] = requirement.anyOf.map((key) => fieldLabel(context, key));
-  return rest.length === 0 ? (first ?? "") : `${first ?? ""} (or ${rest.join(" or ")})`;
+  const [first = "", ...rest] = requirement.anyOf.map((key) => fieldLabel(context, key));
+  if (rest.length === 0) return first;
+  const alternatives = listAlternatives(rest);
+  return t({
+    message: `${first} (or ${alternatives})`,
+    comment:
+      "A field that another field can stand in for, such as 'Chromosome (or Pseudo-CIGAR chromosome)'.",
+  });
 }
 
 /**
@@ -196,9 +235,26 @@ function incompleteGroupMessage(
   context: TableIssueContext,
   problem: Extract<MappingProblem, { kind: "incomplete-group" }>,
 ): string {
-  const mapped = problem.mappedKeys.map((key) => fieldLabel(context, key));
-  const missing = problem.missing.map((requirement) => requirementLabel(context, requirement));
-  const opening = `${listItems(mapped)} ${isAre(mapped)} mapped, but ${listItems(missing)} ${isAre(missing)} not.`;
+  const mappedCount = problem.mappedKeys.length;
+  const missingCount = problem.missing.length;
+  const mappedFields = listItems(problem.mappedKeys.map((key) => fieldLabel(context, key)));
+  const missingFields = listItems(
+    problem.missing.map((requirement) => requirementLabel(context, requirement)),
+  );
+  const opening = t({
+    message: plural(mappedCount, {
+      one: plural(missingCount, {
+        one: `${mappedFields} is mapped, but ${missingFields} is not.`,
+        other: `${mappedFields} is mapped, but ${missingFields} are not.`,
+      }),
+      other: plural(missingCount, {
+        one: `${mappedFields} are mapped, but ${missingFields} is not.`,
+        other: `${mappedFields} are mapped, but ${missingFields} are not.`,
+      }),
+    }),
+    comment:
+      "Fields that only work together. {mappedFields} and {mappedCount} are the fields matched to a column; {missingFields} and {missingCount} are the ones still to match.",
+  });
   const plain = problem.missing.every((requirement) => typeof requirement === "string");
   const group = [
     ...new Set([
@@ -207,44 +263,79 @@ function incompleteGroupMessage(
     ]),
   ];
   const total = group.length;
-  if (plain && total >= 2 && total < COUNT_WORDS.length) {
-    return total === 2
-      ? `${opening} Map both or neither.`
-      : `${opening} Map all ${COUNT_WORDS[total] ?? String(total)} or none.`;
-  }
-  return `${opening} Map ${missing.length === 1 ? "it" : "them"} too, or unmap ${listItems(mapped)}.`;
+  const advice =
+    plain && total >= 2 && total <= MAX_SPELLED_GROUP
+      ? t({
+          message: plural(total, {
+            2: "Map both or neither.",
+            3: "Map all three or none.",
+            4: "Map all four or none.",
+            5: "Map all five or none.",
+            6: "Map all six or none.",
+            other: "Map all # or none.",
+          }),
+          comment:
+            "Advice for fields that only work together: match all of them to columns, or none.",
+        })
+      : t({
+          message: plural(missingCount, {
+            one: `Map it too, or unmap ${mappedFields}.`,
+            other: `Map them too, or unmap ${mappedFields}.`,
+          }),
+          comment:
+            "Advice for fields that only work together: match the missing fields to columns too, or unmatch {mappedFields}.",
+        });
+  return `${opening} ${advice}`;
 }
 
 /** A notice for one problem with a column mapping. */
 export function mappingProblemNotice(problem: MappingProblem, context: TableIssueContext): Notice {
   const tableId = context.tableId ?? undefined;
+  const table = context.tableLabel;
   switch (problem.kind) {
-    case "missing-required":
+    case "missing-required": {
+      const field = fieldLabel(context, problem.fieldKey).toLowerCase();
       return makeNotice(
         "error",
         "mapping/missing-required",
-        `Choose the column of the ${context.tableLabel} that holds the ${fieldLabel(context, problem.fieldKey).toLowerCase()}.`,
+        t({
+          message: `Choose the column of the ${table} that holds the ${field}.`,
+          comment:
+            "{table} is the name of a table, such as 'allele table'. {field} is a field, such as 'sample name'.",
+        }),
         { tableId, fieldKey: problem.fieldKey },
       );
-    case "duplicate-column":
+    }
+    case "duplicate-column": {
+      const column = problem.column;
+      const fields = listItems(
+        problem.fieldKeys.map((key) => fieldLabel(context, key).toLowerCase()),
+      );
       return makeNotice(
         "error",
         "mapping/duplicate-column",
-        `Column "${problem.column}" is chosen for ${listItems(
-          problem.fieldKeys.map((key) => fieldLabel(context, key).toLowerCase()),
-        )}. Each column can feed only one field.`,
+        t({
+          message: `Column "${column}" is chosen for ${fields}. Each column can feed only one field.`,
+          comment:
+            "{column} is a column of the user's table. {fields} is a list of fields, such as 'sample name and target name'.",
+        }),
         { tableId, column: problem.column, fieldKey: problem.fieldKeys[0] },
       );
-    case "unknown-column":
+    }
+    case "unknown-column": {
+      const column = problem.column;
+      const field = fieldLabel(context, problem.fieldKey).toLowerCase();
       return makeNotice(
         "error",
         "mapping/unknown-column",
-        `The ${context.tableLabel} has no column "${problem.column}", which is chosen for ${fieldLabel(
-          context,
-          problem.fieldKey,
-        ).toLowerCase()}. Choose another column.`,
+        t({
+          message: `The ${table} has no column "${column}", which is chosen for ${field}. Choose another column.`,
+          comment:
+            "{table} is the name of a table, such as 'allele table'. {field} is a field, such as 'sample name'.",
+        }),
         { tableId, fieldKey: problem.fieldKey, column: problem.column },
       );
+    }
     case "incomplete-group":
       return makeNotice(
         "error",
@@ -255,20 +346,31 @@ export function mappingProblemNotice(problem: MappingProblem, context: TableIssu
           fieldKey: problem.mappedKeys[0],
         },
       );
-    case "unknown-additional-column":
+    case "unknown-additional-column": {
+      const column = problem.column;
       return makeNotice(
         "error",
         "mapping/unknown-additional-column",
-        `The ${context.tableLabel} has no column "${problem.column}", chosen to carry into the PMO. Untick it.`,
+        t({
+          message: `The ${table} has no column "${column}", chosen to carry into the PMO. Untick it.`,
+          comment: "{table} is the name of a table, such as 'allele table'.",
+        }),
         { tableId, column: problem.column },
       );
-    case "additional-column-mapped":
+    }
+    case "additional-column-mapped": {
+      const column = problem.column;
+      const field = fieldLabel(context, problem.fieldKey).toLowerCase();
       return makeNotice(
         "error",
         "mapping/additional-column-mapped",
-        `Column "${problem.column}" is chosen for ${fieldLabel(context, problem.fieldKey).toLowerCase()} and also to carry into the PMO as it is. Untick it, or choose another column for the field.`,
+        t({
+          message: `Column "${column}" is chosen for ${field} and also to carry into the PMO as it is. Untick it, or choose another column for the field.`,
+          comment: "{field} is a field, such as 'sample name'.",
+        }),
         { tableId, column: problem.column, fieldKey: problem.fieldKey },
       );
+    }
     default:
       return unreachable(problem);
   }
@@ -296,11 +398,15 @@ export function errorNotice(error: unknown, context: TableIssueContext): Notice 
     );
   }
   const message = error instanceof Error ? error.message : String(error);
+  const table = context.tableLabel;
   return makeNotice(
     "error",
     "build/unexpected",
     withLibraryDetail(
-      `Something went wrong while reading the ${context.tableLabel}. Check its column mapping and the values in the mapped columns, then try again.`,
+      t({
+        message: `Something went wrong while reading the ${table}. Check its column mapping and the values in the mapped columns, then try again.`,
+        comment: "{table} is the name of a table, such as 'allele table'.",
+      }),
       message,
     ),
     { tableId: context.tableId ?? undefined },
@@ -319,9 +425,29 @@ export function warningNotice(warning: PmoWarning, context: TableIssueContext): 
 
 function readCountTableLabel(details: IssueDetails, fallback: string): string {
   const table = text(details, "table");
-  if (table === "total_raw_count_table") return "totals table";
-  if (table === "reads_by_stage_table") return "by-stage table";
+  if (table === "total_raw_count_table") {
+    return t({
+      message: "totals table",
+      comment: "The table of total reads per sample, named inside other messages.",
+    });
+  }
+  if (table === "reads_by_stage_table") {
+    return t({
+      message: "by-stage table",
+      comment:
+        "The table of reads per sample, target and processing stage, named inside other messages.",
+    });
+  }
   return fallback;
+}
+
+/**
+ * The rows of `column` that are blank, as " (rows 5 and 9)" to follow a
+ * column, or `null` when none are found.
+ */
+function blankRows(context: TableIssueContext, column: string): string | null {
+  const rows = context.typed === null ? [] : blankRowIndexes(context.typed, column);
+  return rows.length > 0 ? describeRows(rows) : null;
 }
 
 /**
@@ -339,34 +465,70 @@ function describeIssue(
     case "mhap/missing-columns":
     case "panel/missing-columns":
     case "metatable/missing-columns":
-    case "read-counts/missing-columns":
-      return `The ${readCountTableLabel(details, table)} has no ${columnsPhrase(strings(details, "columns"))}. Check the column mapping.`;
+    case "read-counts/missing-columns": {
+      const issueTable = readCountTableLabel(details, table);
+      const columnCount = strings(details, "columns").length;
+      const columns = quoteItems(strings(details, "columns"));
+      return t({
+        message: plural(columnCount, {
+          one: `The ${issueTable} has no column ${columns}. Check the column mapping.`,
+          other: `The ${issueTable} has no columns ${columns}. Check the column mapping.`,
+        }),
+        comment:
+          "{issueTable} is the name of a table, such as 'allele table'. {columns} is a list of quoted column names.",
+      });
+    }
     case "mhap/missing-additional-columns":
     case "panel/missing-additional-columns":
-    case "read-counts/missing-additional-columns":
-      return `The extra ${columnsPhrase(strings(details, "columns"))} chosen to carry into the PMO ${
-        strings(details, "columns").length === 1 ? "is" : "are"
-      } not in the ${readCountTableLabel(details, table)}. Untick ${strings(details, "columns").length === 1 ? "it" : "them"}.`;
+    case "read-counts/missing-additional-columns": {
+      const issueTable = readCountTableLabel(details, table);
+      const columnCount = strings(details, "columns").length;
+      const columns = quoteItems(strings(details, "columns"));
+      return t({
+        message: plural(columnCount, {
+          one: `The extra column ${columns} chosen to carry into the PMO is not in the ${issueTable}. Untick it.`,
+          other: `The extra columns ${columns} chosen to carry into the PMO are not in the ${issueTable}. Untick them.`,
+        }),
+        comment:
+          "{issueTable} is the name of a table, such as 'allele table'. {columns} is a list of quoted column names.",
+      });
+    }
     case "metatable/null-values": {
       const parts = strings(details, "columns").map((column) => {
-        const rows = context.typed === null ? [] : blankRowIndexes(context.typed, column);
-        const where = rows.length > 0 ? ` (${describeRows(rows)})` : "";
-        return `${describeColumn(context, column)}${where}`;
+        const columnText = describeColumn(context, column);
+        const rows = blankRows(context, column);
+        if (rows === null) return columnText;
+        return t({
+          message: `${columnText} (${rows})`,
+          comment:
+            "A column and the rows where it is blank, such as 'column \"Date\" (rows 5 and 9)'.",
+        });
       });
-      return `These columns of the ${table} have blank cells, which these fields do not allow: ${listItems(parts)}. Fill them in, or unmap the column if the field is optional.`;
+      const columns = listItems(parts);
+      return t({
+        message: `These columns of the ${table} have blank cells, which these fields do not allow: ${columns}. Fill them in, or unmap the column if the field is optional.`,
+        comment:
+          "{table} is the name of a table, such as 'specimen table'. {columns} lists the columns and their blank rows.",
+      });
     }
-    case "metatable/duplicate-selected-columns":
-      return `The same column is chosen for more than one field: ${quoteItems(strings(details, "columns"))}. Each column can feed only one field.`;
-    case "metatable/duplicate-output-columns":
-      return `More than one column would be written as "${text(details, "field") ?? ""}": ${quoteItems(
-        strings(details, "columns"),
-      )}. Untick the extra column or change the mapping.`;
+    case "metatable/duplicate-selected-columns": {
+      const columns = quoteItems(strings(details, "columns"));
+      return t`The same column is chosen for more than one field: ${columns}. Each column can feed only one field.`;
+    }
+    case "metatable/duplicate-output-columns": {
+      const field = text(details, "field") ?? "";
+      const columns = quoteItems(strings(details, "columns"));
+      return t({
+        message: `More than one column would be written as "${field}": ${columns}. Untick the extra column or change the mapping.`,
+        comment: "{field} is a PMO field name. {columns} is a list of quoted column names.",
+      });
+    }
     case "mhap/missing-reads": {
       const sample = text(details, "library_sample_name") ?? "";
       const target = text(details, "target_name");
       const readsColumn = columnFor(context, "reads");
       const sampleColumn = columnFor(context, "librarySampleName");
-      const rows =
+      const rowIndexes =
         context.typed !== null && readsColumn !== null
           ? blankRowIndexes(
               context.typed,
@@ -374,67 +536,147 @@ function describeIssue(
               (row) => sampleColumn === null || String(row[sampleColumn] ?? "") === sample,
             )
           : [];
-      const where = rows.length > 0 ? ` (${describeRows(rows)})` : "";
       const column =
-        readsColumn === null ? "the read count column" : describeColumn(context, readsColumn);
-      const targetText = target === null ? "" : `, target "${target}"`;
-      return `Sample "${sample}"${targetText} has no read count in ${column}${where}. Every row needs a read count.`;
+        readsColumn === null
+          ? t({
+              message: "the read count column",
+              comment: "Stands for a column inside other messages, when its name is not known.",
+            })
+          : describeColumn(context, readsColumn);
+      if (rowIndexes.length > 0) {
+        const rows = describeRows(rowIndexes);
+        return target === null
+          ? t({
+              message: `Sample "${sample}" has no read count in ${column} (${rows}). Every row needs a read count.`,
+              comment:
+                "{column} names a column, such as 'column \"Reads\"'. {rows} is such as 'rows 5 and 9'.",
+            })
+          : t({
+              message: `Sample "${sample}", target "${target}" has no read count in ${column} (${rows}). Every row needs a read count.`,
+              comment:
+                "{column} names a column, such as 'column \"Reads\"'. {rows} is such as 'rows 5 and 9'.",
+            });
+      }
+      return target === null
+        ? t({
+            message: `Sample "${sample}" has no read count in ${column}. Every row needs a read count.`,
+            comment: "{column} names a column, such as 'column \"Reads\"'.",
+          })
+        : t({
+            message: `Sample "${sample}", target "${target}" has no read count in ${column}. Every row needs a read count.`,
+            comment: "{column} names a column, such as 'column \"Reads\"'.",
+          });
     }
     case "mhap/missing-seq":
     case "mhap/missing-run-name":
     case "mhap/incomplete-location": {
       const key =
         code === "mhap/missing-seq" ? "seq" : code === "mhap/missing-run-name" ? null : "start";
-      const column = key === null ? text(details, "column") : columnFor(context, key);
-      const target = text(details, "target_name");
-      const rows =
-        context.typed !== null && column !== null ? blankRowIndexes(context.typed, column) : [];
-      const where = rows.length > 0 ? ` (${describeRows(rows)})` : "";
+      const columnName = key === null ? text(details, "column") : columnFor(context, key);
+      const target = text(details, "target_name") ?? "";
+      const rows = columnName === null ? null : blankRows(context, columnName);
       if (code === "mhap/missing-run-name") {
-        return `The run name comes from ${column === null ? "a column" : describeColumn(context, column)}, but it is blank in some rows${where}. Fill them in or give one run name for the whole table.`;
+        const column =
+          columnName === null
+            ? t({
+                message: "a column",
+                comment: "Stands for a column inside other messages, when its name is not known.",
+              })
+            : describeColumn(context, columnName);
+        return rows === null
+          ? t({
+              message: `The run name comes from ${column}, but it is blank in some rows. Fill them in or give one run name for the whole table.`,
+              comment: "{column} names a column, such as 'column \"Run\"'.",
+            })
+          : t({
+              message: `The run name comes from ${column}, but it is blank in some rows (${rows}). Fill them in or give one run name for the whole table.`,
+              comment:
+                "{column} names a column, such as 'column \"Run\"'. {rows} is such as 'rows 5 and 9'.",
+            });
       }
       if (code === "mhap/missing-seq") {
-        return `A row for target "${target ?? ""}" has no sequence in ${column === null ? "the sequence column" : describeColumn(context, column)}${where}.`;
+        const column =
+          columnName === null
+            ? t({
+                message: "the sequence column",
+                comment: "Stands for a column inside other messages, when its name is not known.",
+              })
+            : describeColumn(context, columnName);
+        return rows === null
+          ? t({
+              message: `A row for target "${target}" has no sequence in ${column}.`,
+              comment: "{column} names a column, such as 'column \"ASV\"'.",
+            })
+          : t({
+              message: `A row for target "${target}" has no sequence in ${column} (${rows}).`,
+              comment:
+                "{column} names a column, such as 'column \"ASV\"'. {rows} is such as 'rows 5 and 9'.",
+            });
       }
-      return `Target "${target ?? ""}" has a chromosome but no start or end in its first row. Fill in the location or unmap the location columns.`;
+      return t`Target "${target}" has a chromosome but no start or end in its first row. Fill in the location or unmap the location columns.`;
     }
     case "mhap/invalid-masking": {
-      const column = text(details, "column") ?? "";
+      const columnName = text(details, "column") ?? "";
       const value = text(details, "value") ?? "";
-      const rows = context.raw === null ? [] : rowIndexesWithValue(context.raw, column, value);
-      const where = rows.length > 0 ? ` (${describeRows(rows)})` : "";
-      return `${capitalise(describeColumn(context, column))} must hold whole numbers separated by commas, but holds "${value}"${where}.`;
+      const rowIndexes =
+        context.raw === null ? [] : rowIndexesWithValue(context.raw, columnName, value);
+      const column = capitalise(describeColumn(context, columnName));
+      if (rowIndexes.length > 0) {
+        const rows = describeRows(rowIndexes);
+        return t({
+          message: `${column} must hold whole numbers separated by commas, but holds "${value}" (${rows}).`,
+          comment:
+            "{column} names a column, such as 'Column \"Masking\"'. {rows} is such as 'rows 5 and 9'.",
+        });
+      }
+      return t({
+        message: `${column} must hold whole numbers separated by commas, but holds "${value}".`,
+        comment: "{column} names a column, such as 'Column \"Masking\"'.",
+      });
     }
     case "mhap/incomplete-masking-columns":
-      return "Masking needs three columns: masking start, segment size and replacement size. Map all three, or none.";
+      return t`Masking needs three columns: masking start, segment size and replacement size. Map all three, or none.`;
     case "mhap/incomplete-location-columns":
-      return "A location needs the chromosome, start and end columns. Map all three, or unmap the strand and reference sequence columns.";
+      return t`A location needs the chromosome, start and end columns. Map all three, or unmap the strand and reference sequence columns.`;
     case "mhap/pseudocigar-ref-loc-columns-unset":
-      return "A pseudo-CIGAR column is mapped, so the location it refers to is needed too. Map the chromosome, start and end columns (or the pseudo-CIGAR ones), or unmap the pseudo-CIGAR column.";
-    case "mhap/pseudocigar-ref-loc-missing":
-      return `Target "${text(details, "target_name") ?? ""}" has a pseudo-CIGAR but its chromosome, start or end is blank.`;
+      return t`A pseudo-CIGAR column is mapped, so the location it refers to is needed too. Map the chromosome, start and end columns (or the pseudo-CIGAR ones), or unmap the pseudo-CIGAR column.`;
+    case "mhap/pseudocigar-ref-loc-missing": {
+      const target = text(details, "target_name") ?? "";
+      return t`Target "${target}" has a pseudo-CIGAR but its chromosome, start or end is blank.`;
+    }
     case "mhap/duplicate-target-seq": {
       const duplicates = Array.isArray(details["duplicates"]) ? details["duplicates"] : [];
-      const targets = duplicates.map((entry: unknown) =>
+      const targetNames = duplicates.map((entry: unknown) =>
         typeof entry === "object" && entry !== null && "target_name" in entry
           ? String(entry.target_name)
           : "",
       );
-      return `Some targets list the same sequence more than once with different details (${quoteItems(
-        [...new Set(targets)],
-      )}). Reads are counted against the last copy. Check the extra columns carried onto each microhaplotype.`;
+      const targets = quoteItems([...new Set(targetNames)]);
+      return t`Some targets list the same sequence more than once with different details (${targets}). Reads are counted against the last copy. Check the extra columns carried onto each microhaplotype.`;
     }
     case "panel/invalid-integer": {
-      const column = text(details, "column") ?? "";
-      return `${capitalise(describeColumn(context, column))} must hold whole numbers, but target "${
-        text(details, "target") ?? ""
-      }" has "${text(details, "value") ?? ""}".`;
+      const column = capitalise(describeColumn(context, text(details, "column") ?? ""));
+      const target = text(details, "target") ?? "";
+      const value = text(details, "value") ?? "";
+      return t({
+        message: `${column} must hold whole numbers, but target "${target}" has "${value}".`,
+        comment: "{column} names a column, such as 'Column \"Start\"'.",
+      });
     }
     case "panel/duplicate-target-names": {
-      const column = columnFor(context, "targetName");
-      return `These targets appear more than once in ${
-        column === null ? "the target name column" : describeColumn(context, column)
-      }: ${quoteItems(strings(details, "targets"))}. Each target needs one row.`;
+      const columnName = columnFor(context, "targetName");
+      const column =
+        columnName === null
+          ? t({
+              message: "the target name column",
+              comment: "Stands for a column inside other messages, when its name is not known.",
+            })
+          : describeColumn(context, columnName);
+      const targets = quoteItems(strings(details, "targets"));
+      return t({
+        message: `These targets appear more than once in ${column}: ${targets}. Each target needs one row.`,
+        comment: "{column} names a column, such as 'column \"Target\"'.",
+      });
     }
     case "panel/duplicate-target-info": {
       const groups = Array.isArray(details["groups"]) ? details["groups"] : [];
@@ -446,91 +688,152 @@ function describeIssue(
           ? listItems(group.targets.map((target: unknown) => `"${String(target)}"`))
           : "",
       );
-      return `Some targets have exactly the same primers and location as another target: ${sets
-        .filter((set) => set !== "")
-        .join(
-          "; ",
-        )}. Each target needs its own primers or location. Remove the repeated rows or correct them.`;
+      const targetGroups = sets.filter((set) => set !== "").join("; ");
+      return t({
+        message: `Some targets have exactly the same primers and location as another target: ${targetGroups}. Each target needs its own primers or location. Remove the repeated rows or correct them.`,
+        comment:
+          "{targetGroups} lists groups of quoted target names, the groups separated by semicolons.",
+      });
     }
     case "panel/empty-table":
-      return `The ${table} has no rows.`;
-    case "panel/location-without-genome":
-      return `Target "${text(details, "target") ?? ""}" has a location, so the panel needs genome information. Add a genome, or unmap the location columns.`;
+      return t({
+        message: `The ${table} has no rows.`,
+        comment: "{table} is the name of a table, such as 'target table'.",
+      });
+    case "panel/location-without-genome": {
+      const target = text(details, "target") ?? "";
+      return t`Target "${target}" has a location, so the panel needs genome information. Add a genome, or unmap the location columns.`;
+    }
     case "panel/invalid-location-columns":
-      return "Location columns are mapped without the chromosome column. Map the chromosome column, or unmap the start and end columns.";
-    case "panel/missing-location":
-      return `The ${text(details, "location") ?? "location"} was left out for targets with blank location cells: ${quoteItems(
-        strings(details, "targets"),
-      )}.`;
+      return t`Location columns are mapped without the chromosome column. Map the chromosome column, or unmap the start and end columns.`;
+    case "panel/missing-location": {
+      const location =
+        text(details, "location") ??
+        t({ message: "location", comment: "A target's place on the genome." });
+      const targets = quoteItems(strings(details, "targets"));
+      return t({
+        message: `The ${location} was left out for targets with blank location cells: ${targets}.`,
+        comment:
+          "{location} is the part of a target's location left out, in English, such as 'strand'.",
+      });
+    }
     case "panel/invalid-genome-info":
       return withLibraryDetail(
-        "The panel's genome information is incomplete or not in the right form. Check the genome's name, version, taxon ID and web address on the Panel step.",
+        t`The panel's genome information is incomplete or not in the right form. Check the genome's name, version, taxon ID and web address on the Panel step.`,
         libraryMessage,
       );
     case "metatable/plate-position-conflict":
-      return `Plate columns of the ${table} are mapped twice over: give the plate position, or the plate row and column, not both. Unmap one of them.`;
+      return t({
+        message: `Plate columns of the ${table} are mapped twice over: give the plate position, or the plate row and column, not both. Unmap one of them.`,
+        comment: "{table} is the name of a table, such as 'specimen table'.",
+      });
     case "metatable/plate-row-col-mismatch":
-      return `The plate row and plate column of the ${table} go together. Map both or neither.`;
+      return t({
+        message: `The plate row and plate column of the ${table} go together. Map both or neither.`,
+        comment: "{table} is the name of a table, such as 'specimen table'.",
+      });
     case "metatable/invalid-plate-position": {
-      const column = text(details, "column") ?? "";
-      const values = Array.isArray(details["values"]) ? details["values"] : [];
-      return `${capitalise(describeColumn(context, column))} must hold wells such as A01 or H12 (a letter A to H, then 1 to 12), but holds ${quoteItems(
-        [...new Set(values.map((value: unknown) => String(value)))],
-      )}.`;
+      const column = capitalise(describeColumn(context, text(details, "column") ?? ""));
+      const valueList = Array.isArray(details["values"]) ? details["values"] : [];
+      const values = quoteItems([...new Set(valueList.map((value: unknown) => String(value)))]);
+      return t({
+        message: `${column} must hold wells such as A01 or H12 (a letter A to H, then 1 to 12), but holds ${values}.`,
+        comment:
+          "{column} names a column, such as 'Column \"Well\"'. {values} is a list of quoted values.",
+      });
     }
     case "metatable/invalid-taxon-id":
     case "metatable/invalid-integer":
     case "metatable/invalid-number": {
-      const column = text(details, "column") ?? "";
-      const row = count(details, "row");
-      const what =
-        code === "metatable/invalid-taxon-id"
-          ? "NCBI taxonomy numbers such as 5833, separated by commas"
-          : code === "metatable/invalid-integer"
-            ? "whole numbers"
-            : "numbers";
-      const where = row === null ? "a row" : describeRows([row]);
-      return `${capitalise(describeColumn(context, column))} must hold ${what}, but ${where} holds "${
-        text(details, "value") ?? ""
-      }". Correct it, or unmap the column if the field is optional.`;
+      const column = capitalise(describeColumn(context, text(details, "column") ?? ""));
+      const rowIndex = count(details, "row");
+      const row =
+        rowIndex === null
+          ? t({
+              message: "a row",
+              comment: "Stands for a row inside other messages, when its number is not known.",
+            })
+          : describeRows([rowIndex]);
+      const value = text(details, "value") ?? "";
+      if (code === "metatable/invalid-taxon-id") {
+        return t({
+          message: `${column} must hold NCBI taxonomy numbers such as 5833, separated by commas, but ${row} holds "${value}". Correct it, or unmap the column if the field is optional.`,
+          comment:
+            "{column} names a column, such as 'Column \"Host taxon\"'. {row} is such as 'row 5'.",
+        });
+      }
+      if (code === "metatable/invalid-integer") {
+        return t({
+          message: `${column} must hold whole numbers, but ${row} holds "${value}". Correct it, or unmap the column if the field is optional.`,
+          comment: "{column} names a column, such as 'Column \"Age\"'. {row} is such as 'row 5'.",
+        });
+      }
+      return t({
+        message: `${column} must hold numbers, but ${row} holds "${value}". Correct it, or unmap the column if the field is optional.`,
+        comment: "{column} names a column, such as 'Column \"Density\"'. {row} is such as 'row 5'.",
+      });
     }
     case "metatable/density-method-without-density":
-      return `The parasite density method of the ${table} is mapped without the parasite density. Map both or neither.`;
+      return t({
+        message: `The parasite density method of the ${table} is mapped without the parasite density. Map both or neither.`,
+        comment: "{table} is the name of a table, such as 'specimen table'.",
+      });
     case "read-counts/invalid-count": {
-      const row = count(details, "row");
-      const where = row === null ? "" : ` in ${describeRows([row])}`;
-      return `Column "${text(details, "column") ?? ""}" of the ${readCountTableLabel(details, table)} needs a whole number${where}, but holds "${text(details, "value") ?? ""}".`;
-    }
-    case "read-counts/duplicate-library-sample-names":
-      return `These samples appear more than once in the totals table: ${quoteItems(strings(details, "names"))}. Each sample needs one row.`;
-    case "read-counts/missing-name": {
-      const row = count(details, "row");
-      const column = text(details, "column");
-      if (row !== null && column !== null) {
-        return `${capitalise(readCountTableLabel(details, table))} ${describeRows([row])} has no value in column "${column}".`;
+      const issueTable = readCountTableLabel(details, table);
+      const column = text(details, "column") ?? "";
+      const value = text(details, "value") ?? "";
+      const rowIndex = count(details, "row");
+      if (rowIndex === null) {
+        return t({
+          message: `Column "${column}" of the ${issueTable} needs a whole number, but holds "${value}".`,
+          comment: "{issueTable} is the name of a table, such as 'totals table'.",
+        });
       }
-      return `The by-stage table has a row with no target or stage, for sample "${text(details, "library_sample_name") ?? ""}".`;
+      const rows = describeRows([rowIndex]);
+      return t({
+        message: `Column "${column}" of the ${issueTable} needs a whole number in ${rows}, but holds "${value}".`,
+        comment:
+          "{issueTable} is the name of a table, such as 'totals table'. {rows} is such as 'row 5'.",
+      });
     }
-    case "read-counts/unmatched-library-samples":
-      return `The by-stage table has reads for samples that are not in the totals table, and they were left out: ${quoteItems(
-        strings(details, "names"),
-      )}.`;
-    case "read-counts/unmatched-runs":
-      return `The by-stage table has reads for runs that are not in the totals table, and they were left out: ${quoteItems(
-        strings(details, "runs"),
-      )}.`;
+    case "read-counts/duplicate-library-sample-names": {
+      const samples = quoteItems(strings(details, "names"));
+      return t`These samples appear more than once in the totals table: ${samples}. Each sample needs one row.`;
+    }
+    case "read-counts/missing-name": {
+      const rowIndex = count(details, "row");
+      const column = text(details, "column");
+      if (rowIndex !== null && column !== null) {
+        const issueTable = capitalise(readCountTableLabel(details, table));
+        const rows = describeRows([rowIndex]);
+        return t({
+          message: `${issueTable} ${rows} has no value in column "${column}".`,
+          comment:
+            "{issueTable} is the name of a table, starting the sentence, such as 'Totals table'. {rows} is such as 'row 5'.",
+        });
+      }
+      const sample = text(details, "library_sample_name") ?? "";
+      return t`The by-stage table has a row with no target or stage, for sample "${sample}".`;
+    }
+    case "read-counts/unmatched-library-samples": {
+      const samples = quoteItems(strings(details, "names"));
+      return t`The by-stage table has reads for samples that are not in the totals table, and they were left out: ${samples}.`;
+    }
+    case "read-counts/unmatched-runs": {
+      const runs = quoteItems(strings(details, "runs"));
+      return t`The by-stage table has reads for runs that are not in the totals table, and they were left out: ${runs}.`;
+    }
     case "read-counts/duplicate-stages":
-      return "The by-stage table repeats some sample, target and stage combinations. The last count of each was kept.";
+      return t`The by-stage table repeats some sample, target and stage combinations. The last count of each was kept.`;
     default:
       return withLibraryDetail(
-        `The ${table} could not be turned into its part of the PMO. Check the column mapping of the ${table} and the values in the mapped columns.`,
+        t({
+          message: `The ${table} could not be turned into its part of the PMO. Check the column mapping of the ${table} and the values in the mapped columns.`,
+          comment: "{table} is the name of a table, such as 'allele table'.",
+        }),
         libraryMessage,
       );
   }
-}
-
-function columnsPhrase(columns: readonly string[]): string {
-  return `${columns.length === 1 ? "column" : "columns"} ${quoteItems(columns)}`;
 }
 
 /** The text with its first letter in upper case. */

@@ -1,8 +1,19 @@
-const integerFormat = new Intl.NumberFormat("en-US");
+import { intlLocale } from "@/i18n/languages";
+
+/** Formats whole numbers for the interface language. Made once per language. */
+let integerFormat = new Intl.NumberFormat(intlLocale());
+let formatLocale = intlLocale();
+function integers(): Intl.NumberFormat {
+  if (formatLocale !== intlLocale()) {
+    formatLocale = intlLocale();
+    integerFormat = new Intl.NumberFormat(formatLocale);
+  }
+  return integerFormat;
+}
 
 /** Formats a count with thousands separators, such as `12,431`. */
 export function formatCount(value: number): string {
-  return integerFormat.format(value);
+  return integers().format(value);
 }
 
 /** Formats a byte size for people, such as `1.2 MB` or `830 KB`. */

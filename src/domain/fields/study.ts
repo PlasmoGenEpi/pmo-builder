@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+
 import { defineFieldSet } from "./define";
 import {
   GENOME_RECORD_FIELDS,
@@ -14,7 +16,7 @@ import {
  */
 export const GENOME_FIELDS = defineFieldSet({
   id: "genomes",
-  title: "Reference genomes",
+  title: t`Reference genomes`,
   allowsAdditionalColumns: true,
   fields: toColumnFields(GENOME_RECORD_FIELDS),
 });
@@ -22,7 +24,7 @@ export const GENOME_FIELDS = defineFieldSet({
 /** The project table. No builder; keys are the PMO `ProjectInfo` field names. */
 export const PROJECT_FIELDS = defineFieldSet({
   id: "project",
-  title: "Project",
+  title: t({ message: "Project", comment: "Title of the project table" }),
   allowsAdditionalColumns: true,
   fields: toColumnFields(PROJECT_RECORD_FIELDS),
 });
@@ -30,7 +32,7 @@ export const PROJECT_FIELDS = defineFieldSet({
 /** The sequencing table. No builder; keys are the PMO `SequencingInfo` field names. */
 export const SEQUENCING_FIELDS = defineFieldSet({
   id: "sequencing",
-  title: "Sequencing runs",
+  title: t`Sequencing runs`,
   allowsAdditionalColumns: true,
   fields: toColumnFields(SEQUENCING_RECORD_FIELDS),
 });
@@ -41,7 +43,7 @@ export const SEQUENCING_FIELDS = defineFieldSet({
  */
 export const BIOINFORMATICS_METHOD_FIELDS = defineFieldSet({
   id: "bioinformaticsMethods",
-  title: "Bioinformatics methods",
+  title: t`Bioinformatics methods`,
   allowsAdditionalColumns: true,
   fields: toColumnFields(METHOD_STEP_RECORD_FIELDS),
 });
@@ -53,7 +55,7 @@ export const BIOINFORMATICS_METHOD_FIELDS = defineFieldSet({
  */
 export const BIOINFORMATICS_RUN_FIELDS = defineFieldSet({
   id: "bioinformaticsRuns",
-  title: "Bioinformatics runs",
+  title: t`Bioinformatics runs`,
   allowsAdditionalColumns: true,
   fields: toColumnFields(RUN_RECORD_FIELDS),
 });

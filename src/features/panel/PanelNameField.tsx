@@ -1,16 +1,22 @@
+import { plural, t } from "@lingui/core/macro";
+
 import type { PanelEntry } from "@/domain/draft";
 import type { Notice } from "@/domain/types";
 import { useActions, useSuggestions } from "@/state";
+import { intlLocale } from "@/i18n/languages";
 import { Button, TextField } from "@/ui";
 
 import { findNotice } from "./panelModel";
 
+/** Up to four names in quotes for a sentence: "a", "b" and "c", or "a", "b", "c", "d" and 2 more. */
 function listNames(names: readonly string[]): string {
   const shown = names.slice(0, 4).map((name) => `"${name}"`);
   const more = names.length - shown.length;
-  if (more > 0) return `${shown.join(", ")} and ${more} more`;
-  if (shown.length <= 1) return shown.join("");
-  return `${shown.slice(0, -1).join(", ")} and ${shown.at(-1) ?? ""}`;
+  if (more > 0) {
+    const shownNames = shown.join(", ");
+    return plural(more, { one: `${shownNames} and # more`, other: `${shownNames} and # more` });
+  }
+  return new Intl.ListFormat(intlLocale(), { type: "conjunction" }).format(shown);
 }
 
 /** Props for {@link PanelNameField}. */
@@ -33,6 +39,7 @@ export function PanelNameField({ entry, notices }: PanelNameFieldProps) {
   const problem = findNotice(notices, ["panel/missing-name", "panel/invalid-name"]);
   const others = panelNames.filter((suggested) => suggested !== name);
   const unmatched = name !== "" && panelNames.length > 0 && !panelNames.includes(name);
+  const tableNames = listNames(panelNames);
 
   const setName = (value: string) =>
     actions.updateItem({
@@ -46,10 +53,10 @@ export function PanelNameField({ entry, notices }: PanelNameFieldProps) {
 
   const hint = [
     panelNames.length > 0
-      ? "Your library sample table refers to the panel by this name, so use the same one."
-      : "Letters, numbers and . _ - with no spaces. If you add a library sample table, it refers to the panel by this name.",
+      ? t`Your library sample table refers to the panel by this name, so use the same one.`
+      : t`Letters, numbers and . _ - with no spaces. If you add a library sample table, it refers to the panel by this name.`,
     entry.source === "saved"
-      ? "Renaming it here changes this draft only, not the saved panel."
+      ? t`Renaming it here changes this draft only, not the saved panel.`
       : "",
   ]
     .filter((part) => part !== "")
@@ -58,7 +65,7 @@ export function PanelNameField({ entry, notices }: PanelNameFieldProps) {
   return (
     <div className="flex flex-col gap-2">
       <TextField
-        label="Panel name"
+        label={t`Panel name`}
         required
         mono
         value={current}
@@ -71,13 +78,13 @@ export function PanelNameField({ entry, notices }: PanelNameFieldProps) {
       />
       {others.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2 text-sm text-text-muted">
-          <span>From the library sample table:</span>
+          <span>{t`From the library sample table:`}</span>
           {others.slice(0, 6).map((suggested) => (
             <Button
               key={suggested}
               size="sm"
               onClick={() => setName(suggested)}
-              aria-label={`Use the panel name ${suggested}`}
+              aria-label={t`Use the panel name ${suggested}`}
             >
               <span className="font-mono">{suggested}</span>
             </Button>
@@ -86,9 +93,10 @@ export function PanelNameField({ entry, notices }: PanelNameFieldProps) {
       ) : null}
       {unmatched ? (
         <p className="max-w-prose text-sm text-text-muted">
-          The library sample table names {panelNames.length === 1 ? "its panel" : "its panels"}{" "}
-          {listNames(panelNames)}, not "{name}". Its samples link to this panel only if the names
-          match.
+          {plural(panelNames.length, {
+            one: `The library sample table names its panel ${tableNames}, not "${name}". Its samples link to this panel only if the names match.`,
+            other: `The library sample table names its panels ${tableNames}, not "${name}". Its samples link to this panel only if the names match.`,
+          })}
         </p>
       ) : null}
     </div>

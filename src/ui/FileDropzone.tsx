@@ -1,5 +1,9 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { CircleExclamationPoint, FileSpreadsheet, Upload } from "lucide-react";
 import { useId, useRef, useState, type DragEvent, type ReactNode } from "react";
+
+import { intlLocale } from "@/i18n/languages";
 
 import { Button } from "./Button";
 import { cn } from "./cn";
@@ -45,8 +49,7 @@ function accepts(name: string, accept: readonly string[]): boolean {
 
 function listEndings(accept: readonly string[]): string {
   const names = accept.map((ending) => ending.replace(/^\./, "").toUpperCase());
-  if (names.length <= 1) return names.join("");
-  return `${names.slice(0, -1).join(", ")} or ${names.at(-1) ?? ""}`;
+  return new Intl.ListFormat(intlLocale(), { type: "disjunction" }).format(names);
 }
 
 function hasFiles(event: DragEvent): boolean {
@@ -79,6 +82,9 @@ export function FileDropzone({
   const inactive = disabled || isBusy;
   const shownError = rejection ?? error ?? null;
   const dragging = dragDepth > 0 && !inactive;
+  const fileTypes = listEndings(accept);
+  const fileLabel = label.toLowerCase();
+  const busyMessage = typeof busy === "string" ? busy : t`Reading the file`;
 
   function choose() {
     if (!inactive) inputRef.current?.click();
@@ -88,8 +94,9 @@ export function FileDropzone({
     const chosen = files?.[0];
     if (chosen === undefined) return;
     if (!accepts(chosen.name, accept)) {
+      const fileName = chosen.name;
       setRejection(
-        `${chosen.name} is not a file type this step can read. Choose a ${listEndings(accept)} file.`,
+        t`${fileName} is not a file type this step can read. Choose a ${fileTypes} file.`,
       );
       return;
     }
@@ -122,7 +129,7 @@ export function FileDropzone({
       type="file"
       hidden
       accept={accept.join(",")}
-      aria-label={`Choose ${label.toLowerCase()} file`}
+      aria-label={t`Choose ${fileLabel} file`}
       onChange={(event) => {
         take(event.target.files);
         // Allow choosing the same file again after it was removed.
@@ -139,15 +146,20 @@ export function FileDropzone({
   ) : null;
 
   if (file !== null) {
-    const shape = [
-      formatBytes(file.size),
-      file.rows === undefined
-        ? null
-        : `${formatCount(file.rows)} ${file.rows === 1 ? "row" : "rows"}`,
-      file.columns === undefined
-        ? null
-        : `${formatCount(file.columns)} ${file.columns === 1 ? "column" : "columns"}`,
-    ].filter((part) => part !== null);
+    const { rows, columns } = file;
+    const rowCount = rows === undefined ? "" : formatCount(rows);
+    const columnCount = columns === undefined ? "" : formatCount(columns);
+    const shape = new Intl.ListFormat(intlLocale(), { type: "unit", style: "short" }).format(
+      [
+        formatBytes(file.size),
+        rows === undefined
+          ? null
+          : plural(rows, { one: `${rowCount} row`, other: `${rowCount} rows` }),
+        columns === undefined
+          ? null
+          : plural(columns, { one: `${columnCount} column`, other: `${columnCount} columns` }),
+      ].filter((part) => part !== null),
+    );
 
     return (
       <div className={cn("flex flex-col gap-2", className)}>
@@ -174,7 +186,7 @@ export function FileDropzone({
               {file.name}
             </p>
             <p className="text-sm text-text-muted" aria-live="polite">
-              {isBusy ? (typeof busy === "string" ? busy : "Reading the file") : shape.join(", ")}
+              {isBusy ? busyMessage : shape}
             </p>
             {file.detail && !isBusy ? (
               <p className="text-sm text-text-muted">{file.detail}</p>
@@ -185,9 +197,12 @@ export function FileDropzone({
               size="sm"
               onClick={choose}
               disabled={inactive}
-              aria-label={`Replace ${label.toLowerCase()} file`}
+              aria-label={t`Replace ${fileLabel} file`}
             >
-              Replace
+              {t({
+                message: "Replace",
+                comment: "Button: choose another file in place of this one",
+              })}
             </Button>
             <Button
               size="sm"
@@ -197,9 +212,9 @@ export function FileDropzone({
                 onRemove();
               }}
               disabled={inactive}
-              aria-label={`Remove ${label.toLowerCase()} file`}
+              aria-label={t`Remove ${fileLabel} file`}
             >
-              Remove
+              {t({ message: "Remove", comment: "Button: remove this file" })}
             </Button>
           </div>
           {input}
@@ -241,30 +256,26 @@ export function FileDropzone({
           <span className="sr-only">{label}:</span>{" "}
           <span className="text-base text-text">
             {isBusy ? (
-              typeof busy === "string" ? (
-                busy
-              ) : (
-                "Reading the file"
-              )
+              busyMessage
             ) : dragging ? (
-              "Drop to use this file"
+              t`Drop to use this file`
             ) : (
-              <>
+              <Trans>
                 Drag a file here or{" "}
                 <span className="font-medium text-accent-text">choose a file</span>
-              </>
+              </Trans>
             )}
           </span>
           <span className="text-sm text-text-muted">
-            <span className="sr-only">. Accepts</span> {listEndings(accept)}
+            <Trans>
+              <span className="sr-only">. Accepts</span> {fileTypes}
+            </Trans>
             {description ? <span className="block">{description}</span> : null}
           </span>
         </span>
       </button>
       {input}
-      {isBusy ? (
-        <output className="sr-only">{typeof busy === "string" ? busy : "Reading the file"}</output>
-      ) : null}
+      {isBusy ? <output className="sr-only">{busyMessage}</output> : null}
       {message}
     </div>
   );

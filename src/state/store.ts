@@ -5,6 +5,7 @@
  * Changing the draft schedules a rebuild in the engine and a save to the
  * browser, each debounced. Pages never build or save themselves.
  */
+import { t } from "@lingui/core/macro";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
 import type { PmoFile, PmoFileCheck, Suggestions } from "@/domain/build";
@@ -392,7 +393,8 @@ const EMPTY_MAPPING: ColumnMapping = { fields: {}, additionalColumns: [] };
 
 async function fetchFromOrigin(path: string): Promise<Blob> {
   const response = await fetch(path);
-  if (!response.ok) throw new Error(`${path} could not be fetched (${response.status}).`);
+  const status = response.status;
+  if (!response.ok) throw new Error(t`${path} could not be fetched (${status}).`);
   return response.blob();
 }
 
@@ -537,7 +539,7 @@ export function createAppStore(options: AppStoreOptions): AppStore {
     if (availability.kind === "session-only")
       return { kind: "session-only", reason: availability.reason };
     if (!result.ok)
-      return { kind: "failed", reason: result.reason ?? "The draft could not be saved." };
+      return { kind: "failed", reason: result.reason ?? t`The draft could not be saved.` };
     return { kind: "saved", savedAt: new Date().toISOString() };
   };
 
@@ -843,12 +845,12 @@ export function createAppStore(options: AppStoreOptions): AppStore {
         await actions.flush();
         const entry = get().draft.panel.panels.find((panel) => panel.id === panelId);
         if (entry === undefined)
-          return { ok: false, reason: "That panel is no longer in the draft." };
+          return { ok: false, reason: t`That panel is no longer in the draft.` };
         const fragment = await engine.getPanelFragment(panelId);
         if (fragment === null) {
           return {
             ok: false,
-            reason: "The panel has not built yet. Fix its problems, then save it.",
+            reason: t`The panel has not built yet. Fix its problems, then save it.`,
           };
         }
         const label = (
@@ -864,8 +866,7 @@ export function createAppStore(options: AppStoreOptions): AppStore {
         if (storage.availability().kind === "session-only") {
           return {
             ok: false,
-            reason:
-              "The panel is saved for this session only, because this browser is not letting the app keep data.",
+            reason: t`The panel is saved for this session only, because this browser is not letting the app keep data.`,
           };
         }
         return { ok: true };
@@ -876,7 +877,7 @@ export function createAppStore(options: AppStoreOptions): AppStore {
         if (saved === null)
           return {
             ok: false,
-            reason: "That saved panel could not be found. It may have been deleted.",
+            reason: t`That saved panel could not be found. It may have been deleted.`,
           };
         setDraft((draft) =>
           updateListItem(draft, {
@@ -941,7 +942,8 @@ export function createAppStore(options: AppStoreOptions): AppStore {
           set({ example: { kind: "idle" } });
           return { ok: true };
         } catch (error) {
-          const message = `The example could not be loaded: ${error instanceof Error ? error.message : String(error)}`;
+          const detail = error instanceof Error ? error.message : String(error);
+          const message = t`The example could not be loaded: ${detail}`;
           set({ example: { kind: "failed", message } });
           return { ok: false, reason: message };
         }
@@ -1107,7 +1109,7 @@ export function createAppStore(options: AppStoreOptions): AppStore {
             view: store.getState().build.view,
             message: isEngineStoppedError(error)
               ? message
-              : `Something went wrong while working out the PMO: ${message}`,
+              : t`Something went wrong while working out the PMO: ${message}`,
           },
         });
       }

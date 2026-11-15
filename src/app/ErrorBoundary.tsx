@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { RotateCw } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
@@ -33,22 +34,21 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       <PageContainer>
         <Callout
           tone="error"
-          title="Something went wrong on this page"
+          title={t`Something went wrong on this page`}
           action={
             <>
               <Button variant="primary" icon={RotateCw} onClick={() => window.location.reload()}>
-                Reload the page
+                {t`Reload the page`}
               </Button>
-              <ButtonLink href="#/">Go to the home page</ButtonLink>
+              <ButtonLink href="#/">{t`Go to the home page`}</ButtonLink>
             </>
           }
         >
           <p>
-            Your work is saved in this browser, so reloading will not lose it. If this keeps
-            happening, note what you did just before and tell the PMO Builder team.
+            {t`Your work is saved in this browser, so reloading will not lose it. If this keeps happening, note what you did just before and tell the PMO Builder team.`}
           </p>
           <details className="mt-3 text-sm text-text-muted">
-            <summary className="cursor-pointer">Technical details</summary>
+            <summary className="cursor-pointer">{t`Technical details`}</summary>
             <p className="mt-1 font-mono break-words">{this.state.message}</p>
           </details>
         </Callout>

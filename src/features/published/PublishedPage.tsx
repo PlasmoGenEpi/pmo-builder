@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import {
   ArrowRight,
   CalendarDays,
@@ -30,10 +32,6 @@ import { loadSharedCatalogue, useCatalogue, type CatalogueLoader } from "./useCa
 /** The `Select` value that stands for "no limit". Radix does not allow an empty one. */
 const ANY = "any";
 
-function plural(value: number, singular: string): string {
-  return `${formatCount(value)} ${value === 1 ? singular : `${singular}s`}`;
-}
-
 /** A fact about a dataset with the icon that says what kind it is. */
 function Fact({
   icon: Icon,
@@ -48,7 +46,12 @@ function Fact({
   return (
     <span className="inline-flex items-center gap-1.5 text-sm text-text-muted">
       <Icon aria-hidden="true" className="size-3.5 shrink-0 text-text-subtle" />
-      <span className="sr-only">{label}: </span>
+      <span className="sr-only">
+        {t({
+          message: `${label}:`,
+          comment: "Before a fact about a dataset, for screen readers",
+        })}{" "}
+      </span>
       {children}
     </span>
   );
@@ -76,20 +79,20 @@ function DatasetRow({ dataset }: { readonly dataset: PublishedDataset }) {
         </p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1">
           <span className="text-sm font-medium text-text sm:hidden">
-            {plural(dataset.summary.specimens, "specimen")}
+            {plural(dataset.summary.specimens, { one: "# specimen", other: "# specimens" })}
           </span>
           {dataset.panels.length === 0 ? null : (
-            <Fact icon={FlaskConical} label="Panel">
+            <Fact icon={FlaskConical} label={t`Panel`}>
               {dataset.panels.join(", ")}
             </Fact>
           )}
           {dataset.countries.length === 0 ? null : (
-            <Fact icon={MapPin} label="Country">
+            <Fact icon={MapPin} label={t`Country`}>
               {dataset.countries.join(", ")}
             </Fact>
           )}
           {years === null ? null : (
-            <Fact icon={CalendarDays} label="Collected">
+            <Fact icon={CalendarDays} label={t`Collected`}>
               {years}
             </Fact>
           )}
@@ -101,11 +104,11 @@ function DatasetRow({ dataset }: { readonly dataset: PublishedDataset }) {
             {formatCount(dataset.summary.specimens)}
           </span>
           <span className="text-sm text-text-muted">
-            {dataset.summary.specimens === 1 ? "specimen" : "specimens"}
+            {plural(dataset.summary.specimens, { one: "specimen", other: "specimens" })}
           </span>
         </span>
         <span className="text-sm text-text-subtle">
-          {plural(dataset.summary.targets, "target")}
+          {plural(dataset.summary.targets, { one: "# target", other: "# targets" })}
         </span>
       </div>
       <ChevronRight
@@ -120,14 +123,26 @@ function DatasetRow({ dataset }: { readonly dataset: PublishedDataset }) {
 function Totals({ datasets }: { readonly datasets: readonly PublishedDataset[] }) {
   const totals = useMemo(() => totalsOf(datasets), [datasets]);
   const items = [
-    { label: totals.datasets === 1 ? "Dataset" : "Datasets", value: totals.datasets },
-    { label: totals.specimens === 1 ? "Specimen" : "Specimens", value: totals.specimens },
-    { label: totals.countries === 1 ? "Country" : "Countries", value: totals.countries },
+    {
+      id: "datasets",
+      label: plural(totals.datasets, { one: "Dataset", other: "Datasets" }),
+      value: totals.datasets,
+    },
+    {
+      id: "specimens",
+      label: plural(totals.specimens, { one: "Specimen", other: "Specimens" }),
+      value: totals.specimens,
+    },
+    {
+      id: "countries",
+      label: plural(totals.countries, { one: "Country", other: "Countries" }),
+      value: totals.countries,
+    },
   ];
   return (
     <dl className="grid grid-cols-3 divide-x divide-border rounded-xl border border-border bg-surface shadow-xs">
       {items.map((item) => (
-        <div key={item.label} className="flex flex-col-reverse gap-0.5 px-4 py-4 sm:px-6">
+        <div key={item.id} className="flex flex-col-reverse gap-0.5 px-4 py-4 sm:px-6">
           <dt className="text-sm text-text-muted">{item.label}</dt>
           <dd className="text-2xl font-semibold tracking-tight text-text tabular-nums">
             {formatCount(item.value)}
@@ -157,8 +172,8 @@ function Filters({
         />
         <input
           type="search"
-          aria-label="Search"
-          placeholder="Search datasets"
+          aria-label={t`Search`}
+          placeholder={t`Search datasets`}
           value={filters.search}
           onChange={(event) => onChange({ ...filters, search: event.target.value })}
           className={cn(inputClassName, "h-control pl-9 text-base")}
@@ -166,35 +181,35 @@ function Filters({
       </div>
       <div className="w-40 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
         <Select
-          aria-label="Country"
+          aria-label={t`Country`}
           value={filters.country ?? ANY}
           onValueChange={(value) => onChange({ ...filters, country: value === ANY ? null : value })}
           options={[
-            { value: ANY, label: "Any country" },
+            { value: ANY, label: t`Any country` },
             ...facets.countries.map((country) => ({ value: country, label: country })),
           ]}
         />
       </div>
       <div className="w-36 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
         <Select
-          aria-label="Panel"
+          aria-label={t`Panel`}
           value={filters.panel ?? ANY}
           onValueChange={(value) => onChange({ ...filters, panel: value === ANY ? null : value })}
           options={[
-            { value: ANY, label: "Any panel" },
+            { value: ANY, label: t`Any panel` },
             ...facets.panels.map((panel) => ({ value: panel, label: panel })),
           ]}
         />
       </div>
       <div className="w-28 max-sm:min-w-0 max-sm:grow-0 max-sm:basis-[calc(50%-0.3125rem)]">
         <Select
-          aria-label="Collected in"
+          aria-label={t`Collected in`}
           value={filters.year === null ? ANY : String(filters.year)}
           onValueChange={(value) =>
             onChange({ ...filters, year: value === ANY ? null : Number(value) })
           }
           options={[
-            { value: ANY, label: "Any year" },
+            { value: ANY, label: t`Any year` },
             ...facets.years.map((year) => ({ value: String(year), label: String(year) })),
           ]}
         />
@@ -216,21 +231,23 @@ function isFiltered(filters: CatalogueFilters): boolean {
 function AddYours() {
   return (
     <section
-      aria-label="Share your data"
+      aria-label={t`Share your data`}
       className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl border border-dashed border-border-strong px-5 py-4 sm:px-6"
     >
       <div className="flex min-w-0 flex-col gap-0.5">
-        <p className="text-base font-medium text-text">Have data to share?</p>
+        <p className="text-base font-medium text-text">
+          <Trans>Have data to share?</Trans>
+        </p>
         <p className="text-base text-text-muted">
-          Build a PMO from your tables, or publish a PMO file you already have.
+          <Trans>Build a PMO from your tables, or publish a PMO file you already have.</Trans>
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
         <RouterLink href="/publish" className={buttonClassName({ variant: "secondary" })}>
-          Publish a file
+          <Trans>Publish a file</Trans>
         </RouterLink>
         <RouterLink href="/" className={buttonClassName({ variant: "secondary" })}>
-          Build a PMO
+          <Trans>Build a PMO</Trans>
           <ArrowRight aria-hidden="true" className="size-4" />
         </RouterLink>
       </div>
@@ -242,20 +259,21 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
   const [filters, setFilters] = useState<CatalogueFilters>(NO_FILTERS);
   const shown = useMemo(() => filterDatasets(datasets, filters), [datasets, filters]);
   const filtered = isFiltered(filters);
+  const shownCount = formatCount(shown.length);
 
   if (datasets.length === 0) {
     return (
       <EmptyState
-        title="No PMO has been published yet"
-        description="Build a PMO from your tables, or publish a PMO file you already have. It appears here once a curator accepts it."
+        title={t`No PMO has been published yet`}
+        description={t`Build a PMO from your tables, or publish a PMO file you already have. It appears here once a curator accepts it.`}
         action={
           <div className="flex flex-wrap justify-center gap-2">
             <RouterLink href="/" className={buttonClassName({ variant: "primary" })}>
-              Build a PMO
+              <Trans>Build a PMO</Trans>
               <ArrowRight aria-hidden="true" className="size-4" />
             </RouterLink>
             <RouterLink href="/publish" className={buttonClassName({ variant: "secondary" })}>
-              Publish a file
+              <Trans>Publish a file</Trans>
             </RouterLink>
           </div>
         }
@@ -268,7 +286,7 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
       <Totals datasets={datasets} />
       <section aria-labelledby="published-list-heading" className="flex flex-col gap-3">
         <h2 id="published-list-heading" className="sr-only">
-          Datasets
+          <Trans>Datasets</Trans>
         </h2>
         {/* With a single dataset there is nothing to narrow down. */}
         {datasets.length > 1 ? (
@@ -278,8 +296,11 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
           <div className="flex min-h-6 items-center justify-between gap-4 px-1">
             <p className="text-sm text-text-muted" aria-live="polite">
               {filtered
-                ? `${shown.length} of ${plural(datasets.length, "dataset")}`
-                : plural(datasets.length, "dataset")}
+                ? plural(datasets.length, {
+                    one: `${shownCount} of # dataset`,
+                    other: `${shownCount} of # datasets`,
+                  })
+                : plural(datasets.length, { one: "# dataset", other: "# datasets" })}
             </p>
             {filtered ? (
               <button
@@ -287,7 +308,7 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
                 onClick={() => setFilters(NO_FILTERS)}
                 className="cursor-pointer rounded-sm text-sm font-medium text-accent-text underline-offset-2 hover:underline"
               >
-                Clear the filters
+                <Trans>Clear the filters</Trans>
               </button>
             ) : null}
           </div>
@@ -295,8 +316,8 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
         {shown.length === 0 ? (
           <EmptyState
             icon={Search}
-            title="No published PMO matches"
-            description="Try fewer words or a wider choice."
+            title={t`No published PMO matches`}
+            description={t`Try fewer words or a wider choice.`}
           />
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface shadow-xs">
@@ -310,6 +331,35 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
       </section>
       <AddYours />
     </div>
+  );
+}
+
+/** What the list is, with a link to the community on Zenodo. */
+function CommunityIntro({
+  community,
+  name,
+}: {
+  readonly community: string;
+  readonly name: string;
+}) {
+  return (
+    <Trans>
+      Microhaplotype datasets published in the{" "}
+      <Link href={communityUrl(community)} external>
+        {name} community
+      </Link>{" "}
+      on Zenodo. Each one has a DOI to cite.
+    </Trans>
+  );
+}
+
+/** When the list was last read from Zenodo. */
+function HarvestNote({ harvestedAt }: { readonly harvestedAt: string }) {
+  const harvestDate = longDate(harvestedAt);
+  return (
+    <p className="text-sm text-text-subtle">
+      <Trans>Read from Zenodo on {harvestDate}. A newly accepted PMO shows up within a day.</Trans>
+    </p>
   );
 }
 
@@ -337,26 +387,24 @@ export function PublishedPage({
     <PageContainer>
       <div className="flex flex-col gap-6">
         <header className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-text">Published PMOs</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-text">
+            <Trans>Published PMOs</Trans>
+          </h1>
           <p className="max-w-prose text-md text-text-muted">
-            Microhaplotype datasets published in the{" "}
             {community === undefined ? (
-              `${name} community`
+              <Trans>
+                Microhaplotype datasets published in the {name} community on Zenodo. Each one has a
+                DOI to cite.
+              </Trans>
             ) : (
-              <Link href={communityUrl(community)} external>
-                {name} community
-              </Link>
-            )}{" "}
-            on Zenodo. Each one has a DOI to cite.
+              <CommunityIntro community={community} name={name} />
+            )}
           </p>
         </header>
         {state.kind === "ready" ? (
           <>
             <Catalogue datasets={state.index.datasets} />
-            <p className="text-sm text-text-subtle">
-              Read from Zenodo on {longDate(state.index.harvestedAt)}. A newly accepted PMO shows up
-              within a day.
-            </p>
+            <HarvestNote harvestedAt={state.index.harvestedAt} />
           </>
         ) : (
           <CatalogueProblem state={state} />

@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { Suspense, lazy, useState } from "react";
 
 import { Disclosure } from "@/ui";
@@ -15,7 +16,7 @@ const PmoPreviewBody = lazy(() =>
 export function PmoPreview() {
   const [open, setOpen] = useState(false);
   return (
-    <Disclosure title="Preview the PMO" summary="JSON" open={open} onOpenChange={setOpen}>
+    <Disclosure title={t`Preview the PMO`} summary="JSON" open={open} onOpenChange={setOpen}>
       {open ? (
         <Suspense fallback={<PreviewSkeleton />}>
           <PmoPreviewBody />

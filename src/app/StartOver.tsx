@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { RotateCcw } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useLocation } from "wouter";
@@ -26,21 +27,21 @@ export function StartOverDialog({ open, onOpenChange, onDone }: StartOverDialogP
     <ConfirmDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Start over?"
-      description="This removes from this browser your tables, your column choices, everything you typed in, and any earlier draft that could not be opened. Saved panels are kept: delete them on the Panel step. This cannot be undone."
-      confirmLabel="Start over"
+      title={t`Start over?`}
+      description={t`This removes from this browser your tables, your column choices, everything you typed in, and any earlier draft that could not be opened. Saved panels are kept: delete them on the Panel step. This cannot be undone.`}
+      confirmLabel={t`Start over`}
       tone="danger"
       onConfirm={async () => {
         try {
           await startOver();
           navigate("/");
           onDone?.();
-          toast({ title: "Your draft was removed", tone: "success" });
+          toast({ title: t`Your draft was removed`, tone: "success" });
         } catch (error) {
           console.error(error);
           toast({
-            title: "Your draft could not be removed",
-            description: "Reload the page and try again.",
+            title: t`Your draft could not be removed`,
+            description: t`Reload the page and try again.`,
             tone: "error",
           });
         }
@@ -65,7 +66,7 @@ export function StartOverButton({
   size = "md",
   className,
   onDone,
-  children = "Start over",
+  children,
 }: StartOverButtonProps) {
   const [confirming, setConfirming] = useState(false);
   return (
@@ -77,7 +78,7 @@ export function StartOverButton({
         className={className}
         onClick={() => setConfirming(true)}
       >
-        {children}
+        {children ?? t`Start over`}
       </Button>
       <StartOverDialog open={confirming} onOpenChange={setConfirming} onDone={onDone} />
     </>

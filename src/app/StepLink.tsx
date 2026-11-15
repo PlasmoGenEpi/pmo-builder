@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { ArrowRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link as RouterLink } from "wouter";
@@ -25,7 +26,8 @@ export interface StepLinkProps {
  */
 export function StepLink({ step, children, variant = "inline", className }: StepLinkProps) {
   const definition = getStep(step);
-  const label = children ?? `Go to ${definition.title}`;
+  const stepTitle = definition.title;
+  const label = children ?? t`Go to ${stepTitle}`;
   // The router replaces the anchor's href with the full address, such as `#/panel`.
   return (
     <RouterLink href={definition.path} asChild>

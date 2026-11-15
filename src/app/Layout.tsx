@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { X } from "lucide-react";
 import { Dialog as RadixDialog } from "radix-ui";
 import { useEffect, useState, type ReactNode } from "react";
@@ -6,6 +7,7 @@ import { useLocation } from "wouter";
 import { IconButton } from "@/ui";
 
 import { StepNav } from "./StepNav";
+import { LanguagePreviewNotice } from "./LanguagePreviewNotice";
 import { OtherTabNotice } from "./OtherTabNotice";
 import { UsageNotice } from "./privacy/UsageNotice";
 import { TopBar } from "./TopBar";
@@ -33,10 +35,11 @@ export function Layout({ children }: { children: ReactNode }) {
         }}
         className="sr-only z-50 rounded-md bg-surface px-3 py-2 text-base font-medium text-text shadow-md focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
       >
-        Skip to content
+        {t`Skip to content`}
       </a>
       <ScrollReset key={location} />
       <TopBar onOpenNav={() => setNavOpen(true)} />
+      <LanguagePreviewNotice />
       <div className="flex flex-1">
         <aside className="hidden w-sidebar shrink-0 border-r border-border bg-canvas lg:block">
           <div className="sticky top-topbar max-h-[calc(100dvh-var(--spacing-topbar))] overflow-y-auto px-3 py-5">
@@ -59,10 +62,10 @@ export function Layout({ children }: { children: ReactNode }) {
           >
             <div className="flex h-topbar shrink-0 items-center justify-between border-b border-border px-4">
               <RadixDialog.Title className="text-md font-semibold text-text">
-                Steps
+                {t({ message: "Steps", comment: "Heading of the step list on narrow screens" })}
               </RadixDialog.Title>
               <RadixDialog.Close asChild>
-                <IconButton label="Close the step list" icon={X} showTooltip={false} />
+                <IconButton label={t`Close the step list`} icon={X} showTooltip={false} />
               </RadixDialog.Close>
             </div>
             <div className="flex-1 overflow-y-auto px-3 py-5">

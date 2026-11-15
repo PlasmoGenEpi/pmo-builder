@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { lingui } from "@lingui/vite-plugin";
 import { loadEnv } from "vite";
 import { defineConfig } from "vitest/config";
 
@@ -27,6 +28,8 @@ export default defineConfig(({ mode }) => {
     base: "./",
     plugins: [
       react(),
+      // Compiles Lingui's macros (t, plural, Trans) and .po catalogs on import.
+      lingui({ macroTransform: true }),
       tailwindcss(),
       contentSecurityPolicy({ analyticsUrl, zenodo }),
       serviceWorker(),
@@ -40,6 +43,8 @@ export default defineConfig(({ mode }) => {
     },
     worker: {
       format: "es",
+      // The worker is bundled on its own, so it needs Lingui too: it builds messages.
+      plugins: () => [lingui({ macroTransform: true })],
     },
     build: {
       target: "es2023",
@@ -71,6 +76,7 @@ export default defineConfig(({ mode }) => {
             name: "domain",
             environment: "node",
             include: ["src/domain/**/*.test.ts", "src/worker/**/*.test.ts"],
+            setupFiles: ["src/test/i18n.ts"],
           },
         },
         {

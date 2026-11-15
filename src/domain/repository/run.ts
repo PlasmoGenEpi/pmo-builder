@@ -7,6 +7,9 @@
 import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+// English, for any message the app's own modules build while harvesting.
+import "@/i18n";
+
 import { harvest, HarvestError } from "./harvest";
 import { REPOSITORY_PATH, type HarvestResult } from "./types";
 

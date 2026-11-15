@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Link as RouterLink } from "wouter";
@@ -30,7 +31,7 @@ function StepLink({
 }) {
   const isBack = direction === "back";
   const href = step === null ? "/" : step.path;
-  const title = step === null ? "Home" : step.title;
+  const title = step === null ? t`Home` : step.title;
   return (
     <RouterLink
       href={href}
@@ -41,7 +42,7 @@ function StepLink({
     >
       <span className="flex items-center gap-1.5 text-sm text-text-muted">
         {isBack ? <ArrowLeft aria-hidden="true" className="size-3.5" /> : null}
-        {isBack ? "Back" : "Next"}
+        {isBack ? t`Back` : t`Next`}
         {isBack ? null : <ArrowRight aria-hidden="true" className="size-3.5" />}
       </span>
       <span className="max-w-full truncate text-base font-medium text-text group-hover:text-accent-text">
@@ -66,6 +67,7 @@ export function StepPage({ stepId, children, width = "reading", status, actions 
   const { previous, next } = getAdjacentSteps(stepId);
   const currentStatus = useStepStatus(stepId);
   const stepNumber = STEPS.findIndex((candidate) => candidate.id === stepId) + 1;
+  const stepCount = STEPS.length;
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   // Move focus to the title when the step opens, so screen readers announce the new page.
@@ -78,7 +80,7 @@ export function StepPage({ stepId, children, width = "reading", status, actions 
     <PageContainer width={width}>
       <header className="flex flex-col gap-2 border-b border-border pb-6">
         <p className="text-sm font-medium text-text-muted">
-          Step {stepNumber} of {STEPS.length}
+          {t`Step ${stepNumber} of ${stepCount}`}
         </p>
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
@@ -90,9 +92,13 @@ export function StepPage({ stepId, children, width = "reading", status, actions 
               {step.title}
             </h1>
             {stepId === "review" ? null : step.required ? (
-              <Badge tone="accent">Required</Badge>
+              <Badge tone="accent">
+                {t({ message: "Required", comment: "Marks a step a PMO file needs" })}
+              </Badge>
             ) : (
-              <Badge>Optional</Badge>
+              <Badge>
+                {t({ message: "Optional", comment: "Marks a step a PMO file can do without" })}
+              </Badge>
             )}
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-3">
@@ -104,7 +110,7 @@ export function StepPage({ stepId, children, width = "reading", status, actions 
       </header>
       <div className="pt-8">{children}</div>
       <nav
-        aria-label="Previous and next step"
+        aria-label={t`Previous and next step`}
         className="mt-12 flex flex-wrap gap-3 border-t border-border pt-6"
       >
         <StepLink step={previous} direction="back" />

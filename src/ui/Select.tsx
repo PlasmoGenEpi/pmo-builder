@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { Check, ChevronDown } from "lucide-react";
 import { Select as RadixSelect } from "radix-ui";
 
@@ -31,7 +32,7 @@ export function Select({
   options,
   value,
   onValueChange,
-  placeholder = "Choose",
+  placeholder = t`Choose`,
   disabled,
   className,
   ...aria

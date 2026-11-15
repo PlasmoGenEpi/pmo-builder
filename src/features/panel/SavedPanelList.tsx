@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { Trash2 } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 
@@ -5,7 +7,7 @@ import type { SavedPanelSummary } from "@/domain/draft";
 import { useActions } from "@/state";
 import { Button, ConfirmDialog, IconButton, useToast } from "@/ui";
 
-import { countTargets, formatSavedDate } from "./panelModel";
+import { formatSavedDate } from "./panelModel";
 
 /** Props for {@link SavedPanelList}. */
 export interface SavedPanelListProps {
@@ -39,6 +41,7 @@ export function SavedPanelList({
   const headingId = useId();
   const [applying, setApplying] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<SavedPanelSummary | null>(null);
+  const deletingName = deleting?.name ?? "";
 
   async function apply(saved: SavedPanelSummary) {
     setApplying(saved.id);
@@ -47,7 +50,7 @@ export function SavedPanelList({
       if (result.ok) onApplied?.();
       else
         toast({
-          title: "The saved panel could not be used",
+          title: t`The saved panel could not be used`,
           description: result.reason,
           tone: "error",
         });
@@ -71,44 +74,53 @@ export function SavedPanelList({
         {action}
       </div>
       <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface">
-        {panels.map((saved) => (
-          <li key={saved.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5">
-            <div className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate font-mono text-sm font-medium text-text">{saved.name}</span>
-              <span className="text-sm text-text-muted">
-                {countTargets(saved.targetCount)}, saved {formatSavedDate(saved.savedAt)}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="primary"
-                loading={applying === saved.id}
-                aria-label={`Use the saved panel ${saved.name}`}
-                onClick={() => {
-                  void apply(saved);
-                }}
-              >
-                Use
-              </Button>
-              <IconButton
-                label={`Delete the saved panel ${saved.name}`}
-                icon={Trash2}
-                size="sm"
-                onClick={() => setDeleting(saved)}
-              />
-            </div>
-          </li>
-        ))}
+        {panels.map((saved) => {
+          const panelName = saved.name;
+          const savedDate = formatSavedDate(saved.savedAt);
+          return (
+            <li key={saved.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5">
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate font-mono text-sm font-medium text-text">
+                  {saved.name}
+                </span>
+                <span className="text-sm text-text-muted">
+                  {plural(saved.targetCount, {
+                    one: `# target, saved ${savedDate}`,
+                    other: `# targets, saved ${savedDate}`,
+                  })}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  loading={applying === saved.id}
+                  aria-label={t`Use the saved panel ${panelName}`}
+                  onClick={() => {
+                    void apply(saved);
+                  }}
+                >
+                  <Trans comment="Button: use this saved panel">Use</Trans>
+                </Button>
+                <IconButton
+                  label={t`Delete the saved panel ${panelName}`}
+                  icon={Trash2}
+                  size="sm"
+                  onClick={() => setDeleting(saved)}
+                />
+              </div>
+            </li>
+          );
+        })}
       </ul>
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(open) => {
           if (!open) setDeleting(null);
         }}
-        title={`Delete the saved panel "${deleting?.name ?? ""}"?`}
-        description="It is removed from this browser and will not be offered again. Drafts that already use it keep their targets."
-        confirmLabel="Delete panel"
+        title={t`Delete the saved panel "${deletingName}"?`}
+        description={t`It is removed from this browser and will not be offered again. Drafts that already use it keep their targets.`}
+        confirmLabel={t`Delete panel`}
         tone="danger"
         onConfirm={async () => {
           if (deleting !== null) await actions.deleteSavedPanel(deleting.id);

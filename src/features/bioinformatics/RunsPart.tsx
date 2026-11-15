@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { PlayCircle } from "lucide-react";
 
 import { RUN_FORM_FIELDS, isBlankRecord, type RunMethodMode, type RunRecord } from "@/domain/draft";
@@ -19,7 +20,8 @@ const RUNS = { list: "runs" } as const;
 
 function runTitle(run: RunRecord, index: number): string {
   const name = run.values.bioinformatics_run_name.trim();
-  return name === "" ? `Run ${index + 1}` : name;
+  const number = index + 1;
+  return name === "" ? t`Run ${number}` : name;
 }
 
 /** What is wrong with a run's method, or `null`. */
@@ -29,13 +31,13 @@ function methodProblem(
   methodsFromFile: boolean,
 ): string | null {
   const shown = shownMethod(run.methodRef, options);
-  if (shown.gone) return "The method this run used was removed. Choose another one.";
+  if (shown.gone) return t`The method this run used was removed. Choose another one.`;
   if (shown.value !== undefined) return null;
   if (options.length === 0)
     return methodsFromFile
-      ? "No method is ready yet. Finish the methods table above."
-      : "Add a method above first.";
-  return "Choose the method this run used.";
+      ? t`No method is ready yet. Finish the methods table above.`
+      : t`Add a method above first.`;
+  return t`Choose the method this run used.`;
 }
 
 /** A run's state on its card, counting its method as a required field. */
@@ -62,12 +64,12 @@ function MethodChoice({
   const error = shown.gone || !isBlankRecord(run) ? problem : null;
   return (
     <Field
-      label="Method"
+      label={t`Method`}
       required
       hint={
         options.length === 1 && run.methodRef === null
-          ? "The only method above, so it is used."
-          : "The method above this run used."
+          ? t`The only method above, so it is used.`
+          : t`The method above this run used.`
       }
       error={error ?? undefined}
     >
@@ -75,7 +77,7 @@ function MethodChoice({
         options={options}
         value={shown.value}
         disabled={options.length === 0}
-        placeholder={options.length === 0 ? "No methods yet" : "Choose a method"}
+        placeholder={options.length === 0 ? t`No methods yet` : t`Choose a method`}
         onValueChange={(methodRef) =>
           actions.updateItem({
             list: "runs",
@@ -112,23 +114,23 @@ function RunRecords() {
       <NameCoverage
         referenced={runNames}
         defined={records.map((run) => run.values.bioinformatics_run_name)}
-        source="allele table"
-        noun="run"
+        source={t`allele table`}
+        noun={t`run`}
         onCreate={addNamed}
       />
       <RecordList
         items={records}
-        noun="run"
+        noun={t`run`}
         title={runTitle}
         isBlank={isBlankRecord}
         state={(run) => runState(run, methodProblem(run, options, fromFile))}
         onAdd={() => actions.addItem(RUNS)}
         onRemove={(id) => actions.removeItem(RUNS, id)}
-        addLabel="Add a run"
+        addLabel={t`Add a run`}
         empty={{
           icon: PlayCircle,
-          title: "No runs yet",
-          description: "Add each run of the pipeline, named as in the allele table.",
+          title: t`No runs yet`,
+          description: t`Add each run of the pipeline, named as in the allele table.`,
         }}
       >
         {(run) => (
@@ -144,7 +146,7 @@ function RunRecords() {
                 problem={methodProblem(run, options, fromFile)}
               />
             }
-            optionalTitle="Date and other details"
+            optionalTitle={t`Date and other details`}
             extra={{
               entries: run.extra,
               onUpdate: (recipe) =>
@@ -164,13 +166,13 @@ function RunRecords() {
 const METHOD_MODES: readonly { value: RunMethodMode; label: string; description: string }[] = [
   {
     value: "same",
-    label: "One method for every run",
-    description: "All runs used the same pipeline.",
+    label: t`One method for every run`,
+    description: t`All runs used the same pipeline.`,
   },
   {
     value: "column",
-    label: "Read it from a column",
-    description: "A column holds each run's method name, as given in the methods above.",
+    label: t`Read it from a column`,
+    description: t`A column holds each run's method name, as given in the methods above.`,
   },
 ];
 
@@ -186,6 +188,7 @@ function RunTableMethod({ matching }: { readonly matching: ColumnMatching }) {
   const columnOptions = useColumnOptions(matching.mapped.table.columns, matching.examples);
   const table = runs.table;
   const shown = shownMethod(table.methodRef, methodOptions);
+  const methodNames = methodOptions.map((option) => option.label).join(", ");
   const update = (recipe: (current: typeof table) => typeof table): void =>
     actions.updateSection("bioinformatics", (current) => ({
       ...current,
@@ -193,9 +196,9 @@ function RunTableMethod({ matching }: { readonly matching: ColumnMatching }) {
     }));
   return (
     <section aria-labelledby="run-method-heading" className="flex flex-col gap-5">
-      <SectionHeading id="run-method-heading" level={3} title="Which method each run used" />
+      <SectionHeading id="run-method-heading" level={3} title={t`Which method each run used`} />
       <RadioGroup
-        label="How is the method given?"
+        label={t`How is the method given?`}
         options={METHOD_MODES}
         value={table.methodMode}
         onValueChange={(mode) => {
@@ -204,13 +207,13 @@ function RunTableMethod({ matching }: { readonly matching: ColumnMatching }) {
       />
       {table.methodMode === "same" ? (
         <Field
-          label="Method"
+          label={t`Method`}
           required
           error={
             shown.gone
-              ? "The method chosen was removed. Choose another one."
+              ? t`The method chosen was removed. Choose another one.`
               : methodOptions.length === 0
-                ? "Add a method above first."
+                ? t`Add a method above first.`
                 : undefined
           }
           className="sm:max-w-md"
@@ -219,18 +222,18 @@ function RunTableMethod({ matching }: { readonly matching: ColumnMatching }) {
             options={methodOptions}
             value={shown.value}
             disabled={methodOptions.length === 0}
-            placeholder={methodOptions.length === 0 ? "No methods yet" : "Choose a method"}
+            placeholder={methodOptions.length === 0 ? t`No methods yet` : t`Choose a method`}
             onValueChange={(methodRef) => update((current) => ({ ...current, methodRef }))}
           />
         </Field>
       ) : (
         <Field
-          label="Method name column"
+          label={t`Method name column`}
           required
           hint={
             methodOptions.length > 0
-              ? `Each value must be one of the method names: ${methodOptions.map((option) => option.label).join(", ")}.`
-              : "Each value must be the name of a method above."
+              ? t`Each value must be one of the method names: ${methodNames}.`
+              : t`Each value must be the name of a method above.`
           }
           className="sm:max-w-md"
         >
@@ -239,7 +242,7 @@ function RunTableMethod({ matching }: { readonly matching: ColumnMatching }) {
             options={columnOptions}
             value={table.methodColumn}
             noneLabel={false}
-            placeholder="Choose a column"
+            placeholder={t`Choose a column`}
             onChange={(methodColumn) => update((current) => ({ ...current, methodColumn }))}
           />
         </Field>
@@ -256,11 +259,11 @@ export function RunsPart() {
     <section aria-labelledby="runs-heading" className="flex flex-col gap-6">
       <SectionHeading
         id="runs-heading"
-        title="Runs"
-        description="A run is one time the pipeline was run. Name runs as the allele table does, so its alleles are linked to the method that called them."
+        title={t`Runs`}
+        description={t`A run is one time the pipeline was run. Name runs as the allele table does, so its alleles are linked to the method that called them.`}
       />
       <EntryModeSwitch
-        label="How to enter runs"
+        label={t`How to enter runs`}
         mode={runs.mode}
         onModeChange={(mode) => actions.setMode({ target: "bioinformaticsRuns", mode })}
         manualHasContent={runs.records.some((run) => !isBlankRecord(run))}
@@ -269,9 +272,9 @@ export function RunsPart() {
         table={
           <TableImport
             slot={{ section: "bioinformatics", part: "runs" }}
-            label="Runs table"
+            label={t`Runs table`}
             headingLevel={3}
-            description="One row for each run, with its name and optionally its date."
+            description={t`One row for each run, with its name and optionally its date.`}
           >
             {(matching) => <RunTableMethod matching={matching} />}
           </TableImport>

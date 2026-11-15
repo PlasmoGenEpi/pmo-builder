@@ -2,6 +2,8 @@
  * Small facts about a panel that the build and the panel page must agree on:
  * its name, the label its notices carry, and a key for its content.
  */
+import { t } from "@lingui/core/macro";
+
 import type { PanelEntry } from "./model";
 
 /** The name a panel goes by: its saved panel's name, or the name typed in. */
@@ -12,7 +14,13 @@ export function panelEntryName(entry: PanelEntry): string {
 /** The label the build puts in front of a panel's notices: `Panel "x"`, or `Panel 2` with no name. */
 export function panelLabel(entry: PanelEntry, index: number): string {
   const name = panelEntryName(entry);
-  return name === "" ? `Panel ${index + 1}` : `Panel "${name}"`;
+  const position = index + 1;
+  return name === ""
+    ? t({
+        message: `Panel ${position}`,
+        comment: "A panel with no name yet, by its place in the list.",
+      })
+    : t({ message: `Panel "${name}"`, comment: "A panel, by its name." });
 }
 
 function canonicalJson(value: unknown): string {

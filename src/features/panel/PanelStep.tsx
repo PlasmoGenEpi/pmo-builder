@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -5,10 +7,16 @@ import { StepPage } from "@/app/StepPage";
 import type { PanelEntry } from "@/domain/draft";
 import { SectionResult } from "@/features/shared";
 import { useActions, useDraftSection, useSectionState } from "@/state";
-import { Button, ConfirmDialog, Disclosure, StatusBadge } from "@/ui";
+import { Button, ConfirmDialog, Disclosure, StatusBadge, formatCount } from "@/ui";
 
 import { isPanelEmpty, noticesForPanel, panelStatus, panelTitle } from "./panelModel";
 import { PanelEditor } from "./PanelEditor";
+
+/** "1,200 before merging": the targets of every panel added up. */
+function beforeMerging(panels: readonly { readonly targets: number }[]): string {
+  const targetCount = formatCount(panels.reduce((sum, panel) => sum + panel.targets, 0));
+  return t`${targetCount} before merging`;
+}
 
 /** One panel as a collapsible card, for drafts with two or more panels. */
 function PanelCard({ entry, index }: { readonly entry: PanelEntry; readonly index: number }) {
@@ -38,7 +46,7 @@ function PanelCard({ entry, index }: { readonly entry: PanelEntry; readonly inde
           />
           <div className="flex justify-end border-t border-border pt-4">
             <Button size="sm" variant="ghost" icon={Trash2} onClick={() => setRemoving(true)}>
-              Remove this panel
+              <Trans>Remove this panel</Trans>
             </Button>
           </div>
         </div>
@@ -46,9 +54,9 @@ function PanelCard({ entry, index }: { readonly entry: PanelEntry; readonly inde
       <ConfirmDialog
         open={removing}
         onOpenChange={setRemoving}
-        title={`Remove the panel "${title}"?`}
-        description="Its target table, genome and column choices are removed from this draft. Saved panels stay in this browser."
-        confirmLabel="Remove panel"
+        title={t`Remove the panel "${title}"?`}
+        description={t`Its target table, genome and column choices are removed from this draft. Saved panels stay in this browser.`}
+        confirmLabel={t`Remove panel`}
         tone="danger"
         onConfirm={() => actions.removeItem({ list: "panels" }, entry.id)}
       />
@@ -91,8 +99,11 @@ export function PanelStep() {
         {several ? (
           <div className="flex flex-col gap-3">
             <p className="max-w-prose text-base text-text-muted">
-              {panels.length} panels. Targets that appear in more than one panel are kept once in
-              the PMO, so panels that share targets are merged.
+              {plural(panels.length, {
+                one: "# panel. Targets that appear in more than one panel are kept once in the PMO, so panels that share targets are merged.",
+                other:
+                  "# panels. Targets that appear in more than one panel are kept once in the PMO, so panels that share targets are merged.",
+              })}
             </p>
             <ul className="flex flex-col gap-3">
               {panels.map((entry, index) => (
@@ -106,33 +117,35 @@ export function PanelStep() {
         {canAdd ? (
           <div className="flex flex-col items-start gap-1.5">
             <Button icon={Plus} onClick={() => actions.addItem({ list: "panels" })}>
-              Add another panel
+              <Trans>Add another panel</Trans>
             </Button>
             {several ? null : (
               <p className="max-w-prose text-sm text-text-muted">
-                For runs that use more than one panel. Panels that share targets are merged.
+                <Trans>
+                  For runs that use more than one panel. Panels that share targets are merged.
+                </Trans>
               </p>
             )}
           </div>
         ) : null}
         <SectionResult
           section="panel"
-          emptyMessage="Nothing here yet. Name your panel and add its target table above to see what goes into the PMO."
+          emptyMessage={t`Nothing here yet. Name your panel and add its target table above to see what goes into the PMO.`}
           stats={(summary) => [
             {
-              label: summary.panels.length === 1 ? "Panel" : "Panels",
+              label: plural(summary.panels.length, { one: "Panel", other: "Panels" }),
               value: summary.panels.length,
               hint: summary.panels.map((panel) => panel.name).join(", "),
             },
             {
-              label: "Targets",
+              label: t`Targets`,
               value: summary.targets,
-              hint:
-                summary.panels.length > 1
-                  ? `${summary.panels.reduce((sum, panel) => sum + panel.targets, 0).toLocaleString()} before merging`
-                  : undefined,
+              hint: summary.panels.length > 1 ? beforeMerging(summary.panels) : undefined,
             },
-            { label: summary.genomes === 1 ? "Genome" : "Genomes", value: summary.genomes },
+            {
+              label: plural(summary.genomes, { one: "Genome", other: "Genomes" }),
+              value: summary.genomes,
+            },
           ]}
         />
       </div>

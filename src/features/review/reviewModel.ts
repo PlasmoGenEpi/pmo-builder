@@ -2,6 +2,8 @@
  * What the review page says, worked out from the latest build: the verdict,
  * one line for each section, and the notices worth checking.
  */
+import { plural, t } from "@lingui/core/macro";
+
 import type { SectionSummaries } from "@/domain/build";
 import {
   REQUIRED_SECTION_IDS,
@@ -10,6 +12,7 @@ import {
   type SectionId,
   type SectionStatus,
 } from "@/domain/types";
+import { intlLocale } from "@/i18n/languages";
 import type { BuildView, SectionView } from "@/worker";
 
 /** Why a section stops the PMO from being built. */
@@ -144,45 +147,78 @@ export function checklistState(section: SectionId, status: SectionStatus): Check
   return required ? "needed" : "not-added";
 }
 
-/** "1 target", "276 targets", with thousands separators. */
-export function count(value: number, singular: string, plural = `${singular}s`): string {
-  return `${new Intl.NumberFormat("en-US").format(value)} ${value === 1 ? singular : plural}`;
+/**
+ * "1 target", "276 targets", with thousands separators, always in English.
+ * For text on screen use `plural` from `@lingui/core/macro`; this is for text
+ * that stays English, such as the Zenodo record.
+ */
+export function count(value: number, singular: string, pluralForm = `${singular}s`): string {
+  return `${new Intl.NumberFormat("en-US").format(value)} ${value === 1 ? singular : pluralForm}`;
 }
 
 /** Joins a few short names: "a", "a and b", "a, b and 2 more". */
 function names(values: readonly string[], max = 2): string {
   const shown = values.slice(0, max);
   const rest = values.length - shown.length;
-  if (rest > 0) return `${shown.join(", ")} and ${rest} more`;
-  if (shown.length <= 1) return shown.join("");
-  return `${shown.slice(0, -1).join(", ")} and ${shown.at(-1) ?? ""}`;
+  if (rest > 0) {
+    const shownNames = shown.join(", ");
+    return plural(rest, { one: `${shownNames} and # more`, other: `${shownNames} and # more` });
+  }
+  return new Intl.ListFormat(intlLocale(), { type: "conjunction" }).format(shown);
 }
 
 type Summaries = { readonly [S in SectionId]: (summary: SectionSummaries[S]) => string };
 
 const SUMMARIES: Summaries = {
-  microhaplotypes: (summary) =>
-    `${count(summary.rows, "allele call")} for ${count(summary.librarySamples, "sample")} at ${count(summary.targets, "target")}, ${count(summary.microhaplotypes, "distinct allele")}`,
-  panel: (summary) => {
-    const genomes = summary.genomes === 0 ? "no genome" : count(summary.genomes, "genome");
-    const [only] = summary.panels;
-    const panels =
-      summary.panels.length === 1 && only !== undefined && only.name.trim() !== ""
-        ? `Panel "${only.name}"`
-        : count(summary.panels.length, "panel");
-    return `${panels} with ${count(summary.targets, "target")}, ${genomes}`;
+  microhaplotypes: (summary) => {
+    const alleleCalls = summary.rows;
+    const samples = summary.librarySamples;
+    const targets = summary.targets;
+    const alleles = summary.microhaplotypes;
+    return t`${plural(alleleCalls, { one: "# allele call", other: "# allele calls" })} for ${plural(samples, { one: "# sample", other: "# samples" })} at ${plural(targets, { one: "# target", other: "# targets" })}, ${plural(alleles, { one: "# distinct allele", other: "# distinct alleles" })}`;
   },
-  specimens: (summary) => count(summary.specimens, "specimen"),
-  librarySamples: (summary) => count(summary.librarySamples, "library sample"),
-  project: (summary) =>
-    summary.names.length > 0
-      ? `${summary.projects === 1 ? "Project" : "Projects"} ${names(summary.names.map((name) => `"${name}"`))}`
-      : count(summary.projects, "project"),
-  sequencing: (summary) => count(summary.runs, "sequencing run"),
-  bioinformatics: (summary) =>
-    `${count(summary.methods.length, "method")}, ${count(summary.runs, "run")}`,
-  readCounts: (summary) =>
-    `${count(summary.librarySamples, "sample")} over ${count(summary.stages.length, "stage")}${summary.stages.length > 0 ? ` (${names(summary.stages, 3)})` : ""}`,
+  panel: (summary) => {
+    const targets = summary.targets;
+    const genomes = summary.genomes;
+    const panels = summary.panels.length;
+    const [only] = summary.panels;
+    if (panels === 1 && only !== undefined && only.name.trim() !== "") {
+      const panelName = only.name;
+      return genomes === 0
+        ? t`Panel "${panelName}" with ${plural(targets, { one: "# target", other: "# targets" })}, no genome`
+        : t`Panel "${panelName}" with ${plural(targets, { one: "# target", other: "# targets" })}, ${plural(genomes, { one: "# genome", other: "# genomes" })}`;
+    }
+    return genomes === 0
+      ? t`${plural(panels, { one: "# panel", other: "# panels" })} with ${plural(targets, { one: "# target", other: "# targets" })}, no genome`
+      : t`${plural(panels, { one: "# panel", other: "# panels" })} with ${plural(targets, { one: "# target", other: "# targets" })}, ${plural(genomes, { one: "# genome", other: "# genomes" })}`;
+  },
+  specimens: (summary) => plural(summary.specimens, { one: "# specimen", other: "# specimens" }),
+  librarySamples: (summary) =>
+    plural(summary.librarySamples, { one: "# library sample", other: "# library samples" }),
+  project: (summary) => {
+    if (summary.names.length === 0)
+      return plural(summary.projects, { one: "# project", other: "# projects" });
+    const projectNames = names(summary.names.map((name) => `"${name}"`));
+    return plural(summary.projects, {
+      one: `Project ${projectNames}`,
+      other: `Projects ${projectNames}`,
+    });
+  },
+  sequencing: (summary) =>
+    plural(summary.runs, { one: "# sequencing run", other: "# sequencing runs" }),
+  bioinformatics: (summary) => {
+    const methods = summary.methods.length;
+    const runs = summary.runs;
+    return t`${plural(methods, { one: "# method", other: "# methods" })}, ${plural(runs, { one: "# run", other: "# runs" })}`;
+  },
+  readCounts: (summary) => {
+    const samples = summary.librarySamples;
+    const stages = summary.stages.length;
+    if (stages === 0)
+      return t`${plural(samples, { one: "# sample", other: "# samples" })} over ${plural(stages, { one: "# stage", other: "# stages" })}`;
+    const stageNames = names(summary.stages, 3);
+    return t`${plural(samples, { one: "# sample", other: "# samples" })} over ${plural(stages, { one: "# stage", other: "# stages" })} (${stageNames})`;
+  },
 };
 
 /** A one-line summary of a ready section, such as "50 specimens". */
@@ -193,9 +229,9 @@ export function summaryLine<S extends SectionId>(section: S, summary: SectionSum
 
 /** What the checklist says under a section that is not ready. */
 export const STATE_LINE: Readonly<Record<Exclude<ChecklistState, "ready">, string>> = {
-  errors: "Has problems to fix before a PMO can be built.",
-  unfinished: "Needed for a PMO, and not finished yet.",
-  "left-out": "Not finished, so it is left out of the PMO.",
-  needed: "Nothing added yet. A PMO needs this step.",
-  "not-added": "Optional.",
+  errors: t`Has problems to fix before a PMO can be built.`,
+  unfinished: t`Needed for a PMO, and not finished yet.`,
+  "left-out": t`Not finished, so it is left out of the PMO.`,
+  needed: t`Nothing added yet. A PMO needs this step.`,
+  "not-added": t`Optional.`,
 };

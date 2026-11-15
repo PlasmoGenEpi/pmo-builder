@@ -1,3 +1,4 @@
+import { plural, t } from "@lingui/core/macro";
 import type { ReactNode } from "react";
 
 import type { FormFieldSpec, KeyValueEntry } from "@/domain/draft";
@@ -63,7 +64,7 @@ export function RecordForm<K extends string>({
   suggestions,
   fixes,
   requiredExtra,
-  optionalTitle = "More details",
+  optionalTitle = t`More details`,
   showMissing = false,
 }: RecordFormProps<K>) {
   const required = fields.filter((field) => field.required);
@@ -98,10 +99,8 @@ export function RecordForm<K extends string>({
           title={optionalTitle}
           summary={
             filled > 0
-              ? `${filled} filled in`
-              : optional.length === 1
-                ? "1 optional field"
-                : `${optional.length} optional fields`
+              ? plural(filled, { one: "# filled in", other: "# filled in" })
+              : plural(optional.length, { one: "# optional field", other: "# optional fields" })
           }
           defaultOpen={filled > 0}
         >

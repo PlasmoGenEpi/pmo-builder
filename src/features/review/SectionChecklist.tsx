@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { CircleCheck, CircleDashed, CircleDot, CircleMinus, CircleX } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Link as RouterLink } from "wouter";
@@ -10,7 +12,6 @@ import type { BuildView } from "@/worker";
 import {
   STATE_LINE,
   checklistState,
-  count,
   isRequiredSection,
   summaryLine,
   type ChecklistState,
@@ -22,12 +23,12 @@ const STATE_META: Readonly<
     { readonly label: string; readonly tone: BadgeTone; readonly icon: LucideIcon }
   >
 > = {
-  ready: { label: "Ready", tone: "success", icon: CircleCheck },
-  errors: { label: "Has errors", tone: "danger", icon: CircleX },
-  unfinished: { label: "Not finished", tone: "warning", icon: CircleDot },
-  "left-out": { label: "Left out", tone: "neutral", icon: CircleMinus },
-  needed: { label: "Needed", tone: "warning", icon: CircleDashed },
-  "not-added": { label: "Not added", tone: "neutral", icon: CircleDashed },
+  ready: { label: t`Ready`, tone: "success", icon: CircleCheck },
+  errors: { label: t`Has errors`, tone: "danger", icon: CircleX },
+  unfinished: { label: t`Not finished`, tone: "warning", icon: CircleDot },
+  "left-out": { label: t`Left out`, tone: "neutral", icon: CircleMinus },
+  needed: { label: t`Needed`, tone: "warning", icon: CircleDashed },
+  "not-added": { label: t`Not added`, tone: "neutral", icon: CircleDashed },
 };
 
 function Row({ section, view }: { readonly section: SectionId; readonly view: BuildView | null }) {
@@ -38,10 +39,10 @@ function Row({ section, view }: { readonly section: SectionId; readonly view: Bu
   const warnings =
     sectionView?.notices.filter((notice) => notice.severity === "warning").length ?? 0;
   let line: string;
-  if (sectionView === null) line = "Working out where this step stands.";
+  if (sectionView === null) line = t`Working out where this step stands.`;
   else if (state === "ready" && sectionView.summary !== null) {
     line = summaryLine(section, sectionView.summary);
-  } else if (state === "ready") line = "Ready.";
+  } else if (state === "ready") line = t`Ready.`;
   else line = STATE_LINE[state];
 
   return (
@@ -55,7 +56,9 @@ function Row({ section, view }: { readonly section: SectionId; readonly view: Bu
             {step.title}
           </RouterLink>
           {isRequiredSection(section) ? (
-            <span className="text-xs text-text-subtle">Required</span>
+            <span className="text-xs text-text-subtle">
+              <Trans>Required</Trans>
+            </span>
           ) : null}
         </div>
         <Badge tone={meta.tone} icon={meta.icon}>
@@ -64,7 +67,10 @@ function Row({ section, view }: { readonly section: SectionId; readonly view: Bu
       </div>
       <p className="text-base text-text-muted">
         {state === "ready" && warnings > 0
-          ? `${line}. ${count(warnings, "warning")} to check.`
+          ? plural(warnings, {
+              one: `${line}. # warning to check.`,
+              other: `${line}. # warnings to check.`,
+            })
           : line}
       </p>
     </li>
@@ -80,7 +86,7 @@ export function SectionChecklist({ view }: { readonly view: BuildView | null }) 
           id="review-checklist-heading"
           className="text-lg font-semibold tracking-tight text-text"
         >
-          Steps
+          <Trans>Steps</Trans>
         </h2>
         <ul className="flex flex-col divide-y divide-border">
           {SECTION_IDS.map((section) => (

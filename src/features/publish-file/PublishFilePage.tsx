@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { ArrowRight } from "lucide-react";
 import { useRef, useState } from "react";
 import { Link as RouterLink } from "wouter";
@@ -25,27 +27,30 @@ type FileState =
 /** A sentence for a file that cannot be published, or `null` when the file is fine or needs a list. */
 function problemOf(state: FileState): string | null {
   if (state.kind === "failed")
-    return "The file could not be checked. Reload the page and try again.";
+    return t`The file could not be checked. Reload the page and try again.`;
   if (state.kind !== "checked") return null;
   const { check } = state;
+  const publishableVersion = PUBLISHABLE_PMO_VERSION;
   switch (check.kind) {
     case "ready":
     case "invalid":
       return null;
-    case "too-large":
-      return `This file is larger than ${formatBytes(check.limit)}, more than this browser can check.`;
+    case "too-large": {
+      const sizeLimit = formatBytes(check.limit);
+      return t`This file is larger than ${sizeLimit}, more than this browser can check.`;
+    }
     case "unreadable":
       if (check.reason === "gzip")
-        return "This file looks gzipped but could not be unpacked. Check that it downloaded completely.";
+        return t`This file looks gzipped but could not be unpacked. Check that it downloaded completely.`;
       if (check.reason === "json")
-        return "This is not a PMO file. A PMO file holds JSON and is saved as .json or .json.gz.";
-      return "This JSON file is not a PMO: it has no PMO header.";
-    case "wrong-version":
-      return `${
-        check.declared === null
-          ? "This file does not say which PMO version it is."
-          : `This file is in PMO version ${check.declared}.`
-      } Only version ${PUBLISHABLE_PMO_VERSION} files can be published. Build it again from your tables in PMO Builder to get a ${PUBLISHABLE_PMO_VERSION} file.`;
+        return t`This is not a PMO file. A PMO file holds JSON and is saved as .json or .json.gz.`;
+      return t`This JSON file is not a PMO: it has no PMO header.`;
+    case "wrong-version": {
+      const declaredVersion = check.declared;
+      return declaredVersion === null
+        ? t`This file does not say which PMO version it is. Only version ${publishableVersion} files can be published. Build it again from your tables in PMO Builder to get a ${publishableVersion} file.`
+        : t`This file is in PMO version ${declaredVersion}. Only version ${publishableVersion} files can be published. Build it again from your tables in PMO Builder to get a ${publishableVersion} file.`;
+    }
     default:
       return null;
   }
@@ -54,7 +59,7 @@ function problemOf(state: FileState): string | null {
 function RebuildLink() {
   return (
     <RouterLink href="/" className={buttonClassName({ variant: "secondary", size: "sm" })}>
-      Build a PMO
+      <Trans>Build a PMO</Trans>
       <ArrowRight aria-hidden="true" className="size-3.5" />
     </RouterLink>
   );
@@ -71,13 +76,15 @@ function Invalid({
     <Callout
       tone="error"
       live
-      title="This file does not match the PMO format"
+      title={t`This file does not match the PMO format`}
       action={<RebuildLink />}
     >
       <div className="flex flex-col gap-2">
         <p>
-          It cannot be published as it is. Build the PMO again from your tables in PMO Builder,
-          which checks it as you go.
+          <Trans>
+            It cannot be published as it is. Build the PMO again from your tables in PMO Builder,
+            which checks it as you go.
+          </Trans>
         </p>
         <ul className="list-disc pl-5">
           {problems.map((problem) => (
@@ -88,7 +95,10 @@ function Invalid({
         </ul>
         {rest > 0 ? (
           <p>
-            {rest} more {rest === 1 ? "problem is" : "problems are"} not listed.
+            {plural(rest, {
+              one: "# more problem is not listed.",
+              other: "# more problems are not listed.",
+            })}
           </p>
         ) : null}
       </div>
@@ -105,13 +115,14 @@ function Ready({
   readonly file: File;
   readonly check: Extract<PmoFileCheck, { readonly kind: "ready" }>;
 }) {
+  const publishableVersion = PUBLISHABLE_PMO_VERSION;
   return (
     <div className="flex flex-col gap-6">
-      <Callout tone="success" live title="This file is a valid PMO">
-        It matches PMO version {PUBLISHABLE_PMO_VERSION} and its tables link up.
+      <Callout tone="success" live title={t`This file is a valid PMO`}>
+        <Trans>It matches PMO version {publishableVersion} and its tables link up.</Trans>
       </Callout>
       {check.warnings.length === 0 ? null : (
-        <Callout tone="warning" title="Worth a look before you publish">
+        <Callout tone="warning" title={t`Worth a look before you publish`}>
           <ul className="list-disc pl-5">
             {check.warnings.map((warning) => (
               <li key={warning} className="break-words">
@@ -119,7 +130,11 @@ function Ready({
               </li>
             ))}
           </ul>
-          {check.warnings.length === MAX_LISTED ? <p>There may be more.</p> : null}
+          {check.warnings.length === MAX_LISTED ? (
+            <p>
+              <Trans>There may be more.</Trans>
+            </p>
+          ) : null}
         </Callout>
       )}
       <PublishToZenodo
@@ -131,6 +146,21 @@ function Ready({
       />
       <PmoContents summary={check.summary} />
     </div>
+  );
+}
+
+/** What the page is for, with a link to the community on Zenodo. */
+function PageIntro({ zenodo }: { readonly zenodo: ZenodoConfig }) {
+  const communityName = zenodo.communityName;
+  return (
+    <Trans>
+      Already have a PMO file, built here earlier or with pmotools? Check it and deposit it in the{" "}
+      <Link href={communityUrl(zenodo.community)} external>
+        {communityName} community
+      </Link>{" "}
+      on Zenodo. The file is checked in this browser, and nothing is sent until you choose to
+      deposit.
+    </Trans>
   );
 }
 
@@ -160,39 +190,37 @@ export function PublishFilePage({ zenodo = zenodoConfig() }: PublishFilePageProp
 
   const file = state.kind === "none" ? null : state.file;
   const problem = problemOf(state);
+  const publishableVersion = PUBLISHABLE_PMO_VERSION;
 
   return (
     <PageContainer>
       <div className="flex flex-col gap-6">
         <header className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-text">Publish a PMO file</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-text">
+            <Trans>Publish a PMO file</Trans>
+          </h1>
           <p className="max-w-prose text-md text-text-muted">
-            Already have a PMO file, built here earlier or with pmotools? Check it and deposit it
             {zenodo === null ? (
-              " on Zenodo"
+              <Trans>
+                Already have a PMO file, built here earlier or with pmotools? Check it and deposit
+                it on Zenodo. The file is checked in this browser, and nothing is sent until you
+                choose to deposit.
+              </Trans>
             ) : (
-              <>
-                {" "}
-                in the{" "}
-                <Link href={communityUrl(zenodo.community)} external>
-                  {zenodo.communityName} community
-                </Link>{" "}
-                on Zenodo
-              </>
+              <PageIntro zenodo={zenodo} />
             )}
-            . The file is checked in this browser, and nothing is sent until you choose to deposit.
           </p>
         </header>
 
         {zenodo === null ? (
-          <Callout tone="info" title="This copy of PMO Builder is not set up for publishing">
-            Publishing needs the app to be set up with a Zenodo community.
+          <Callout tone="info" title={t`This copy of PMO Builder is not set up for publishing`}>
+            <Trans>Publishing needs the app to be set up with a Zenodo community.</Trans>
           </Callout>
         ) : (
           <>
             <FileDropzone
               label="PMO"
-              description={`A PMO file in version ${PUBLISHABLE_PMO_VERSION}, saved as .json or .json.gz.`}
+              description={t`A PMO file in version ${publishableVersion}, saved as .json or .json.gz.`}
               accept={[".json", ".json.gz", ".gz"]}
               file={file === null ? null : { name: file.name, size: file.size }}
               onFileSelect={(chosen) => void check(chosen)}
@@ -200,7 +228,7 @@ export function PublishFilePage({ zenodo = zenodoConfig() }: PublishFilePageProp
                 latest.current = null;
                 setState({ kind: "none" });
               }}
-              busy={state.kind === "checking" ? "Checking the file" : false}
+              busy={state.kind === "checking" ? t`Checking the file` : false}
               error={problem}
             />
             {state.kind === "checked" && state.check.kind === "invalid" ? (

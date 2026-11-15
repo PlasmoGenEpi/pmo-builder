@@ -1,3 +1,4 @@
+import { plural, t } from "@lingui/core/macro";
 import { useMemo } from "react";
 
 import type { RunNameChoice as RunNameValue, RunNameMode } from "@/domain/draft";
@@ -29,9 +30,9 @@ export interface RunNameChoiceProps {
 }
 
 const MODE_LABELS: Readonly<Record<RunNameMode, string>> = {
-  none: "No run name",
-  fixed: "One name for the whole table",
-  column: "Read it from a column",
+  none: t`No run name`,
+  fixed: t`One name for the whole table`,
+  column: t`Read it from a column`,
 };
 
 function isRunNameMode(value: string): value is RunNameMode {
@@ -47,11 +48,25 @@ function suggestRunColumn(columns: readonly string[]): string | null {
   );
 }
 
-function listRuns(values: readonly string[], truncated: boolean): string {
+/** The hint that lists the run names a column holds, such as "3 runs: a, b, c." */
+function runsHint(values: readonly string[], truncated: boolean): string {
   const shown = values.slice(0, 5);
   const more = values.length - shown.length;
-  const tail = more > 0 || truncated ? `, and ${truncated ? "more" : `${more} more`}` : "";
-  return `${shown.join(", ")}${tail}`;
+  const runNames = shown.join(", ");
+  const runCount = values.length;
+  if (truncated) {
+    return plural(runCount, {
+      one: `More than # run: ${runNames}, and more.`,
+      other: `More than # runs: ${runNames}, and more.`,
+    });
+  }
+  if (more > 0) {
+    return plural(runCount, {
+      one: `# run: ${runNames}, and ${more} more.`,
+      other: `# runs: ${runNames}, and ${more} more.`,
+    });
+  }
+  return plural(runCount, { one: `One run: ${runNames}.`, other: `# runs: ${runNames}.` });
 }
 
 /**
@@ -104,11 +119,11 @@ export function RunNameChoice({
       <SectionHeading
         id={headingId}
         level={headingLevel}
-        title="Bioinformatics run name"
+        title={t`Bioinformatics run name`}
         description={description}
       />
       <RadioGroup
-        label="How is the run named?"
+        label={t`How is the run named?`}
         options={(["none", "fixed", "column"] as const).map((mode) => ({
           value: mode,
           label: MODE_LABELS[mode],
@@ -127,7 +142,7 @@ export function RunNameChoice({
       {runName.mode === "fixed" ? (
         <div className="flex flex-col gap-2">
           <TextField
-            label="Run name"
+            label={t`Run name`}
             mono
             value={runName.fixedName}
             onChange={(event) => {
@@ -145,7 +160,7 @@ export function RunNameChoice({
                   key={name}
                   size="sm"
                   onClick={() => update((value) => ({ ...value, fixedName: name }))}
-                  aria-label={`Use the run name ${name}`}
+                  aria-label={t`Use the run name ${name}`}
                 >
                   <span className="font-mono">{name}</span>
                 </Button>
@@ -156,11 +171,11 @@ export function RunNameChoice({
       ) : null}
       {runName.mode === "column" ? (
         <Field
-          label="Run name column"
+          label={t`Run name column`}
           hint={
             values?.kind === "ready" && values.values.length > 0
-              ? `${values.values.length === 1 && !values.truncated ? "One run" : `${values.truncated ? "More than " : ""}${values.values.length} runs`}: ${listRuns(values.values, values.truncated)}.`
-              : `The column of the ${tableName} that holds each row's run name.`
+              ? runsHint(values.values, values.truncated)
+              : t`The column of the ${tableName} that holds each row's run name.`
           }
           error={problem}
           className="sm:max-w-md"
@@ -171,7 +186,7 @@ export function RunNameChoice({
             value={runName.column}
             onChange={(column) => update((value) => ({ ...value, column }))}
             noneLabel={false}
-            placeholder="Choose a column"
+            placeholder={t`Choose a column`}
           />
         </Field>
       ) : null}

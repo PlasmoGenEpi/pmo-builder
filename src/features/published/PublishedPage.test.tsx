@@ -1,8 +1,11 @@
+import { I18nProvider } from "@lingui/react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import type { ZenodoConfig } from "@/features/review/zenodo";
+import { i18n } from "@/i18n";
 import { installDomPolyfills } from "@/ui/testPolyfills";
 
 import type { CatalogueLoad } from "./catalogue";
@@ -11,6 +14,11 @@ import { PublishedPage } from "./PublishedPage";
 import { catalogue, DATASETS } from "./testing";
 
 beforeAll(installDomPolyfills);
+
+/** `<Trans>` needs the i18n context, as in the app. */
+function wrapper({ children }: { children: ReactNode }) {
+  return <I18nProvider i18n={i18n}>{children}</I18nProvider>;
+}
 
 const ZENODO: ZenodoConfig = {
   community: "plasmogenepi",
@@ -34,7 +42,7 @@ async function choose(user: ReturnType<typeof userEvent.setup>, field: string, o
 
 describe("PublishedPage", () => {
   it("lists the datasets with totals, each linking to its page", async () => {
-    render(<PublishedPage load={READY} zenodo={ZENODO} />);
+    render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
     expect(await screen.findByText("3 datasets")).toBeInTheDocument();
     expect(titles()).toEqual([
       "Maputo surveillance 2015 to 2019",
@@ -63,7 +71,7 @@ describe("PublishedPage", () => {
 
   it("narrows the list by search, country, panel and year", async () => {
     const user = userEvent.setup();
-    render(<PublishedPage load={READY} zenodo={ZENODO} />);
+    render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
     await screen.findByText("3 datasets");
 
     await user.type(screen.getByRole("searchbox", { name: "Search" }), "uganda");
@@ -86,7 +94,7 @@ describe("PublishedPage", () => {
 
   it("offers to clear the filters when nothing matches", async () => {
     const user = userEvent.setup();
-    render(<PublishedPage load={READY} zenodo={ZENODO} />);
+    render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
     await screen.findByText("3 datasets");
     await user.type(screen.getByRole("searchbox", { name: "Search" }), "nothing like this");
     expect(screen.getByText("No published PMO matches")).toBeInTheDocument();
@@ -102,6 +110,7 @@ describe("PublishedPage", () => {
         load={gives({ kind: "ready", index: catalogue(DATASETS.slice(0, 1)) })}
         zenodo={ZENODO}
       />,
+      { wrapper },
     );
     expect(await screen.findByRole("article")).toBeInTheDocument();
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
@@ -110,19 +119,24 @@ describe("PublishedPage", () => {
   });
 
   it("invites a first deposit when nothing has been published", async () => {
-    render(<PublishedPage load={gives({ kind: "ready", index: catalogue([]) })} zenodo={ZENODO} />);
+    render(
+      <PublishedPage load={gives({ kind: "ready", index: catalogue([]) })} zenodo={ZENODO} />,
+      { wrapper },
+    );
     expect(await screen.findByText("No PMO has been published yet")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Build a PMO" })).toHaveAttribute("href", "/");
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
 
   it("says so when the list is missing or cannot be loaded", async () => {
-    const { unmount } = render(<PublishedPage load={gives({ kind: "missing" })} zenodo={null} />);
+    const { unmount } = render(<PublishedPage load={gives({ kind: "missing" })} zenodo={null} />, {
+      wrapper,
+    });
     expect(
       await screen.findByText("This copy of PMO Builder has no list of published PMOs"),
     ).toBeInTheDocument();
     unmount();
-    render(<PublishedPage load={gives({ kind: "failed" })} zenodo={ZENODO} />);
+    render(<PublishedPage load={gives({ kind: "failed" })} zenodo={ZENODO} />, { wrapper });
     expect(
       await screen.findByText("The list of published PMOs could not be loaded"),
     ).toBeInTheDocument();
@@ -132,7 +146,7 @@ describe("PublishedPage", () => {
 describe("DatasetPage", () => {
   it("shows what the PMO holds, where to get it and how to cite it", async () => {
     const user = userEvent.setup();
-    render(<DatasetPage id="303" load={READY} />);
+    render(<DatasetPage id="303" load={READY} />, { wrapper });
     expect(
       await screen.findByRole("heading", {
         level: 1,
@@ -178,7 +192,7 @@ describe("DatasetPage", () => {
   });
 
   it("says so when the PMO is not in the list", async () => {
-    render(<DatasetPage id="999" load={READY} />);
+    render(<DatasetPage id="999" load={READY} />, { wrapper });
     expect(await screen.findByText("This PMO is not in the list")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "All published PMOs" })).toBeInTheDocument();
   });

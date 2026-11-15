@@ -1,7 +1,9 @@
+import { t } from "@lingui/core/macro";
 import { Ellipsis, Menu as MenuIcon, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
 import { useState } from "react";
 import { Link as RouterLink } from "wouter";
 
+import { chooseLanguage, currentLocale, LANGUAGES, OFFERED } from "@/i18n";
 import { IconButton, Menu } from "@/ui";
 
 import { Logo } from "./Logo";
@@ -29,7 +31,7 @@ export function TopBar({ onOpenNav }: TopBarProps) {
   return (
     <header className="sticky top-0 z-30 flex h-topbar shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-3 sm:px-4">
       <IconButton
-        label="Open the step list"
+        label={t`Open the step list`}
         icon={MenuIcon}
         onClick={onOpenNav}
         className="lg:hidden"
@@ -40,7 +42,7 @@ export function TopBar({ onOpenNav }: TopBarProps) {
       >
         <Logo />
         <span className="hidden sm:inline">PMO Builder</span>
-        <span className="sr-only sm:hidden">PMO Builder home</span>
+        <span className="sr-only sm:hidden">{t`PMO Builder home`}</span>
       </RouterLink>
       <div className="ml-auto flex min-w-0 items-center gap-1 sm:gap-2">
         <SaveStatus />
@@ -49,25 +51,45 @@ export function TopBar({ onOpenNav }: TopBarProps) {
           <ThemeToggle />
         </span>
         <Menu
-          trigger={<IconButton label="More options" icon={Ellipsis} />}
+          trigger={<IconButton label={t`More options`} icon={Ellipsis} />}
           entries={[
             {
               kind: "radio",
-              label: "Theme",
+              label: t`Theme`,
               value: preference,
               onValueChange: (value) => {
                 if (isPreference(value)) setPreference(value);
               },
               options: [
-                { value: "system", label: "Match my device", icon: Monitor },
-                { value: "light", label: "Light", icon: Sun },
-                { value: "dark", label: "Dark", icon: Moon },
+                { value: "system", label: t`Match my device`, icon: Monitor },
+                {
+                  value: "light",
+                  label: t({ message: "Light", comment: "Theme name" }),
+                  icon: Sun,
+                },
+                { value: "dark", label: t({ message: "Dark", comment: "Theme name" }), icon: Moon },
               ],
             },
+            ...(OFFERED.length > 1
+              ? [
+                  {
+                    kind: "radio" as const,
+                    label: t`Language`,
+                    value: currentLocale(),
+                    onValueChange: (value: string) => {
+                      const language = OFFERED.find((code) => code === value);
+                      if (language !== undefined) chooseLanguage(language);
+                    },
+                    options: LANGUAGES.filter((language) =>
+                      OFFERED.some((code) => code === language.code),
+                    ).map((language) => ({ value: language.code, label: language.name })),
+                  },
+                ]
+              : []),
             { kind: "separator" },
             {
               kind: "item",
-              label: "Start over",
+              label: t`Start over`,
               icon: RotateCcw,
               danger: true,
               onSelect: () => setConfirming(true),

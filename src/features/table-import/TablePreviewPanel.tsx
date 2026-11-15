@@ -1,3 +1,4 @@
+import { plural, t } from "@lingui/core/macro";
 import { useMemo, useState } from "react";
 
 import { Callout, DataTable, Disclosure, Skeleton, formatCount } from "@/ui";
@@ -7,6 +8,22 @@ import type { ColumnMatching } from "./useColumnMatching";
 /** Whether the screen is wide enough to show the preview open at first. */
 function isWideScreen(): boolean {
   return typeof window.matchMedia === "function" && window.matchMedia("(min-width: 64rem)").matches;
+}
+
+/** "First 50 of 1,200 rows", or "12 rows" when every row is shown. */
+function previewSummary(preview: {
+  readonly rows: readonly unknown[];
+  readonly totalRows: number;
+}): string {
+  const rowCount = preview.totalRows;
+  const shownRows = formatCount(preview.rows.length);
+  const totalRows = formatCount(rowCount);
+  return rowCount > preview.rows.length
+    ? plural(rowCount, {
+        one: `First ${shownRows} of ${totalRows} row`,
+        other: `First ${shownRows} of ${totalRows} rows`,
+      })
+    : plural(rowCount, { one: `${totalRows} row`, other: `${totalRows} rows` });
 }
 
 /** Props for {@link TablePreviewPanel}. */
@@ -22,6 +39,7 @@ export interface TablePreviewPanelProps {
  * labelled with their field. Open at first on wide screens.
  */
 export function TablePreviewPanel({ matching, label }: TablePreviewPanelProps) {
+  const tableName = label.toLowerCase();
   const [defaultOpen] = useState(isWideScreen);
   const { preview, fieldSet, mapped } = matching;
   const highlights = useMemo(() => {
@@ -36,35 +54,39 @@ export function TablePreviewPanel({ matching, label }: TablePreviewPanelProps) {
     return result;
   }, [fieldSet, mapped.mapping]);
 
-  const summary =
-    preview?.kind === "ready"
-      ? preview.totalRows > preview.rows.length
-        ? `First ${formatCount(preview.rows.length)} of ${formatCount(preview.totalRows)} rows`
-        : `${formatCount(preview.totalRows)} ${preview.totalRows === 1 ? "row" : "rows"}`
-      : undefined;
+  const summary = preview?.kind === "ready" ? previewSummary(preview) : undefined;
+  const rowSummary = summary ?? "";
 
   return (
-    <Disclosure title="Preview" summary={summary} defaultOpen={defaultOpen}>
+    <Disclosure
+      title={t({ message: "Preview", comment: "Noun: the first rows of the table" })}
+      summary={summary}
+      defaultOpen={defaultOpen}
+    >
       {preview === null || preview.kind === "loading" ? (
-        <output className="flex flex-col gap-2" aria-busy="true" aria-label="Loading the preview">
+        <output
+          className="flex flex-col gap-2"
+          aria-busy="true"
+          aria-label={t`Loading the preview`}
+        >
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-48 w-full" />
         </output>
       ) : preview.kind === "ready" ? (
         <DataTable
-          label={`Preview of the ${label.toLowerCase()}`}
+          label={t`Preview of the ${tableName}`}
           columns={preview.columns}
           rows={preview.rows}
           totalRows={preview.totalRows}
           highlightedColumns={highlights}
           height="sm"
-          caption={`${summary ?? ""}. Highlighted columns are matched to a field.`}
+          caption={t`${rowSummary}. Highlighted columns are matched to a field.`}
         />
       ) : (
-        <Callout tone="warning" title="The preview could not be shown">
+        <Callout tone="warning" title={t`The preview could not be shown`}>
           {preview.kind === "failed"
             ? preview.message
-            : "The file is no longer loaded. Import it again."}
+            : t`The file is no longer loaded. Import it again.`}
         </Callout>
       )}
     </Disclosure>

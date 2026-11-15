@@ -1,3 +1,5 @@
+import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { useId } from "react";
 
 import { cn } from "./cn";
@@ -35,10 +37,15 @@ function isBlank(value: CellValue | undefined): boolean {
 }
 
 function rowCaption(shown: number, total: number | undefined): string {
+  const shownCount = formatCount(shown);
   if (total !== undefined && total > shown) {
-    return `Showing ${formatCount(shown)} of ${formatCount(total)} rows`;
+    const totalCount = formatCount(total);
+    return plural(total, {
+      one: `Showing ${shownCount} of ${totalCount} row`,
+      other: `Showing ${shownCount} of ${totalCount} rows`,
+    });
   }
-  return `${formatCount(shown)} ${shown === 1 ? "row" : "rows"}`;
+  return plural(shown, { one: `${shownCount} row`, other: `${shownCount} rows` });
 }
 
 /**
@@ -80,7 +87,9 @@ export function DataTable({
                 scope="col"
                 className="sticky top-0 left-0 z-20 border-r border-b border-border bg-surface-subtle px-3 py-2 text-right font-normal text-text-subtle"
               >
-                <span className="sr-only">Row</span>
+                <span className="sr-only">
+                  {t({ message: "Row", comment: "Header of the row number column" })}
+                </span>
                 <span aria-hidden="true">#</span>
               </th>
               {columns.map((column) => {
@@ -101,8 +110,10 @@ export function DataTable({
                     </span>
                     {mapped === undefined ? null : (
                       <span className="mt-0.5 block truncate text-xs font-medium text-accent-text">
-                        <span className="sr-only">mapped to </span>
-                        {mapped}
+                        <Trans comment="Under a column name: the field it is matched to">
+                          <span className="sr-only">mapped to </span>
+                          {mapped}
+                        </Trans>
                       </span>
                     )}
                   </th>
@@ -134,7 +145,13 @@ export function DataTable({
                       )}
                       title={blank ? undefined : text}
                     >
-                      {blank ? <span className="text-text-subtle italic">blank</span> : text}
+                      {blank ? (
+                        <span className="text-text-subtle italic">
+                          {t({ message: "blank", comment: "Shown in an empty table cell" })}
+                        </span>
+                      ) : (
+                        text
+                      )}
                     </td>
                   );
                 })}

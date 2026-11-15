@@ -26,6 +26,8 @@ tests. oxlint (type-aware) and oxfmt for linting and formatting.
 | `src/domain/repository/`     | The catalogue of published PMOs and the harvester that builds it                       | `domain/*`, `pmotools-ts`. Node only, except `types.ts`      |
 | `src/worker/`                | The web worker that runs imports and builds, and its client                            | `domain/*`                                                   |
 | `src/state/`                 | The app store, its hooks, and usage counts wired to it                                 | `domain`, `worker`, `analytics`                              |
+| `src/i18n/`                  | The interface language: choosing it and loading its catalog                            | `locales`                                                    |
+| `src/locales/`               | The translation catalogs (`.po`). Written by `pnpm i18n:extract`                       |                                                              |
 | `src/analytics/`             | Usage instrumentation                                                                  | nothing in `domain`                                          |
 | `src/ui/`                    | Design system primitives. No domain knowledge                                          | `styles`                                                     |
 | `src/app/`                   | Shell: layout, navigation, routes, home, `StepLink`                                    | `ui`, `domain`, `state`, `analytics`                         |
@@ -106,6 +108,36 @@ happened and what to do next. No exclamation marks, no em dashes, no jargon the
 lab user would not use, and no internal names (say "sample table", not
 "library_sample_info", unless you are naming a PMO field). Error messages name
 the column or row at fault.
+
+**Translatable text.** Every word a user can see goes through Lingui, so the
+interface can be translated. That includes labels, hints, headings, button
+text, `aria-label`s, placeholders, toasts, error messages and notice messages.
+
+- Plain text: `` t`Saved ${fileName}` `` from `@lingui/core/macro`. Give an
+  interpolated value a clear variable name first, so translators see
+  `{fileName}`, not `{0}`.
+- Text with elements inside, such as a link in a sentence:
+  `<Trans>Read the <Link href={url}>PMO documentation</Link>.</Trans>` from
+  `@lingui/react/macro`.
+- Counts: `plural(count, { one: "# specimen", other: "# specimens" })` from
+  `@lingui/core/macro`. Never choose a word with `count === 1`, since other
+  languages have other plural rules.
+- Whole sentences only. Never build a sentence from translated pieces
+  (``t`in` + " " + country``); put the whole sentence in one message with
+  placeholders, so a translator can reorder it.
+- When a short message is ambiguous, add a note for translators:
+  `t({ message: "Run", comment: "Noun: a sequencing run" })`.
+- Not translated: PMO field names and values, column names, codes, file names,
+  units (`KB`), the PMO format's own words, and anything sent to Zenodo.
+- Numbers and dates: `formatCount`, `formatBytes`, or `Intl.*(intlLocale())`
+  from `@/i18n/languages`. Never a fixed `"en-US"`.
+- `t` may be used anywhere, including in constants worked out when a module
+  loads: the page and the worker both load the language before importing the
+  app's modules.
+- After changing text, run `pnpm i18n:extract` and commit `src/locales/`. CI
+  fails when the catalogs and the code disagree (`pnpm i18n:check`).
+- Preview a language with `?lang=fr`; `?lang=pseudo` shows every wrapped string
+  lengthened and accented, so plain English is text not yet wrapped.
 
 **Privacy.** The app makes no network request that carries user data, with
 one exception: a deposit on Zenodo that the user asks for, sent only by

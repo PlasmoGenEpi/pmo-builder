@@ -1,10 +1,19 @@
+import { I18nProvider } from "@lingui/react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+
+import { i18n } from "@/i18n";
 
 import { FileDropzone, type FileDropzoneProps } from "./FileDropzone";
 
 const ACCEPT = [".csv", ".tsv", ".xlsx"];
+
+/** `<Trans>` needs the i18n context, as in the app. */
+function wrapper({ children }: { children: ReactNode }) {
+  return <I18nProvider i18n={i18n}>{children}</I18nProvider>;
+}
 
 function renderDropzone(props: Partial<FileDropzoneProps> = {}) {
   const onFileSelect = vi.fn<(file: File) => void>();
@@ -18,6 +27,7 @@ function renderDropzone(props: Partial<FileDropzoneProps> = {}) {
       onRemove={onRemove}
       {...props}
     />,
+    { wrapper },
   );
   return { ...view, onFileSelect, onRemove };
 }

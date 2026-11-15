@@ -16,6 +16,7 @@
  * blocked storage), storage falls back to memory for the session and says so
  * through {@link DraftStorage.availability}.
  */
+import { t } from "@lingui/core/macro";
 import { createStore, del, get, keys, promisifyRequest } from "idb-keyval";
 
 import { checkDraft } from "./guard";
@@ -216,9 +217,13 @@ export function createDraftStorage(options: DraftStorageOptions = {}): DraftStor
 
   const fallBack = (error: unknown): void => {
     if (availability.kind === "session-only") return;
+    const detail = describeError(error);
     availability = {
       kind: "session-only",
-      reason: `This browser is not letting the app save data (${describeError(error)}). Your work is kept until you close this tab.`,
+      reason: t({
+        message: `This browser is not letting the app save data (${detail}). Your work is kept until you close this tab.`,
+        comment: "{detail} is the browser's own error message.",
+      }),
     };
   };
 
