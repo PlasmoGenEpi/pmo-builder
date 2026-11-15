@@ -267,7 +267,7 @@ Leave `VITE_ANALYTICS_URL` unset.
 
 ### Recommendation
 
-Use the Cloudflare Worker with D1 and the reference receiver below. It is the
+Use the Cloudflare Worker with D1 and the receiver below. It is the
 only option that checks every record against our schema and rejects the rest,
 stores nothing but daily counts, costs nothing at our scale, and gives
 nobody but the maintainers and Cloudflare (as processor) any data. If no one
@@ -275,37 +275,20 @@ can own a Cloudflare account for the project, do not switch usage counts on:
 host statistics alone are better than a hosted counter that needs an adapter
 and accepts any data.
 
-### Reference receiver
+### The receiver
 
-[`receiver/worker.js`](receiver/worker.js), 55 lines. It validates each
-record with `@cfworker/json-schema` against
-[`analytics-payload.schema.json`](analytics-payload.schema.json), never reads
-the IP address or headers, and adds one to a `(day, metric, value)` counter
-for each fact in the record. It keeps no record, so stored facts cannot be
-joined back into sessions.
+[`receiver/`](../receiver) holds the Worker, its Wrangler configuration and
+how to deploy it ([`receiver/README.md`](../receiver/README.md)). The Worker
+is about 55 lines. It validates each record with `@cfworker/json-schema`
+against [`analytics-payload.schema.json`](analytics-payload.schema.json),
+never reads the IP address or headers, and adds one to a
+`(day, metric, value)` counter for each fact in the record. It keeps no
+record, so stored facts cannot be joined back into sessions.
 
-To deploy it, in a separate folder (not in this repository's build):
-
-```bash
-npm create cloudflare@latest pmo-builder-usage -- --type hello-world --lang js
-cd pmo-builder-usage
-npm install @cfworker/json-schema
-cp ../pmo-builder/docs/receiver/worker.js src/index.js
-mkdir -p docs && cp ../pmo-builder/docs/analytics-payload.schema.json docs/
-# fix the schema import path in src/index.js to ../docs/analytics-payload.schema.json
-npx wrangler d1 create pmo-builder-usage   # add the binding it prints, named DB
-npx wrangler d1 execute pmo-builder-usage --remote --command \
-  "CREATE TABLE counts (day TEXT, metric TEXT, value TEXT, n INTEGER NOT NULL, PRIMARY KEY (day, metric, value))"
-npx wrangler deploy
-```
-
-In `wrangler.jsonc`, set `"observability": { "enabled": false }` and do not
-add Logpush.
-
-To read the counts:
+To read the counts, from `receiver/`:
 
 ```bash
-npx wrangler d1 execute pmo-builder-usage --remote --command \
+pnpm exec wrangler d1 execute pmo-builder-usage --remote --command \
   "SELECT metric, value, SUM(n) AS n FROM counts WHERE day >= '2026-11-01' GROUP BY metric, value ORDER BY metric, n DESC"
 ```
 

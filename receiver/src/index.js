@@ -1,5 +1,5 @@
-// Reference receiver for PMO Builder usage records: a Cloudflare Worker with a
-// D1 database bound as DB. It rejects anything that does not match the schema,
+// The receiver for PMO Builder usage records: a Cloudflare Worker with a
+// D1 database bound as DB. See README.md beside this folder for deploying. It rejects anything that does not match the schema,
 // never reads the IP address or any header, and adds one to a daily counter
 // per fact. It keeps no record, so stored facts cannot be linked to each other.
 //
@@ -9,7 +9,7 @@
 // Turn off Workers Logs and Logpush for this Worker: they would keep IP addresses.
 import { Validator } from "@cfworker/json-schema";
 
-import schema from "../analytics-payload.schema.json" with { type: "json" };
+import schema from "../../docs/analytics-payload.schema.json" with { type: "json" };
 
 const validator = new Validator(schema, "2020-12", false);
 const insert =

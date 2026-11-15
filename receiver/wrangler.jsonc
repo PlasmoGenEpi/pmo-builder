@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pmo-builder-usage",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01",
+  // Served at https://pmo-builder-usage.<account>.workers.dev. No preview addresses.
+  "workers_dev": true,
+  "preview_urls": false,
+  // Workers Logs would keep the IP address of every request. Keep this off,
+  // and do not add Logpush.
+  "observability": { "enabled": false },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "pmo-builder-usage",
+      "database_id": "b9dd01d0-a48b-438f-a59c-e1223a969a49",
+    },
+  ],
+}

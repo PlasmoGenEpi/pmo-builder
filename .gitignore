@@ -12,3 +12,6 @@ test-results/
 
 # The catalogue of published PMOs, written by `pnpm harvest`.
 public/repository/
+
+# Wrangler's local state, in receiver/.
+.wrangler/

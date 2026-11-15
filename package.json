@@ -1,6 +1,6 @@
 {
   "name": "pmo-builder",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Build Portable Microhaplotype Object (PMO) files in the browser",
   "license": "GPL-3.0-only",

@@ -38,6 +38,7 @@ tests. oxlint (type-aware) and oxfmt for linting and formatting.
 | `e2e/`                       | Playwright tests against the built app                             |                                                              |
 | `e2e/fixtures/`              | The privacy fixture: fails a test that contacts another origin     |                                                              |
 | `scripts/`                   | Large-table generator and benchmark, `pmotools-ts` update, harvest |                                                              |
+| `receiver/`                  | The Cloudflare Worker that receives usage counts. Its own project  |                                                              |
 | `vite/`                      | Build plugins and chunk rules, with their tests                    |                                                              |
 | `public/examples/`           | Example tables served with the app                                 |                                                              |
 | `reference/`                 | Material from the old app, for reading only. Not bundled           |                                                              |
