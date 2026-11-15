@@ -14,6 +14,15 @@ import {
 } from "pmotools-ts";
 
 import { alleleLabels } from "./alleleLabels";
+import {
+  controlKind,
+  densityOf,
+  groupFieldsOf,
+  plateWell,
+  reactionsOf,
+  stageReadsOf,
+  stagesOf,
+} from "./sampleDetails";
 
 import type { PmoSummary, SampleSummary, TargetSummary } from "./types";
 
@@ -47,7 +56,13 @@ export function summaryOf(pmo: Pmo, minReads: number): PmoSummary {
     for (const sample of run.library_samples)
       kept.set(`${runIndex}:${sample.library_sample_id}`, sample);
   });
-  const addRow = (libraryId: number, runName: string, runIndex: number | null): void => {
+  const stages = stagesOf(pmo);
+  const addRow = (
+    libraryId: number,
+    runName: string,
+    runIndex: number | null,
+    runId: number | null,
+  ): void => {
     const library = pmo.library_sample_info[libraryId];
     const row = Array.from({ length: targetNames.length }, () => 0);
     let total = 0;
@@ -62,7 +77,10 @@ export function summaryOf(pmo: Pmo, minReads: number): PmoSummary {
       maxAlleles = Math.max(maxAlleles, result.mhaps.length);
     }
     reads.push(...row);
+    const stageReads = stageReadsOf(pmo, { libraryId, runId, stages });
+    const specimen = library === undefined ? undefined : pmo.specimen_info[library.specimen_id];
     samples.push({
+      libraryId,
       name: library?.library_sample_name ?? String(libraryId),
       specimen:
         library === undefined
@@ -72,6 +90,11 @@ export function summaryOf(pmo: Pmo, minReads: number): PmoSummary {
       targets: row.filter((value) => value > 0).length,
       reads: total,
       maxAlleles,
+      control: controlKind(specimen?.specimen_type),
+      plate: plateWell(pmo, libraryId),
+      density: densityOf(pmo, libraryId),
+      rawReads: stageReads.raw,
+      stageReads: stageReads.stages,
     });
   };
   const detected = new Set<number>();
@@ -82,11 +105,16 @@ export function summaryOf(pmo: Pmo, minReads: number): PmoSummary {
         : String(runIndex + 1);
     for (const sample of run.library_samples) {
       detected.add(sample.library_sample_id);
-      addRow(sample.library_sample_id, runName, runIndex);
+      addRow(
+        sample.library_sample_id,
+        runName,
+        runIndex,
+        typeof run.bioinformatics_run_id === "number" ? run.bioinformatics_run_id : null,
+      );
     }
   });
   pmo.library_sample_info.forEach((_, libraryId) => {
-    if (!detected.has(libraryId)) addRow(libraryId, "", null);
+    if (!detected.has(libraryId)) addRow(libraryId, "", null, null);
   });
 
   // Per target: samples with data, alleles seen, and expected heterozygosity.
@@ -148,6 +176,9 @@ export function summaryOf(pmo: Pmo, minReads: number): PmoSummary {
     samples,
     targets,
     grid: { columns: targetNames.length, reads },
+    stages,
+    reactions: reactionsOf(pmo),
+    groupFields: groupFieldsOf(pmo),
     headline: {
       samplesWithData: withData.length,
       targetsWithData: targets.filter((target) => target.samples > 0).length,

@@ -139,6 +139,19 @@ depositing again, but a subset of it can be. The tabs:
   `extractAlleleCountsFreqFromPmo`), checked against pmotools-python. A
   published dataset's page links straight to its summary
   (`#/pmo/published/<record id>/summary`).
+  When the file has them, the Summary also shows: controls (from
+  `specimen_type`), with a warning for a negative control with reads or a
+  positive one without data; each plate's wells (from
+  `library_prep_plate_info`); parasite density against targets with data;
+  reads at each pipeline stage (from `read_counts_by_stage`); and the reads
+  grid grouped by panel reaction. Each of these fields is optional in PMO, so
+  each view appears only when there is data for it and says how much of the
+  file it covers.
+- **Compare**: specimens grouped by country, administrative area, collection
+  year or month, or project (only fields the file has), side by side: samples
+  with data, the share with more than one clone, heterozygosity per target,
+  each target's microhaplotype frequencies per group, and a collection
+  timeline. Specimens without a value form a "Not recorded" group.
 
 - **Tables**: any of its tables as CSV or TSV: the allele table (one row per
   microhaplotype in each library sample, with reads), specimens, library

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Route, Switch } from "wouter";
 
 import { buildExamplePmo } from "@/domain/build/testing";
+import { richPmo } from "@/domain/tools/testing";
 import { saveFile } from "@/features/review/saveFile";
 import type { ZenodoConfig } from "@/features/review/zenodo";
 import { signIn } from "@/features/review/zenodoAuth";
@@ -316,5 +317,87 @@ describe("PmoFilePage: summary", () => {
     expect(header).toHaveAttribute("aria-sort", "ascending");
     await user.click(within(samples).getByRole("button", { name: "Sort by Reads" }));
     expect(header).toHaveAttribute("aria-sort", "descending");
+  });
+});
+
+describe("PmoFilePage: optional details", () => {
+  it("shows controls, plates, stages and optional columns only for data the file has", async () => {
+    const { user } = await open(pmoFile(richPmo()));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await screen.findByText("Reads by sample and target");
+    expect(screen.getByText("Check the controls")).toBeInTheDocument();
+    expect(screen.getByText("Negative control S3 has 3 reads.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Plates" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Plate positions are given for 2 of 3 library samples."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Read counts by stage are given for 1 of 3 library samples."),
+    ).toBeInTheDocument();
+    // Two densities are too few to plot.
+    expect(
+      screen.queryByRole("heading", { name: "Parasite density and targets with data" }),
+    ).toBeNull();
+    const samples = screen.getByRole("table", { name: "Samples" });
+    for (const column of ["Control", "Plate well", "Parasites per µL"]) {
+      expect(
+        within(samples).getByRole("columnheader", { name: new RegExp(column) }),
+      ).toBeInTheDocument();
+    }
+    // Only pool1 has targets with data, so there is nothing to group until
+    // the targets without data are shown too.
+    expect(screen.queryByRole("switch", { name: "Group targets by reaction" })).toBeNull();
+    await user.click(screen.getByRole("switch", { name: "Show targets with no data" }));
+    expect(screen.getByRole("switch", { name: "Group targets by reaction" })).toBeInTheDocument();
+  });
+
+  it("leaves out every optional view when the file has none of their data", async () => {
+    const plain = buildExamplePmo();
+    const bare = {
+      ...plain,
+      library_sample_info: plain.library_sample_info.map(
+        ({ library_prep_plate_info: _plate, ...rest }) => rest,
+      ),
+    };
+    const { read_counts_by_stage: _counts, ...withoutCounts } = bare;
+    const { user } = await open(pmoFile(withoutCounts));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await screen.findByText("Reads by sample and target");
+    expect(screen.queryByRole("heading", { name: "Plates" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Reads at each pipeline stage" })).toBeNull();
+    expect(screen.queryByText("Check the controls")).toBeNull();
+    const samples = screen.getByRole("table", { name: "Samples" });
+    expect(within(samples).queryByRole("columnheader", { name: /Plate well/ })).toBeNull();
+  });
+
+  it("compares groups, keeping specimens without a value as Not recorded", async () => {
+    const { user } = await open(pmoFile(richPmo()));
+    await user.click(await screen.findByRole("tab", { name: "Compare" }));
+    const field = await screen.findByRole("combobox", { name: "Group specimens by" });
+    await user.click(field);
+    await user.click(await screen.findByRole("option", { name: /Administrative area, level 1/ }));
+    expect(
+      await screen.findByText(
+        "2 of 3 specimens have a value for Administrative area, level 1. The others are grouped as Not recorded.",
+      ),
+    ).toBeInTheDocument();
+    const groups = await screen.findByRole("table", { name: "Groups" });
+    expect(within(groups).getByText("Not recorded")).toBeInTheDocument();
+    expect(within(groups).getByText("Gaza")).toBeInTheDocument();
+  });
+
+  it("says when there is nothing to group by", async () => {
+    const plain = buildExamplePmo();
+    const ungrouped = {
+      ...plain,
+      specimen_info: plain.specimen_info.map((specimen) => ({
+        specimen_name: specimen.specimen_name,
+      })),
+    };
+    const { user } = await open(pmoFile(ungrouped));
+    await user.click(await screen.findByRole("tab", { name: "Compare" }));
+    expect(
+      await screen.findByText("There is nothing to group the specimens by"),
+    ).toBeInTheDocument();
   });
 });

@@ -16,6 +16,8 @@ import type {
 } from "@/domain/build";
 import type { Draft, JsonValue, TableRef } from "@/domain/draft";
 import type {
+  GroupComparison,
+  GroupKey,
   OpenOutcome,
   PmoSummary,
   SubsetOutcome,
@@ -217,6 +219,15 @@ export interface Engine {
     readonly source: WorkingSource;
     readonly minReads: number;
   }): Promise<PmoSummary | null>;
+  /**
+   * The opened PMO or its subset with its specimens grouped by `key`, counting
+   * microhaplotypes with at least `minReads` reads. `null` when there is none.
+   */
+  workingPmoGroups(request: {
+    readonly source: WorkingSource;
+    readonly minReads: number;
+    readonly key: GroupKey;
+  }): Promise<GroupComparison | null>;
   /** The opened PMO's subset as a file, or `null` when none was made. */
   workingPmoFile(request: { readonly gzip: boolean }): Promise<PmoFile | null>;
   /** Releases the engine. A worker is terminated. */

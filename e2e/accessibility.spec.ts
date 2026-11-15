@@ -87,7 +87,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     await expect(page.getByText("This is the PMO built from your draft")).toBeVisible({
       timeout: BUILD_TIMEOUT,
     });
-    for (const tab of ["Summary", "Tables", "Subset"]) {
+    for (const tab of ["Summary", "Compare", "Tables", "Subset"]) {
       // oxlint-disable-next-line no-await-in-loop -- tabs are checked one at a time.
       await page.getByRole("tab", { name: tab }).click();
       // oxlint-disable-next-line no-await-in-loop -- let the tab settle before checking.

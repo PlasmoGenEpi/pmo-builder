@@ -139,8 +139,31 @@ export interface TableFile {
 /** The delimited formats a table can be written in. */
 export type TableFormat = "csv" | "tsv";
 
+/** What kind of control a specimen is, from its `specimen_type`. */
+export type ControlKind = "negative" | "positive" | "other";
+
+/** Where a library was prepared on a plate. */
+export interface PlateWell {
+  readonly plate: string;
+  /** The row letter, such as `B`. */
+  readonly row: string;
+  /** The column, counted from 1. */
+  readonly col: number;
+}
+
+/** A parasite density, and where it came from. */
+export interface Density {
+  /** Parasites per microlitre. */
+  readonly value: number;
+  readonly method: string;
+  /** `library` for the library sample's qPCR, `specimen` for the specimen's own. */
+  readonly from: "library" | "specimen";
+}
+
 /** One library sample of one run, in a PMO's summary. */
 export interface SampleSummary {
+  /** Its index in `library_sample_info`. */
+  readonly libraryId: number;
   readonly name: string;
   readonly specimen: string | null;
   /**
@@ -157,6 +180,42 @@ export interface SampleSummary {
    * the number of clones (complexity of infection) in the sample.
    */
   readonly maxAlleles: number;
+  /** `null` for a field sample, or when the specimen has no `specimen_type`. */
+  readonly control: ControlKind | null;
+  readonly plate: PlateWell | null;
+  readonly density: Density | null;
+  /** Total raw reads from the read counts by stage, when given. */
+  readonly rawReads: number | null;
+  /** Reads at each stage of `PmoSummary.stages`, summed over targets; `null` where not given. */
+  readonly stageReads: readonly (number | null)[];
+}
+
+/** A specimen field the Compare tab can group by. */
+export type GroupKey =
+  | "collection_country"
+  | "geo_admin1"
+  | "geo_admin2"
+  | "geo_admin3"
+  | "collection_year"
+  | "collection_month"
+  | "project";
+
+/** A field that can group specimens, and how much of the file has it. */
+export interface GroupField {
+  readonly key: GroupKey;
+  /** Specimens with a value. */
+  readonly present: number;
+  readonly total: number;
+  /** Distinct values. */
+  readonly distinct: number;
+}
+
+/** A panel reaction (pool), and the targets amplified in it. */
+export interface ReactionGroup {
+  readonly panel: string;
+  readonly name: string;
+  /** Indexes into `PmoSummary.targets`. */
+  readonly targets: readonly number[];
 }
 
 /** One microhaplotype of a target, and how often it was seen. */
@@ -200,6 +259,12 @@ export interface PmoSummary {
    * `targets[j]`, stored row by row. `0` where nothing was counted.
    */
   readonly grid: { readonly columns: number; readonly reads: readonly number[] };
+  /** The pipeline stages in the read counts by stage, in the order first given. */
+  readonly stages: readonly string[];
+  /** The panels' reactions, in order. */
+  readonly reactions: readonly ReactionGroup[];
+  /** Fields the Compare tab can group by: those with at least one value. */
+  readonly groupFields: readonly GroupField[];
   readonly headline: {
     readonly samplesWithData: number;
     readonly targetsWithData: number;
@@ -208,4 +273,46 @@ export interface PmoSummary {
     /** Samples with more than one microhaplotype at some target. */
     readonly polyclonal: number;
   };
+}
+
+/** One group in a comparison. */
+export interface GroupRow {
+  /** The value, or `null` for specimens without one. */
+  readonly name: string | null;
+  readonly specimens: number;
+  readonly librarySamples: number;
+  /** Library samples with at least one microhaplotype counted. */
+  readonly withData: number;
+  /** Library samples with two or more alleles at some target. */
+  readonly polyclonal: number;
+  /** Mean expected heterozygosity over targets with data in the group. */
+  readonly meanHeterozygosity: number | null;
+  /** Distinct microhaplotypes seen in the group, over every target. */
+  readonly alleles: number;
+}
+
+/** One target across the groups of a comparison. */
+export interface TargetAcrossGroups {
+  readonly name: string;
+  /** Per group, in the order of `GroupComparison.groups`. */
+  readonly heterozygosity: readonly (number | null)[];
+  /** Its microhaplotypes, most frequent overall first, with their frequency in each group. */
+  readonly alleles: readonly {
+    readonly mhapId: number;
+    readonly seq: string;
+    readonly label: AlleleLabel;
+    readonly freqs: readonly (number | null)[];
+  }[];
+}
+
+/** Specimens grouped by one field, side by side. */
+export interface GroupComparison {
+  readonly key: GroupKey;
+  readonly groups: readonly GroupRow[];
+  readonly targets: readonly TargetAcrossGroups[];
+  /** Specimens per month (or per year, when no date gives the month), oldest first. */
+  readonly timeline: readonly { readonly period: string; readonly specimens: number }[];
+  readonly timelineUnit: "month" | "year" | null;
+  /** Specimens whose date gives the period, of all specimens. */
+  readonly dated: number;
 }

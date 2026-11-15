@@ -331,6 +331,10 @@ msgstr "{columnText} ({rows})"
 msgid "{count, plural, one {{share} (# sample)} other {{share} (# samples)}}"
 msgstr "{count, plural, one {{share} (# échantillon)} other {{share} (# échantillons)}}"
 
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "{count, plural, one {# control: no negative control has reads above the threshold, and every positive control has data.} other {# controls: no negative control has reads above the threshold, and every positive control has data.}}"
+msgstr "{count, plural, one {# témoin : aucun témoin négatif n’a de lectures au-dessus du seuil, et chaque témoin positif a des données.} other {# témoins : aucun témoin négatif n’a de lectures au-dessus du seuil, et chaque témoin positif a des données.}}"
+
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "{count, plural, one {# library sample} other {# library samples}}"
 msgstr "{count, plural, one {# échantillon de bibliothèque} other {# échantillons de bibliothèque}}"
@@ -398,6 +402,14 @@ msgstr "{count, plural, one {Le tableau des spécimens indique un projet sans en
 #: src/features/review/noticeKinds.ts
 msgid "{count, plural, one {Warning} other {Warnings}}"
 msgstr "{count, plural, one {Avertissement} other {Avertissements}}"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{dated} of {all} specimens have a collection date that gives the month."
+msgstr "{dated} spécimens sur {all} ont une date de collecte indiquant le mois."
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{dated} of {all} specimens have a collection date."
+msgstr "{dated} spécimens sur {all} ont une date de collecte."
 
 #: src/features/review/VerdictCard.tsx
 msgid "{errors, plural, one {Your PMO can be downloaded, but it does not fully match the PMO format, so other tools may not read it. See the # problem below.} other {Your PMO can be downloaded, but it does not fully match the PMO format, so other tools may not read it. See the # problems below.}}"
@@ -480,9 +492,21 @@ msgstr "{hidden, plural, one {et # autre similaire.} other {et # autres similair
 msgid "{hiddenSize} not shown"
 msgstr "{hiddenSize} non affichés"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{hoverCount, plural, one {{hoverPeriod}: # specimen} other {{hoverPeriod}: # specimens}}"
+msgstr "{hoverCount, plural, one {{hoverPeriod} : # spécimen} other {{hoverPeriod} : # spécimens}}"
+
 #: src/features/pmo-file/summary/ReadsGrid.tsx
 msgid "{hoveredReads} reads"
 msgstr "{hoveredReads} lectures"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "{hoverName}: {hoverDensity} per µL, {hoverTargets} targets with data."
+msgstr "{hoverName} : {hoverDensity} par µL, {hoverTargets} cibles avec des données."
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "{hoverTargets, plural, one {# target with data} other {# targets with data}}"
+msgstr "{hoverTargets, plural, one {# cible avec des données} other {# cibles avec des données}}"
 
 #: src/features/table-import/MatchingParts.tsx
 msgid "{includedCount} of {columnCount} included"
@@ -505,6 +529,10 @@ msgstr "{kind, select, all {{missingCount, plural, one {Des projets sont saisis,
 #: src/domain/build/merge.ts
 msgid "{kind, select, all {{missingCount, plural, one {Sequencing runs are entered, but # library sample has no sequencing run name ({examples}). Fill in the sequencing run name column of the library sample table in every row.} other {Sequencing runs are entered, but # library samples have no sequencing run name ({examples}). Fill in the sequencing run name column of the library sample table in every row.}}} some {{missingCount, plural, one {Sequencing runs are entered, but # library sample has no sequencing run name (such as {examples}). Fill in the sequencing run name column of the library sample table in every row.} other {Sequencing runs are entered, but # library samples have no sequencing run name (such as {examples}). Fill in the sequencing run name column of the library sample table in every row.}}} other {{missingCount, plural, one {Sequencing runs are entered, but # library sample has no sequencing run name. Fill in the sequencing run name column of the library sample table in every row.} other {Sequencing runs are entered, but # library samples have no sequencing run name. Fill in the sequencing run name column of the library sample table in every row.}}}}"
 msgstr "{kind, select, all {{missingCount, plural, one {Des runs de séquençage sont saisis, mais # échantillon de bibliothèque n’a pas de nom de run de séquençage ({examples}). Remplissez la colonne du nom de run de séquençage du tableau des échantillons de bibliothèque sur toutes les lignes.} other {Des runs de séquençage sont saisis, mais # échantillons de bibliothèque n’ont pas de nom de run de séquençage ({examples}). Remplissez la colonne du nom de run de séquençage du tableau des échantillons de bibliothèque sur toutes les lignes.}}} some {{missingCount, plural, one {Des runs de séquençage sont saisis, mais # échantillon de bibliothèque n’a pas de nom de run de séquençage (par exemple {examples}). Remplissez la colonne du nom de run de séquençage du tableau des échantillons de bibliothèque sur toutes les lignes.} other {Des runs de séquençage sont saisis, mais # échantillons de bibliothèque n’ont pas de nom de run de séquençage (par exemple {examples}). Remplissez la colonne du nom de run de séquençage du tableau des échantillons de bibliothèque sur toutes les lignes.}}} other {{missingCount, plural, one {Des runs de séquençage sont saisis, mais # échantillon de bibliothèque n’a pas de nom de run de séquençage. Remplissez la colonne du nom de run de séquençage du tableau des échantillons de bibliothèque sur toutes les lignes.} other {Des runs de séquençage sont saisis, mais # échantillons de bibliothèque n’ont pas de nom de run de séquençage. Remplissez la colonne du nom de run de séquençage du tableau des échantillons de bibliothèque sur toutes les lignes.}}}}"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{label} ({fieldPresent} of {fieldTotal} specimens)"
+msgstr "{label} ({fieldPresent} spécimens sur {fieldTotal})"
 
 #. {label} names a panel, such as 'Panel "P1"' or 'Panel 2'.
 #: src/domain/build/panel.ts
@@ -636,6 +664,10 @@ msgstr "{panels, plural, one {# panel} other {# panels}} avec {targets, plural, 
 msgid "{path} could not be fetched ({status})."
 msgstr "{path} n’a pas pu être récupéré ({status})."
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{present} of {total} specimens have a value for {name}. The others are grouped as Not recorded."
+msgstr "{present} spécimens sur {total} ont une valeur pour « {name} ». Les autres sont regroupés sous « Non renseigné »."
+
 #: src/domain/build/merge.ts
 msgid "{projectCount, plural, one {The specimen table names the project {nameList}, but no project is entered, so the PMO keeps the name without linking it to a project. Add the project on the Project step, or unmap the project name column.} other {The specimen table names the projects {nameList}, but no project is entered, so the PMO keeps the names without linking them to a project. Add the project on the Project step, or unmap the project name column.}}"
 msgstr "{projectCount, plural, one {Le tableau des spécimens mentionne le projet {nameList}, mais aucun projet n’est saisi : le PMO conserve donc le nom sans le relier à un projet. Ajoutez le projet à l’étape Projet, ou dissociez la colonne du nom de projet.} other {Le tableau des spécimens mentionne les projets {nameList}, mais aucun projet n’est saisi : le PMO conserve donc les noms sans les relier à un projet. Ajoutez le projet à l’étape Projet, ou dissociez la colonne du nom de projet.}}"
@@ -651,6 +683,10 @@ msgstr "{projectCount, plural, one {Il y a # projet : chaque spécimen doit don
 #: src/domain/build/merge.ts
 msgid "{projectCount, plural, one {There is # project, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.} other {There are # projects, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.}}"
 msgstr "{projectCount, plural, one {Il y a # projet : chaque spécimen doit donc indiquer son projet. Choisissez la colonne du nom de projet du tableau des spécimens, et remplissez-la pour chaque spécimen.} other {Il y a # projets : chaque spécimen doit donc indiquer son projet. Choisissez la colonne du nom de projet du tableau des spécimens, et remplissez-la pour chaque spécimen.}}"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "{reads, plural, one {Negative control {name} has # read.} other {Negative control {name} has # reads.}}"
+msgstr "{reads, plural, one {Le témoin négatif {name} a # lecture.} other {Le témoin négatif {name} a # lectures.}}"
 
 #: src/app/SaveStatus.tsx
 msgid "{reason} Download your PMO file before you close the tab."
@@ -992,6 +1028,10 @@ msgstr "<0>Nom du spécimen</0> doit correspondre à un nom du tableau de l’é
 msgid "<0>Your data stays on this device.</0> Files are read inside this browser and are never uploaded."
 msgstr "<0>Vos données restent sur cet appareil.</0> Les fichiers sont lus dans ce navigateur et ne sont jamais envoyés ailleurs."
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "A bar chart of specimens per collection period. The figures are in the bars' tooltips and in the group table."
+msgstr "Un diagramme en barres des spécimens par période de collecte. Les chiffres figurent dans les info-bulles des barres et dans le tableau des groupes."
+
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "A column holds each run's method name, as given in the methods above."
 msgstr "Une colonne contient le nom de la méthode de chaque run, tel qu’indiqué dans les méthodes ci-dessus."
@@ -1008,6 +1048,10 @@ msgstr "Un curateur de la communauté {communityName} vérifie chaque enregistre
 #: src/domain/fields/records.ts
 msgid "a date written YYYY-MM or YYYY-MM-DD"
 msgstr "une date au format YYYY-MM ou YYYY-MM-DD"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "A density is given for {haveCount} of {totalCount} library samples."
+msgstr "Une densité est indiquée pour {haveCount} échantillons de bibliothèque sur {totalCount}."
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "A deposit is under way."
@@ -1269,6 +1313,18 @@ msgstr "Ajoutez votre tableau des allèles : les microhaplotypes trouvés dans 
 msgid "Additional arguments"
 msgstr "Arguments supplémentaires"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Administrative area, level 1"
+msgstr "Division administrative, niveau 1"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Administrative area, level 2"
+msgstr "Division administrative, niveau 2"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Administrative area, level 3"
+msgstr "Division administrative, niveau 3"
+
 #: src/features/review/zenodo.ts
 msgid "Age"
 msgstr "Âge"
@@ -1322,6 +1378,10 @@ msgstr "Allèles comptés deux fois pour un même échantillon"
 #: src/features/review/noticeKinds.ts
 msgid "Alleles listed twice"
 msgstr "Allèles listés deux fois"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Alleles seen"
+msgstr "Allèles observés"
 
 #: src/features/table-import/mappingModel.ts
 msgid "Also matched to {fieldLabel}. Untick it here."
@@ -1526,6 +1586,10 @@ msgstr "Les modifications faites ici ne sont pas enregistrées, pour que les deu
 msgid "Check the authors, read the draft through and choose Submit for review. It is published once a curator of the community accepts it."
 msgstr "Vérifiez les auteurs, relisez le brouillon et choisissez « Submit for review ». Il est publié dès qu’un curateur de la communauté l’accepte."
 
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Check the controls"
+msgstr "Vérifiez les témoins"
+
 #: src/features/review/PublishToZenodo.tsx
 msgid "Check what you are sharing"
 msgstr "Vérifiez ce que vous partagez"
@@ -1669,6 +1733,14 @@ msgstr "Dates de collecte précisant le jour"
 msgid "Collection method"
 msgstr "Méthode de prélèvement"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Collection month"
+msgstr "Mois de collecte"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Collection year"
+msgstr "Année de collecte"
+
 #. Names a column of the user's table inside other messages, such as 'is blank in column "SampleID"'. {column} is the column's name in the file. Write it without an article: the message around it adds any article or preposition your language needs.
 #: src/domain/build/notices.ts
 msgid "column \"{column}\""
@@ -1724,6 +1796,15 @@ msgstr "La colonne « {runLike} » les distingue : le tableau contient donc p
 msgid "Comments"
 msgstr "Commentaires"
 
+#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Compare"
+msgstr "Comparer"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Comparing groups needs specimens with a country, an administrative area, a collection date or a project, and at least two different values. This file has none of these."
+msgstr "Pour comparer des groupes, il faut des spécimens ayant un pays, une division administrative, une date de collecte ou un projet, avec au moins deux valeurs différentes. Ce fichier n’en a aucun."
+
 #. Badge: every required field of the record is filled in
 #: src/features/records/RecordBadge.tsx
 msgid "Complete"
@@ -1737,6 +1818,15 @@ msgstr "Reprendre votre brouillon"
 #: src/domain/fields/records.ts
 msgid "Contributors"
 msgstr "Contributeurs"
+
+#. Marks a control sample in the reads grid
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "control"
+msgstr "témoin"
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Control"
+msgstr "Témoin"
 
 #: src/features/review/zenodo.ts
 msgid "Coordinates"
@@ -1779,6 +1869,7 @@ msgstr "Copier le mot-clé {keyword}"
 msgid "Copy title"
 msgstr "Copier le titre"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Count microhaplotypes with at least this many reads"
 msgstr "Compter les microhaplotypes ayant au moins ce nombre de lectures"
@@ -1789,6 +1880,7 @@ msgstr "Comptage en cours"
 
 #. Field label: the country a specimen was collected in
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/published/PublishedPage.tsx
 msgid "Country"
 msgstr "Pays"
@@ -2025,6 +2117,10 @@ msgstr "Chaque valeur doit être l’un des noms de méthode : {methodNames}."
 msgid "Each value must be the name of a method above."
 msgstr "Chaque valeur doit être le nom d’une méthode ci-dessus."
 
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Each well is a library sample, coloured by how many targets have data; a cross marks a sample with none. Patterns along a row, a column or the edge point to a problem with the plate rather than the samples."
+msgstr "Chaque puits est un échantillon de bibliothèque, coloré selon le nombre de cibles avec des données ; une croix marque un échantillon qui n’en a aucune. Un motif le long d’une ligne, d’une colonne ou du bord signale un problème de plaque plutôt que d’échantillons."
+
 #. Field label: where an allele ends on the chromosome
 #: src/domain/fields/microhaplotypes.ts
 msgid "End"
@@ -2098,6 +2194,10 @@ msgstr "Chaque run de séquençage cité dans le tableau des échantillons de bi
 #: src/app/privacy/PrivacyDetails.tsx
 msgid "Everything you type and every column you match."
 msgstr "Tout ce que vous saisissez et chaque colonne que vous associez."
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Expected heterozygosity of each target in each group: 1 minus the sum of squared allele frequencies."
+msgstr "Hétérozygotie attendue de chaque cible dans chaque groupe : 1 moins la somme des carrés des fréquences alléliques."
 
 #: src/domain/fields/samples.ts
 msgid "Experiment accession"
@@ -2342,6 +2442,22 @@ msgstr "Aller à la page d’accueil"
 msgid "Got it"
 msgstr "J’ai compris"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Group"
+msgstr "Groupe"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Group specimens by"
+msgstr "Regrouper les spécimens par"
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Group targets by reaction"
+msgstr "Regrouper les cibles par réaction"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Groups"
+msgstr "Groupes"
+
 #. Part of a sentence: a verb phrase that follows 'It', as in 'It has characters ...'. Several such phrases may be joined with ', and it'.
 #: src/domain/build/merge.ts
 msgid "has characters the PMO format does not allow there"
@@ -2377,6 +2493,10 @@ msgstr "Aider à améliorer PMO Builder"
 msgid "Heterozygosity"
 msgstr "Hétérozygotie"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Heterozygosity by target"
+msgstr "Hétérozygotie par cible"
+
 #: src/app/StepPage.tsx
 msgid "Home"
 msgstr "Accueil"
@@ -2410,6 +2530,14 @@ msgstr "Sexe de l’hôte"
 #: src/domain/fields/samples.ts
 msgid "Host taxon ID"
 msgstr "Identifiant du taxon de l’hôte"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Hover over a bar to see its count."
+msgstr "Survolez une barre pour voir son effectif."
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Hover over a dot to see its sample."
+msgstr "Survolez un point pour voir son échantillon."
 
 #: src/features/pmo-file/summary/AlleleBars.tsx
 msgid "Hover over a label to see the whole sequence. Each bar is a share of the target's detections: a sample with two microhaplotypes here counts once for each."
@@ -2454,6 +2582,10 @@ msgstr "Le nombre de grossesses de l’hôte."
 #: src/domain/fields/microhaplotypes.ts
 msgid "How many unique molecular identifiers support the allele."
 msgstr "Nombre d’identifiants moléculaires uniques qui soutiennent l’allèle."
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "How often each microhaplotype of the chosen target is seen in each group. Choose a target in the table above, or here."
+msgstr "La fréquence de chaque microhaplotype de la cible choisie dans chaque groupe. Choisissez une cible dans le tableau ci-dessus, ou ici."
 
 #: src/domain/fields/records.ts
 msgid "How reads are arranged: PAIRED or SINGLE."
@@ -2534,6 +2666,10 @@ msgstr "Importez le tableau des lectures totales par échantillon."
 #: src/domain/build/panel.ts
 msgid "Import the target table."
 msgstr "Importez le tableau des cibles."
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "In no reaction"
+msgstr "Dans aucune réaction"
 
 #. A place in the PMO file, starting a sentence, such as 'In the PMO, field "pmo_header"'. {place} uses the PMO's own field names.
 #: src/domain/build/merge.ts
@@ -2623,6 +2759,10 @@ msgstr "Son adresse Zenodo ou son DOI, par exemple https://zenodo.org/records/12
 #: src/features/table-import/FieldRow.tsx
 msgid "Keep it"
 msgstr "Conserver"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Kept of raw"
+msgstr "Part conservée"
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "Keywords"
@@ -2737,6 +2877,7 @@ msgstr "Préparation des bibliothèques"
 
 #. A record type in the PMO, starting a place in the file, such as 'Library sample "L1"'.
 #: src/domain/build/merge.ts
+#: src/features/pmo-file/summary/QualityViews.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Library sample"
 msgstr "Échantillon de bibliothèque"
@@ -2928,6 +3069,10 @@ msgstr "Association faite d’après un nom similaire. Vérifiez qu’elle est c
 msgid "May this site send anonymous usage counts, such as which steps are used and whether deposits work? They never include your files, sample names or anything you type, and nothing in them identifies you. Nothing is sent until you choose."
 msgstr "Ce site peut-il envoyer des statistiques d’utilisation anonymes, par exemple les étapes utilisées et la réussite des dépôts ? Elles n’incluent jamais vos fichiers, vos noms d’échantillons ni rien de ce que vous saisissez, et rien ne permet de vous identifier. Rien n’est envoyé tant que vous n’avez pas fait votre choix."
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Mean heterozygosity"
+msgstr "Hétérozygotie moyenne"
+
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Median reads per sample: {medianReads}"
 msgstr "Lectures médianes par échantillon : {medianReads}"
@@ -3000,6 +3145,10 @@ msgstr "tableau des méthodes"
 msgid "Methods table"
 msgstr "Tableau des méthodes"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Microhaplotype"
+msgstr "Microhaplotype"
+
 #: src/features/published/PublishedPage.tsx
 msgid "Microhaplotype datasets published in the {name} community on Zenodo. Each one has a DOI to cite."
 msgstr "Jeux de données de microhaplotypes publiés dans la communauté {name} sur Zenodo. Chacun possède un DOI à citer."
@@ -3008,6 +3157,10 @@ msgstr "Jeux de données de microhaplotypes publiés dans la communauté {name} 
 msgid "Microhaplotype datasets published in the <0>{name} community</0> on Zenodo. Each one has a DOI to cite."
 msgstr "Jeux de données de microhaplotypes publiés dans la <0>communauté {name}</0> sur Zenodo. Chacun possède un DOI à citer."
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Microhaplotype frequencies by group"
+msgstr "Fréquences des microhaplotypes par groupe"
+
 #. A part of the PMO, starting a place in the file, such as 'Microhaplotypes, target 1'.
 #. Step title, shown in the sidebar and as the page heading
 #. The name of a step of the app
@@ -3015,6 +3168,10 @@ msgstr "Jeux de données de microhaplotypes publiés dans la <0>communauté {nam
 #: src/domain/build/merge.ts
 msgid "Microhaplotypes"
 msgstr "Microhaplotypes"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Microhaplotypes by group"
+msgstr "Microhaplotypes par groupe"
 
 #: src/domain/build/merge.ts
 msgid "Microhaplotypes is needed and is not finished yet. Import the allele table on the Microhaplotypes step."
@@ -3043,6 +3200,14 @@ msgstr "Plus d’options"
 #: src/features/review/noticeKinds.ts
 msgid "More problems with the PMO format"
 msgstr "Autres problèmes de format PMO"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "More than one clone"
+msgstr "Plus d’un clone"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group."
+msgstr "« Plus d’un clone » est la part des échantillons avec des données qui ont deux allèles ou plus sur au moins une cible. L’hétérozygotie moyenne porte sur les cibles avec des données dans le groupe."
 
 #. {field} is a PMO field name. {columns} is a list of quoted column names.
 #: src/domain/build/notices.ts
@@ -3116,6 +3281,11 @@ msgstr "Nécessaire pour un PMO, et pas encore terminée."
 #: src/features/readCounts/ReadCountsStep.tsx
 msgid "Needed for this step. One row for each sample, with its sample name and its number of raw reads."
 msgstr "Nécessaire pour cette étape. Une ligne par échantillon, avec le nom de l’échantillon et son nombre de lectures brutes."
+
+#. A negative control
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Negative"
+msgstr "Négatif"
 
 #: src/app/StepPage.tsx
 msgid "Next"
@@ -3263,6 +3433,11 @@ msgstr "Absents de l’étape {stepTitle} : {missingNames}."
 #: src/features/review/VerdictCard.tsx
 msgid "Not ready yet"
 msgstr "Pas encore prêt"
+
+#. Specimens with no value for the field
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Not recorded"
+msgstr "Non renseigné"
 
 #: src/app/SaveStatus.tsx
 msgid "Not saved"
@@ -3527,6 +3702,7 @@ msgstr "Ouvrir dans Mon fichier PMO"
 msgid "Open the draft on Zenodo"
 msgstr "Ouvrir le brouillon sur Zenodo"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Open the file again."
 msgstr "Ouvrez de nouveau le fichier."
@@ -3597,6 +3773,7 @@ msgstr "Facultatif. Le projet donne au PMO un nom et une description de votre é
 msgid "Optional. This tells readers of the PMO which programs and versions turned the reads into alleles, and links each run in the allele table to its pipeline."
 msgstr "Facultatif. Cette étape indique aux lecteurs du PMO quels programmes et quelles versions ont transformé les lectures en allèles, et relie chaque run du tableau des allèles à son pipeline."
 
+#. A control that is neither negative nor positive
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
@@ -3605,6 +3782,7 @@ msgstr "Facultatif. Cette étape indique aux lecteurs du PMO quels programmes et
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading over optional fields that belong to no group
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/summary/SummaryPanel.tsx
 #: src/features/table-import/mappingModel.ts
 msgid "Other"
 msgstr "Autres"
@@ -3721,6 +3899,10 @@ msgstr "Densité parasitaire"
 msgid "Parasite density (qPCR)"
 msgstr "Densité parasitaire (qPCR)"
 
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Parasite density and targets with data"
+msgstr "Densité parasitaire et cibles avec des données"
+
 #: src/domain/fields/samples.ts
 msgid "Parasite density method"
 msgstr "Méthode de mesure de la densité parasitaire"
@@ -3732,6 +3914,14 @@ msgstr "Parasites par microlitre mesurés à partir de cet extrait, par exemple 
 #: src/domain/fields/samples.ts
 msgid "Parasites per microlitre of blood."
 msgstr "Parasites par microlitre de sang."
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Parasites per µL"
+msgstr "Parasites par µL"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Parasites per µL (log scale)"
+msgstr "Parasites par µL (échelle logarithmique)"
 
 #: src/domain/fields/records.ts
 msgid "PCR conditions"
@@ -3761,10 +3951,26 @@ msgstr "Choisir un panel enregistré remplace le tableau des cibles ci-dessous p
 msgid "Plate"
 msgstr "Plaque"
 
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Plate {plate}: {wellCount} library samples. The sample table gives the same figures."
+msgstr "Plaque {plate} : {wellCount} échantillons de bibliothèque. Le tableau des échantillons donne les mêmes chiffres."
+
 #. {table} is a table name in lower case, such as 'specimen table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
 msgid "Plate columns of the {table} are mapped twice over: give the plate position, or the plate row and column, not both. Unmap one of them."
 msgstr "Les colonnes de plaque du {table} sont associées en double : indiquez la position sur la plaque, ou bien la ligne et la colonne de la plaque, mais pas les deux. Dissociez l’une des deux."
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Plate positions are given for {haveCount} of {totalCount} library samples."
+msgstr "Les positions sur plaque sont indiquées pour {haveCount} échantillons de bibliothèque sur {totalCount}."
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Plate well"
+msgstr "Puits"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Plates"
+msgstr "Plaques"
 
 #. Field label: the sequencing technology
 #: src/domain/fields/records.ts
@@ -3786,6 +3992,15 @@ msgstr "PMO Builder fonctionne entièrement dans votre navigateur. Vos fichiers,
 #: src/features/review/PmoPreviewBody.tsx
 msgid "PMO preview"
 msgstr "Aperçu du PMO"
+
+#. A positive control
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Positive"
+msgstr "Positif"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Positive control {name} has no data."
+msgstr "Le témoin positif {name} n’a aucune donnée."
 
 #: src/features/review/zenodo.ts
 msgid "Pregnancy"
@@ -3852,6 +4067,7 @@ msgstr "Lien vers le programme"
 #: src/domain/build/merge.ts
 #: src/domain/fields/samples.ts
 #: src/domain/fields/study.ts
+#: src/features/pmo-file/summary/CompareTab.tsx
 msgid "Project"
 msgstr "Projet"
 
@@ -3967,6 +4183,10 @@ msgstr "PMO publiés"
 msgid "Put each one on its own line"
 msgstr "Placer chaque élément sur sa propre ligne"
 
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Raw reads"
+msgstr "Lectures brutes"
+
 #. Field label: the PCR reaction or pool a target is amplified in
 #: src/domain/fields/panel.ts
 msgid "Reaction"
@@ -3988,6 +4208,10 @@ msgstr "Nombre de lectures"
 #: src/app/steps.ts
 msgid "Read counts by stage"
 msgstr "Nombre de lectures par étape"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Read counts by stage are given for {haveCount} of {totalCount} library samples."
+msgstr "Le nombre de lectures par étape est indiqué pour {haveCount} échantillons de bibliothèque sur {totalCount}."
 
 #: src/domain/build/merge.ts
 msgid "Read counts records in the PMO have a problem. Check the Read counts step."
@@ -4034,6 +4258,10 @@ msgstr "Lecture du tableau."
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Reads"
 msgstr "Lectures"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Reads at each pipeline stage"
+msgstr "Lectures à chaque étape du pipeline"
 
 #: src/features/readCounts/ReadCountsStep.tsx
 msgid "Reads at each stage"
@@ -4397,9 +4625,14 @@ msgstr "Échantillons comptés deux fois dans un même run"
 msgid "Samples that appear twice"
 msgstr "Échantillons présents deux fois"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Samples with data"
 msgstr "Échantillons avec des données"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Samples with few parasites often lose targets. Each dot is a library sample; the density is its own qPCR measurement when it has one, else its specimen's."
+msgstr "Les échantillons pauvres en parasites perdent souvent des cibles. Chaque point est un échantillon de bibliothèque ; la densité est sa propre mesure qPCR quand il en a une, sinon celle de son spécimen."
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Samples with more than one clone"
@@ -4777,6 +5010,7 @@ msgstr "Type de spécimen"
 #: src/domain/fields/samples.ts
 #: src/features/librarySamples/LibrarySamplesStep.tsx
 #: src/features/pmo-file/SubsetPanel.tsx
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 #: src/features/review/PmoContents.tsx
 #: src/features/specimens/SpecimensStep.tsx
@@ -4790,6 +5024,14 @@ msgstr "Les spécimens que je coche"
 #: src/features/librarySamples/LibrarySamplesStep.tsx
 msgid "Specimens named in this table"
 msgstr "Spécimens indiqués dans ce tableau"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Specimens per month of collection."
+msgstr "Spécimens par mois de collecte."
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Specimens per year of collection."
+msgstr "Spécimens par année de collecte."
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Specimens with certain values"
@@ -4976,6 +5218,7 @@ msgstr "Tableaux de"
 
 #. A record type in the PMO, starting a place in the file, such as 'Target "t1"'.
 #: src/domain/build/merge.ts
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Target"
 msgstr "Cible"
@@ -5064,9 +5307,14 @@ msgstr "Cibles absentes du panel"
 msgid "Targets with alleles"
 msgstr "Cibles avec allèles"
 
+#: src/features/pmo-file/summary/QualityViews.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Targets with data"
 msgstr "Cibles avec des données"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Targets with data against parasite density for {pointCount} samples. The sample table gives the same figures."
+msgstr "Cibles avec des données en fonction de la densité parasitaire pour {pointCount} échantillons. Le tableau des échantillons donne les mêmes chiffres."
 
 #: src/domain/fields/records.ts
 msgid "Taxon ID"
@@ -5260,6 +5508,14 @@ msgstr "La demande d’évaluation n’a pas pu être envoyée à la communauté
 #: src/features/review/PublishToZenodo.tsx
 msgid "The community could not be found on Zenodo."
 msgstr "La communauté est introuvable sur Zenodo."
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "The comparison could not be made"
+msgstr "La comparaison n’a pas pu être faite"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "The controls look right"
+msgstr "Les témoins semblent corrects"
 
 #: src/domain/fields/samples.ts
 msgid "The country the specimen was collected in."
@@ -5744,6 +6000,7 @@ msgid "The strand the target lies on, + or -."
 msgstr "Le brin sur lequel se trouve la cible, + ou -."
 
 #: src/features/pmo-file/PublishPanel.tsx
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "The subset"
@@ -5807,6 +6064,7 @@ msgid "The well of the specimen on its storage plate, such as A01, instead of ro
 msgstr "Le puits du spécimen sur sa plaque de conservation, par exemple A01, au lieu de la ligne et de la colonne."
 
 #: src/features/pmo-file/PublishPanel.tsx
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "The whole file"
@@ -5839,6 +6097,10 @@ msgstr "Il n’y a aucun PMO à déposer. Quelque chose a changé. Vérifiez les
 #: src/features/review/usePmoDownload.ts
 msgid "There is no PMO to download"
 msgstr "Il n’y a aucun PMO à télécharger"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "There is nothing to group the specimens by"
+msgstr "Rien ne permet de regrouper les spécimens"
 
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "There may be more."
@@ -6381,6 +6643,10 @@ msgstr "La date d’amplification des acides nucléiques, au format YYYY-MM ou Y
 msgid "When nucleic acids were extracted, as YYYY-MM or YYYY-MM-DD."
 msgstr "La date d’extraction des acides nucléiques, au format YYYY-MM ou YYYY-MM-DD."
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "When specimens were collected"
+msgstr "Quand les spécimens ont été collectés"
+
 #: src/domain/fields/records.ts
 msgid "When the pipeline was run, as YYYY-MM or YYYY-MM-DD."
 msgstr "La date d’exécution du pipeline, au format YYYY-MM ou YYYY-MM-DD."
@@ -6404,6 +6670,10 @@ msgstr "Début de chaque segment masqué de la séquence, valeurs séparées par
 #: src/features/microhaplotypes/MicrohaplotypesStep.tsx
 msgid "Where extra columns go"
 msgstr "Destination des colonnes supplémentaires"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Where reads are lost on the way to the final calls. Stage names are the pipeline's own; reads at a stage are summed over targets. Kept of raw is the last stage given, as a share of the raw reads."
+msgstr "Où les lectures se perdent jusqu’aux appels finaux. Les noms d’étapes sont ceux du pipeline ; les lectures d’une étape sont additionnées sur les cibles. La part conservée est la dernière étape indiquée, rapportée aux lectures brutes."
 
 #: src/domain/fields/microhaplotypes.ts
 msgid "Where the allele ends on the chromosome."

@@ -10,6 +10,38 @@ export interface ReadsGridProps {
   readonly summary: PmoSummary;
   /** The target columns to draw, as indexes into `summary.targets`. */
   readonly columns: readonly number[];
+  /**
+   * Runs of `columns` to draw apart, with a heading each, such as the panel's
+   * reactions. Their counts add up to `columns.length`.
+   */
+  readonly groups?: readonly { readonly label: string; readonly count: number }[];
+}
+
+/** Space between two groups of columns. */
+const GROUP_GAP = 6;
+
+/** Where each column starts, with a gap before each new group, and where each group starts. */
+function layout(options: {
+  readonly count: number;
+  readonly groups: ReadsGridProps["groups"];
+  readonly left: number;
+  readonly cellWidth: number;
+}): { readonly xs: number[]; readonly starts: { readonly label: string; readonly x: number }[] } {
+  const groupOf: number[] = [];
+  (options.groups ?? [{ label: "", count: options.count }]).forEach((group, index) => {
+    for (let column = 0; column < group.count; column += 1) groupOf.push(index);
+  });
+  const xs = Array.from(
+    { length: options.count },
+    (_, index) => options.left + index * options.cellWidth + (groupOf[index] ?? 0) * GROUP_GAP,
+  );
+  const starts: { label: string; x: number }[] = [];
+  let first = 0;
+  for (const group of options.groups ?? []) {
+    starts.push({ label: group.label, x: xs[first] ?? options.left });
+    first += group.count;
+  }
+  return { xs, starts };
 }
 
 interface Hover {
@@ -27,7 +59,7 @@ const MAX_HEIGHT = 640;
  * cell names the sample, the target and the reads. The tables below give the
  * same figures as text.
  */
-export function ReadsGrid({ summary, columns }: ReadsGridProps) {
+export function ReadsGrid({ summary, columns, groups }: ReadsGridProps) {
   const { resolved } = useTheme();
   const wrapper = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -37,8 +69,18 @@ export function ReadsGrid({ summary, columns }: ReadsGridProps) {
   const rowHeight = Math.max(3, Math.min(14, Math.floor(MAX_HEIGHT / Math.max(1, rows))));
   const showLabels = rowHeight >= 10;
   const left = showLabels ? LABEL_WIDTH : 0;
-  const cellWidth = Math.max(2, (width - left) / Math.max(1, columns.length));
+  const gaps = groups === undefined ? 0 : Math.max(0, groups.length - 1) * GROUP_GAP;
+  const cellWidth = Math.max(2, (width - left - gaps) / Math.max(1, columns.length));
   const height = rows * rowHeight;
+  const controlWord = t({
+    message: "control",
+    comment: "Marks a control sample in the reads grid",
+  });
+
+  const { xs, starts: groupStarts } = useMemo(
+    () => layout({ count: columns.length, groups, left, cellWidth }),
+    [columns.length, groups, left, cellWidth],
+  );
 
   const maxLog = useMemo(() => {
     let max = 0;
@@ -76,9 +118,13 @@ export function ReadsGrid({ summary, columns }: ReadsGridProps) {
       const y = row * rowHeight;
       if (showLabels) {
         context.fillStyle = textColour;
-        const name = summary.samples[row]?.name ?? "";
+        const sample = summary.samples[row];
+        const name = sample?.name ?? "";
+        const control = sample?.control !== null && sample?.control !== undefined;
+        const short =
+          name.length > (control ? 12 : 22) ? `${name.slice(0, control ? 11 : 21)}…` : name;
         context.fillText(
-          name.length > 22 ? `${name.slice(0, 21)}…` : name,
+          control ? `${short} (${controlWord})` : short,
           0,
           y + rowHeight / 2,
           LABEL_WIDTH - 8,
@@ -90,7 +136,7 @@ export function ReadsGrid({ summary, columns }: ReadsGridProps) {
           reads > 0
             ? rampColour(ramp, maxLog === 0 ? 1 : Math.log10(reads + 1) / maxLog)
             : EMPTY_CELL[resolved];
-        context.fillRect(left + index * cellWidth, y, cellWidth - gap, rowHeight - gap);
+        context.fillRect(xs[index] ?? 0, y, cellWidth - gap, rowHeight - gap);
       });
     }
   }, [
@@ -101,10 +147,11 @@ export function ReadsGrid({ summary, columns }: ReadsGridProps) {
     rows,
     rowHeight,
     cellWidth,
-    left,
     showLabels,
     maxLog,
     resolved,
+    xs,
+    controlWord,
   ]);
 
   const hovered =
@@ -128,6 +175,19 @@ export function ReadsGrid({ summary, columns }: ReadsGridProps) {
       <p className="sr-only">
         {t`A grid of reads for ${sampleCount} samples at ${targetCount} targets. The tables below give the same figures.`}
       </p>
+      {groupStarts.length > 1 ? (
+        <div className="relative h-5 text-xs text-text-muted" aria-hidden="true">
+          {groupStarts.map((group) => (
+            <span
+              key={`${group.label}${group.x}`}
+              className="absolute top-0 whitespace-nowrap"
+              style={{ left: group.x }}
+            >
+              {group.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
       <div ref={wrapper} className="relative max-h-[40rem] overflow-y-auto">
         <canvas
           ref={canvas}
@@ -138,9 +198,10 @@ export function ReadsGrid({ summary, columns }: ReadsGridProps) {
             const box = event.currentTarget.getBoundingClientRect();
             const x = event.clientX - box.left;
             const y = event.clientY - box.top;
-            const column = Math.floor((x - left) / cellWidth);
+            const column = xs.findLastIndex((start) => start <= x);
             const row = Math.floor(y / rowHeight);
-            if (x < left || column < 0 || column >= columns.length || row < 0 || row >= rows) {
+            const inCell = column >= 0 && x < (xs[column] ?? 0) + cellWidth;
+            if (x < left || !inCell || row < 0 || row >= rows) {
               setHover(null);
             } else {
               setHover({ row, column, x, y });

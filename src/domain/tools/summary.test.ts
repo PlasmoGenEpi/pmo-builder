@@ -61,7 +61,7 @@ const PMO: PortableMicrohaplotypeObject = {
 describe("summaryOf", () => {
   it("counts each sample's targets, reads and most alleles at a target", () => {
     const summary = summaryOf(PMO, 0);
-    expect(summary.samples).toEqual([
+    expect(summary.samples).toMatchObject([
       { name: "S1", specimen: "spec1", run: "runA", targets: 1, reads: 100, maxAlleles: 2 },
       { name: "S2", specimen: "spec2", run: "runA", targets: 2, reads: 55, maxAlleles: 1 },
     ]);
@@ -136,7 +136,7 @@ describe("summaryOf", () => {
       ],
     };
     const last = summaryOf(withSpare, 0).samples.at(-1);
-    expect(last).toEqual({
+    expect(last).toMatchObject({
       name: "S3",
       specimen: "spec2",
       run: "",

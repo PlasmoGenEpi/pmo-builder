@@ -10,6 +10,8 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 
 import type { PmoFile, PmoFileCheck, Suggestions } from "@/domain/build";
 import type {
+  GroupComparison,
+  GroupKey,
   OpenOutcome,
   PmoSummary,
   SubsetOutcome,
@@ -365,6 +367,12 @@ export interface AppActions {
     readonly source: WorkingSource;
     readonly minReads: number;
   }): Promise<PmoSummary | null>;
+  /** The opened PMO or its subset grouped by a specimen field. `null` when there is none or the engine failed. */
+  workingPmoGroups(request: {
+    readonly source: WorkingSource;
+    readonly minReads: number;
+    readonly key: GroupKey;
+  }): Promise<GroupComparison | null>;
   /** The subset as a file. `null` when there is none or the engine failed. */
   workingPmoFile(request: { readonly gzip: boolean }): Promise<PmoFile | null>;
   /** Reports a publishing step, for usage counts. Changes nothing. */
@@ -1091,6 +1099,15 @@ export function createAppStore(options: AppStoreOptions): AppStore {
       async workingPmoSummary(request) {
         try {
           return await engine.workingPmoSummary(request);
+        } catch (error) {
+          engineFailed(error);
+          return null;
+        }
+      },
+
+      async workingPmoGroups(request) {
+        try {
+          return await engine.workingPmoGroups(request);
         } catch (error) {
           engineFailed(error);
           return null;

@@ -2,7 +2,13 @@ import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useEffect, useMemo, useState } from "react";
 
-import type { PmoSummary, SampleSummary, TargetSummary, WorkingSource } from "@/domain/tools/types";
+import type {
+  ControlKind,
+  PmoSummary,
+  SampleSummary,
+  TargetSummary,
+  WorkingSource,
+} from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
 import { useActions } from "@/state";
 import {
@@ -18,6 +24,7 @@ import {
 } from "@/ui";
 
 import { AlleleBars } from "./AlleleBars";
+import { ControlsCheck, DensityView, PlateView, StagesView } from "./QualityViews";
 import { ReadsGrid } from "./ReadsGrid";
 import { SortableTable, type SortableColumn } from "./SortableTable";
 
@@ -57,7 +64,79 @@ function sampleColumns(summary: PmoSummary): SortableColumn<SampleSummary>[] {
       value: (row) => row.maxAlleles,
       numeric: true,
     },
+    // Optional in PMO: each column shows only when some sample has the field.
+    ...(summary.samples.some((row) => row.control !== null)
+      ? [
+          {
+            key: "control",
+            label: t`Control`,
+            value: (row: SampleSummary) => (row.control === null ? null : controlName(row.control)),
+          },
+        ]
+      : []),
+    ...(summary.samples.some((row) => row.plate !== null)
+      ? [
+          {
+            key: "plate",
+            label: t`Plate well`,
+            value: (row: SampleSummary) =>
+              row.plate === null ? null : `${row.plate.plate} ${row.plate.row}${row.plate.col}`,
+          },
+        ]
+      : []),
+    ...(summary.samples.some((row) => row.density !== null)
+      ? [
+          {
+            key: "density",
+            label: t`Parasites per µL`,
+            value: (row: SampleSummary) => row.density?.value ?? null,
+            render: (row: SampleSummary) =>
+              row.density === null ? "–" : formatCount(Math.round(row.density.value)),
+            numeric: true,
+          },
+        ]
+      : []),
   ];
+}
+
+function controlName(kind: ControlKind): string {
+  switch (kind) {
+    case "negative":
+      return t({ message: "Negative", comment: "A negative control" });
+    case "positive":
+      return t({ message: "Positive", comment: "A positive control" });
+    case "other":
+    default:
+      return t({ message: "Other", comment: "A control that is neither negative nor positive" });
+  }
+}
+
+/** The grid's columns in reaction order, with a heading per reaction that has any. */
+function byReaction(
+  summary: PmoSummary,
+  shown: readonly number[],
+): { readonly columns: number[]; readonly groups: { label: string; count: number }[] } {
+  const visible = new Set(shown);
+  const placed = new Set<number>();
+  const columns: number[] = [];
+  const groups: { label: string; count: number }[] = [];
+  const panels = new Set(summary.reactions.map((reaction) => reaction.panel)).size;
+  for (const reaction of summary.reactions) {
+    const mine = reaction.targets.filter((target) => visible.has(target) && !placed.has(target));
+    if (mine.length === 0) continue;
+    for (const target of mine) placed.add(target);
+    columns.push(...mine);
+    groups.push({
+      label: panels > 1 ? `${reaction.panel} · ${reaction.name}` : reaction.name,
+      count: mine.length,
+    });
+  }
+  const rest = shown.filter((target) => !placed.has(target));
+  if (rest.length > 0) {
+    columns.push(...rest);
+    groups.push({ label: t`In no reaction`, count: rest.length });
+  }
+  return { columns, groups };
 }
 
 function targetColumns(): SortableColumn<TargetSummary>[] {
@@ -128,6 +207,7 @@ export function SummaryPanel({ hasSubset, source, onSourceChange }: SummaryPanel
   const minReads = useSettled(Math.max(0, minReadsInput ?? 0), 400);
   const [loaded, setLoaded] = useState<Loaded>({ kind: "loading" });
   const [allTargets, setAllTargets] = useState(false);
+  const [grouped, setGrouped] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const shownSource = hasSubset ? source : "original";
 
@@ -153,6 +233,19 @@ export function SummaryPanel({ hasSubset, source, onSourceChange }: SummaryPanel
             allTargets || target.samples > 0 ? [index] : [],
           ),
     [summary, allTargets],
+  );
+  const reactionsWithData =
+    summary === null
+      ? 0
+      : summary.reactions.filter((reaction) =>
+          reaction.targets.some((target) => columns.includes(target)),
+        ).length;
+  const grid = useMemo(
+    () =>
+      summary !== null && grouped && reactionsWithData > 1
+        ? byReaction(summary, columns)
+        : { columns: [...columns], groups: undefined },
+    [summary, grouped, reactionsWithData, columns],
   );
   const targetsWithData = summary?.headline.targetsWithData ?? 0;
   const chosenTarget =
@@ -201,23 +294,33 @@ export function SummaryPanel({ hasSubset, source, onSourceChange }: SummaryPanel
       ) : (
         <>
           <Headline summary={summary} />
+          <ControlsCheck summary={summary} />
 
           <section className="flex flex-col gap-4">
             <SectionHeading
               title={t`Reads by sample and target`}
               description={t`Each row is a library sample and each column a target. The colour shows the reads, as in the legend below the grid. Hover over a cell to see its numbers.`}
               actions={
-                <Switch
-                  label={t`Show targets with no data`}
-                  checked={allTargets}
-                  onCheckedChange={setAllTargets}
-                />
+                <div className="flex flex-wrap items-center gap-4">
+                  {reactionsWithData > 1 ? (
+                    <Switch
+                      label={t`Group targets by reaction`}
+                      checked={grouped}
+                      onCheckedChange={setGrouped}
+                    />
+                  ) : null}
+                  <Switch
+                    label={t`Show targets with no data`}
+                    checked={allTargets}
+                    onCheckedChange={setAllTargets}
+                  />
+                </div>
               }
             />
             {summary.samples.length === 0 ? (
               <p className="text-base text-text-muted">{t`No sample has any reads to show.`}</p>
             ) : (
-              <ReadsGrid summary={summary} columns={columns} />
+              <ReadsGrid summary={summary} columns={grid.columns} groups={grid.groups} />
             )}
           </section>
 
@@ -259,6 +362,10 @@ export function SummaryPanel({ hasSubset, source, onSourceChange }: SummaryPanel
               </Card>
             </div>
           </section>
+
+          <PlateView summary={summary} />
+          <DensityView summary={summary} />
+          <StagesView summary={summary} />
         </>
       )}
     </div>
