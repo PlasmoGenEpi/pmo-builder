@@ -29,6 +29,10 @@ const PublishFile = page(() =>
   import("@/features/publish-file/PublishFilePage").then((module) => module.PublishFilePage),
 );
 
+const PmoTools = page(() =>
+  import("@/features/pmo-tools/PmoToolsPage").then((module) => module.PmoToolsPage),
+);
+
 const TranslateReview = page(() =>
   import("@/features/translate/TranslateReviewPage").then((module) => module.TranslateReviewRoute),
 );
@@ -92,6 +96,7 @@ function useRecordStepOpened(location: string): void {
     if (location === "/published") recordPageOpened("published");
     else if (location.startsWith("/published/")) recordPageOpened("dataset");
     else if (location === "/publish") recordPageOpened("publish-file");
+    else if (location === "/pmo-tools") recordPageOpened("pmo-tools");
   }, [location]);
 }
 
@@ -112,6 +117,7 @@ function Routes() {
           <Route path="/published" component={Published.component} />
           <Route path="/published/:id" component={PublishedDataset.component} />
           <Route path="/publish" component={PublishFile.component} />
+          <Route path="/pmo-tools" component={PmoTools.component} />
           <Route path="/translate/:locale/:key" component={TranslateReview.component} />
           <Route path="/styleguide" component={Styleguide.component} />
           <Route>

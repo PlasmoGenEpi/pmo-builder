@@ -44,6 +44,12 @@ import {
   parseFile,
   type ImportFailure,
 } from "@/domain/import";
+import {
+  baseNameOf,
+  makeSubset,
+  openPmo as openWorkingPmo,
+  tableFile,
+} from "@/domain/tools/workingPmo";
 import type { Notice, ParsedFile, RawTable, SectionId } from "@/domain/types";
 import { SECTION_IDS } from "@/domain/types";
 
@@ -228,6 +234,12 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
   let latestRequest = 0;
   let buildRevision = 0;
   let latestPmo: PortableMicrohaplotypeObject | null = null;
+  /** A PMO file opened to subset or export, apart from the draft. */
+  let working: {
+    readonly fileName: string;
+    readonly original: PortableMicrohaplotypeObject;
+    subset: PortableMicrohaplotypeObject | null;
+  } | null = null;
   /** The latest PMO's files, made when first asked for, by format (gzipped or not). */
   let fileMemo: {
     readonly pmo: PortableMicrohaplotypeObject;
@@ -499,6 +511,35 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
 
     checkPmoFile(file) {
       return checkPmoFile(file);
+    },
+
+    async openPmo(file, fileName) {
+      const { outcome, pmo } = await openWorkingPmo(file, fileName);
+      working = pmo === null ? null : { fileName, original: pmo, subset: null };
+      return outcome;
+    },
+
+    subsetPmo(request) {
+      if (working === null) return Promise.resolve({ kind: "not-open" as const });
+      const { outcome, subset } = makeSubset(working.original, request, working.fileName);
+      working.subset = subset;
+      return Promise.resolve(outcome);
+    },
+
+    workingPmoTable(request) {
+      if (working === null) return Promise.resolve(null);
+      const pmo = request.source === "subset" ? working.subset : working.original;
+      if (pmo === null) return Promise.resolve(null);
+      const baseName =
+        baseNameOf(working.fileName) + (request.source === "subset" ? "-subset" : "");
+      return Promise.resolve(tableFile(pmo, { id: request.id, format: request.format, baseName }));
+    },
+
+    async workingPmoFile(request) {
+      if (working?.subset === null || working === null) return null;
+      const file = await exportPmo(working.subset, { gzip: request.gzip });
+      const fileName = `${baseNameOf(working.fileName)}-subset.json${request.gzip ? ".gz" : ""}`;
+      return { blob: file.blob, fileName };
     },
 
     getPanelFragment(panelId) {

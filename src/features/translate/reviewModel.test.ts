@@ -48,6 +48,7 @@ describe("groupOf", () => {
     [["src/features/table-import/TableFile.tsx"], "tables"],
     [["src/domain/import/messages.ts"], "tables"],
     [["src/ui/Toast.tsx"], "controls"],
+    [["src/features/pmo-tools/SubsetPanel.tsx"], "tools"],
     [[], "home"],
   ])("puts %j in %s", (origins, group) => {
     expect(groupOf(origins)).toBe(group);

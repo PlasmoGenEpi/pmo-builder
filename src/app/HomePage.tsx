@@ -172,10 +172,30 @@ export function HomePage({
               >
                 Publish it
               </RouterLink>
+              , or{" "}
+              <RouterLink
+                href="/pmo-tools"
+                className="font-medium text-accent-text underline-offset-2 hover:underline"
+              >
+                subset it or download its tables
+              </RouterLink>
               .
             </Trans>
           </p>
-        ) : null}
+        ) : (
+          <p className="text-base text-text-muted">
+            <Trans>
+              Have a PMO file already?{" "}
+              <RouterLink
+                href="/pmo-tools"
+                className="font-medium text-accent-text underline-offset-2 hover:underline"
+              >
+                Subset it or download its tables
+              </RouterLink>
+              .
+            </Trans>
+          </p>
+        )}
         {example.kind === "loading" ? (
           <ProgressBar label={t`Loading the example tables`} value={null} className="max-w-md" />
         ) : null}

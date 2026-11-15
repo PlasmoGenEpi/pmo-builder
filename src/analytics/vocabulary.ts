@@ -30,7 +30,7 @@ export const STEPS = ["home", ...SECTIONS, "review"] as const;
 export type AnalyticsStep = (typeof STEPS)[number];
 
 /** Pages outside the builder's steps. A dataset page is counted, never which dataset. */
-export const PAGES = ["published", "dataset", "publish-file"] as const;
+export const PAGES = ["published", "dataset", "publish-file", "pmo-tools"] as const;
 
 /** A page outside the builder's steps. */
 export type AnalyticsPage = (typeof PAGES)[number];

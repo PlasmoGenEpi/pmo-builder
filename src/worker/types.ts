@@ -15,6 +15,15 @@ import type {
   BuildDeps,
 } from "@/domain/build";
 import type { Draft, JsonValue, TableRef } from "@/domain/draft";
+import type {
+  OpenOutcome,
+  SubsetOutcome,
+  SubsetRequest,
+  TableFile,
+  TableFormat,
+  TableId,
+  WorkingSource,
+} from "@/domain/tools/types";
 import type { ImportFailure, parseFile } from "@/domain/import";
 import type { Notice, RawRow, SectionId, SectionStatus } from "@/domain/types";
 
@@ -180,6 +189,22 @@ export interface Engine {
   getPanelFragment(panelId: string): Promise<JsonValue | null>;
   /** Reads and checks a PMO file the user already has, for publishing. Leaves the draft alone. */
   checkPmoFile(file: Blob): Promise<PmoFileCheck>;
+  /**
+   * Opens a PMO file the user already has, to subset it or export its tables,
+   * and keeps it. Replaces any PMO opened before, and its subset. Leaves the
+   * draft alone.
+   */
+  openPmo(file: Blob, fileName: string): Promise<OpenOutcome>;
+  /** Makes a subset of the opened PMO and keeps it, replacing any earlier subset. */
+  subsetPmo(request: SubsetRequest): Promise<SubsetOutcome>;
+  /** One table of the opened PMO or its subset, or `null` when there is none. */
+  workingPmoTable(request: {
+    readonly source: WorkingSource;
+    readonly id: TableId;
+    readonly format: TableFormat;
+  }): Promise<TableFile | null>;
+  /** The opened PMO's subset as a file, or `null` when none was made. */
+  workingPmoFile(request: { readonly gzip: boolean }): Promise<PmoFile | null>;
   /** Releases the engine. A worker is terminated. */
   dispose(): Promise<void>;
 }

@@ -1,5 +1,5 @@
 import { t } from "@lingui/core/macro";
-import { FileUp, House, LibraryBig } from "lucide-react";
+import { FileUp, House, LibraryBig, Scissors } from "lucide-react";
 import { Link as RouterLink, useLocation } from "wouter";
 
 import { zenodoConfig } from "@/features/review/zenodo";
@@ -47,38 +47,54 @@ export function StepNav({
         <House aria-hidden="true" className="size-4 shrink-0" />
         {t`Home`}
       </RouterLink>
-      {showPublished ? (
-        <div className="-mt-4 flex flex-col gap-0.5">
-          <RouterLink
-            href="/published"
-            onClick={onNavigate}
-            aria-current={onPublished ? "page" : undefined}
-            className={cn(
-              itemClass,
-              onPublished
-                ? "bg-surface-muted font-medium text-text"
-                : "text-text-muted hover:bg-surface-muted hover:text-text",
-            )}
-          >
-            <LibraryBig aria-hidden="true" className="size-4 shrink-0" />
-            {t`Published PMOs`}
-          </RouterLink>
-          <RouterLink
-            href="/publish"
-            onClick={onNavigate}
-            aria-current={location === "/publish" ? "page" : undefined}
-            className={cn(
-              itemClass,
-              location === "/publish"
-                ? "bg-surface-muted font-medium text-text"
-                : "text-text-muted hover:bg-surface-muted hover:text-text",
-            )}
-          >
-            <FileUp aria-hidden="true" className="size-4 shrink-0" />
-            {t`Publish a PMO file`}
-          </RouterLink>
-        </div>
-      ) : null}
+      <div className="-mt-4 flex flex-col gap-0.5">
+        {showPublished ? (
+          <>
+            <RouterLink
+              href="/published"
+              onClick={onNavigate}
+              aria-current={onPublished ? "page" : undefined}
+              className={cn(
+                itemClass,
+                onPublished
+                  ? "bg-surface-muted font-medium text-text"
+                  : "text-text-muted hover:bg-surface-muted hover:text-text",
+              )}
+            >
+              <LibraryBig aria-hidden="true" className="size-4 shrink-0" />
+              {t`Published PMOs`}
+            </RouterLink>
+            <RouterLink
+              href="/publish"
+              onClick={onNavigate}
+              aria-current={location === "/publish" ? "page" : undefined}
+              className={cn(
+                itemClass,
+                location === "/publish"
+                  ? "bg-surface-muted font-medium text-text"
+                  : "text-text-muted hover:bg-surface-muted hover:text-text",
+              )}
+            >
+              <FileUp aria-hidden="true" className="size-4 shrink-0" />
+              {t`Publish a PMO file`}
+            </RouterLink>
+          </>
+        ) : null}
+        <RouterLink
+          href="/pmo-tools"
+          onClick={onNavigate}
+          aria-current={location === "/pmo-tools" ? "page" : undefined}
+          className={cn(
+            itemClass,
+            location === "/pmo-tools"
+              ? "bg-surface-muted font-medium text-text"
+              : "text-text-muted hover:bg-surface-muted hover:text-text",
+          )}
+        >
+          <Scissors aria-hidden="true" className="size-4 shrink-0" />
+          {t`Subset or export a PMO`}
+        </RouterLink>
+      </div>
       {groups.map(({ group, steps }) => (
         <div key={group} className="flex flex-col gap-0.5">
           <h2 className="px-2.5 pb-1 text-xs font-medium text-text-subtle">

@@ -9,6 +9,15 @@ import { t } from "@lingui/core/macro";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
 import type { PmoFile, PmoFileCheck, Suggestions } from "@/domain/build";
+import type {
+  OpenOutcome,
+  SubsetOutcome,
+  SubsetRequest,
+  TableFile,
+  TableFormat,
+  TableId,
+  WorkingSource,
+} from "@/domain/tools/types";
 // Not the `@/domain/build` or `@/domain/import` barrels: they would bring
 // pmotools-ts onto the main thread.
 import { NO_SUGGESTIONS } from "@/domain/build/suggestions";
@@ -332,6 +341,21 @@ export interface AppActions {
    * touched. `null` when the engine failed.
    */
   checkPmoFile(file: Blob): Promise<PmoFileCheck | null>;
+  /**
+   * Opens a PMO file the user already has, to subset it or export its
+   * tables. The draft is not touched. `null` when the engine failed.
+   */
+  openPmo(file: Blob, fileName: string): Promise<OpenOutcome | null>;
+  /** Makes a subset of the opened PMO. `null` when the engine failed. */
+  subsetPmo(request: SubsetRequest): Promise<SubsetOutcome | null>;
+  /** One table of the opened PMO or its subset. `null` when there is none or the engine failed. */
+  workingPmoTable(request: {
+    readonly source: WorkingSource;
+    readonly id: TableId;
+    readonly format: TableFormat;
+  }): Promise<TableFile | null>;
+  /** The subset as a file. `null` when there is none or the engine failed. */
+  workingPmoFile(request: { readonly gzip: boolean }): Promise<PmoFile | null>;
   /** Reports a publishing step, for usage counts. Changes nothing. */
   notePublishing(event: PublishingEvent): void;
   /** Runs any scheduled build and save now, the save without waiting for the build. */
@@ -1014,6 +1038,42 @@ export function createAppStore(options: AppStoreOptions): AppStore {
         }
         emit({ kind: "pmo-file-checked", result: fileCheckResult(check) });
         return check;
+      },
+
+      async openPmo(file, fileName) {
+        try {
+          return await engine.openPmo(file, fileName);
+        } catch (error) {
+          engineFailed(error);
+          return null;
+        }
+      },
+
+      async subsetPmo(request) {
+        try {
+          return await engine.subsetPmo(request);
+        } catch (error) {
+          engineFailed(error);
+          return null;
+        }
+      },
+
+      async workingPmoTable(request) {
+        try {
+          return await engine.workingPmoTable(request);
+        } catch (error) {
+          engineFailed(error);
+          return null;
+        }
+      },
+
+      async workingPmoFile(request) {
+        try {
+          return await engine.workingPmoFile(request);
+        } catch (error) {
+          engineFailed(error);
+          return null;
+        }
       },
 
       notePublishing(event) {

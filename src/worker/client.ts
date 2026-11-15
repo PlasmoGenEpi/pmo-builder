@@ -76,6 +76,15 @@ const RESULT_GUARDS: {
   getPanelFragment: (value): value is EngineResult<"getPanelFragment"> => isJsonValue(value),
   checkPmoFile: (value): value is EngineResult<"checkPmoFile"> =>
     hasKind(value, ["ready", "too-large", "unreadable", "wrong-version", "invalid"]),
+  openPmo: (value): value is EngineResult<"openPmo"> => hasKind(value, ["opened", "refused"]),
+  subsetPmo: (value): value is EngineResult<"subsetPmo"> =>
+    hasKind(value, ["made", "empty", "not-open", "failed"]),
+  workingPmoTable: (value): value is EngineResult<"workingPmoTable"> =>
+    value === null ||
+    (isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string"),
+  workingPmoFile: (value): value is EngineResult<"workingPmoFile"> =>
+    value === null ||
+    (isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string"),
 };
 
 /**
@@ -198,6 +207,10 @@ export function createEngineClient(
     getPmoText: (...args) => call("getPmoText", args),
     getPanelFragment: (...args) => call("getPanelFragment", args),
     checkPmoFile: (...args) => call("checkPmoFile", args),
+    openPmo: (...args) => call("openPmo", args),
+    subsetPmo: (...args) => call("subsetPmo", args),
+    workingPmoTable: (...args) => call("workingPmoTable", args),
+    workingPmoFile: (...args) => call("workingPmoFile", args),
     async dispose(...args) {
       try {
         await call("dispose", args);
@@ -295,6 +308,10 @@ export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
     getPmoText: async (...args) => engine().getPmoText(...args),
     getPanelFragment: async (...args) => engine().getPanelFragment(...args),
     checkPmoFile: async (...args) => engine().checkPmoFile(...args),
+    openPmo: async (...args) => engine().openPmo(...args),
+    subsetPmo: async (...args) => engine().subsetPmo(...args),
+    workingPmoTable: async (...args) => engine().workingPmoTable(...args),
+    workingPmoFile: async (...args) => engine().workingPmoFile(...args),
     async dispose() {
       files.clear();
       const client = current;
@@ -378,6 +395,10 @@ export function createLazyEngine(make: () => Promise<Engine>): Engine {
     getPmoText: async (...args) => (await load()).getPmoText(...args),
     getPanelFragment: async (...args) => (await load()).getPanelFragment(...args),
     checkPmoFile: async (...args) => (await load()).checkPmoFile(...args),
+    openPmo: async (...args) => (await load()).openPmo(...args),
+    subsetPmo: async (...args) => (await load()).subsetPmo(...args),
+    workingPmoTable: async (...args) => (await load()).workingPmoTable(...args),
+    workingPmoFile: async (...args) => (await load()).workingPmoFile(...args),
     // Nothing to release if the engine was never loaded.
     dispose: async (...args) => (loading === null ? undefined : (await load()).dispose(...args)),
   };

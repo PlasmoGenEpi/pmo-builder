@@ -100,6 +100,24 @@ datasets; no page reads it yet.
 Run `pnpm harvest --community plasmogenepi` to try the list locally. The
 output folder, `public/repository/`, is not committed.
 
+## Subset or export a PMO
+
+"Subset or export a PMO" (`#/pmo-tools`) opens a version 1.1.0 PMO file the
+user already has, built here or downloaded from the published PMOs, and:
+
+- downloads any of its tables as CSV or TSV: the allele table (one row per
+  microhaplotype in each library sample, with reads), specimens, library
+  samples, targets, panels, and the optional sections it has;
+- makes a smaller PMO with only some specimens (ticked by name, or chosen by
+  metadata values such as the country), some targets, or the
+  microhaplotypes with at least a number of reads. The subset is checked
+  against the PMO format and downloaded as `.json.gz` or `.json`, and its
+  tables can be downloaded too.
+
+The work is done by `pmotools-ts` (`filterPmoBy…`, `extract…`,
+`export…Table`), ported from pmotools-python and checked against it. The
+file is read in the browser's worker and nothing is sent anywhere.
+
 ## Working offline
 
 Once the app has been opened online, a service worker (`sw.js`, written by

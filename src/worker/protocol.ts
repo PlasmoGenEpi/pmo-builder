@@ -22,6 +22,10 @@ export const ENGINE_METHODS = [
   "getPmoText",
   "getPanelFragment",
   "checkPmoFile",
+  "openPmo",
+  "subsetPmo",
+  "workingPmoTable",
+  "workingPmoFile",
   "dispose",
 ] as const satisfies readonly (keyof Engine)[];
 
@@ -102,6 +106,10 @@ function handlersFor(engine: Engine): Handlers {
     getPmoText: (args) => engine.getPmoText(...args),
     getPanelFragment: (args) => engine.getPanelFragment(...args),
     checkPmoFile: (args) => engine.checkPmoFile(...args),
+    openPmo: (args) => engine.openPmo(...args),
+    subsetPmo: (args) => engine.subsetPmo(...args),
+    workingPmoTable: (args) => engine.workingPmoTable(...args),
+    workingPmoFile: (args) => engine.workingPmoFile(...args),
     dispose: (args) => engine.dispose(...args),
   };
 }

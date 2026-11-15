@@ -4,7 +4,14 @@
  * format and its tables link up.
  */
 import { plural, t } from "@lingui/core/macro";
-import { checkPmoIntegrity, parsePmo, PmoError, readPmoVersion, validatePmo } from "pmotools-ts";
+import {
+  checkPmoIntegrity,
+  parsePmo,
+  PmoError,
+  readPmoVersion,
+  validatePmo,
+  type PortableMicrohaplotypeObject,
+} from "pmotools-ts";
 
 import { IMPORT_LIMITS } from "@/domain/import";
 
@@ -51,45 +58,67 @@ function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** A checked PMO file, with the PMO when the check passed. */
+export interface ReadPmoFile {
+  readonly check: PmoFileCheck;
+  /** The PMO, when `check.kind` is `"ready"`. */
+  readonly pmo: PortableMicrohaplotypeObject | null;
+}
+
 /** Reads and checks a `.json` or `.json.gz` PMO file. */
 export async function checkPmoFile(
   file: Blob,
   limit: number = IMPORT_LIMITS.textBytes,
 ): Promise<PmoFileCheck> {
-  if (file.size > limit) return { kind: "too-large", limit };
+  return (await readPmoFile(file, limit)).check;
+}
+
+function failed(check: PmoFileCheck): ReadPmoFile {
+  return { check, pmo: null };
+}
+
+/** Reads and checks a `.json` or `.json.gz` PMO file, and keeps the PMO when it passes. */
+export async function readPmoFile(
+  file: Blob,
+  limit: number = IMPORT_LIMITS.textBytes,
+): Promise<ReadPmoFile> {
+  if (file.size > limit) return failed({ kind: "too-large", limit });
   let data: unknown;
   try {
     data = await parsePmo(file);
   } catch (error) {
     if (error instanceof PmoError) {
-      return { kind: "unreadable", reason: error.code === "io/invalid-gzip" ? "gzip" : "json" };
+      return failed({
+        kind: "unreadable",
+        reason: error.code === "io/invalid-gzip" ? "gzip" : "json",
+      });
     }
     throw error;
   }
   if (!isRecord(data) || !isRecord(data["pmo_header"])) {
-    return { kind: "unreadable", reason: "not-pmo" };
+    return failed({ kind: "unreadable", reason: "not-pmo" });
   }
 
   const version = readPmoVersion(data);
   if (version.schemaVersion !== PUBLISHABLE_PMO_VERSION) {
-    return { kind: "wrong-version", declared: version.declared ?? null };
+    return failed({ kind: "wrong-version", declared: version.declared ?? null });
   }
 
   const validation = validatePmo(data, { schemaVersion: PUBLISHABLE_PMO_VERSION });
   if (!validation.valid) {
-    return {
+    return failed({
       kind: "invalid",
       ...listProblems(
         validation.errors.map((error) => error.message),
         validation.errorCount,
       ),
-    };
+    });
   }
 
   const issues = checkPmoIntegrity(validation.pmo);
   const errors = issues.filter((issue) => issue.severity === "error");
   if (errors.length > 0) {
-    return {
+    return failed({
       kind: "invalid",
       ...listProblems(
         errors.map((issue) =>
@@ -97,10 +126,10 @@ export async function checkPmoFile(
         ),
         errors.length,
       ),
-    };
+    });
   }
 
-  return {
+  const check: PmoFileCheck = {
     kind: "ready",
     summary: summarisePmo(validation.pmo),
     publication: summarisePublication(validation.pmo),
@@ -110,4 +139,5 @@ export async function checkPmoFile(
       ),
     ].slice(0, MAX_LISTED),
   };
+  return { check, pmo: validation.pmo };
 }

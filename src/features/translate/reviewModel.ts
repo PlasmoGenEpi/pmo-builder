@@ -31,6 +31,7 @@ export const GROUPS: readonly ReviewGroup[] = [
   { id: "checks", title: "Checks and warnings about the PMO", path: "/review" },
   { id: "publishing", title: "Publishing on Zenodo", path: "/publish" },
   { id: "published", title: "Published PMOs", path: "/published" },
+  { id: "tools", title: "Subset or export a PMO", path: "/pmo-tools" },
   { id: "controls", title: "Buttons and controls used everywhere", path: "/" },
 ];
 
@@ -39,6 +40,7 @@ const RULES: readonly (readonly [RegExp, string])[] = [
   [/^src\/features\/review\/(PublishToZenodo|zenodo)/, "publishing"],
   [/^src\/features\/publish-file\//, "publishing"],
   [/^src\/features\/published\//, "published"],
+  [/^src\/(features\/pmo-tools|domain\/tools)\//, "tools"],
   [/^src\/features\/review\/(noticeKinds|reviewModel|ThingsToCheck)/, "checks"],
   [/^src\/features\/librarySamples\//, "specimens"],
   [/^src\/features\/(table-import)\//, "tables"],

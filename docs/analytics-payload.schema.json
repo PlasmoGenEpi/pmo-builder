@@ -61,9 +61,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["published", "dataset", "publish-file"]
+            "enum": ["published", "dataset", "publish-file", "pmo-tools"]
           },
-          "maxItems": 3,
+          "maxItems": 4,
           "uniqueItems": true
         },
         "tables": {
@@ -955,6 +955,18 @@
                   "panel/missing-target-info",
                   "panel/missing-target-name",
                   "panel/no-panels",
+                  "process/base-columns",
+                  "process/fields-without-data",
+                  "process/library-sample-id-out-of-range",
+                  "process/meta-condition",
+                  "process/missing-section",
+                  "process/select-specimens",
+                  "process/specimen-id-out-of-range",
+                  "process/target-ids",
+                  "process/unknown-library-sample-names",
+                  "process/unknown-meta-fields",
+                  "process/unknown-specimen-names",
+                  "process/unknown-target-names",
                   "validate/unknown-schema-version",
                   "bioinformatics/blank-group",
                   "bioinformatics/method-column",
@@ -1024,6 +1036,7 @@
                   "metatable/other",
                   "mhap/other",
                   "panel/other",
+                  "process/other",
                   "validate/other",
                   "import/other",
                   "draft/other",
