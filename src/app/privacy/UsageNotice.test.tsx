@@ -45,8 +45,9 @@ describe("UsageNotice", () => {
     renderNotice(true);
     await user.click(screen.getByRole("button", { name: "Don't send" }));
     expect(setEnabled).toHaveBeenCalledExactlyOnceWith(false);
-    expect(await screen.findByText("No usage counts will be sent")).toBeInTheDocument();
-    expect(screen.getByText(/Change this any time/)).toBeInTheDocument();
+    // A toast's text can appear twice: on screen and in its announcement.
+    expect((await screen.findAllByText("No usage counts will be sent")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Change this any time/).length).toBeGreaterThan(0);
   });
 
   it("opens the privacy details from the notice", async () => {
