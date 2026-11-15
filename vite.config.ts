@@ -20,10 +20,9 @@ export default defineConfig(({ mode }) => {
   const analyticsUrl = env["VITE_ANALYTICS_URL"] || undefined;
   // Translation review links. See src/features/translate.
   const reviewUrl = env["VITE_TRANSLATION_REVIEW_URL"] || undefined;
-  // Direct deposit needs both: where to deposit, and the application to sign in with.
-  const zenodo = Boolean(
-    env["VITE_ZENODO_COMMUNITY"]?.trim() && env["VITE_ZENODO_CLIENT_ID"]?.trim(),
-  );
+  // A community means the app may contact zenodo.org: to open a published
+  // PMO the user picks, and, with a client ID, to deposit one.
+  const zenodo = Boolean(env["VITE_ZENODO_COMMUNITY"]?.trim());
 
   return {
     // Relative asset paths, so the build works from any subpath (GitHub Pages).

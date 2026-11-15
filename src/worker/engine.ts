@@ -47,6 +47,7 @@ import {
 import {
   baseNameOf,
   makeSubset,
+  openBuiltPmo as describeBuiltPmo,
   openPmo as openWorkingPmo,
   tableFile,
 } from "@/domain/tools/workingPmo";
@@ -517,6 +518,14 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       const { outcome, pmo } = await openWorkingPmo(file, fileName);
       working = pmo === null ? null : { fileName, original: pmo, subset: null };
       return outcome;
+    },
+
+    async openBuiltPmo() {
+      const pmo = latestPmo;
+      if (pmo === null) return null;
+      const file = await exportPmo(pmo, { gzip: true });
+      working = { fileName: file.fileName, original: pmo, subset: null };
+      return { outcome: describeBuiltPmo(pmo, file.fileName), file };
     },
 
     subsetPmo(request) {

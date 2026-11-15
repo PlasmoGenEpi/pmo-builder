@@ -14,7 +14,7 @@ describe("LibrarySamplesStep", () => {
     expect(screen.getByText(/must match the name of a panel on the Panel/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Specimens step" })).toHaveAttribute(
       "href",
-      "/specimens",
+      "/build/specimens",
     );
     expect(screen.queryByRole("heading", { name: "What this table refers to" })).toBeNull();
     const result = screen.getByRole("region", { name: "Result" });
@@ -50,7 +50,7 @@ describe("LibrarySamplesStep", () => {
     expect(within(links).getByText("The Panel step has no named panels yet.")).toBeVisible();
     expect(within(links).getByRole("link", { name: "Go to Panel" })).toHaveAttribute(
       "href",
-      "/panel",
+      "/build/panel",
     );
   });
 

@@ -15,40 +15,39 @@ tests. oxlint (type-aware) and oxfmt for linting and formatting.
 
 ## Layout
 
-| Path                         | What it holds                                                                          | May import from                                               |
-| ---------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `src/domain/types.ts`        | Contracts shared by every module                                                       | `pmotools-ts` types                                           |
-| `src/domain/import/`         | File to typed table: csv, tsv, txt, gz, xlsx                                           | `types`, `pmotools-ts`                                        |
-| `src/domain/fields/`         | Field specs and header aliases for each table                                          | `types`                                                       |
-| `src/domain/matching/`       | Column auto-matching and mapping checks                                                | `types`                                                       |
-| `src/domain/draft/`          | The draft model, form specs, persistence                                               | `domain/*`                                                    |
-| `src/domain/build/`          | Draft to PMO fragments, merge, validate, export                                        | `domain/*`, `pmotools-ts`                                     |
-| `src/domain/tools/`          | Working with a PMO the user has: choices, subsets, tables. Calls `pmotools-ts`         | `domain/*`, `pmotools-ts`                                     |
-| `src/domain/repository/`     | The catalogue of published PMOs and the harvester that builds it                       | `domain/*`, `pmotools-ts`. Node only, except `types.ts`       |
-| `src/worker/`                | The web worker that runs imports and builds, and its client                            | `domain/*`                                                    |
-| `src/state/`                 | The app store, its hooks, and usage counts wired to it                                 | `domain`, `worker`, `analytics`                               |
-| `src/i18n/`                  | The interface language: choosing it and loading its catalog                            | `locales`                                                     |
-| `src/locales/`               | The translation catalogs (`.po`). Written by `pnpm i18n:extract`                       |                                                               |
-| `src/analytics/`             | Usage instrumentation                                                                  | nothing in `domain`                                           |
-| `src/ui/`                    | Design system primitives. No domain knowledge                                          | `styles`                                                      |
-| `src/app/`                   | Shell: layout, navigation, routes, home, `StepLink`                                    | `ui`, `domain`, `state`, `analytics`                          |
-| `src/features/<step>/`       | One folder per step page                                                               | `ui`, `app`, `domain`, `state`, `analytics`, the three below  |
-| `src/features/table-import/` | Import a table and match its columns, for every step                                   | `ui`, `domain`, `state`                                       |
-| `src/features/records/`      | Hand-entered records: forms, lists, suggestions                                        | `ui`, `domain`                                                |
-| `src/features/publish-file/` | Checking and depositing a PMO file the user already has                                | `ui`, `app`, `domain/build`, `state`, `features/review`       |
-| `src/features/published/`    | The list of published PMOs and each dataset's page                                     | `ui`, `app`, `domain/repository/types`, `features/review`     |
-| `src/features/pmo-tools/`    | Subsetting a PMO file and downloading its tables                                       | `ui`, `app`, `domain/tools/types`, `state`, `features/review` |
-| `src/features/translate/`    | The translation review page, opened from a private link. In English, not translated    | `ui`, `app`, `i18n`                                           |
-| `src/features/shared/`       | Parts several steps use: result card, name checks, run name                            | `ui`, `app`, `domain`, `state`, `table-import`                |
-| `src/test/`                  | Test setup and shared test helpers                                                     | anything                                                      |
-| `e2e/`                       | Playwright tests against the built app                                                 |                                                               |
-| `e2e/fixtures/`              | The privacy fixture: fails a test that contacts another origin                         |                                                               |
-| `scripts/`                   | Large-table generator and benchmark, `pmotools-ts` update, harvest                     |                                                               |
-| `receiver/`                  | The Cloudflare Worker: usage counts, and translation review. Its own project           |                                                               |
-| `vite/`                      | Build plugins (security policy, chunk rules, offline service worker), with their tests |                                                               |
-| `public/examples/`           | Example tables served with the app                                                     |                                                               |
-| `reference/`                 | Material from the old app, for reading only. Not bundled                               |                                                               |
-| `vendor/`                    | The `pmotools-ts` tarball. Do not edit                                                 |                                                               |
+| Path                         | What it holds                                                                          | May import from                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `src/domain/types.ts`        | Contracts shared by every module                                                       | `pmotools-ts` types                                                                 |
+| `src/domain/import/`         | File to typed table: csv, tsv, txt, gz, xlsx                                           | `types`, `pmotools-ts`                                                              |
+| `src/domain/fields/`         | Field specs and header aliases for each table                                          | `types`                                                                             |
+| `src/domain/matching/`       | Column auto-matching and mapping checks                                                | `types`                                                                             |
+| `src/domain/draft/`          | The draft model, form specs, persistence                                               | `domain/*`                                                                          |
+| `src/domain/build/`          | Draft to PMO fragments, merge, validate, export                                        | `domain/*`, `pmotools-ts`                                                           |
+| `src/domain/tools/`          | Working with a PMO the user has: choices, subsets, tables. Calls `pmotools-ts`         | `domain/*`, `pmotools-ts`                                                           |
+| `src/domain/repository/`     | The catalogue of published PMOs and the harvester that builds it                       | `domain/*`, `pmotools-ts`. Node only, except `types.ts`                             |
+| `src/worker/`                | The web worker that runs imports and builds, and its client                            | `domain/*`                                                                          |
+| `src/state/`                 | The app store, its hooks, and usage counts wired to it                                 | `domain`, `worker`, `analytics`                                                     |
+| `src/i18n/`                  | The interface language: choosing it and loading its catalog                            | `locales`                                                                           |
+| `src/locales/`               | The translation catalogs (`.po`). Written by `pnpm i18n:extract`                       |                                                                                     |
+| `src/analytics/`             | Usage instrumentation                                                                  | nothing in `domain`                                                                 |
+| `src/ui/`                    | Design system primitives. No domain knowledge                                          | `styles`                                                                            |
+| `src/app/`                   | Shell: layout, top-bar sections, step sidebar, routes, home, `StepLink`                | `ui`, `domain`, `state`, `analytics`                                                |
+| `src/features/<step>/`       | One folder per step page                                                               | `ui`, `app`, `domain`, `state`, `analytics`, the three below                        |
+| `src/features/table-import/` | Import a table and match its columns, for every step                                   | `ui`, `domain`, `state`                                                             |
+| `src/features/records/`      | Hand-entered records: forms, lists, suggestions                                        | `ui`, `domain`                                                                      |
+| `src/features/published/`    | The list of published PMOs and each dataset's page                                     | `ui`, `app`, `domain/repository/types`, `features/review`                           |
+| `src/features/pmo-file/`     | My PMO file: one file opened, then its overview, tables, subset and publishing         | `ui`, `app`, `domain/tools/types`, `state`, `features/review`, `features/published` |
+| `src/features/translate/`    | The translation review page, opened from a private link. In English, not translated    | `ui`, `app`, `i18n`                                                                 |
+| `src/features/shared/`       | Parts several steps use: result card, name checks, run name                            | `ui`, `app`, `domain`, `state`, `table-import`                                      |
+| `src/test/`                  | Test setup and shared test helpers                                                     | anything                                                                            |
+| `e2e/`                       | Playwright tests against the built app                                                 |                                                                                     |
+| `e2e/fixtures/`              | The privacy fixture: fails a test that contacts another origin                         |                                                                                     |
+| `scripts/`                   | Large-table generator and benchmark, `pmotools-ts` update, harvest                     |                                                                                     |
+| `receiver/`                  | The Cloudflare Worker: usage counts, and translation review. Its own project           |                                                                                     |
+| `vite/`                      | Build plugins (security policy, chunk rules, offline service worker), with their tests |                                                                                     |
+| `public/examples/`           | Example tables served with the app                                                     |                                                                                     |
+| `reference/`                 | Material from the old app, for reading only. Not bundled                               |                                                                                     |
+| `vendor/`                    | The `pmotools-ts` tarball. Do not edit                                                 |                                                                                     |
 
 `src/domain` and `src/worker` contain no React and never touch `document` or
 `window`. Import across folders with the `@/` alias (`@/domain/types`).
@@ -146,7 +145,9 @@ readers review the English, so it is written in English only.
 
 **Privacy.** The app makes no network request that carries user data, with
 one exception: a deposit on Zenodo that the user asks for, sent only by
-`src/features/review/zenodoDeposit.ts`. The translation review page sends a
+`src/features/review/zenodoDeposit.ts`. Opening a published PMO downloads
+its public file from zenodo.org (`src/features/pmo-file/OpenPublished.tsx`)
+and sends nothing of the user's. The translation review page sends a
 reviewer's name and suggestions, never anything from a draft, through
 `src/features/translate/reviewApi.ts` only. No third-party scripts, fonts or
 images. Analytics events go through

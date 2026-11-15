@@ -50,7 +50,7 @@ async function expectStepReady(page: Page): Promise<void> {
 
 /** Uploads the allele and panel tables, with one run name for the allele table. */
 async function uploadRequired(page: Page): Promise<void> {
-  await page.goto("/#/microhaplotypes");
+  await page.goto("/#/build/microhaplotypes");
   await expect(page.getByRole("heading", { level: 1, name: "Microhaplotypes" })).toBeVisible();
   await page.getByLabel("Choose allele table file").setInputFiles(ALLELE_TABLE);
   await expectStepReady(page);

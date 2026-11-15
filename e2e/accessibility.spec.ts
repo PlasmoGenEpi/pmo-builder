@@ -12,16 +12,17 @@ import { BUILD_TIMEOUT, loadExample } from "./support/review";
 
 /** Every page, with the heading that says it has loaded. Follows `src/app/steps.ts`. */
 const PAGES: readonly { readonly hash: string; readonly heading: string }[] = [
-  { hash: "#/", heading: "Turn your lab's tables into a PMO file" },
-  { hash: "#/microhaplotypes", heading: "Microhaplotypes" },
-  { hash: "#/panel", heading: "Panel" },
-  { hash: "#/specimens", heading: "Specimens" },
-  { hash: "#/library-samples", heading: "Library samples" },
-  { hash: "#/project", heading: "Project" },
-  { hash: "#/sequencing", heading: "Sequencing" },
-  { hash: "#/bioinformatics", heading: "Bioinformatics" },
-  { hash: "#/read-counts", heading: "Read counts by stage" },
-  { hash: "#/review", heading: "Review and download" },
+  { hash: "#/", heading: "PMO Builder" },
+  { hash: "#/pmo", heading: "My PMO file" },
+  { hash: "#/build/microhaplotypes", heading: "Microhaplotypes" },
+  { hash: "#/build/panel", heading: "Panel" },
+  { hash: "#/build/specimens", heading: "Specimens" },
+  { hash: "#/build/library-samples", heading: "Library samples" },
+  { hash: "#/build/project", heading: "Project" },
+  { hash: "#/build/sequencing", heading: "Sequencing" },
+  { hash: "#/build/bioinformatics", heading: "Bioinformatics" },
+  { hash: "#/build/read-counts", heading: "Read counts by stage" },
+  { hash: "#/build/review", heading: "Review and download" },
 ];
 
 /** WCAG 2.2 A and AA, as AGENTS.md asks. */

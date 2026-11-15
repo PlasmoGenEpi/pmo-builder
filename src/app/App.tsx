@@ -1,7 +1,7 @@
 import { t } from "@lingui/core/macro";
 import { I18nProvider } from "@lingui/react";
 import { Suspense, useEffect, type ReactNode } from "react";
-import { Route, Router, Switch, useLocation, type BaseLocationHook } from "wouter";
+import { Redirect, Route, Router, Switch, useLocation, type BaseLocationHook } from "wouter";
 // Aliased: the router takes the hook itself as a value.
 import { useHashLocation as hashLocation } from "wouter/use-hash-location";
 
@@ -16,7 +16,14 @@ import { Layout } from "./Layout";
 import { NotFoundPage } from "./NotFoundPage";
 import { PageContainer } from "./PageContainer";
 import { RestoreNotice } from "./RestoreNotice";
-import { STEPS, getAdjacentSteps, page, type StepDefinition } from "./steps";
+import {
+  BUILD_PATH,
+  STEPS,
+  getAdjacentSteps,
+  legacyPath,
+  page,
+  type StepDefinition,
+} from "./steps";
 
 const Published = page(() =>
   import("@/features/published/PublishedPage").then((module) => module.PublishedPage),
@@ -25,13 +32,16 @@ const PublishedDataset = page(() =>
   import("@/features/published/DatasetPage").then((module) => module.DatasetRoute),
 );
 
-const PublishFile = page(() =>
-  import("@/features/publish-file/PublishFilePage").then((module) => module.PublishFilePage),
+const PmoFile = page(() =>
+  import("@/features/pmo-file/PmoFilePage").then((module) => module.PmoFileRoute),
 );
 
-const PmoTools = page(() =>
-  import("@/features/pmo-tools/PmoToolsPage").then((module) => module.PmoToolsPage),
+const PmoPublished = page(() =>
+  import("@/features/pmo-file/OpenPublished").then((module) => module.OpenPublishedRoute),
 );
+
+/** Where the first step lives; the Build section opens there. */
+const FIRST_STEP_PATH = STEPS[0]?.path ?? "/";
 
 const TranslateReview = page(() =>
   import("@/features/translate/TranslateReviewPage").then((module) => module.TranslateReviewRoute),
@@ -53,7 +63,7 @@ function whenIdle(task: () => void): () => void {
 
 /** The step a user is likely to open next from `location`: the first step from home, else the next one. */
 function nextStepFrom(location: string): StepDefinition | null {
-  if (location === "/") return STEPS[0] ?? null;
+  if (location === "/" || location === BUILD_PATH) return STEPS[0] ?? null;
   const current = STEPS.find((step) => step.path === location);
   return current === undefined ? null : getAdjacentSteps(current.id).next;
 }
@@ -95,8 +105,7 @@ function useRecordStepOpened(location: string): void {
     // Other pages are counted by kind. A dataset page never says which dataset.
     if (location === "/published") recordPageOpened("published");
     else if (location.startsWith("/published/")) recordPageOpened("dataset");
-    else if (location === "/publish") recordPageOpened("publish-file");
-    else if (location === "/pmo-tools") recordPageOpened("pmo-tools");
+    else if (location === "/pmo" || location.startsWith("/pmo/")) recordPageOpened("pmo-file");
   }, [location]);
 }
 
@@ -111,13 +120,29 @@ function Routes() {
           <Route path="/">
             <HomePage />
           </Route>
+          <Route path={BUILD_PATH}>
+            <Redirect to={FIRST_STEP_PATH} replace />
+          </Route>
           {STEPS.map((step) => (
             <Route key={step.id} path={step.path} component={step.component} />
           ))}
           <Route path="/published" component={Published.component} />
           <Route path="/published/:id" component={PublishedDataset.component} />
-          <Route path="/publish" component={PublishFile.component} />
-          <Route path="/pmo-tools" component={PmoTools.component} />
+          <Route path="/pmo" component={PmoFile.component} />
+          <Route path="/pmo/published/:id" component={PmoPublished.component} />
+          <Route path="/pmo/:tab" component={PmoFile.component} />
+          {/* Addresses from before the Build and My PMO file sections, kept working. */}
+          {STEPS.map((step) => (
+            <Route key={`legacy-${step.id}`} path={legacyPath(step)}>
+              <Redirect to={step.path} replace />
+            </Route>
+          ))}
+          <Route path="/publish">
+            <Redirect to="/pmo/publish" replace />
+          </Route>
+          <Route path="/pmo-tools">
+            <Redirect to="/pmo" replace />
+          </Route>
           <Route path="/translate/:locale/:key" component={TranslateReview.component} />
           <Route path="/styleguide" component={Styleguide.component} />
           <Route>

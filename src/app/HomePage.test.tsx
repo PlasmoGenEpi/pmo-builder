@@ -40,7 +40,7 @@ describe("home page actions", () => {
     await user.click(screen.getByRole("button", { name: "Try with example data" }));
     expect(await screen.findByText("Loading the example tables")).toBeInTheDocument();
     release();
-    await waitFor(() => expect(location.history.at(-1)).toBe("/microhaplotypes"), {
+    await waitFor(() => expect(location.history.at(-1)).toBe("/build/microhaplotypes"), {
       timeout: 10_000,
     });
     expect(store.getState().draft.microhaplotypes.table?.table.fileName).toBe(
@@ -68,9 +68,7 @@ describe("home page actions", () => {
     await act(() => store.getState().actions.loadExample());
     await act(() => store.getState().actions.flush());
     const { user } = await renderApp(store);
-    expect(
-      await screen.findByRole("button", { name: /Continue where you left off/ }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Continue your draft" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Try with example data" }));
     const dialog = await screen.findByRole("alertdialog", {
       name: "Replace your draft with the example?",
@@ -82,7 +80,7 @@ describe("home page actions", () => {
   it("starts over after confirming, and returns home", async () => {
     const store = createTestStore();
     await act(() => store.getState().actions.loadExample());
-    const { location, user } = await renderApp(store, "/microhaplotypes");
+    const { location, user } = await renderApp(store, "/build/microhaplotypes");
     await user.click(screen.getByRole("button", { name: "More options" }));
     await user.click(await screen.findByRole("menuitem", { name: "Start over" }));
     const dialog = await screen.findByRole("alertdialog", { name: "Start over?" });
@@ -92,7 +90,7 @@ describe("home page actions", () => {
     expect(await screen.findByText("Your draft was removed")).toBeInTheDocument();
   });
 
-  it("offers Start over only when there is a draft, from the home page and the step list", async () => {
+  it("offers Start over and progress only when there is a draft", async () => {
     await renderApp(createTestStore());
     expect(await screen.findByRole("button", { name: "Start" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Start over" })).not.toBeInTheDocument();
@@ -102,18 +100,17 @@ describe("home page actions", () => {
     await act(() => store.getState().actions.loadExample());
     await act(() => store.getState().actions.flush());
     await renderApp(store);
-    await screen.findByRole("button", { name: /Continue where you left off/ });
+    await screen.findByRole("button", { name: "Continue your draft" });
     const home = screen.getByRole("main");
-    const steps = screen.getByRole("navigation", { name: "Steps" });
     expect(within(home).getByRole("button", { name: "Start over" })).toBeInTheDocument();
-    expect(within(steps).getByRole("button", { name: "Start over" })).toBeInTheDocument();
+    expect(home).toHaveTextContent("of 2 required steps ready");
   });
 
   it("starts over from the step list after confirming", async () => {
     const store = createTestStore();
     await act(() => store.getState().actions.loadExample());
     await act(() => store.getState().actions.flush());
-    const { location, user } = await renderApp(store, "/panel");
+    const { location, user } = await renderApp(store, "/build/panel");
     const steps = screen.getByRole("navigation", { name: "Steps" });
     await user.click(await within(steps).findByRole("button", { name: "Start over" }));
     const dialog = await screen.findByRole("alertdialog", { name: "Start over?" });
@@ -131,7 +128,7 @@ describe("home page actions", () => {
     const store = createTestStore();
     await act(() => store.getState().actions.loadExample());
     await act(() => store.getState().actions.flush());
-    const { location, user } = await renderApp(store, "/review");
+    const { location, user } = await renderApp(store, "/build/review");
     await user.click(await screen.findByRole("button", { name: "Start over for a new PMO" }));
     const dialog = await screen.findByRole("alertdialog", { name: "Start over?" });
     await user.click(within(dialog).getByRole("button", { name: "Start over" }));

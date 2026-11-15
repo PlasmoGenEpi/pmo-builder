@@ -1,99 +1,39 @@
-import { t } from "@lingui/core/macro";
-import { FileUp, House, LibraryBig, Scissors } from "lucide-react";
+import { plural, t } from "@lingui/core/macro";
 import { Link as RouterLink, useLocation } from "wouter";
 
-import { zenodoConfig } from "@/features/review/zenodo";
 import { StatusIcon, cn } from "@/ui";
 
 import { useHasSavedDraft } from "./draftHooks";
 import { StartOverButton } from "./StartOver";
-import { STEP_GROUP_LABELS, stepsByGroup } from "./steps";
+import { STEP_GROUP_LABELS, STEPS, stepsByGroup } from "./steps";
 import { useStepStatuses } from "./stepStatus";
 
 const itemClass =
   "flex h-8 items-center gap-2.5 rounded-md px-2.5 text-base transition-colors duration-100";
 
-/** The list of steps in the sidebar and the mobile menu, grouped as in the registry. */
-export function StepNav({
-  onNavigate,
-  showPublished = zenodoConfig() !== null,
-}: {
-  onNavigate?: () => void;
-  /** Whether to link to the published PMOs. Default: when a Zenodo community is set. */
-  showPublished?: boolean;
-}) {
+/** The steps of the Build section, in the sidebar and the narrow-screen drawer. */
+export function StepNav({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
-  const onPublished = location === "/published" || location.startsWith("/published/");
   const statuses = useStepStatuses();
   const groups = stepsByGroup();
   const hasDraft = useHasSavedDraft();
+  const required = STEPS.filter((step) => step.required);
+  const readyCount = required.filter((step) => statuses[step.id] === "ready").length;
+  const requiredCount = required.length;
 
   return (
     <nav
       aria-label={t({ message: "Steps", comment: "Name of the sidebar navigation" })}
       className="flex flex-col gap-5"
     >
-      <RouterLink
-        href="/"
-        onClick={onNavigate}
-        aria-current={location === "/" ? "page" : undefined}
-        className={cn(
-          itemClass,
-          location === "/"
-            ? "bg-surface-muted font-medium text-text"
-            : "text-text-muted hover:bg-surface-muted hover:text-text",
-        )}
-      >
-        <House aria-hidden="true" className="size-4 shrink-0" />
-        {t`Home`}
-      </RouterLink>
-      <div className="-mt-4 flex flex-col gap-0.5">
-        {showPublished ? (
-          <>
-            <RouterLink
-              href="/published"
-              onClick={onNavigate}
-              aria-current={onPublished ? "page" : undefined}
-              className={cn(
-                itemClass,
-                onPublished
-                  ? "bg-surface-muted font-medium text-text"
-                  : "text-text-muted hover:bg-surface-muted hover:text-text",
-              )}
-            >
-              <LibraryBig aria-hidden="true" className="size-4 shrink-0" />
-              {t`Published PMOs`}
-            </RouterLink>
-            <RouterLink
-              href="/publish"
-              onClick={onNavigate}
-              aria-current={location === "/publish" ? "page" : undefined}
-              className={cn(
-                itemClass,
-                location === "/publish"
-                  ? "bg-surface-muted font-medium text-text"
-                  : "text-text-muted hover:bg-surface-muted hover:text-text",
-              )}
-            >
-              <FileUp aria-hidden="true" className="size-4 shrink-0" />
-              {t`Publish a PMO file`}
-            </RouterLink>
-          </>
-        ) : null}
-        <RouterLink
-          href="/pmo-tools"
-          onClick={onNavigate}
-          aria-current={location === "/pmo-tools" ? "page" : undefined}
-          className={cn(
-            itemClass,
-            location === "/pmo-tools"
-              ? "bg-surface-muted font-medium text-text"
-              : "text-text-muted hover:bg-surface-muted hover:text-text",
-          )}
-        >
-          <Scissors aria-hidden="true" className="size-4 shrink-0" />
-          {t`Subset or export a PMO`}
-        </RouterLink>
+      <div className="flex flex-col gap-0.5 px-2.5">
+        <p className="text-md font-semibold text-text">{t`Build a PMO`}</p>
+        <p className="text-sm text-text-muted">
+          {plural(requiredCount, {
+            one: `${readyCount} of # required step ready`,
+            other: `${readyCount} of # required steps ready`,
+          })}
+        </p>
       </div>
       {groups.map(({ group, steps }) => (
         <div key={group} className="flex flex-col gap-0.5">
@@ -118,15 +58,6 @@ export function StepNav({
                   >
                     <StatusIcon status={statuses[step.id]} />
                     <span className="min-w-0 flex-1 truncate">{step.title}</span>
-                    {step.required ? (
-                      <span className="shrink-0 text-xs font-normal text-text-subtle">
-                        {t({
-                          message: "Required",
-                          context: "step",
-                          comment: "Marks a step a PMO file needs",
-                        })}
-                      </span>
-                    ) : null}
                   </RouterLink>
                 </li>
               );

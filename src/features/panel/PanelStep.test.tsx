@@ -11,7 +11,7 @@ const READY = "This part is ready to go into the PMO.";
 
 async function setup() {
   const user = userEvent.setup();
-  const rendered = await renderWithStore(<PanelStep />, { path: "/panel" });
+  const rendered = await renderWithStore(<PanelStep />, { path: "/build/panel" });
   return { ...rendered, user };
 }
 
@@ -169,7 +169,7 @@ describe("PanelStep", () => {
     expect(await screen.findByText("Saved")).toBeInTheDocument();
 
     unmount();
-    await renderWithStore(<PanelStep />, { store, path: "/panel" });
+    await renderWithStore(<PanelStep />, { store, path: "/build/panel" });
     await waitFor(() => expect(result().getByText(READY)).toBeInTheDocument());
     expect(await screen.findByText("Saved")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Save this panel for next time" })).toBeNull();

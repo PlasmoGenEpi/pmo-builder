@@ -13,7 +13,7 @@ function projectName(page: Page) {
 }
 
 async function openProject(page: Page): Promise<void> {
-  await page.goto("/#/project");
+  await page.goto("/#/build/project");
   await expect(page.getByRole("heading", { level: 1, name: "Project" })).toBeVisible();
 }
 

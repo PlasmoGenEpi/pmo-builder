@@ -54,7 +54,7 @@ The panel works in one of two ways, depending on how the copy was set up.
   of this project. The sign-in allows making and changing drafts, not
   publishing them, and the app forgets it when you close or reload the page.
 
-The "Publish a PMO file" page works the same way for a file you already
+The Publish tab of My PMO file works the same way for a file you already
 have: it is read and checked in your browser, and goes to Zenodo only if you
 choose to deposit it.
 
@@ -62,6 +62,12 @@ choose to deposit it.
 
 The list of published PMOs is a file on this site, so browsing and searching
 it contacts nothing else. A download, or a link to a record, opens Zenodo.
+
+"Open in My PMO file" on a published PMO's page downloads that public file
+from zenodo.org into your browser, so Zenodo sees the request, as it would
+for any download. The request carries nothing of yours: no draft, file or
+name, and no cookies. The file is then read in your browser like one you
+chose yourself.
 
 ## Usage counts
 

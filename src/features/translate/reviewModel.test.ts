@@ -48,7 +48,7 @@ describe("groupOf", () => {
     [["src/features/table-import/TableFile.tsx"], "tables"],
     [["src/domain/import/messages.ts"], "tables"],
     [["src/ui/Toast.tsx"], "controls"],
-    [["src/features/pmo-tools/SubsetPanel.tsx"], "tools"],
+    [["src/features/pmo-file/SubsetPanel.tsx"], "tools"],
     [[], "home"],
   ])("puts %j in %s", (origins, group) => {
     expect(groupOf(origins)).toBe(group);
@@ -63,7 +63,6 @@ describe("groupOf", () => {
       "src/features/bioinformatics/x.tsx",
       "src/features/readCounts/x.tsx",
       "src/features/published/x.tsx",
-      "src/features/publish-file/x.tsx",
       "src/features/records/x.tsx",
       "src/domain/build/readCounts.ts",
       "src/worker/x.ts",

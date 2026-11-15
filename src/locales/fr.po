@@ -327,7 +327,7 @@ msgstr "{columns, plural, one {{columnCount} colonne} other {{columnCount} colon
 msgid "{columnText} ({rows})"
 msgstr "{columnText} ({rows})"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "{count, plural, one {# library sample} other {# library samples}}"
 msgstr "{count, plural, one {# échantillon de bibliothèque} other {# échantillons de bibliothèque}}"
 
@@ -343,7 +343,7 @@ msgstr "{count, plural, one {# problème similaire} other {# problèmes similair
 msgid "{count, plural, one {# similar warning} other {# similar warnings}}"
 msgstr "{count, plural, one {# avertissement similaire} other {# avertissements similaires}}"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "{count, plural, one {# specimen} other {# specimens}}"
 msgstr "{count, plural, one {# spécimen} other {# spécimens}}"
 
@@ -434,6 +434,10 @@ msgstr "{fileCount, plural, one {Un fichier n’a pas été conservé} other {# 
 msgid "{fileCount, plural, one {Your draft is back, but {files} was not saved in this browser. Import it again.} other {Your draft is back, but {files} were not saved in this browser. Import them again.}}"
 msgstr "{fileCount, plural, one {Votre brouillon a été restauré, mais {files} n’a pas été enregistré dans ce navigateur. Importez-le à nouveau.} other {Votre brouillon a été restauré, mais {files} n’ont pas été enregistrés dans ce navigateur. Importez-les à nouveau.}}"
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "{fileName} is {fileSize}. Download it, and work with it in pmotools on your computer."
+msgstr "{fileName} fait {fileSize}. Téléchargez-le, et travaillez avec pmotools sur votre ordinateur."
+
 #: src/ui/FileDropzone.tsx
 msgid "{fileName} is not a file type this step can read. Choose a {fileTypes} file."
 msgstr "{fileName} n’est pas un type de fichier que cette étape peut lire. Choisissez un fichier {fileTypes}."
@@ -480,7 +484,7 @@ msgstr "{includedCount} sur {columnCount} incluses"
 msgid "{includedCount} of {columnCount} included, {problemCount} to fix"
 msgstr "{includedCount} sur {columnCount} incluses, {problemCount} à corriger"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "{keptCount} of {allCount} specimens kept."
 msgstr "{keptCount} spécimens gardés sur {allCount}."
 
@@ -653,6 +657,11 @@ msgstr "{record}, {place}"
 msgid "{remaining, plural, one {and # more like this.} other {and # more like this.}}"
 msgstr "{remaining, plural, one {et # autre similaire.} other {et # autres similaires.}}"
 
+#: src/app/HomePage.tsx
+#: src/app/StepNav.tsx
+msgid "{requiredCount, plural, one {{readyCount} of # required step ready} other {{readyCount} of # required steps ready}}"
+msgstr "{requiredCount, plural, one {{readyCount} étape obligatoire prête sur #} other {{readyCount} étapes obligatoires prêtes sur #}}"
+
 #: src/features/table-import/mappingModel.ts
 msgid "{requiredMatched} of {requiredTotal, plural, one {# required field} other {# required fields}} matched, {optionalMatched, plural, one {# optional field} other {# optional fields}} matched."
 msgstr "{requiredMatched} sur {requiredTotal, plural, one {# champ obligatoire associé} other {# champs obligatoires associés}}, {optionalMatched, plural, one {# champ facultatif associé} other {# champs facultatifs associés}}."
@@ -665,7 +674,7 @@ msgstr "{requiredMatched} sur {requiredTotal, plural, one {# champ obligatoire a
 msgid "{rest, plural, one {{shownNames} and # more} other {{shownNames} and # more}}"
 msgstr "{rest, plural, one {{shownNames} et # autre} other {{shownNames} et # autres}}"
 
-#: src/features/publish-file/PublishFilePage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "{rest, plural, one {# more problem is not listed.} other {# more problems are not listed.}}"
 msgstr "{rest, plural, one {# autre problème n’est pas affiché.} other {# autres problèmes ne sont pas affichés.}}"
 
@@ -720,7 +729,7 @@ msgstr "{rowCount, plural, one {ligne {rowList}} other {lignes {rowList}}}"
 msgid "{rows, plural, one {{rowCount} row} other {{rowCount} rows}}"
 msgstr "{rows, plural, one {{rowCount} ligne} other {{rowCount} lignes}}"
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "{rows, plural, one {# row} other {# rows}}"
 msgstr "{rows, plural, one {# ligne} other {# lignes}}"
 
@@ -777,7 +786,7 @@ msgstr "{samples, plural, one {# échantillon} other {# échantillons}} sur {sta
 msgid "{section} is not finished, so it is left out of the PMO."
 msgstr "L’étape {section} n’est pas terminée : elle est donc exclue du PMO."
 
-#: src/features/pmo-tools/NameChecklist.tsx
+#: src/features/pmo-file/NameChecklist.tsx
 msgid "{selectedCount} of {totalCount} ticked"
 msgstr "{selectedCount} cochés sur {totalCount}"
 
@@ -805,7 +814,7 @@ msgstr "{targetCount} avant fusion"
 msgid "{targets, plural, one {# target, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.} other {# targets, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.}}"
 msgstr "{targets, plural, one {# cible, enregistré le {savedDate}. Ses cibles et son génome proviennent de la copie enregistrée. Pour les modifier, ajoutez plutôt le tableau des cibles.} other {# cibles, enregistré le {savedDate}. Ses cibles et son génome proviennent de la copie enregistrée. Pour les modifier, ajoutez plutôt le tableau des cibles.}}"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "{targetsWithoutData, plural, one {# target has no microhaplotypes in this file, so it cannot be kept on its own and is not listed.} other {# targets have no microhaplotypes in this file, so they cannot be kept on their own and are not listed.}}"
 msgstr "{targetsWithoutData, plural, one {# cible n’a aucun microhaplotype dans ce fichier ; elle ne peut donc pas être gardée seule et n’est pas listée.} other {# cibles n’ont aucun microhaplotype dans ce fichier ; elles ne peuvent donc pas être gardées seules et ne sont pas listées.}}"
 
@@ -910,7 +919,7 @@ msgstr "{where} : la valeur {value} devrait être d’un autre type."
 msgid "{where}. It {reasonText}."
 msgstr "{where} {reasonText}."
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "{withoutData, plural, one {# specimen has no library sample, so no data, and is left out of any subset.} other {# specimens have no library sample, so no data, and are left out of any subset.}}"
 msgstr "{withoutData, plural, one {# spécimen n’a aucun échantillon de bibliothèque, donc aucune donnée, et n’entre dans aucun sous-ensemble.} other {# spécimens n’ont aucun échantillon de bibliothèque, donc aucune donnée, et n’entrent dans aucun sous-ensemble.}}"
 
@@ -1044,11 +1053,7 @@ msgstr "Une nouvelle version d’un enregistrement que j’ai publié"
 msgid "A PMO file holds your samples, panel and allele calls in one shared format, so you can share them, archive them, or open them in other analysis tools. Read about the format and the tools that use it in the <0>PMO documentation</0>."
 msgstr "Un fichier PMO réunit vos échantillons, votre panel et vos appels d’allèles dans un format commun, afin que vous puissiez les partager, les archiver ou les ouvrir dans d’autres outils d’analyse. Découvrez le format et les outils qui l’utilisent dans la <0>documentation PMO</0>."
 
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "A PMO file in version {publishableVersion}, saved as .json or .json.gz."
-msgstr "Un fichier PMO en version {publishableVersion}, enregistré au format .json ou .json.gz."
-
-#: src/features/pmo-tools/PmoToolsPage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "A PMO file in version {version}, saved as .json or .json.gz."
 msgstr "Un fichier PMO en version {version}, enregistré au format .json ou .json.gz."
 
@@ -1102,7 +1107,7 @@ msgstr "Un nom court pour le projet, qu’aucun autre projet ne peut utiliser."
 msgid "A short note on how the pseudo-CIGAR was generated."
 msgstr "Une courte note sur la façon dont le pseudo-CIGAR a été généré."
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "A specimen is kept when it matches every condition: for each field, one of the ticked values."
 msgstr "Un spécimen est gardé s’il remplit toutes les conditions : pour chaque champ, l’une des valeurs cochées."
 
@@ -1132,7 +1137,7 @@ msgstr "À propos des données"
 msgid "Add {onlyName}"
 msgstr "Ajouter {onlyName}"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Add a condition"
 msgstr "Ajouter une condition"
 
@@ -1249,11 +1254,11 @@ msgstr "Tous les PMO publiés"
 msgid "All runs used the same pipeline."
 msgstr "Tous les runs ont utilisé le même pipeline."
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "All specimens ({allCount})"
 msgstr "Tous les spécimens ({allCount})"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "All targets"
 msgstr "Toutes les cibles"
 
@@ -1270,7 +1275,7 @@ msgstr "tableau des allèles"
 #: src/app/HomePage.tsx
 #: src/domain/fields/microhaplotypes.ts
 #: src/features/microhaplotypes/MicrohaplotypesStep.tsx
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "Allele table"
 msgstr "Tableau des allèles"
 
@@ -1281,14 +1286,6 @@ msgstr "Allèles comptés deux fois pour un même échantillon"
 #: src/features/review/noticeKinds.ts
 msgid "Alleles listed twice"
 msgstr "Allèles listés deux fois"
-
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "Already have a PMO file, built here earlier or with pmotools? Check it and deposit it in the <0>{communityName} community</0> on Zenodo. The file is checked in this browser, and nothing is sent until you choose to deposit."
-msgstr "Vous avez déjà un fichier PMO, généré ici auparavant ou avec pmotools ? Vérifiez-le et déposez-le dans la <0>communauté {communityName}</0> sur Zenodo. Le fichier est vérifié dans ce navigateur, et rien n’est envoyé tant que vous n’avez pas choisi de le déposer."
-
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "Already have a PMO file, built here earlier or with pmotools? Check it and deposit it on Zenodo. The file is checked in this browser, and nothing is sent until you choose to deposit."
-msgstr "Vous avez déjà un fichier PMO, généré ici auparavant ou avec pmotools ? Vérifiez-le et déposez-le sur Zenodo. Le fichier est vérifié dans ce navigateur, et rien n’est envoyé tant que vous n’avez pas choisi de le déposer."
 
 #: src/features/table-import/mappingModel.ts
 msgid "Also matched to {fieldLabel}. Untick it here."
@@ -1383,7 +1380,7 @@ msgid "Bioinformatics"
 msgstr "Bioinformatique"
 
 #: src/domain/fields/study.ts
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "Bioinformatics methods"
 msgstr "Méthodes bioinformatiques"
 
@@ -1401,7 +1398,7 @@ msgid "Bioinformatics run records in the PMO have a problem. Check the Bioinform
 msgstr "Les enregistrements de runs bioinformatiques du PMO présentent un problème. Vérifiez l’étape Bioinformatique."
 
 #: src/domain/fields/study.ts
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 #: src/features/review/PmoContents.tsx
 msgid "Bioinformatics runs"
 msgstr "Runs bioinformatiques"
@@ -1431,7 +1428,19 @@ msgstr "vide"
 msgid "Broad environment"
 msgstr "Environnement général"
 
-#: src/features/publish-file/PublishFilePage.tsx
+#: src/app/HomePage.tsx
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Browse published PMOs"
+msgstr "Parcourir les PMO publiés"
+
+#. Top bar section: building a PMO from tables
+#: src/app/TopBar.tsx
+msgid "Build"
+msgstr "Créer"
+
+#: src/app/HomePage.tsx
+#: src/app/StepNav.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 #: src/features/published/PublishedPage.tsx
 msgid "Build a PMO"
 msgstr "Générer un PMO"
@@ -1444,7 +1453,7 @@ msgstr "Générez un PMO à partir de vos tableaux, ou publiez un fichier PMO qu
 msgid "Build a PMO from your tables, or publish a PMO file you already have. It appears here once a curator accepts it."
 msgstr "Générez un PMO à partir de vos tableaux, ou publiez un fichier PMO que vous avez déjà. Il apparaît ici dès qu’un curateur l’accepte."
 
-#: src/features/pmo-tools/PmoToolsPage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "Build one in this app from your tables, or download one from the published PMOs."
 msgstr "Créez-en un dans cette application à partir de vos tableaux, ou téléchargez-en un parmi les PMO publiés."
 
@@ -1489,9 +1498,9 @@ msgstr "Vérifiez ce que vous partagez"
 msgid "Check your connection and reload the page."
 msgstr "Vérifiez votre connexion et rechargez la page."
 
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "Checking the file"
-msgstr "Vérification du fichier"
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Check your connection. Zenodo may also be busy for a moment."
+msgstr "Vérifiez votre connexion. Zenodo est peut-être aussi momentanément surchargé."
 
 #: src/features/review/VerdictCard.tsx
 msgid "Checking your draft"
@@ -1533,7 +1542,7 @@ msgstr "Choisissez un panel enregistré."
 msgid "Choose another saved panel"
 msgstr "Choisir un autre panel enregistré"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the whole file."
 msgstr "Choisissez des spécimens ou des cibles, ou un nombre minimal de lectures. En l’état, le sous-ensemble serait le fichier entier."
 
@@ -1555,7 +1564,7 @@ msgstr "Choisissez la colonne du {table} qui contient le nom du run."
 msgid "Choose the column of the runs table that names each run's method."
 msgstr "Choisissez la colonne du tableau des runs qui indique la méthode de chaque run."
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Choose the file again."
 msgstr "Choisissez de nouveau le fichier."
 
@@ -1685,8 +1694,8 @@ msgid "Complete"
 msgstr "Complet"
 
 #: src/app/HomePage.tsx
-msgid "Continue where you left off"
-msgstr "Reprendre là où vous en étiez"
+msgid "Continue your draft"
+msgstr "Reprendre votre brouillon"
 
 #. Field label: people who contributed to the project
 #: src/domain/fields/records.ts
@@ -1749,7 +1758,7 @@ msgstr "Comptages"
 msgid "Creating the draft"
 msgstr "Création du brouillon"
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "CSV"
 msgstr "CSV"
 
@@ -1761,6 +1770,10 @@ msgstr "Sombre"
 #: src/features/published/PublishedPage.tsx
 msgid "Datasets"
 msgstr "Jeux de données"
+
+#: src/app/HomePage.tsx
+msgid "Datasets shared in the PlasmoGenEpi community on Zenodo, with their countries, years and panels."
+msgstr "Les jeux de données partagés dans la communauté PlasmoGenEpi sur Zenodo, avec leurs pays, leurs années et leurs panels."
 
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "Date and other details"
@@ -1876,15 +1889,15 @@ msgstr "Ne pas envoyer"
 msgid "Done"
 msgstr "Terminé"
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "Download"
 msgstr "Télécharger"
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "Download {title} as {format}"
 msgstr "Télécharger {title} au format {format}"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Download as .json"
 msgstr "Télécharger au format .json"
 
@@ -1896,7 +1909,11 @@ msgstr "Télécharger en JSON simple"
 msgid "Download from Zenodo"
 msgstr "Télécharger depuis Zenodo"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Download it from Zenodo instead"
+msgstr "Le télécharger plutôt depuis Zenodo"
+
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Download its tables"
 msgstr "Télécharger ses tableaux"
 
@@ -1908,10 +1925,6 @@ msgstr "Télécharger le PMO"
 msgid "Download PMO for Zenodo"
 msgstr "Télécharger le PMO pour Zenodo"
 
-#: src/features/pmo-tools/PmoToolsPage.tsx
-msgid "Download tables"
-msgstr "Télécharger les tableaux"
-
 #: src/app/HomePage.tsx
 msgid "Download the Excel template"
 msgstr "Télécharger le modèle Excel"
@@ -1920,9 +1933,13 @@ msgstr "Télécharger le modèle Excel"
 msgid "Download the PMO file."
 msgstr "Téléchargez le fichier PMO."
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Download the subset (.json.gz)"
 msgstr "Télécharger le sous-ensemble (.json.gz)"
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Downloading {fileName} ({fileSize}) from Zenodo"
+msgstr "Téléchargement de {fileName} ({fileSize}) depuis Zenodo"
 
 #: src/ui/FileDropzone.tsx
 msgid "Drag a file here or <0>choose a file</0>"
@@ -2075,7 +2092,7 @@ msgstr "Compléments"
 msgid "FASTQ location"
 msgstr "Emplacement des fichiers FASTQ"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Field"
 msgstr "Champ"
 
@@ -2088,11 +2105,11 @@ msgstr "champ « {segment} »"
 msgid "Fields the PMO format needs are missing"
 msgstr "Des champs requis par le format PMO sont manquants"
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "File header"
 msgstr "En-tête du fichier"
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "File type"
 msgstr "Type de fichier"
 
@@ -2117,14 +2134,26 @@ msgstr "Filtrer par nom ou par colonne"
 msgid "Filter optional fields"
 msgstr "Filtrer les champs facultatifs"
 
+#: src/app/HomePage.tsx
+msgid "Find published PMOs"
+msgstr "Trouver des PMO publiés"
+
 #: src/features/review/PublishToZenodo.tsx
 msgid "Finding the community on Zenodo"
 msgstr "Recherche de la communauté sur Zenodo"
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Finding the published PMO"
+msgstr "Recherche du PMO publié"
 
 #. Sidebar heading: the last step
 #: src/app/steps.ts
 msgid "Finish"
 msgstr "Finalisation"
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Finish the required steps first, so that the PMO can be built."
+msgstr "Terminez d’abord les étapes obligatoires pour que le PMO puisse être créé."
 
 #: src/features/review/ThingsToCheck.tsx
 msgid "Fix on {stepTitle}"
@@ -2179,6 +2208,14 @@ msgstr "De l’étape Bioinformatique :"
 #: src/features/panel/PanelNameField.tsx
 msgid "From the library sample table:"
 msgstr "D’après le tableau des échantillons de bibliothèque :"
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "From the Zenodo record <0>{recordTitle}</0>. It matches PMO version {version} and its tables link up."
+msgstr "Issu de l’enregistrement Zenodo <0>{recordTitle}</0>. Il est conforme à la version {version} du PMO et ses tableaux sont bien reliés."
+
+#: src/app/HomePage.tsx
+msgid "From your lab's allele table, panel table and sample metadata. Fill in the steps in any order; your work is saved as you go."
+msgstr "À partir du tableau des allèles, du tableau du panel et des métadonnées des échantillons de votre laboratoire. Remplissez les étapes dans l’ordre de votre choix ; votre travail est enregistré au fur et à mesure."
 
 #. Field label: the gene a target covers
 #: src/domain/fields/panel.ts
@@ -2240,6 +2277,10 @@ msgstr "Donnez un nom à cette information."
 msgid "Go to {stepTitle}"
 msgstr "Aller à {stepTitle}"
 
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Go to Build"
+msgstr "Aller à Créer"
+
 #: src/features/review/PublishToZenodo.tsx
 msgid "Go to Specimens"
 msgstr "Aller à l’étape Spécimens"
@@ -2268,10 +2309,6 @@ msgstr "Contient des erreurs"
 msgid "Has problems to fix before a PMO can be built."
 msgstr "Contient des problèmes à corriger avant de pouvoir générer un PMO."
 
-#: src/app/HomePage.tsx
-msgid "Have a PMO file already? <0>Subset it or download its tables</0>."
-msgstr "Vous avez déjà un fichier PMO ? <0>Extrayez-en un sous-ensemble ou téléchargez ses tableaux</0>."
-
 #: src/features/published/PublishedPage.tsx
 msgid "Have data to share?"
 msgstr "Vous avez des données à partager ?"
@@ -2288,7 +2325,6 @@ msgstr "Préparez votre fichier : <0>{fileName}</0>."
 msgid "Help improve PMO Builder"
 msgstr "Aider à améliorer PMO Builder"
 
-#: src/app/StepNav.tsx
 #: src/app/StepPage.tsx
 msgid "Home"
 msgstr "Accueil"
@@ -2448,7 +2484,7 @@ msgstr "Importez le tableau des cibles."
 msgid "In the PMO, {place}"
 msgstr "Dans le PMO, {place}"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "In the subset: specimens {specimens}, library samples {librarySamples}, targets with alleles {targets}."
 msgstr "Dans le sous-ensemble : spécimens {specimens}, échantillons de bibliothèque {librarySamples}, cibles avec des allèles {targets}."
 
@@ -2479,11 +2515,11 @@ msgstr "ne contient pas {field}"
 msgid "is missing a required field"
 msgstr "ne contient pas un champ obligatoire"
 
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "It cannot be published as it is. Build the PMO again from your tables in PMO Builder, which checks it as you go."
-msgstr "Il ne peut pas être publié tel quel. Générez de nouveau le PMO à partir de vos tableaux dans PMO Builder, qui le vérifie au fur et à mesure."
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "It cannot be used as it is. Build the PMO again from your tables in PMO Builder, which checks it as you go."
+msgstr "Il ne peut pas être utilisé tel quel. Créez de nouveau le PMO à partir de vos tableaux dans PMO Builder, qui le vérifie au fur et à mesure."
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "It is a valid PMO. Download it, or download its tables."
 msgstr "C’est un PMO valide. Téléchargez-le, ou téléchargez ses tableaux."
 
@@ -2495,9 +2531,17 @@ msgstr "Il vous sera proposé sur cette page la prochaine fois que vous génére
 msgid "It is removed from this browser and will not be offered again. Drafts that already use it keep their targets."
 msgstr "Il est supprimé de ce navigateur et ne sera plus proposé. Les brouillons qui l’utilisent déjà conservent leurs cibles."
 
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "It matches PMO version {publishableVersion} and its tables link up."
-msgstr "Il est conforme à la version {publishableVersion} du PMO et ses tableaux sont correctement reliés."
+#: src/features/pmo-file/PublishPanel.tsx
+msgid "It is the file of the Zenodo record <0>{recordTitle}</0>. To publish part of it as a new record, make a subset first."
+msgstr "C’est le fichier de l’enregistrement Zenodo <0>{recordTitle}</0>. Pour en publier une partie comme nouvel enregistrement, créez d’abord un sous-ensemble."
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "It matches PMO version {version} and its tables link up."
+msgstr "Il est conforme à la version {version} du PMO et ses tableaux sont bien reliés."
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "It may be in another PMO version. My PMO file says what is wrong with it."
+msgstr "Il est peut-être dans une autre version PMO. Mon fichier PMO indique ce qui ne va pas."
 
 #: src/features/published/DatasetPage.tsx
 msgid "It may have been withdrawn from the community, or the address may be mistyped."
@@ -2650,7 +2694,7 @@ msgstr "Tableau des échantillons de bibliothèque"
 #: src/domain/fields/samples.ts
 #: src/features/librarySamples/LibrarySamplesStep.tsx
 #: src/features/microhaplotypes/MicrohaplotypesStep.tsx
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 #: src/features/review/PmoContents.tsx
 msgid "Library samples"
 msgstr "Échantillons de bibliothèque"
@@ -2751,17 +2795,17 @@ msgstr "Des colonnes de position sont associées sans la colonne chromosome. Ass
 msgid "Locations that end before they start"
 msgstr "Positions qui se terminent avant de commencer"
 
-#: src/app/HomePage.tsx
-msgid "Looking for data? <0>Browse the published PMOs</0>. Have a PMO file already? <1>Publish it</1>, or <2>subset it or download its tables</2>."
-msgstr "Vous cherchez des données ? <0>Parcourez les PMO publiés</0>. Vous avez déjà un fichier PMO ? <1>Publiez-le</1>, ou <2>extrayez-en un sous-ensemble ou téléchargez ses tableaux</2>."
-
-#: src/features/pmo-tools/PmoToolsPage.tsx
-msgid "Make a subset"
-msgstr "Créer un sous-ensemble"
-
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Make the subset"
 msgstr "Créer le sous-ensemble"
+
+#: src/features/pmo-file/PublishPanel.tsx
+msgid "Make the subset again on the Subset tab."
+msgstr "Créez de nouveau le sous-ensemble dans l’onglet Sous-ensemble."
+
+#: src/app/HomePage.tsx
+msgid "Make, use and find Portable Microhaplotype Object (PMO) files."
+msgstr "Créer, utiliser et trouver des fichiers Portable Microhaplotype Object (PMO)."
 
 #: src/features/librarySamples/LibrarySamplesStep.tsx
 msgid "Many labs keep specimens and library samples in one sheet. If yours does, add the same file here and on the <0>Specimens step</0>."
@@ -2899,11 +2943,11 @@ msgstr "L’étape Microhaplotypes est obligatoire et n’est pas encore termin�
 msgid "Microhaplotypes records in the PMO have a problem. Check the Microhaplotypes step."
 msgstr "Les enregistrements de microhaplotypes du PMO présentent un problème. Vérifiez l’étape Microhaplotypes."
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Microhaplotypes with fewer reads are left out. Leave empty to keep them all. The most in this file is {maxReads}."
 msgstr "Les microhaplotypes ayant moins de lectures sont écartés. Laissez vide pour tous les garder. Le maximum dans ce fichier est de {maxReads}."
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Minimum reads per microhaplotype"
 msgstr "Nombre minimal de lectures par microhaplotype"
 
@@ -2931,6 +2975,13 @@ msgstr "Descendre {name}"
 #: src/features/records/RecordList.tsx
 msgid "Move {name} up"
 msgstr "Monter {name}"
+
+#. Top bar section: working with a PMO file the user has
+#: src/app/TopBar.tsx
+#: src/features/pmo-file/OpenPublished.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "My PMO file"
+msgstr "Mon fichier PMO"
 
 #: src/features/records/ExtraDetails.tsx
 msgid "Name of detail {number}"
@@ -2960,6 +3011,10 @@ msgstr "Noms utilisés plusieurs fois"
 msgid "NCBI taxon {taxon}"
 msgstr "Taxon NCBI {taxon}"
 
+#: src/features/review/ReviewStep.tsx
+msgid "Need its tables, or a subset of some specimens or targets? <0>Open it in My PMO file</0>."
+msgstr "Besoin de ses tableaux, ou d’un sous-ensemble de certains spécimens ou de certaines cibles ? <0>Ouvrez-le dans Mon fichier PMO</0>."
+
 #: src/features/review/SectionChecklist.tsx
 msgid "Needed"
 msgstr "Nécessaire"
@@ -2976,7 +3031,7 @@ msgstr "Nécessaire pour cette étape. Une ligne par échantillon, avec le nom d
 msgid "Next"
 msgstr "Suivant"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "No library sample has any microhaplotypes left with these choices. Choose more specimens or targets, or fewer reads."
 msgstr "Avec ces choix, il ne reste aucun microhaplotype dans aucun échantillon de bibliothèque. Choisissez plus de spécimens ou de cibles, ou moins de lectures."
 
@@ -3041,7 +3096,7 @@ msgstr "Aucune colonne de run de séquençage. Ce n’est pas un problème : el
 msgid "No sequencing runs yet"
 msgstr "Aucun run de séquençage pour l’instant"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "No specimen is chosen yet."
 msgstr "Aucun spécimen n’est encore choisi."
 
@@ -3053,7 +3108,7 @@ msgstr "Aucune colonne de nom de spécimen n’est encore associée."
 msgid "No steps yet"
 msgstr "Aucune étape pour l’instant"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "No target is ticked yet."
 msgstr "Aucune cible n’est encore cochée."
 
@@ -3161,7 +3216,7 @@ msgstr "Rien pour l’instant. Cette étape est facultative. Sans elle, le PMO n
 msgid "Nothing here yet. This step is optional. Without it, the samples come from the allele table and all use one panel, so add it if you have several panels."
 msgstr "Rien pour l’instant. Cette étape est facultative. Sans elle, les échantillons proviennent du tableau des allèles et utilisent tous le même panel ; ajoutez-la donc si vous avez plusieurs panels."
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Nothing is left"
 msgstr "Il ne reste rien"
 
@@ -3177,7 +3232,7 @@ msgstr "Rien n’est envoyé."
 msgid "Nothing leaves this copy. These are the records it would send if usage counts were set up, so you can see what they hold."
 msgstr "Rien ne quitte cette instance. Voici les relevés qu’elle enverrait si les statistiques d’utilisation étaient configurées, pour que vous puissiez voir ce qu’ils contiennent."
 
-#: src/features/pmo-tools/NameChecklist.tsx
+#: src/features/pmo-file/NameChecklist.tsx
 msgid "Nothing matches the search."
 msgstr "Rien ne correspond à la recherche."
 
@@ -3274,47 +3329,47 @@ msgstr "Une ligne par étape : le programme et sa version, et éventuellement u
 msgid "One row for each target, with its forward and reverse primer."
 msgstr "Une ligne par cible, avec son amorce sens et son amorce anti-sens."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "One row per bioinformatics run."
 msgstr "Une ligne par run bioinformatique."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "One row per library sample, with its specimen, panel and sequencing run."
 msgstr "Une ligne par échantillon de bibliothèque, avec son spécimen, son panel et son run de séquençage."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "One row per microhaplotype found in each library sample: the sample, the target, the sequence, the run and the reads."
 msgstr "Une ligne par microhaplotype trouvé dans chaque échantillon de bibliothèque : l’échantillon, la cible, la séquence, le run et les lectures."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "One row per program of each bioinformatics method."
 msgstr "Une ligne par programme de chaque méthode bioinformatique."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "One row per project."
 msgstr "Une ligne par projet."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "One row per reference genome."
 msgstr "Une ligne par génome de référence."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "One row per sequencing run."
 msgstr "Une ligne par run de séquençage."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "One row per specimen, with its metadata."
 msgstr "Une ligne par spécimen, avec ses métadonnées."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "One row per target of each panel, with its reactions."
 msgstr "Une ligne par cible de chaque panel, avec ses réactions."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "One row per target, with its primers and location."
 msgstr "Une ligne par cible, avec ses amorces et sa position."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "One row per trip a specimen's host made."
 msgstr "Une ligne par voyage de l’hôte d’un spécimen."
 
@@ -3338,17 +3393,33 @@ msgstr "Seul le compte propriétaire d’un enregistrement peut y ajouter une ve
 msgid "Only the specimen name is needed. Many labs keep specimens and library samples in one sheet. If yours does, add the same file here and on the <0>Library samples step</0>. Without a library sample table, the specimen names must be the sample names in your allele table."
 msgstr "Seul le nom du spécimen est requis. De nombreux laboratoires tiennent les spécimens et les échantillons de bibliothèque dans une même feuille. Si c’est votre cas, ajoutez le même fichier ici et à l’<0>étape Échantillons de bibliothèque</0>. Sans tableau des échantillons de bibliothèque, les noms des spécimens doivent être les noms d’échantillons de votre tableau des allèles."
 
-#: src/features/pmo-tools/PmoToolsPage.tsx
-msgid "Open a PMO file to download its tables as CSV or TSV, or to make a smaller PMO with only some specimens, targets or reads. The file stays in this browser."
-msgstr "Ouvrez un fichier PMO pour télécharger ses tableaux au format CSV ou TSV, ou pour créer un PMO plus petit avec seulement certains spécimens, certaines cibles ou certaines lectures. Le fichier reste dans ce navigateur."
+#: src/app/HomePage.tsx
+msgid "Open a PMO file"
+msgstr "Ouvrir un fichier PMO"
+
+#: src/app/HomePage.tsx
+msgid "Open a PMO file to download its tables, make a subset of some specimens, targets or reads, or publish it."
+msgstr "Ouvrez un fichier PMO pour télécharger ses tableaux, en extraire un sous-ensemble de spécimens, de cibles ou de lectures, ou le publier."
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Open a PMO file to see what it holds, download its tables as CSV or TSV, make a smaller PMO with only some specimens, targets or reads, or publish it. The file stays in this browser."
+msgstr "Ouvrez un fichier PMO pour voir ce qu’il contient, télécharger ses tableaux au format CSV ou TSV, créer un PMO plus petit avec seulement certains spécimens, certaines cibles ou certaines lectures, ou le publier. Le fichier reste dans ce navigateur."
 
 #: src/app/SaveStatus.tsx
 msgid "Open in another tab"
 msgstr "Ouvert dans un autre onglet"
 
+#: src/features/published/DatasetPage.tsx
+msgid "Open in My PMO file"
+msgstr "Ouvrir dans Mon fichier PMO"
+
 #: src/features/review/PublishToZenodo.tsx
 msgid "Open the draft on Zenodo"
 msgstr "Ouvrir le brouillon sur Zenodo"
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Open the PMO you are building"
+msgstr "Ouvrir le PMO en cours de création"
 
 #: src/app/TopBar.tsx
 msgid "Open the step list"
@@ -3362,9 +3433,13 @@ msgstr "Ouvrez la page d’import et connectez-vous à Zenodo. La communauté es
 msgid "Open the Zenodo upload page"
 msgstr "Ouvrir la page d’import de Zenodo"
 
-#: src/features/pmo-tools/PmoToolsPage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "Opening the file"
 msgstr "Ouverture du fichier"
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Opening the PMO built from your draft"
+msgstr "Ouverture du PMO créé à partir de votre brouillon"
 
 #: src/app/SaveStatus.tsx
 msgid "Opening your draft"
@@ -3440,6 +3515,10 @@ msgstr "Les autres noms du spécimen, séparés par des virgules."
 msgid "Other specimen identifiers"
 msgstr "Autres identifiants de spécimen"
 
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Overview"
+msgstr "Aperçu"
+
 #: src/app/NotFoundPage.tsx
 msgid "Page not found"
 msgstr "Page introuvable"
@@ -3503,7 +3582,7 @@ msgstr "Tableau du panel"
 msgid "Panel targets"
 msgstr "Cibles du panel"
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 #: src/features/review/PmoContents.tsx
 msgid "Panels"
 msgstr "Panels"
@@ -3578,10 +3657,6 @@ msgstr "Plateforme"
 msgid "PMO Builder home"
 msgstr "Accueil de PMO Builder"
 
-#: src/app/HomePage.tsx
-msgid "PMO Builder reads your allele table, panel table and sample metadata, matches their columns to the fields of a Portable Microhaplotype Object, and builds a PMO file you can download. You can fill in the steps in any order, and your work is saved as you go."
-msgstr "PMO Builder lit votre tableau des allèles, votre tableau du panel et les métadonnées de vos échantillons, associe leurs colonnes aux champs d’un Portable Microhaplotype Object et génère un fichier PMO que vous pouvez télécharger. Vous pouvez remplir les étapes dans l’ordre de votre choix, et votre travail est enregistré au fur et à mesure."
-
 #: src/app/privacy/PrivacyDetails.tsx
 msgid "PMO Builder runs entirely in your browser. Your files, tables, sample names, sequences and metadata stay on this device. They are never uploaded, and the app has no server to upload them to."
 msgstr "PMO Builder fonctionne entièrement dans votre navigateur. Vos fichiers, tableaux, noms d’échantillons, séquences et métadonnées restent sur cet appareil. Ils ne sont jamais envoyés ailleurs, et l’application n’a aucun serveur où les envoyer."
@@ -3606,6 +3681,10 @@ msgstr "Enceinte"
 #: src/features/review/PublishToZenodo.tsx
 msgid "Preparing the file"
 msgstr "Préparation du fichier"
+
+#: src/features/pmo-file/PublishPanel.tsx
+msgid "Preparing the subset"
+msgstr "Préparation du sous-ensemble"
 
 #. Noun: the first rows of the table
 #: src/features/table-import/TablePreviewPanel.tsx
@@ -3700,7 +3779,7 @@ msgstr "Informations sur le projet, le séquençage et la bioinformatique, saisi
 msgid "projects"
 msgstr "projets"
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 #: src/features/review/PmoContents.tsx
 msgid "Projects"
 msgstr "Projets"
@@ -3744,27 +3823,27 @@ msgstr "Brin du pseudo-CIGAR"
 msgid "Publish a file"
 msgstr "Publier un fichier"
 
-#: src/app/StepNav.tsx
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "Publish a PMO file"
-msgstr "Publier un fichier PMO"
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "Publish the subset"
+msgstr "Publier le sous-ensemble"
 
+#: src/features/pmo-file/PmoFilePage.tsx
 #: src/features/review/PublishToZenodo.tsx
 msgid "Publish to Zenodo"
 msgstr "Publier sur Zenodo"
+
+#. Top bar section: published PMOs
+#: src/app/TopBar.tsx
+msgid "Published"
+msgstr "Publiés"
 
 #: src/features/published/DatasetPage.tsx
 msgid "Published {publishedDate}"
 msgstr "Publié le {publishedDate}"
 
-#: src/app/StepNav.tsx
 #: src/features/published/PublishedPage.tsx
 msgid "Published PMOs"
 msgstr "PMO publiés"
-
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "Publishing needs the app to be set up with a Zenodo community."
-msgstr "La publication nécessite que l’application soit configurée avec une communauté Zenodo."
 
 #: src/features/records/checks.ts
 msgid "Put each one on its own line"
@@ -3833,7 +3912,7 @@ msgstr "Lecture du tableau."
 #. Field label: a count of sequencing reads
 #: src/domain/fields/microhaplotypes.ts
 #: src/domain/fields/readCounts.ts
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Reads"
 msgstr "Lectures"
 
@@ -3890,7 +3969,7 @@ msgid "Reference genome <0>(optional)</0>"
 msgstr "Génome de référence <0>(facultatif)</0>"
 
 #: src/domain/fields/study.ts
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "Reference genomes"
 msgstr "Génomes de référence"
 
@@ -3953,7 +4032,7 @@ msgstr "Supprimer l’information {number}"
 msgid "Remove panel"
 msgstr "Supprimer le panel"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Remove the condition on {fieldName}"
 msgstr "Supprimer la condition sur {fieldName}"
 
@@ -4017,8 +4096,6 @@ msgstr "Obligatoires"
 
 #. Marks a step a PMO file needs
 #. Marks a step a PMO file needs
-#. Marks a step a PMO file needs
-#: src/app/StepNav.tsx
 #: src/app/StepPage.tsx
 #: src/features/review/SectionChecklist.tsx
 msgctxt "step"
@@ -4219,7 +4296,7 @@ msgstr "Enregistré dans ce navigateur. La prochaine fois, choisissez-le au lieu
 msgid "Saved on this device"
 msgstr "Enregistré sur cet appareil"
 
-#: src/features/pmo-tools/NameChecklist.tsx
+#: src/features/pmo-file/NameChecklist.tsx
 #: src/features/published/PublishedPage.tsx
 msgid "Search"
 msgstr "Rechercher"
@@ -4228,9 +4305,13 @@ msgstr "Rechercher"
 msgid "Search datasets"
 msgstr "Rechercher des jeux de données"
 
-#: src/features/pmo-tools/NameChecklist.tsx
+#: src/features/pmo-file/NameChecklist.tsx
 msgid "Search to see the others."
 msgstr "Faites une recherche pour voir les autres."
+
+#: src/app/TopBar.tsx
+msgid "Sections"
+msgstr "Sections"
 
 #: src/app/privacy/PrivacyDetails.tsx
 #: src/app/privacy/UsageNotice.tsx
@@ -4248,6 +4329,10 @@ msgstr "Voyez ce qui est prêt, corrigez ce qui manque et téléchargez votre fi
 #: src/features/review/PublishToZenodo.tsx
 msgid "See what the draft will say"
 msgstr "Voir le contenu du brouillon"
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "See why"
+msgstr "Voir pourquoi"
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "Select a keyword to copy it. Keep the first one as it is written: it places the record with the other PMO files."
@@ -4327,7 +4412,7 @@ msgid "sequencing runs"
 msgstr "runs de séquençage"
 
 #: src/domain/fields/study.ts
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 #: src/features/review/PmoContents.tsx
 msgid "Sequencing runs"
 msgstr "Runs de séquençage"
@@ -4488,7 +4573,7 @@ msgstr "Un problème est survenu lors de la lecture du {table}. Vérifiez l’as
 msgid "Something went wrong while working out the PMO: {message}"
 msgstr "Un problème est survenu lors de la génération du PMO : {message}"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Something went wrong. Reload the page and try again."
 msgstr "Un problème est survenu. Rechargez la page et réessayez."
 
@@ -4540,14 +4625,14 @@ msgstr "Type de spécimen"
 #: src/domain/build/merge.ts
 #: src/domain/fields/samples.ts
 #: src/features/librarySamples/LibrarySamplesStep.tsx
-#: src/features/pmo-tools/SubsetPanel.tsx
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 #: src/features/review/PmoContents.tsx
 #: src/features/specimens/SpecimensStep.tsx
 msgid "Specimens"
 msgstr "Spécimens"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Specimens I tick"
 msgstr "Les spécimens que je coche"
 
@@ -4555,7 +4640,7 @@ msgstr "Les spécimens que je coche"
 msgid "Specimens named in this table"
 msgstr "Spécimens indiqués dans ce tableau"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Specimens with certain values"
 msgstr "Les spécimens ayant certaines valeurs"
 
@@ -4694,12 +4779,11 @@ msgstr "Étude et méthodes"
 msgid "Subject names or codes"
 msgstr "Noms ou codes des sujets"
 
-#: src/app/StepNav.tsx
-#: src/features/pmo-tools/PmoToolsPage.tsx
-msgid "Subset or export a PMO"
-msgstr "Extraire ou exporter un PMO"
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Subset"
+msgstr "Sous-ensemble"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Such as the country or year of collection."
 msgstr "Par exemple le pays ou l’année de collecte."
 
@@ -4715,6 +4799,10 @@ msgstr "Passer au thème clair"
 msgid "Switching to this tab"
 msgstr "Passage à cet onglet"
 
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Tables"
+msgstr "Tableaux"
+
 #: src/app/HomePage.tsx
 msgid "Tables and details"
 msgstr "Tableaux et informations"
@@ -4723,7 +4811,7 @@ msgstr "Tableaux et informations"
 msgid "Tables can be CSV, TSV, plain text or Excel files."
 msgstr "Les tableaux peuvent être des fichiers CSV, TSV, texte brut ou Excel."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "Tables from"
 msgstr "Tableaux de"
 
@@ -4789,8 +4877,8 @@ msgstr "Type de cible"
 
 #: src/features/microhaplotypes/MicrohaplotypesStep.tsx
 #: src/features/panel/PanelStep.tsx
-#: src/features/pmo-tools/SubsetPanel.tsx
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 #: src/features/review/PmoContents.tsx
 msgid "Targets"
 msgstr "Cibles"
@@ -4799,7 +4887,7 @@ msgstr "Cibles"
 msgid "Targets counted twice for one sample"
 msgstr "Cibles comptées deux fois pour un même échantillon"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Targets I tick ({targetCount} with data)"
 msgstr "Les cibles que je coche ({targetCount} avec des données)"
 
@@ -5070,15 +5158,15 @@ msgstr "Le fichier « {fileName} » du {table} n’est pas chargé. Importez-l
 msgid "The file and your column choices for it are removed from this draft. You can add the file again later."
 msgstr "Le fichier et vos choix de colonnes pour ce fichier sont retirés de ce brouillon. Vous pourrez ajouter le fichier à nouveau plus tard."
 
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "The file could not be checked. Reload the page and try again."
-msgstr "Le fichier n’a pas pu être vérifié. Rechargez la page et réessayez."
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "The file could not be downloaded from Zenodo"
+msgstr "Le fichier n’a pas pu être téléchargé depuis Zenodo"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "The file could not be made. Make the subset again."
 msgstr "Le fichier n’a pas pu être créé. Créez de nouveau le sous-ensemble."
 
-#: src/features/pmo-tools/PmoToolsPage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "The file could not be opened. Reload the page and try again."
 msgstr "Le fichier n’a pas pu être ouvert. Rechargez la page et réessayez."
 
@@ -5094,7 +5182,7 @@ msgstr "Le fichier dépasse la taille acceptée par Zenodo."
 msgid "The file is no longer loaded. Import it again."
 msgstr "Le fichier n’est plus chargé. Importez-le à nouveau."
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "The file is no longer open"
 msgstr "Le fichier n’est plus ouvert"
 
@@ -5129,6 +5217,10 @@ msgstr "Le laboratoire, la plateforme technologique ou l’entreprise qui a effe
 #: src/domain/fields/samples.ts
 msgid "The largest area within the country, such as a region or province."
 msgstr "La plus grande subdivision du pays, par exemple une région ou une province."
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "The link may be out of date, or the list could not be loaded."
+msgstr "Le lien est peut-être périmé, ou la liste n’a pas pu être chargée."
 
 #: src/app/NotFoundPage.tsx
 msgid "The link may be out of date. Your work is still saved."
@@ -5314,7 +5406,7 @@ msgstr "Le fichier PMO que vous générez. Il est créé dans le navigateur et e
 msgid "The PMO has a problem in how its parts refer to each other."
 msgstr "Le PMO présente un problème dans la façon dont ses parties font référence les unes aux autres."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "The PMO version and how the file was made."
 msgstr "La version PMO et la façon dont le fichier a été créé."
 
@@ -5329,6 +5421,10 @@ msgstr "Le programme utilisé pour cette étape."
 #: src/domain/fields/records.ts
 msgid "The program's version, ideally written v1.2.3."
 msgstr "La version du programme, idéalement sous la forme v1.2.3."
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "The published file could not be opened"
+msgstr "Le fichier publié n’a pas pu être ouvert"
 
 #: src/domain/fields/microhaplotypes.ts
 msgid "The quality score of each base, written as in a FASTQ file."
@@ -5478,23 +5574,28 @@ msgstr "Le brin du segment de référence auquel se rapporte le pseudo-CIGAR."
 msgid "The strand the target lies on, + or -."
 msgstr "Le brin sur lequel se trouve la cible, + ou -."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/PublishPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "The subset"
 msgstr "Le sous-ensemble"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "The subset could not be made"
 msgstr "Le sous-ensemble n’a pas pu être créé"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/PublishPanel.tsx
+msgid "The subset could not be prepared"
+msgstr "Le sous-ensemble n’a pas pu être préparé"
+
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "The subset does not pass every check"
 msgstr "Le sous-ensemble ne passe pas toutes les vérifications"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "The subset is ready"
 msgstr "Le sous-ensemble est prêt"
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "The table could not be made. Open the file again."
 msgstr "Le tableau n’a pas pu être créé. Ouvrez de nouveau le fichier."
 
@@ -5531,7 +5632,8 @@ msgstr "Le puits de la bibliothèque sur sa plaque, par exemple A01, au lieu de 
 msgid "The well of the specimen on its storage plate, such as A01, instead of row and column."
 msgstr "Le puits du spécimen sur sa plaque de conservation, par exemple A01, au lieu de la ligne et de la colonne."
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/PublishPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "The whole file"
 msgstr "Le fichier entier"
 
@@ -5551,6 +5653,10 @@ msgstr "Des problèmes doivent être corrigés avant que cette partie puisse ent
 msgid "There are several panels, so a library sample table is needed to say which panel each sample used. Add one on the Library samples step, or use a single panel."
 msgstr "Il y a plusieurs panels : un tableau des échantillons de bibliothèque est donc nécessaire pour indiquer le panel utilisé par chaque échantillon. Ajoutez-en un à l’étape Échantillons de bibliothèque, ou utilisez un seul panel."
 
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "There is no built PMO to open"
+msgstr "Aucun PMO créé à ouvrir"
+
 #: src/features/review/PublishToZenodo.tsx
 msgid "There is no PMO to deposit. Something changed. Check the steps on the page."
 msgstr "Il n’y a aucun PMO à déposer. Quelque chose a changé. Vérifiez les étapes de la page."
@@ -5559,7 +5665,7 @@ msgstr "Il n’y a aucun PMO à déposer. Quelque chose a changé. Vérifiez les
 msgid "There is no PMO to download"
 msgstr "Il n’y a aucun PMO à télécharger"
 
-#: src/features/publish-file/PublishFilePage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "There may be more."
 msgstr "Il peut y en avoir d’autres."
 
@@ -5674,10 +5780,6 @@ msgstr "Cette instance de PMO Builder n’envoie pas de statistiques d’utilisa
 msgid "This copy of PMO Builder has no list of published PMOs"
 msgstr "Cette copie de PMO Builder n’a pas de liste de PMO publiés"
 
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "This copy of PMO Builder is not set up for publishing"
-msgstr "Cette copie de PMO Builder n’est pas configurée pour la publication"
-
 #: src/app/privacy/PrivacyDetails.tsx
 msgid "This copy sends anonymous usage counts to {destination}. They help its maintainers see how much the app is used and where people get stuck."
 msgstr "Cette instance envoie des statistiques d’utilisation anonymes à {destination}. Elles aident ses responsables à voir dans quelle mesure l’application est utilisée et où les utilisateurs rencontrent des difficultés."
@@ -5699,31 +5801,23 @@ msgstr "Ce fichier n’a pas pu être lu."
 msgid "This file could not be read. Check that it is a table saved as .csv, .tsv, .txt or .xlsx, and try again."
 msgstr "Ce fichier n’a pas pu être lu. Vérifiez qu’il s’agit d’un tableau enregistré au format .csv, .tsv, .txt ou .xlsx, puis réessayez."
 
-#: src/features/publish-file/PublishFilePage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "This file does not match the PMO format"
 msgstr "Ce fichier n’est pas conforme au format PMO"
 
-#: src/features/pmo-tools/PmoToolsPage.tsx
-msgid "This file does not match the PMO format, so it cannot be worked with here. Check it on the Publish a PMO file page to see what is wrong."
-msgstr "Ce fichier n’est pas conforme au format PMO ; il ne peut donc pas être traité ici. Vérifiez-le sur la page « Publier un fichier PMO » pour voir ce qui ne va pas."
-
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "This file does not say which PMO version it is. Only version {publishableVersion} files can be published. Build it again from your tables in PMO Builder to get a {publishableVersion} file."
-msgstr "Ce fichier n’indique pas sa version de PMO. Seuls les fichiers en version {publishableVersion} peuvent être publiés. Générez-le de nouveau à partir de vos tableaux dans PMO Builder pour obtenir un fichier en version {publishableVersion}."
-
-#: src/features/pmo-tools/PmoToolsPage.tsx
-msgid "This file does not say which PMO version it is. Only version {version} files can be opened here."
-msgstr "Ce fichier n’indique pas sa version PMO. Seuls les fichiers en version {version} peuvent être ouverts ici."
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "This file does not say which PMO version it is. Only version {version} files can be opened here. Build it again from your tables to get a {version} file."
+msgstr "Ce fichier n’indique pas sa version PMO. Seuls les fichiers en version {version} peuvent être ouverts ici. Créez-le de nouveau à partir de vos tableaux pour obtenir un fichier en version {version}."
 
 #: src/domain/import/messages.ts
 msgid "This file has a header row but no rows of data. Add the data below the header, or choose another file."
 msgstr "Ce fichier contient une ligne d’en-tête mais aucune ligne de données. Ajoutez les données sous l’en-tête, ou choisissez un autre fichier."
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "This file has no field with a few distinct values to choose by."
 msgstr "Ce fichier n’a aucun champ avec quelques valeurs distinctes permettant de choisir."
 
-#: src/features/publish-file/PublishFilePage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "This file is a valid PMO"
 msgstr "Ce fichier est un PMO valide"
 
@@ -5731,6 +5825,10 @@ msgstr "Ce fichier est un PMO valide"
 #: src/domain/import/messages.ts
 msgid "This file is a workbook over {limit}, too large to open in the browser. Save the sheet as a .csv or .tsv file and add that instead."
 msgstr "Ce fichier est un classeur de plus de {limit}, trop volumineux pour être ouvert dans le navigateur. Enregistrez la feuille au format .csv ou .tsv et importez plutôt ce fichier."
+
+#: src/features/pmo-file/PublishPanel.tsx
+msgid "This file is already published"
+msgstr "Ce fichier est déjà publié"
 
 #: src/domain/import/messages.ts
 msgid "This file is an old Excel file (.xls), which cannot be read. Open it in Excel, choose Save As, pick Excel Workbook (.xlsx), and add that file."
@@ -5744,25 +5842,21 @@ msgstr "Ce fichier est généré à partir des données d’exemple : il ne peu
 msgid "This file is empty. Choose a file with a header row and at least one row of data."
 msgstr "Ce fichier est vide. Choisissez un fichier comportant une ligne d’en-tête et au moins une ligne de données."
 
-#: src/features/pmo-tools/PmoToolsPage.tsx
-msgid "This file is in PMO version {declared}. Only version {version} files can be opened here."
-msgstr "Ce fichier est en version PMO {declared}. Seuls les fichiers en version {version} peuvent être ouverts ici."
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "This file is in PMO version {declared}. Only version {version} files can be opened here. Build it again from your tables to get a {version} file."
+msgstr "Ce fichier est en version PMO {declared}. Seuls les fichiers en version {version} peuvent être ouverts ici. Créez-le de nouveau à partir de vos tableaux pour obtenir un fichier en version {version}."
 
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "This file is in PMO version {declaredVersion}. Only version {publishableVersion} files can be published. Build it again from your tables in PMO Builder to get a {publishableVersion} file."
-msgstr "Ce fichier est en version {declaredVersion} du PMO. Seuls les fichiers en version {publishableVersion} peuvent être publiés. Générez-le de nouveau à partir de vos tableaux dans PMO Builder pour obtenir un fichier en version {publishableVersion}."
-
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "This file is larger than {sizeLimit}, more than this browser can check."
-msgstr "Ce fichier dépasse {sizeLimit}, ce qui est trop volumineux pour être vérifié par ce navigateur."
-
-#: src/features/pmo-tools/PmoToolsPage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "This file is larger than {sizeLimit}, more than this browser can open."
 msgstr "Ce fichier dépasse {sizeLimit}, ce qui est trop pour ce navigateur."
 
 #: src/domain/import/messages.ts
 msgid "This file is not a type of file that can be read. Choose a .csv, .tsv, .txt or .xlsx file. A .gz of a text file also works."
 msgstr "Ce fichier n’est pas d’un type pouvant être lu. Choisissez un fichier .csv, .tsv, .txt ou .xlsx. Un fichier texte compressé en .gz convient aussi."
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "This file is too large to open in the browser"
+msgstr "Ce fichier est trop volumineux pour être ouvert dans le navigateur"
 
 #. {limit} is a size, such as '200 MB'.
 #: src/domain/import/messages.ts
@@ -5777,18 +5871,23 @@ msgstr "Ce fichier est trop volumineux pour être ouvert dans le navigateur. Div
 msgid "This file looks compressed but could not be unpacked, so it may be damaged or incomplete. Download or copy it again, or add it uncompressed."
 msgstr "Ce fichier semble compressé mais n’a pas pu être décompressé ; il est peut-être endommagé ou incomplet. Téléchargez-le ou copiez-le de nouveau, ou importez-le non compressé."
 
-#: src/features/pmo-tools/PmoToolsPage.tsx
-#: src/features/publish-file/PublishFilePage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "This file looks gzipped but could not be unpacked. Check that it downloaded completely."
 msgstr "Ce fichier semble compressé au format gzip mais n’a pas pu être décompressé. Vérifiez qu’il a été entièrement téléchargé."
 
-#: src/features/pmo-tools/PmoToolsPage.tsx
-#: src/features/publish-file/PublishFilePage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "This is a published PMO"
+msgstr "Voici un PMO publié"
+
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "This is not a PMO file. A PMO file holds JSON and is saved as .json or .json.gz."
 msgstr "Ce n’est pas un fichier PMO. Un fichier PMO contient du JSON et est enregistré au format .json ou .json.gz."
 
-#: src/features/pmo-tools/PmoToolsPage.tsx
-#: src/features/publish-file/PublishFilePage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "This is the PMO built from your draft"
+msgstr "Voici le PMO créé à partir de votre brouillon"
+
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "This JSON file is not a PMO: it has no PMO header."
 msgstr "Ce fichier JSON n’est pas un PMO : il n’a pas d’en-tête PMO."
 
@@ -5812,6 +5911,10 @@ msgstr "Ce PMO est généré à partir des données d’exemple : il ne peut do
 msgid "This PMO is not in the list"
 msgstr "Ce PMO ne figure pas dans la liste"
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "This published PMO is not in the list"
+msgstr "Ce PMO publié ne figure pas dans la liste"
+
 #: src/app/StartOver.tsx
 msgid "This removes from this browser your tables, your column choices, everything you typed in, and any earlier draft that could not be opened. Saved panels are kept: delete them on the Panel step. This cannot be undone."
 msgstr "Cette action supprime de ce navigateur vos tableaux, vos choix de colonnes, tout ce que vous avez saisi et tout brouillon précédent qui n’a pas pu être ouvert. Les panels enregistrés sont conservés : supprimez-les à l’étape Panel. Cette action est irréversible."
@@ -5832,11 +5935,11 @@ msgstr "Ce tableau ne contient plus cette colonne. Décochez-la."
 msgid "This translation is a preview and may be incomplete. <0>Leave the preview</0>"
 msgstr "Cette traduction est une préversion et peut être incomplète. <0>Quitter la préversion</0>"
 
-#: src/features/pmo-tools/NameChecklist.tsx
+#: src/features/pmo-file/NameChecklist.tsx
 msgid "Tick all"
 msgstr "Tout cocher"
 
-#: src/features/pmo-tools/NameChecklist.tsx
+#: src/features/pmo-file/NameChecklist.tsx
 msgid "Tick all found"
 msgstr "Cocher tous les résultats"
 
@@ -5876,7 +5979,7 @@ msgstr "Tableau des totaux"
 msgid "Town or site"
 msgstr "Ville ou site"
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "Travel"
 msgstr "Voyages"
 
@@ -5893,6 +5996,7 @@ msgid "Treatment outcome"
 msgstr "Issue du traitement"
 
 #: src/app/HomePage.tsx
+#: src/features/pmo-file/OpenPublished.tsx
 msgid "Try again"
 msgstr "Réessayer"
 
@@ -5908,13 +6012,9 @@ msgstr "Essayez avec moins de mots ou des critères plus larges."
 msgid "Try with example data"
 msgstr "Essayer avec des données d’exemple"
 
-#: src/features/pmo-tools/TablesPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "TSV"
 msgstr "TSV"
-
-#: src/app/HomePage.tsx
-msgid "Turn your lab's tables into a PMO file"
-msgstr "Transformez les tableaux de votre laboratoire en fichier PMO"
 
 #: src/features/records/EntryModeSwitch.tsx
 msgid "Type it in"
@@ -5928,11 +6028,11 @@ msgstr "Saisissez le nom du run bioinformatique, ou choisissez de ne pas indique
 msgid "UMI count"
 msgstr "Nombre d’UMI"
 
-#: src/features/pmo-tools/NameChecklist.tsx
+#: src/features/pmo-file/NameChecklist.tsx
 msgid "Untick all"
 msgstr "Tout décocher"
 
-#: src/features/pmo-tools/NameChecklist.tsx
+#: src/features/pmo-file/NameChecklist.tsx
 msgid "Untick all found"
 msgstr "Décocher tous les résultats"
 
@@ -6015,7 +6115,7 @@ msgstr "Valeur"
 msgid "Value of detail {number}"
 msgstr "Valeur de l’information {number}"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Values of {fieldName}"
 msgstr "Valeurs de {fieldName}"
 
@@ -6074,9 +6174,13 @@ msgstr "Ce que ce navigateur conserve"
 msgid "What this table refers to"
 msgstr "Ce à quoi ce tableau fait référence"
 
-#: src/features/pmo-tools/PmoToolsPage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "What to do with the file"
 msgstr "Que faire du fichier"
+
+#: src/features/pmo-file/PublishPanel.tsx
+msgid "What to publish"
+msgstr "Que publier"
 
 #: src/features/records/RecordList.tsx
 msgid "What you typed for it will be gone. This cannot be undone."
@@ -6087,8 +6191,8 @@ msgid "What you typed is kept, but only the file goes into the PMO."
 msgstr "Ce que vous avez saisi est conservé, mais seul le fichier est intégré au PMO."
 
 #: src/app/HomePage.tsx
-msgid "What you will need"
-msgstr "Ce dont vous aurez besoin"
+msgid "What you will need to build a PMO"
+msgstr "Ce qu’il vous faut pour créer un PMO"
 
 #: src/domain/fields/records.ts
 msgid "When nucleic acids were amplified, as YYYY-MM or YYYY-MM-DD."
@@ -6186,7 +6290,7 @@ msgstr "La position de fin de la région comprise entre les deux amorces sur le 
 msgid "Where the stretch between the two primers starts on the chromosome."
 msgstr "La position de début de la région comprise entre les deux amorces sur le chromosome."
 
-#: src/features/pmo-tools/PmoToolsPage.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "Where to get a PMO file"
 msgstr "Où trouver un fichier PMO"
 
@@ -6210,11 +6314,11 @@ msgstr "Méthode utilisée par chaque run"
 msgid "Which reference genome the location refers to, counting from 0."
 msgstr "Le génome de référence auquel se rapporte la position, numéroté à partir de 0."
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Which specimens to keep"
 msgstr "Quels spécimens garder"
 
-#: src/features/pmo-tools/SubsetPanel.tsx
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Which targets to keep"
 msgstr "Quelles cibles garder"
 
@@ -6240,6 +6344,10 @@ msgstr "Avec le nombre de lectures"
 msgid "Without a specimen table, each library sample becomes its own specimen, so the specimen names in the library sample table are not used. Add a specimen table to keep them."
 msgstr "Sans tableau des spécimens, chaque échantillon de bibliothèque devient son propre spécimen : les noms de spécimens du tableau des échantillons de bibliothèque ne sont donc pas utilisés. Ajoutez un tableau des spécimens pour les conserver."
 
+#: src/app/HomePage.tsx
+msgid "Work with a PMO file"
+msgstr "Travailler avec un fichier PMO"
+
 #: src/features/shared/SectionResult.tsx
 msgid "Working out the result."
 msgstr "Calcul du résultat."
@@ -6256,9 +6364,9 @@ msgstr "Évaluation de l’état de cette étape."
 msgid "Working out whether a PMO can be built from what you added."
 msgstr "Vérification : un PMO peut-il être généré à partir de ce que vous avez ajouté ?"
 
-#: src/features/publish-file/PublishFilePage.tsx
-msgid "Worth a look before you publish"
-msgstr "À vérifier avant de publier"
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Worth a look"
+msgstr "À vérifier"
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "Written from what is in your PMO. Change them on Zenodo as you see fit."
@@ -6291,6 +6399,10 @@ msgstr "Le réglage de votre navigateur empêche leur envoi, quelle que soit la 
 #: src/features/review/PublishToZenodo.tsx
 msgid "Your browser stopped the Zenodo sign-in window. Allow pop-ups for this site and try again."
 msgstr "Votre navigateur a bloqué la fenêtre de connexion à Zenodo. Autorisez les fenêtres pop-up pour ce site et réessayez."
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Your built PMO"
+msgstr "Votre PMO créé"
 
 #: src/app/privacy/PrivacyDetails.tsx
 msgid "Your choice is remembered in this browser."

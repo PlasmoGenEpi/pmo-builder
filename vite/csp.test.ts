@@ -29,7 +29,7 @@ describe("content security policy", () => {
     expect(policy).toContain("script-src 'self';");
   });
 
-  it("adds zenodo.org to connect-src only when the build can deposit there", () => {
+  it("adds zenodo.org to connect-src only when the build names a Zenodo community", () => {
     const off = buildContentSecurityPolicy({ analyticsUrl: undefined, dev: false });
     expect(off).not.toContain("zenodo");
     const on = buildContentSecurityPolicy({ analyticsUrl: undefined, zenodo: true, dev: false });

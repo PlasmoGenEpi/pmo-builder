@@ -41,7 +41,7 @@ alone does not count.
 | ------------------------------ | --------------------------------------------------------- |
 | `v`, `kind`, `app`             | `2`, `session`, app version                               |
 | `steps`                        | steps opened, each once, in navigation order              |
-| `pages`                        | `published`, `dataset` or `publish-file`, each once       |
+| `pages`                        | `published`, `dataset` or `pmo-file`, each once           |
 | `tables.<table>.import`        | last import of that table this session, or `null`         |
 | `tables.<table>.import.route`  | `upload`, `example` or `saved-panel`                      |
 | `...import.format`, `.gzip`    | `csv`, `tsv`, `txt`, `xlsx` or `other`; `true` or `false` |

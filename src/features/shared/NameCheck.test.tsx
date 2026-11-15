@@ -27,7 +27,10 @@ describe("NameCheck", () => {
   it("says when every name is found, with a link to the step", () => {
     renderCheck(["P1", "P2"]);
     expect(screen.getByText("All found on the Project step.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Go to Project" })).toHaveAttribute("href", "/project");
+    expect(screen.getByRole("link", { name: "Go to Project" })).toHaveAttribute(
+      "href",
+      "/build/project",
+    );
   });
 
   it("lists the names that are missing", () => {

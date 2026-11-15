@@ -6,6 +6,7 @@ import { useLocation } from "wouter";
 
 import { IconButton } from "@/ui";
 
+import { BUILD_PATH } from "./steps";
 import { StepNav } from "./StepNav";
 import { LanguagePreviewNotice } from "./LanguagePreviewNotice";
 import { OtherTabNotice } from "./OtherTabNotice";
@@ -20,10 +21,14 @@ function ScrollReset() {
   return null;
 }
 
-/** The app frame: top bar, step sidebar (a drawer on narrow screens) and the content column. */
+/**
+ * The app frame: top bar and content column, with the step sidebar (a drawer
+ * on narrow screens) in the Build section only.
+ */
 export function Layout({ children }: { children: ReactNode }) {
   const [navOpen, setNavOpen] = useState(false);
   const [location] = useLocation();
+  const building = location === BUILD_PATH || location.startsWith(`${BUILD_PATH}/`);
 
   return (
     <div className="flex min-h-dvh flex-col bg-surface">
@@ -41,11 +46,13 @@ export function Layout({ children }: { children: ReactNode }) {
       <TopBar onOpenNav={() => setNavOpen(true)} />
       <LanguagePreviewNotice />
       <div className="flex flex-1">
-        <aside className="hidden w-sidebar shrink-0 border-r border-border bg-canvas lg:block">
-          <div className="sticky top-topbar max-h-[calc(100dvh-var(--spacing-topbar))] overflow-y-auto px-3 py-5">
-            <StepNav />
-          </div>
-        </aside>
+        {building ? (
+          <aside className="hidden w-sidebar shrink-0 border-r border-border bg-canvas lg:block">
+            <div className="sticky top-topbar max-h-[calc(100dvh-var(--spacing-topbar))] overflow-y-auto px-3 py-5">
+              <StepNav />
+            </div>
+          </aside>
+        ) : null}
         <main id="main" tabIndex={-1} className="min-w-0 flex-1 outline-none">
           <OtherTabNotice />
           {children}
@@ -53,7 +60,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </div>
       <UsageNotice />
 
-      <RadixDialog.Root open={navOpen} onOpenChange={setNavOpen}>
+      <RadixDialog.Root open={building && navOpen} onOpenChange={setNavOpen}>
         <RadixDialog.Portal>
           <RadixDialog.Overlay className="fixed inset-0 z-40 animate-fade-in bg-overlay lg:hidden" />
           <RadixDialog.Content

@@ -77,7 +77,7 @@ test("downloads the example as a gzipped and a plain PMO that pass the checks", 
 test("an uploaded allele table alone is not ready, and review says the panel is needed", async ({
   page,
 }) => {
-  await page.goto("/#/microhaplotypes");
+  await page.goto("/#/build/microhaplotypes");
   await expect(page.getByRole("heading", { level: 1, name: "Microhaplotypes" })).toBeVisible();
   await page.getByLabel("Choose allele table file").setInputFiles(ALLELE_TABLE);
   await expect(
@@ -97,7 +97,7 @@ test("an uploaded allele table alone is not ready, and review says the panel is 
   ).toContainText("Needed");
 
   await verdict.getByRole("link", { name: "Go to Panel" }).click();
-  await expect(page).toHaveURL(/#\/panel$/);
+  await expect(page).toHaveURL(/#\/build\/panel$/);
   await expect(page.getByRole("heading", { level: 1, name: "Panel" })).toBeVisible();
 
   // Add the panel and name it, then download.
@@ -124,7 +124,7 @@ test("the verdict and numbers come back after a reload on the review step", asyn
   await expect(page.getByRole("button", { name: "Saved on this device" })).toBeVisible();
   await page.waitForTimeout(1_000);
   await page.reload();
-  await expect(page).toHaveURL(/#\/review$/);
+  await expect(page).toHaveURL(/#\/build\/review$/);
   await expect(
     verdictCard(page).getByRole("heading", { name: "Ready, with things to check" }),
   ).toBeVisible({ timeout: BUILD_TIMEOUT });
@@ -136,7 +136,7 @@ test("the download button is reached and used from the keyboard alone", async ({
   await loadExample(page);
   await expect(page.getByRole("button", { name: "Saved on this device" })).toBeVisible();
   await page.waitForTimeout(1_000);
-  await page.goto("/#/review");
+  await page.goto("/#/build/review");
   await page.reload();
 
   const title = page.getByRole("heading", { level: 1, name: "Review and download" });

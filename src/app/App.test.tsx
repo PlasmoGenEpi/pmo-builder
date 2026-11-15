@@ -28,10 +28,17 @@ describe("App", () => {
   it("renders the home page with a main landmark", () => {
     renderAt("/");
     expect(screen.getByRole("main")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { level: 1, name: "Turn your lab's tables into a PMO file" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "PMO Builder" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open a PMO file" })).toHaveAttribute("href", "/pmo");
+    const sections = screen.getByRole("navigation", { name: "Sections" });
+    expect(within(sections).getByRole("link", { name: "Build" })).toHaveAttribute("href", "/build");
+    expect(within(sections).getByRole("link", { name: "My PMO file" })).toHaveAttribute(
+      "href",
+      "/pmo",
+    );
+    // The step list belongs to the Build section only.
+    expect(screen.queryByRole("navigation", { name: "Steps" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Download the Excel template" })).toHaveAttribute(
       "href",
       "/examples/PMO_building_template.xlsx",
@@ -39,7 +46,7 @@ describe("App", () => {
   });
 
   it("moves between two steps from the sidebar", async () => {
-    const { location, user } = renderAt("/microhaplotypes");
+    const { location, user } = renderAt("/build/microhaplotypes");
     expect(
       await screen.findByRole("heading", { level: 1, name: "Microhaplotypes" }),
     ).toBeInTheDocument();
@@ -47,18 +54,20 @@ describe("App", () => {
     const sidebar = screen.getByRole("navigation", { name: "Steps" });
     const current = within(sidebar).getByRole("link", { current: "page" });
     expect(current).toHaveTextContent("Microhaplotypes");
-    // Required steps are marked, and status is given in words.
-    expect(current).toHaveTextContent("Required");
+    // Status is given in words; progress on the required steps heads the list.
     expect(current).toHaveTextContent("Not started");
+    expect(sidebar).toHaveTextContent("0 of 2 required steps ready");
+    const sections = screen.getByRole("navigation", { name: "Sections" });
+    expect(within(sections).getByRole("link", { current: "page" })).toHaveTextContent("Build");
 
     await user.click(within(sidebar).getByRole("link", { name: /Panel/ }));
     expect(await screen.findByRole("heading", { level: 1, name: "Panel" })).toBeInTheDocument();
-    expect(location.history.at(-1)).toBe("/panel");
+    expect(location.history.at(-1)).toBe("/build/panel");
     expect(within(sidebar).getByRole("link", { current: "page" })).toHaveTextContent("Panel");
   });
 
   it("links Back and Next in registry order", async () => {
-    const { user } = renderAt("/panel");
+    const { user } = renderAt("/build/panel");
     await screen.findByRole("heading", { level: 1, name: "Panel" });
     const pager = screen.getByRole("navigation", { name: "Previous and next step" });
     expect(within(pager).getByRole("link", { name: /Back\s*Microhaplotypes/ })).toBeInTheDocument();
@@ -80,7 +89,7 @@ describe("App", () => {
 
   it("loads the next step's code when the browser is idle", async () => {
     const preload = vi.spyOn(getStep("specimens"), "preload");
-    renderAt("/panel");
+    renderAt("/build/panel");
     await screen.findByRole("heading", { level: 1, name: "Panel" });
     await waitFor(() => expect(preload).toHaveBeenCalled());
   });
@@ -118,14 +127,27 @@ describe("App", () => {
 });
 
 describe("usage counts for pages outside the steps", () => {
-  it("counts the published list, a dataset page and the publish page by kind only", async () => {
+  it("counts the published list, a dataset page and My PMO file by kind only", async () => {
     const spy = vi.spyOn(await import("@/analytics"), "recordPageOpened");
-    for (const path of ["/published", "/published/24237928", "/publish"]) {
+    for (const path of ["/published", "/published/24237928", "/pmo"]) {
       const { unmount } = render(
         <App locationHook={memoryLocation({ path }).hook} store={createTestStore()} />,
       );
       unmount();
     }
-    expect(spy.mock.calls).toEqual([["published"], ["dataset"], ["publish-file"]]);
+    expect(spy.mock.calls).toEqual([["published"], ["dataset"], ["pmo-file"]]);
+  });
+});
+
+describe("addresses from before the sections", () => {
+  it.each([
+    ["/panel", "/build/panel"],
+    ["/review", "/build/review"],
+    ["/publish", "/pmo/publish"],
+    ["/pmo-tools", "/pmo"],
+    ["/build", "/build/microhaplotypes"],
+  ])("sends %s to %s", async (from, to) => {
+    const { location } = renderAt(from);
+    await waitFor(() => expect(location.history.at(-1)).toBe(to));
   });
 });

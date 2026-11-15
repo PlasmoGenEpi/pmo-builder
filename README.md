@@ -7,9 +7,23 @@ match PMO fields, and download a validated PMO JSON file. It replaces the
 Streamlit app in `pmotools-app`. All PMO logic comes from
 pmotools-ts, the TypeScript port of pmotools-python.
 
+## The sections
+
+The top bar has three sections, and the home page offers the same three:
+
+- **Build** (`#/build/…`): make a PMO from your tables, step by step. The
+  step list is in the sidebar, which appears only here.
+- **My PMO file** (`#/pmo`): open a PMO file once, then look over it,
+  download its tables, make a subset, or publish it, each on its own tab.
+- **Published** (`#/published`): the PMOs published in the Zenodo community.
+  Shown when the build sets a community.
+
+Addresses from before the sections (`#/panel`, `#/publish`, `#/pmo-tools`
+and so on) redirect to their new places.
+
 ## The steps
 
-The steps can be done in any order. Each one rebuilds its part of the PMO as
+The steps of Build can be done in any order. Each one rebuilds its part of the PMO as
 you go and shows whether it is ready. Only the first two are needed.
 
 1. **Microhaplotypes**: the allele table, and the analysis run that made it.
@@ -55,11 +69,11 @@ Developer Applications. Set the client type to Public and the redirect URI to
 `zenodo-callback.html` beside the app, such as
 `https://v2.pmotools.app/zenodo-callback.html`.
 
-"Publish a PMO file" (`#/publish`) does the same for a PMO file the user
-already has, built here earlier or with pmotools. The file is read and
-checked in the browser, and only a file in PMO version 1.1.0 that matches the
-format and whose tables link up can be deposited. The user's draft is not
-touched.
+The Publish tab of My PMO file (`#/pmo/publish`) does the same for a PMO file
+the user already has, built here earlier or with pmotools, or for a subset
+of it. The file is read and checked in the browser, and only a file in PMO
+version 1.1.0 that matches the format and whose tables link up can be
+deposited. The user's draft is not touched.
 
 The panel does not offer to publish the app's own example data. The example
 tables use made-up sample names that start with `example_sample_`, and a PMO
@@ -100,19 +114,28 @@ datasets; no page reads it yet.
 Run `pnpm harvest --community plasmogenepi` to try the list locally. The
 output folder, `public/repository/`, is not committed.
 
-## Subset or export a PMO
+## My PMO file
 
-"Subset or export a PMO" (`#/pmo-tools`) opens a version 1.1.0 PMO file the
-user already has, built here or downloaded from the published PMOs, and:
+My PMO file (`#/pmo`) opens a version 1.1.0 PMO file the user already has,
+built here or downloaded from the published PMOs, and keeps it open while
+the user moves between its tabs and the rest of the app. "Open it in My PMO
+file" on the Review step opens the PMO the draft built, and "Open in My PMO
+file" on a published dataset's page downloads that PMO from Zenodo and opens
+it (`#/pmo/published/<record id>`). A published file is not offered for
+depositing again, but a subset of it can be. The tabs:
 
-- downloads any of its tables as CSV or TSV: the allele table (one row per
+- **Overview**: whether the file is valid, anything worth a look, and what it
+  holds.
+
+- **Tables**: any of its tables as CSV or TSV: the allele table (one row per
   microhaplotype in each library sample, with reads), specimens, library
   samples, targets, panels, and the optional sections it has;
-- makes a smaller PMO with only some specimens (ticked by name, or chosen by
+- **Subset**: a smaller PMO with only some specimens (ticked by name, or chosen by
   metadata values such as the country), some targets, or the
   microhaplotypes with at least a number of reads. The subset is checked
   against the PMO format and downloaded as `.json.gz` or `.json`, and its
-  tables can be downloaded too.
+  tables can be downloaded too, or the subset published.
+- **Publish to Zenodo**: see above.
 
 The work is done by `pmotools-ts` (`filterPmoBy…`, `extract…`,
 `export…Table`), ported from pmotools-python and checked against it. The

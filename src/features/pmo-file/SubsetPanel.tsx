@@ -151,9 +151,11 @@ function subsetSummary(summary: MergeSummary): string {
 function SubsetResult({
   outcome,
   onShowTables,
+  onPublish,
 }: {
   readonly outcome: SubsetOutcome;
   readonly onShowTables: () => void;
+  readonly onPublish: (() => void) | null;
 }) {
   const actions = useActions();
   const [saving, setSaving] = useState<"gzip" | "json" | null>(null);
@@ -206,6 +208,11 @@ function SubsetResult({
             <Button variant="ghost" onClick={onShowTables}>
               {t`Download its tables`}
             </Button>
+            {onPublish === null ? null : (
+              <Button variant="ghost" onClick={onPublish}>
+                {t`Publish the subset`}
+              </Button>
+            )}
           </div>
           {failed ? (
             <p role="alert" className="text-sm text-danger-text">
@@ -248,10 +255,18 @@ export interface SubsetPanelProps {
   readonly outcome: SubsetOutcome | null;
   readonly onMade: (outcome: SubsetOutcome | null) => void;
   readonly onShowTables: () => void;
+  /** Opens publishing for the subset, or `null` when this copy cannot publish. */
+  readonly onPublish: (() => void) | null;
 }
 
 /** Choosing specimens, targets and a read threshold, and making the subset. */
-export function SubsetPanel({ choices, outcome, onMade, onShowTables }: SubsetPanelProps) {
+export function SubsetPanel({
+  choices,
+  outcome,
+  onMade,
+  onShowTables,
+  onPublish,
+}: SubsetPanelProps) {
   const actions = useActions();
   const [form, setForm] = useState<SubsetForm>(() => initialForm(choices));
   const [making, setMaking] = useState(false);
@@ -403,7 +418,9 @@ export function SubsetPanel({ choices, outcome, onMade, onShowTables }: SubsetPa
         )}
       </div>
 
-      {outcome === null ? null : <SubsetResult outcome={outcome} onShowTables={onShowTables} />}
+      {outcome === null ? null : (
+        <SubsetResult outcome={outcome} onShowTables={onShowTables} onPublish={onPublish} />
+      )}
     </div>
   );
 }

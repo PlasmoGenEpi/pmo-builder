@@ -5,8 +5,9 @@
  * The policy is what makes the privacy promise checkable: the browser itself
  * refuses any request to an origin not listed in `connect-src`, whatever the
  * app's code tries to do. The only origins added are the one in
- * `VITE_ANALYTICS_URL`, when it is set, and zenodo.org, when the build can
- * deposit there (`VITE_ZENODO_CLIENT_ID` is set).
+ * `VITE_ANALYTICS_URL` and `VITE_TRANSLATION_REVIEW_URL`, when they are set,
+ * and zenodo.org, when the build names a Zenodo community
+ * (`VITE_ZENODO_COMMUNITY`).
  *
  * A `<meta>` policy cannot carry `frame-ancestors`, `report-uri` or
  * `sandbox`. GitHub Pages cannot set response headers, so this is the
@@ -19,9 +20,9 @@ export interface PolicyOptions {
   /** The value of `VITE_ANALYTICS_URL`, or `undefined` when it is not set. */
   readonly analyticsUrl: string | undefined;
   /**
-   * `true` when the build can deposit to Zenodo (`VITE_ZENODO_CLIENT_ID` is
-   * set). The app then may contact zenodo.org, which it does only when the
-   * user asks for a deposit.
+   * `true` when the build names a Zenodo community. The app then may contact
+   * zenodo.org, which it does only when the user opens a published PMO or
+   * asks for a deposit.
    */
   readonly zenodo?: boolean;
   /** The value of `VITE_TRANSLATION_REVIEW_URL`, or `undefined` when it is not set. */

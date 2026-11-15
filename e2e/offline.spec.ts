@@ -23,11 +23,9 @@ test("opens and builds the example without a connection, after one visit online"
   await context.setOffline(true);
   try {
     await page.reload();
-    await expect(
-      page.getByRole("heading", { level: 1, name: "Turn your lab's tables into a PMO file" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "PMO Builder" })).toBeVisible();
     await loadExample(page);
-    await page.goto("/#/review");
+    await page.goto("/#/build/review");
     await expect(verdictCard(page)).toContainText("Ready", { timeout: BUILD_TIMEOUT });
     await expect(page.getByRole("button", { name: "Download PMO" })).toBeEnabled();
   } finally {

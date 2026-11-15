@@ -77,6 +77,9 @@ const RESULT_GUARDS: {
   checkPmoFile: (value): value is EngineResult<"checkPmoFile"> =>
     hasKind(value, ["ready", "too-large", "unreadable", "wrong-version", "invalid"]),
   openPmo: (value): value is EngineResult<"openPmo"> => hasKind(value, ["opened", "refused"]),
+  openBuiltPmo: (value): value is EngineResult<"openBuiltPmo"> =>
+    value === null ||
+    (isRecord(value) && hasKind(value["outcome"], ["opened"]) && isRecord(value["file"])),
   subsetPmo: (value): value is EngineResult<"subsetPmo"> =>
     hasKind(value, ["made", "empty", "not-open", "failed"]),
   workingPmoTable: (value): value is EngineResult<"workingPmoTable"> =>
@@ -208,6 +211,7 @@ export function createEngineClient(
     getPanelFragment: (...args) => call("getPanelFragment", args),
     checkPmoFile: (...args) => call("checkPmoFile", args),
     openPmo: (...args) => call("openPmo", args),
+    openBuiltPmo: (...args) => call("openBuiltPmo", args),
     subsetPmo: (...args) => call("subsetPmo", args),
     workingPmoTable: (...args) => call("workingPmoTable", args),
     workingPmoFile: (...args) => call("workingPmoFile", args),
@@ -309,6 +313,7 @@ export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
     getPanelFragment: async (...args) => engine().getPanelFragment(...args),
     checkPmoFile: async (...args) => engine().checkPmoFile(...args),
     openPmo: async (...args) => engine().openPmo(...args),
+    openBuiltPmo: async (...args) => engine().openBuiltPmo(...args),
     subsetPmo: async (...args) => engine().subsetPmo(...args),
     workingPmoTable: async (...args) => engine().workingPmoTable(...args),
     workingPmoFile: async (...args) => engine().workingPmoFile(...args),
@@ -396,6 +401,7 @@ export function createLazyEngine(make: () => Promise<Engine>): Engine {
     getPanelFragment: async (...args) => (await load()).getPanelFragment(...args),
     checkPmoFile: async (...args) => (await load()).checkPmoFile(...args),
     openPmo: async (...args) => (await load()).openPmo(...args),
+    openBuiltPmo: async (...args) => (await load()).openBuiltPmo(...args),
     subsetPmo: async (...args) => (await load()).subsetPmo(...args),
     workingPmoTable: async (...args) => (await load()).workingPmoTable(...args),
     workingPmoFile: async (...args) => (await load()).workingPmoFile(...args),

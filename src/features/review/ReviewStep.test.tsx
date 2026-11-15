@@ -101,11 +101,11 @@ describe("ReviewStep verdict", () => {
     expect(within(card).getByRole("heading", { name: "Not ready yet" })).toBeInTheDocument();
     expect(within(card).getByRole("link", { name: "Go to Microhaplotypes" })).toHaveAttribute(
       "href",
-      "/microhaplotypes",
+      "/build/microhaplotypes",
     );
     expect(within(card).getByRole("link", { name: "Go to Panel" })).toHaveAttribute(
       "href",
-      "/panel",
+      "/build/panel",
     );
     expect(within(card).queryByRole("button", { name: "Download PMO" })).toBeNull();
   });
@@ -290,7 +290,7 @@ describe("ReviewStep checklist", () => {
     expect(row("Project")).toHaveTextContent("Not added");
     expect(within(row("Read counts by stage")).getByRole("link")).toHaveAttribute(
       "href",
-      "/read-counts",
+      "/build/read-counts",
     );
   });
 
@@ -361,11 +361,11 @@ describe("ReviewStep things to check", () => {
     expect(within(check).queryByText('Specimen "S3" is missing collection_country.')).toBeNull();
     expect(within(check).getByRole("link", { name: "Fix on Specimens" })).toHaveAttribute(
       "href",
-      "/specimens",
+      "/build/specimens",
     );
     expect(within(check).getByRole("link", { name: "Fix on Sequencing" })).toHaveAttribute(
       "href",
-      "/sequencing",
+      "/build/sequencing",
     );
 
     await userEvent.click(within(check).getByRole("button", { name: "Show all 3" }));

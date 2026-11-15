@@ -52,14 +52,14 @@ const STATES: readonly State[] = [
   {
     name: "empty",
     reach: async (page) => {
-      await page.goto("/#/review");
+      await page.goto("/#/build/review");
       await expect(verdictCard(page).getByRole("heading", { name: "Not ready yet" })).toBeVisible();
     },
   },
   {
     name: "not-ready-panel-missing",
     reach: async (page) => {
-      await page.goto("/#/microhaplotypes");
+      await page.goto("/#/build/microhaplotypes");
       await page
         .getByLabel("Choose allele table file")
         .setInputFiles(join(EXAMPLES, "mad4hatter_allele_data_example.csv"));

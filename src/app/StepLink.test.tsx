@@ -19,8 +19,8 @@ describe("StepLink", () => {
       </Router>,
     );
     const link = screen.getByRole("link", { name: "Go to Library samples" });
-    expect(link).toHaveAttribute("href", "/library-samples");
+    expect(link).toHaveAttribute("href", "/build/library-samples");
     await user.click(screen.getByRole("link", { name: "Fix the panel" }));
-    expect(location.history).toEqual(["/", "/panel"]);
+    expect(location.history).toEqual(["/", "/build/panel"]);
   });
 });

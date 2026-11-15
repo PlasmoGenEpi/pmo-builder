@@ -2,27 +2,66 @@ import {
   ArrowRight,
   Dna,
   Download,
+  FileSpreadsheet,
   FlaskConical,
+  Hammer,
+  LibraryBig,
   Microscope,
   ShieldCheck,
   Table2,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link as RouterLink, useLocation } from "wouter";
 
 import { zenodoConfig } from "@/features/review/zenodo";
 
-import { Badge, Button, Callout, Card, ConfirmDialog, Link, ProgressBar } from "@/ui";
+import {
+  Badge,
+  Button,
+  Callout,
+  Card,
+  ConfirmDialog,
+  Link,
+  ProgressBar,
+  buttonClassName,
+} from "@/ui";
 
 import { useHasSavedDraft, useLoadExampleData } from "./draftHooks";
 import { Logo } from "./Logo";
 import { PageContainer } from "./PageContainer";
 import { StartOverButton } from "./StartOver";
-import { STEPS } from "./steps";
+import { BUILD_PATH, STEPS } from "./steps";
+import { useStepStatuses } from "./stepStatus";
+
+/** One of the three things the app does, as a card on the home page. */
+function JobCard({
+  icon: Icon,
+  title,
+  description,
+  children,
+}: {
+  readonly icon: LucideIcon;
+  readonly title: string;
+  readonly description: string;
+  readonly children: ReactNode;
+}) {
+  return (
+    <Card as="article" className="flex flex-col gap-4">
+      <span className="flex size-10 items-center justify-center rounded-lg bg-accent-subtle text-accent-text">
+        <Icon aria-hidden="true" className="size-5" />
+      </span>
+      <div className="flex flex-1 flex-col gap-1.5">
+        <h2 className="text-lg font-semibold tracking-tight text-text">{title}</h2>
+        <p className="text-base text-pretty text-text-muted">{description}</p>
+      </div>
+      <div className="flex flex-col items-start gap-2">{children}</div>
+    </Card>
+  );
+}
 
 interface Need {
   icon: LucideIcon;
@@ -72,7 +111,7 @@ type ExampleLoad =
 
 const TEMPLATE_URL = `${import.meta.env.BASE_URL}examples/PMO_building_template.xlsx`;
 
-/** The landing page: what the app does, the privacy promise and how to start. */
+/** The landing page: the three things the app does, the privacy promise, and what building needs. */
 export function HomePage({
   showPublished = zenodoConfig() !== null,
 }: {
@@ -87,7 +126,11 @@ export function HomePage({
   const loadingExample = example.kind === "loading";
   const exampleMessage = example.kind === "failed" ? example.message : "";
   const firstStep = STEPS[0];
-  const firstPath = firstStep?.path ?? "/";
+  const firstPath = firstStep?.path ?? BUILD_PATH;
+  const statuses = useStepStatuses();
+  const required = STEPS.filter((step) => step.required);
+  const readyCount = required.filter((step) => statuses[step.id] === "ready").length;
+  const requiredCount = required.length;
 
   async function tryExample() {
     setExample({ kind: "loading" });
@@ -105,19 +148,18 @@ export function HomePage({
   }
 
   return (
-    <PageContainer>
+    <PageContainer width="full">
       <section aria-labelledby="home-title" className="flex flex-col gap-6 lg:pt-6">
-        <Logo className="size-12" />
-        <div className="flex flex-col gap-4">
-          <h1
-            id="home-title"
-            className="text-3xl font-semibold tracking-tight text-balance text-text"
-          >
-            <Trans>Turn your lab&apos;s tables into a PMO file</Trans>
-          </h1>
-          <p className="max-w-2xl text-md text-pretty text-text-muted">
-            {t`PMO Builder reads your allele table, panel table and sample metadata, matches their columns to the fields of a Portable Microhaplotype Object, and builds a PMO file you can download. You can fill in the steps in any order, and your work is saved as you go.`}
-          </p>
+        <div className="flex items-center gap-4">
+          <Logo className="size-12" />
+          <div className="flex flex-col gap-1">
+            <h1 id="home-title" className="text-3xl font-semibold tracking-tight text-text">
+              PMO Builder
+            </h1>
+            <p className="text-md text-pretty text-text-muted">
+              {t`Make, use and find Portable Microhaplotype Object (PMO) files.`}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-start gap-3 rounded-lg border border-success/30 bg-success-subtle px-4 py-3">
@@ -130,72 +172,60 @@ export function HomePage({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 pt-2">
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={() => navigate(firstPath)}
-            className="max-sm:w-full"
+        <div className={showPublished ? "grid gap-4 lg:grid-cols-3" : "grid gap-4 lg:grid-cols-2"}>
+          <JobCard
+            icon={Hammer}
+            title={t`Build a PMO`}
+            description={t`From your lab's allele table, panel table and sample metadata. Fill in the steps in any order; your work is saved as you go.`}
           >
-            {hasDraft ? t`Continue where you left off` : t`Start`}
-            <ArrowRight aria-hidden="true" className="size-4.5" />
-          </Button>
-          <Button
-            size="lg"
-            loading={loadingExample}
-            onClick={() => {
-              if (hasDraft) setConfirmingExample(true);
-              else void tryExample();
-            }}
-            className="max-sm:w-full"
+            <Button variant="primary" onClick={() => navigate(firstPath)}>
+              {hasDraft ? t`Continue your draft` : t`Start`}
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </Button>
+            {hasDraft ? (
+              <p className="text-sm text-text-muted">
+                {plural(requiredCount, {
+                  one: `${readyCount} of # required step ready`,
+                  other: `${readyCount} of # required steps ready`,
+                })}
+              </p>
+            ) : null}
+            <Button
+              variant="ghost"
+              size="sm"
+              loading={loadingExample}
+              onClick={() => {
+                if (hasDraft) setConfirmingExample(true);
+                else void tryExample();
+              }}
+            >
+              {t`Try with example data`}
+            </Button>
+            {hasDraft ? <StartOverButton variant="ghost" size="sm" /> : null}
+          </JobCard>
+          <JobCard
+            icon={FileSpreadsheet}
+            title={t`Work with a PMO file`}
+            description={t`Open a PMO file to download its tables, make a subset of some specimens, targets or reads, or publish it.`}
           >
-            {t`Try with example data`}
-          </Button>
-          {hasDraft ? (
-            <StartOverButton variant="ghost" size="lg" className="max-sm:w-full" />
+            <RouterLink href="/pmo" className={buttonClassName({ variant: "secondary" })}>
+              {t`Open a PMO file`}
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </RouterLink>
+          </JobCard>
+          {showPublished ? (
+            <JobCard
+              icon={LibraryBig}
+              title={t`Find published PMOs`}
+              description={t`Datasets shared in the PlasmoGenEpi community on Zenodo, with their countries, years and panels.`}
+            >
+              <RouterLink href="/published" className={buttonClassName({ variant: "secondary" })}>
+                {t`Browse published PMOs`}
+                <ArrowRight aria-hidden="true" className="size-4" />
+              </RouterLink>
+            </JobCard>
           ) : null}
         </div>
-        {showPublished ? (
-          <p className="text-base text-text-muted">
-            <Trans>
-              Looking for data?{" "}
-              <RouterLink
-                href="/published"
-                className="font-medium text-accent-text underline-offset-2 hover:underline"
-              >
-                Browse the published PMOs
-              </RouterLink>
-              . Have a PMO file already?{" "}
-              <RouterLink
-                href="/publish"
-                className="font-medium text-accent-text underline-offset-2 hover:underline"
-              >
-                Publish it
-              </RouterLink>
-              , or{" "}
-              <RouterLink
-                href="/pmo-tools"
-                className="font-medium text-accent-text underline-offset-2 hover:underline"
-              >
-                subset it or download its tables
-              </RouterLink>
-              .
-            </Trans>
-          </p>
-        ) : (
-          <p className="text-base text-text-muted">
-            <Trans>
-              Have a PMO file already?{" "}
-              <RouterLink
-                href="/pmo-tools"
-                className="font-medium text-accent-text underline-offset-2 hover:underline"
-              >
-                Subset it or download its tables
-              </RouterLink>
-              .
-            </Trans>
-          </p>
-        )}
         {example.kind === "loading" ? (
           <ProgressBar label={t`Loading the example tables`} value={null} className="max-w-md" />
         ) : null}
@@ -235,7 +265,7 @@ export function HomePage({
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
           <div className="flex flex-col gap-1">
             <h2 id="needs-title" className="text-lg font-semibold tracking-tight text-text">
-              {t`What you will need`}
+              {t`What you will need to build a PMO`}
             </h2>
             <p className="text-base text-text-muted">
               {t`Tables can be CSV, TSV, plain text or Excel files.`}

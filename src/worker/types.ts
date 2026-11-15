@@ -195,6 +195,11 @@ export interface Engine {
    * draft alone.
    */
   openPmo(file: Blob, fileName: string): Promise<OpenOutcome>;
+  /**
+   * Opens the PMO the draft last built, as if its file had been chosen, and
+   * gives that file too. `null` when nothing has been built.
+   */
+  openBuiltPmo(): Promise<{ readonly outcome: OpenOutcome; readonly file: PmoFile } | null>;
   /** Makes a subset of the opened PMO and keeps it, replacing any earlier subset. */
   subsetPmo(request: SubsetRequest): Promise<SubsetOutcome>;
   /** One table of the opened PMO or its subset, or `null` when there is none. */

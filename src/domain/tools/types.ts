@@ -4,6 +4,7 @@
  */
 import type { PmoFileCheck } from "@/domain/build/checkFileResult";
 import type { MergeSummary } from "@/domain/build/merge";
+import type { PublicationSummary } from "@/domain/build/publication";
 
 /** A flat table that can be downloaded from a PMO. */
 export const TABLE_IDS = [
@@ -76,6 +77,10 @@ export type OpenOutcome =
       readonly kind: "opened";
       readonly fileName: string;
       readonly summary: MergeSummary;
+      /** What a Zenodo record of the file would say. */
+      readonly publication: PublicationSummary;
+      /** Things worth a look that do not stop working with or publishing the file. */
+      readonly warnings: readonly string[];
       readonly choices: PmoChoices;
       readonly tables: readonly TableInfo[];
     }
@@ -108,6 +113,8 @@ export type SubsetOutcome =
       readonly kind: "made";
       readonly fileName: string;
       readonly summary: MergeSummary;
+      /** What a Zenodo record of the subset would say. */
+      readonly publication: PublicationSummary;
       readonly tables: readonly TableInfo[];
       /** Problems found when checking the subset. Empty when it is a valid PMO. */
       readonly problems: readonly string[];

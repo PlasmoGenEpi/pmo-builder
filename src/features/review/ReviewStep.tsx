@@ -1,5 +1,6 @@
 import { Trans } from "@lingui/react/macro";
 import { CircleCheck, CircleDashed, TriangleExclamationPoint } from "lucide-react";
+import { Link as RouterLink } from "wouter";
 
 import { StepPage } from "@/app/StepPage";
 import { unreachable } from "@/domain/draft";
@@ -76,6 +77,21 @@ export function ReviewStep({
             />
           ) : null}
         </VerdictCard>
+        {view?.overall.pmo === "valid" ? (
+          <p className="text-base text-text-muted">
+            <Trans>
+              Need its tables, or a subset of some specimens or targets?{" "}
+              {/* The address My PMO file opens the built PMO at; see PmoFilePage. */}
+              <RouterLink
+                href="/pmo/open-built"
+                className="font-medium text-accent-text underline-offset-2 hover:underline"
+              >
+                Open it in My PMO file
+              </RouterLink>
+              .
+            </Trans>
+          </p>
+        ) : null}
         <SectionChecklist view={view} />
         {view === null ? null : (
           <>

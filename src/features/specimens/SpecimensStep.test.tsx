@@ -22,7 +22,7 @@ describe("SpecimensStep", () => {
     expect(screen.getByText(/one specimen can have several library samples/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Library samples step" })).toHaveAttribute(
       "href",
-      "/library-samples",
+      "/build/library-samples",
     );
     const result = screen.getByRole("region", { name: "Result" });
     expect(within(result).getByText(/This step is optional/)).toBeInTheDocument();

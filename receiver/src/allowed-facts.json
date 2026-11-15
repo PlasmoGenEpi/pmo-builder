@@ -2108,7 +2108,7 @@
       "worker/other warning 5-9"
     ],
     "kind": ["session", "visit"],
-    "pages": ["dataset", "pmo-tools", "publish-file", "published"],
+    "pages": ["dataset", "pmo-file", "pmo-tools", "publish-file", "published"],
     "publish.deposits.built": ["0", "1", "10-99", "100+", "2-4", "5-9"],
     "publish.deposits.file": ["0", "1", "10-99", "100+", "2-4", "5-9"],
     "publish.fileChecks.example": ["0", "1", "10-99", "100+", "2-4", "5-9"],

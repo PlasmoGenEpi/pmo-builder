@@ -38,7 +38,7 @@ export const BUILD_TIMEOUT = 30_000;
 export async function loadExample(page: Page): Promise<void> {
   await page.goto("/");
   await page.getByRole("button", { name: "Try with example data" }).click();
-  await expect(page).toHaveURL(/#\/microhaplotypes$/, { timeout: BUILD_TIMEOUT });
+  await expect(page).toHaveURL(/#\/build\/microhaplotypes$/, { timeout: BUILD_TIMEOUT });
   await expect(
     page.getByRole("region", { name: "Result" }).getByText("Ready", { exact: true }),
   ).toBeVisible({ timeout: BUILD_TIMEOUT });
@@ -46,9 +46,9 @@ export async function loadExample(page: Page): Promise<void> {
 
 /** Routes of the steps the tests open. */
 const STEP_PATHS: Readonly<Record<string, string>> = {
-  Microhaplotypes: "#/microhaplotypes",
-  Panel: "#/panel",
-  "Review and download": "#/review",
+  Microhaplotypes: "#/build/microhaplotypes",
+  Panel: "#/build/panel",
+  "Review and download": "#/build/review",
 };
 
 /**

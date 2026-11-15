@@ -34,7 +34,7 @@ export const STEP_GROUP_LABELS: Readonly<Record<StepGroup, string>> = {
 /** One step of the app. */
 export interface StepDefinition {
   id: StepId;
-  /** Route path, such as `/panel`. The URL is `#/panel`. */
+  /** Route path, such as `/build/panel`. The URL is `#/build/panel`. */
   path: `/${string}`;
   /** Page title and sidebar label, in sentence case. */
   title: string;
@@ -98,7 +98,7 @@ export function page(load: () => Promise<ComponentType>): PageModule {
 export const STEPS: readonly StepDefinition[] = [
   {
     id: "microhaplotypes",
-    path: "/microhaplotypes",
+    path: "/build/microhaplotypes",
     title: t({
       message: "Microhaplotypes",
       comment: "Step title, shown in the sidebar and as the page heading",
@@ -114,7 +114,7 @@ export const STEPS: readonly StepDefinition[] = [
   },
   {
     id: "panel",
-    path: "/panel",
+    path: "/build/panel",
     title: t({
       message: "Panel",
       comment: "Step title, shown in the sidebar and as the page heading",
@@ -126,7 +126,7 @@ export const STEPS: readonly StepDefinition[] = [
   },
   {
     id: "specimens",
-    path: "/specimens",
+    path: "/build/specimens",
     title: t({
       message: "Specimens",
       comment: "Step title, shown in the sidebar and as the page heading",
@@ -140,7 +140,7 @@ export const STEPS: readonly StepDefinition[] = [
   },
   {
     id: "librarySamples",
-    path: "/library-samples",
+    path: "/build/library-samples",
     title: t({
       message: "Library samples",
       comment: "Step title, shown in the sidebar and as the page heading",
@@ -156,7 +156,7 @@ export const STEPS: readonly StepDefinition[] = [
   },
   {
     id: "project",
-    path: "/project",
+    path: "/build/project",
     title: t({
       message: "Project",
       comment: "Step title, shown in the sidebar and as the page heading",
@@ -168,7 +168,7 @@ export const STEPS: readonly StepDefinition[] = [
   },
   {
     id: "sequencing",
-    path: "/sequencing",
+    path: "/build/sequencing",
     title: t({
       message: "Sequencing",
       comment: "Step title, shown in the sidebar and as the page heading",
@@ -182,7 +182,7 @@ export const STEPS: readonly StepDefinition[] = [
   },
   {
     id: "bioinformatics",
-    path: "/bioinformatics",
+    path: "/build/bioinformatics",
     title: t({
       message: "Bioinformatics",
       comment: "Step title, shown in the sidebar and as the page heading",
@@ -198,7 +198,7 @@ export const STEPS: readonly StepDefinition[] = [
   },
   {
     id: "readCounts",
-    path: "/read-counts",
+    path: "/build/read-counts",
     title: t({
       message: "Read counts by stage",
       comment: "Step title, shown in the sidebar and as the page heading",
@@ -212,7 +212,7 @@ export const STEPS: readonly StepDefinition[] = [
   },
   {
     id: "review",
-    path: "/review",
+    path: "/build/review",
     title: t({
       message: "Review and download",
       comment: "Step title, shown in the sidebar and as the page heading",
@@ -223,6 +223,14 @@ export const STEPS: readonly StepDefinition[] = [
     ...page(() => import("@/features/review/ReviewStep").then((module) => module.ReviewStep)),
   },
 ];
+
+/** Where the Build section starts: the first step. */
+export const BUILD_PATH = "/build";
+
+/** The address a step had before the steps moved under {@link BUILD_PATH}, such as `/panel`. */
+export function legacyPath(step: StepDefinition): string {
+  return step.path.slice(BUILD_PATH.length);
+}
 
 /** Looks up a step. Every `StepId` has one. */
 export function getStep(id: StepId): StepDefinition {

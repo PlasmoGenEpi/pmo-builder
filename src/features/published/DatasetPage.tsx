@@ -1,6 +1,6 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { ArrowLeft, Download, ExternalLink } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, FileSearch } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link as RouterLink, useParams } from "wouter";
 
@@ -9,6 +9,7 @@ import type { PublishedDataset } from "@/domain/repository/types";
 import { PmoContents } from "@/features/review/PmoContents";
 import { CopyValue } from "@/features/shared/CopyValue";
 import {
+  buttonClassName,
   ButtonLink,
   Callout,
   Card,
@@ -102,9 +103,15 @@ function Dataset({ dataset }: { readonly dataset: PublishedDataset }) {
           <Trans>Published {publishedDate}</Trans>
         </p>
         <div className="flex flex-wrap items-start gap-x-4 gap-y-3 pt-2">
+          <RouterLink
+            href={`/pmo/published/${dataset.id}`}
+            className={buttonClassName({ variant: "primary", size: "lg" })}
+          >
+            <FileSearch aria-hidden="true" className="size-4.5" />
+            <Trans>Open in My PMO file</Trans>
+          </RouterLink>
           <div className="flex flex-col gap-1.5">
             <ButtonLink
-              variant="primary"
               size="lg"
               href={dataset.file.url}
               target="_blank"

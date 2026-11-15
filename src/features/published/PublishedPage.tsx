@@ -243,7 +243,7 @@ function AddYours() {
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
-        <RouterLink href="/publish" className={buttonClassName({ variant: "secondary" })}>
+        <RouterLink href="/pmo/publish" className={buttonClassName({ variant: "secondary" })}>
           <Trans>Publish a file</Trans>
         </RouterLink>
         <RouterLink href="/" className={buttonClassName({ variant: "secondary" })}>
@@ -272,7 +272,7 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
               <Trans>Build a PMO</Trans>
               <ArrowRight aria-hidden="true" className="size-4" />
             </RouterLink>
-            <RouterLink href="/publish" className={buttonClassName({ variant: "secondary" })}>
+            <RouterLink href="/pmo/publish" className={buttonClassName({ variant: "secondary" })}>
               <Trans>Publish a file</Trans>
             </RouterLink>
           </div>

@@ -21,7 +21,7 @@ test("loads the example, breaks and mends a match, and keeps the draft over a re
 }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Try with example data" }).click();
-  await expect(page).toHaveURL(/#\/microhaplotypes$/, { timeout: 30_000 });
+  await expect(page).toHaveURL(/#\/build\/microhaplotypes$/, { timeout: 30_000 });
   await expect(page.getByRole("heading", { level: 1, name: "Microhaplotypes" })).toBeVisible();
 
   const result = page.getByRole("region", { name: "Result" });
@@ -64,7 +64,7 @@ test("loads the example, breaks and mends a match, and keeps the draft over a re
 });
 
 test("runs the engine in a worker that reads Excel workbooks", async ({ page }) => {
-  await page.goto("/#/microhaplotypes");
+  await page.goto("/#/build/microhaplotypes");
   await expect(page.getByRole("heading", { level: 1, name: "Microhaplotypes" })).toBeVisible();
   await expect.poll(() => page.workers().length).toBeGreaterThan(0);
   const worker = page.workers().find((candidate) => candidate.url().includes("engine.worker"));

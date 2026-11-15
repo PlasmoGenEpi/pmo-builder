@@ -1,41 +1,87 @@
 import { t } from "@lingui/core/macro";
 import { Ellipsis, Menu as MenuIcon, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
 import { useState } from "react";
-import { Link as RouterLink } from "wouter";
+import { Link as RouterLink, useLocation } from "wouter";
 
 import { chooseLanguage, currentLocale, LANGUAGES, OFFERED } from "@/i18n";
-import { IconButton, Menu } from "@/ui";
+import { zenodoConfig } from "@/features/review/zenodo";
+import { IconButton, Menu, cn } from "@/ui";
 
 import { Logo } from "./Logo";
 import { PrivacyIndicator } from "./privacy/PrivacyIndicator";
 import { StartOverDialog } from "./StartOver";
 import { SaveStatus } from "./SaveStatus";
+import { BUILD_PATH } from "./steps";
 import { useTheme, type ThemePreference } from "./theme";
-import { ThemeToggle } from "./ThemeToggle";
 
 function isPreference(value: string): value is ThemePreference {
   return value === "light" || value === "dark" || value === "system";
 }
 
-/** Props for {@link TopBar}. */
-export interface TopBarProps {
-  /** Opens the step list on narrow screens. */
-  onOpenNav: () => void;
+/** The app's sections, in the top bar. */
+interface Section {
+  readonly href: string;
+  readonly label: string;
+  /** Whether `location` is in the section. */
+  readonly matches: (location: string) => boolean;
 }
 
-/** The slim bar across the top: app name, privacy promise, theme and the overflow menu. */
-export function TopBar({ onOpenNav }: TopBarProps) {
+function within(prefix: string) {
+  return (location: string): boolean => location === prefix || location.startsWith(`${prefix}/`);
+}
+
+function sections(showPublished: boolean): Section[] {
+  return [
+    {
+      href: BUILD_PATH,
+      label: t({ message: "Build", comment: "Top bar section: building a PMO from tables" }),
+      matches: within(BUILD_PATH),
+    },
+    {
+      href: "/pmo",
+      label: t({
+        message: "My PMO file",
+        comment: "Top bar section: working with a PMO file the user has",
+      }),
+      matches: within("/pmo"),
+    },
+    ...(showPublished
+      ? [
+          {
+            href: "/published",
+            label: t({ message: "Published", comment: "Top bar section: published PMOs" }),
+            matches: within("/published"),
+          },
+        ]
+      : []),
+  ];
+}
+
+/** Props for {@link TopBar}. */
+export interface TopBarProps {
+  /** Opens the step list on narrow screens. Only in the Build section. */
+  onOpenNav: () => void;
+  /** Whether to offer the published PMOs. Default: when a Zenodo community is set. */
+  showPublished?: boolean;
+}
+
+/** The bar across the top: app name, the sections, the privacy promise and the overflow menu. */
+export function TopBar({ onOpenNav, showPublished = zenodoConfig() !== null }: TopBarProps) {
   const { preference, setPreference } = useTheme();
   const [confirming, setConfirming] = useState(false);
+  const [location] = useLocation();
+  const building = within(BUILD_PATH)(location);
 
   return (
     <header className="sticky top-0 z-30 flex h-topbar shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-3 sm:px-4">
-      <IconButton
-        label={t`Open the step list`}
-        icon={MenuIcon}
-        onClick={onOpenNav}
-        className="lg:hidden"
-      />
+      {building ? (
+        <IconButton
+          label={t`Open the step list`}
+          icon={MenuIcon}
+          onClick={onOpenNav}
+          className="lg:hidden"
+        />
+      ) : null}
       <RouterLink
         href="/"
         className="flex shrink-0 items-center gap-2.5 rounded-md py-1 pr-1.5 text-md font-semibold tracking-tight text-text"
@@ -44,12 +90,29 @@ export function TopBar({ onOpenNav }: TopBarProps) {
         <span className="hidden sm:inline">PMO Builder</span>
         <span className="sr-only sm:hidden">{t`PMO Builder home`}</span>
       </RouterLink>
+      <nav aria-label={t`Sections`} className="ml-2 flex items-center gap-1 sm:ml-4">
+        {sections(showPublished).map((section) => {
+          const active = section.matches(location);
+          return (
+            <RouterLink
+              key={section.href}
+              href={section.href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "rounded-md px-2.5 py-1.5 text-base whitespace-nowrap transition-colors duration-100",
+                active
+                  ? "bg-accent-subtle font-medium text-accent-text"
+                  : "text-text-muted hover:bg-surface-muted hover:text-text",
+              )}
+            >
+              {section.label}
+            </RouterLink>
+          );
+        })}
+      </nav>
       <div className="ml-auto flex min-w-0 items-center gap-1 sm:gap-2">
-        <SaveStatus />
+        {building ? <SaveStatus /> : null}
         <PrivacyIndicator />
-        <span className="hidden sm:contents">
-          <ThemeToggle />
-        </span>
         <Menu
           trigger={<IconButton label={t`More options`} icon={Ellipsis} />}
           entries={[

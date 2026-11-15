@@ -346,6 +346,11 @@ export interface AppActions {
    * tables. The draft is not touched. `null` when the engine failed.
    */
   openPmo(file: Blob, fileName: string): Promise<OpenOutcome | null>;
+  /**
+   * Builds now if needed, then opens the built PMO as the working file.
+   * `null` when nothing could be built or the engine failed.
+   */
+  openBuiltPmo(): Promise<{ readonly outcome: OpenOutcome; readonly file: PmoFile } | null>;
   /** Makes a subset of the opened PMO. `null` when the engine failed. */
   subsetPmo(request: SubsetRequest): Promise<SubsetOutcome | null>;
   /** One table of the opened PMO or its subset. `null` when there is none or the engine failed. */
@@ -1043,6 +1048,16 @@ export function createAppStore(options: AppStoreOptions): AppStore {
       async openPmo(file, fileName) {
         try {
           return await engine.openPmo(file, fileName);
+        } catch (error) {
+          engineFailed(error);
+          return null;
+        }
+      },
+
+      async openBuiltPmo() {
+        try {
+          await actions.flush();
+          return await engine.openBuiltPmo();
         } catch (error) {
           engineFailed(error);
           return null;

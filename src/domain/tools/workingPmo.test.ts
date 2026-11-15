@@ -165,7 +165,9 @@ describe("baseNameOf", () => {
   it.each([
     ["study.json.gz", "study"],
     ["study.json", "study"],
-    ["study.pmo.json", "study.pmo"],
+    ["study.pmo.json", "study"],
+    ["Mad4hatter.pmo.json.gz", "Mad4hatter"],
+    ["study.pmo", "study.pmo"],
     ["study.gz", "study"],
     [".json", "pmo"],
   ])("%s gives %s", (name, base) => {

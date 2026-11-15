@@ -32,8 +32,9 @@ import {
 } from "pmotools-ts";
 
 import { readPmoFile } from "@/domain/build/checkFile";
-import { PUBLISHABLE_PMO_VERSION } from "@/domain/build/checkFileResult";
+import { MAX_LISTED, PUBLISHABLE_PMO_VERSION } from "@/domain/build/checkFileResult";
 import { summarisePmo } from "@/domain/build/merge";
+import { summarisePublication } from "@/domain/build/publication";
 
 import {
   MAX_META_VALUES,
@@ -190,6 +191,23 @@ export function tablesOf(pmo: Pmo): TableInfo[] {
   });
 }
 
+/** What an opened PMO offers. */
+function describe(
+  pmo: Pmo,
+  fileName: string,
+  warnings: readonly string[],
+): Extract<OpenOutcome, { kind: "opened" }> {
+  return {
+    kind: "opened",
+    fileName,
+    summary: summarisePmo(pmo),
+    publication: summarisePublication(pmo),
+    warnings,
+    choices: choicesOf(pmo),
+    tables: tablesOf(pmo),
+  };
+}
+
 /** Opens a PMO file to work with: the checks for publishing, then the choices. */
 export async function openPmo(
   file: Blob,
@@ -205,21 +223,24 @@ export async function openPmo(
       pmo: null,
     };
   }
-  return {
-    outcome: {
-      kind: "opened",
-      fileName,
-      summary: summarisePmo(pmo),
-      choices: choicesOf(pmo),
-      tables: tablesOf(pmo),
-    },
-    pmo,
-  };
+  return { outcome: describe(pmo, fileName, check.warnings), pmo };
 }
 
-/** A file name without `.json`, `.json.gz` or `.gz`. */
+/** Opens a PMO this app has just built, which needs no reading or format check. */
+export function openBuiltPmo(pmo: Pmo, fileName: string): Extract<OpenOutcome, { kind: "opened" }> {
+  const warnings = [
+    ...new Set(
+      checkPmoIntegrity(pmo)
+        .filter((issue) => issue.severity === "warning")
+        .map((issue) => issue.message),
+    ),
+  ].slice(0, MAX_LISTED);
+  return describe(pmo, fileName, warnings);
+}
+
+/** A file name without `.json`, `.json.gz` or `.gz`, and without a `.pmo` before them. */
 export function baseNameOf(fileName: string): string {
-  const base = fileName.replace(/\.json(?:\.gz)?$|\.gz$/i, "");
+  const base = fileName.replace(/(?:\.pmo)?(?:\.json(?:\.gz)?|\.gz)$/i, "");
   return base === "" ? "pmo" : base;
 }
 
@@ -272,6 +293,7 @@ export function makeSubset(
       kind: "made",
       fileName: `${baseNameOf(fileName)}-subset.json.gz`,
       summary: summarisePmo(subset),
+      publication: summarisePublication(subset),
       tables: tablesOf(subset),
       problems: problemsOf(subset),
     },
