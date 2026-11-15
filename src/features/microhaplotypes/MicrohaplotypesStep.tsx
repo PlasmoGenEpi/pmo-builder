@@ -27,7 +27,7 @@ function AlleleRunName({ matching }: { readonly matching: ColumnMatching }) {
         fixed: t`Every row came from the same analysis run.`,
         column: t`The table holds several runs, with the run name in one column.`,
       }}
-      tableName={t`allele table`}
+      columnHint={t`The column of the allele table that holds each row's run name.`}
       knownNames={runNames}
       knownLabel={t`From the Bioinformatics step:`}
     />

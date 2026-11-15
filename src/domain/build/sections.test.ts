@@ -108,7 +108,7 @@ describe("microhaplotypes", () => {
     expect(result.status).toBe("error");
     expect(codes(result)).toEqual(["table/blank-required"]);
     expect(result.notices[0]?.message).toBe(
-      'Column "reads" is blank in row 3. Every row needs a reads. Fill it in.',
+      'Column "reads" is blank in row 3. Every row needs a value for “reads”. Fill it in.',
     );
   });
 
@@ -300,12 +300,12 @@ describe("panel", () => {
       [
         "table/blank-required",
         "name",
-        'Panel "P1": Column "name" (targetname) is blank in row 5. Every row needs a targetname. Fill it in.',
+        'Panel "P1": Column "name" (targetname) is blank in row 5. Every row needs a value for “targetName”. Fill it in.',
       ],
       [
         "table/blank-required",
         "rev",
-        'Panel "P1": Column "rev" (reverseprimersseq) is blank in rows 3, 4, 5, 6, 7, 8, 9, 10 and 3 more. Every row needs a reverseprimersseq. Fill them in.',
+        'Panel "P1": Column "rev" (reverseprimersseq) is blank in rows 3, 4, 5, 6, 7, 8, 9, 10 and 3 more. Every row needs a value for “reversePrimersSeq”. Fill them in.',
       ],
     ]);
   });
@@ -580,7 +580,7 @@ describe("project and sequencing", () => {
     expect(missing.notices).toEqual([
       expect.objectContaining({
         code: "form/missing-required",
-        message: "Project 1: fill in the description.",
+        message: "Project 1: fill in “Description”.",
       }),
     ]);
     const bad = buildProject(
@@ -633,7 +633,7 @@ describe("project and sequencing", () => {
       testContext({ projects: table }),
     );
     expect(result.status).toBe("incomplete");
-    expect(result.notices[0]?.message).toBe("Row 3: fill in the description.");
+    expect(result.notices[0]?.message).toBe("Row 3: fill in “Description”.");
   });
 
   it("checks dates and repeated names", () => {

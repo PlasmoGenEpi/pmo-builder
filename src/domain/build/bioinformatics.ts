@@ -124,7 +124,8 @@ function tableMethods(
 ): PartResult<ResolvedMethod> {
   const tableLabel = t({
     message: "methods table",
-    comment: "Names a table inside other messages, such as 'The methods table has no rows.'",
+    comment:
+      "A table name in lower case, used inside other messages, such as 'The methods table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
   });
   const mapped = section.table;
   if (mapped === null) return { status: "empty", notices: [], items: [] };
@@ -157,13 +158,18 @@ function tableMethods(
   if (entered.blankGroupRows.length > 0) {
     const column = group ?? "";
     const rows = describeRows(entered.blankGroupRows);
+    const rowCount = entered.blankGroupRows.length;
     notices.push(
       makeNotice(
         "error",
         "bioinformatics/blank-group",
         t({
-          message: `Column "${column}" names the method of each step, but it is blank in ${rows}.`,
-          comment: "{rows} is such as 'rows 5 and 9'.",
+          message: plural(rowCount, {
+            one: `Column "${column}" names the method of each step, but it is blank in ${rows}.`,
+            other: `Column "${column}" names the method of each step, but it is blank in ${rows}.`,
+          }),
+          comment:
+            "{rows} is such as 'rows 5 and 9', without an article; {rowCount} is how many rows it lists.",
         }),
       ),
     );
@@ -337,7 +343,7 @@ function tableRuns(
       tableLabel: t({
         message: "runs table",
         comment:
-          "Names the table of bioinformatics runs inside other messages, such as 'The runs table has no rows.'",
+          "The table of bioinformatics runs: a table name in lower case, used inside other messages, such as 'The runs table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
       }),
     },
     context,
@@ -359,7 +365,7 @@ function tableRuns(
           t({
             message: "Runs table",
             comment:
-              "Starts a message about every run of the runs table, such as 'Runs table: choose the method this run used.'",
+              "A table name, capitalised to start a message about every run of the runs table, such as 'Runs table: choose the method this run used.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
           }),
         )
       : null;

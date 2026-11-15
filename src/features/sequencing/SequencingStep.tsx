@@ -84,19 +84,30 @@ function SequencingRecords() {
       <NameCoverage
         referenced={sequencingNames}
         defined={records.map((record) => record.values.sequencing_info_name)}
-        source={t`library sample table`}
-        noun={t`sequencing run`}
+        allNamed={t`Every sequencing run the library sample table names has a record here.`}
+        missingTitle={(count) =>
+          plural(count, {
+            one: "The library sample table names a sequencing run with no record here",
+            other: "The library sample table names # sequencing runs with no record here",
+          })
+        }
         onCreate={addNamed}
       />
       <RecordList
         items={records}
-        noun={t`sequencing run`}
+        listLabel={t({
+          message: "sequencing runs",
+          comment: "Accessible name of the list of sequencing run cards",
+        })}
         title={runTitle}
         isBlank={isBlankRecord}
         state={(record) => recordState(SEQUENCING_FORM_FIELDS, record.values, record.extra)}
         onAdd={() => actions.addItem(LIST)}
         onRemove={(id) => actions.removeItem(LIST, id)}
-        onDuplicate={duplicate}
+        duplicate={{
+          onDuplicate: duplicate,
+          label: (name) => t`Copy ${name} into a new sequencing run`,
+        }}
         addLabel={t`Add a sequencing run`}
         empty={{
           icon: Dna,

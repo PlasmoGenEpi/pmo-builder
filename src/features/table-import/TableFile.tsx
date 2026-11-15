@@ -31,8 +31,7 @@ export interface TableFileProps {
  */
 export function TableFile({ slot, description, label, accept = TABLE_FILE_TYPES }: TableFileProps) {
   const fieldSetId = fieldSetForSlot(slot);
-  const name = label ?? getFieldSet(fieldSetId).title;
-  const tableName = name.toLowerCase();
+  const tableName = label ?? getFieldSet(fieldSetId).title;
   const mapped = useSlotTable(slot);
   const importState = useImportState(slot);
   const actions = useActions();
@@ -85,7 +84,7 @@ export function TableFile({ slot, description, label, accept = TABLE_FILE_TYPES 
   return (
     <div className="flex flex-col gap-4">
       <FileDropzone
-        label={name}
+        label={tableName}
         description={description}
         accept={accept}
         file={file}
@@ -100,9 +99,13 @@ export function TableFile({ slot, description, label, accept = TABLE_FILE_TYPES 
         <Field
           layout="inline"
           label={t({ message: "Sheet", comment: "A sheet of a spreadsheet workbook" })}
-          hint={plural(sheets.length, {
-            one: `This workbook has # sheet. Choose the one that holds the ${tableName}.`,
-            other: `This workbook has # sheets. Choose the one that holds the ${tableName}.`,
+          hint={t({
+            message: plural(sheets.length, {
+              one: `This workbook has # sheet. Choose the one that holds “${tableName}”.`,
+              other: `This workbook has # sheets. Choose the one that holds “${tableName}”.`,
+            }),
+            comment:
+              "{tableName} is the table's name as shown in its heading, such as Allele table",
           })}
         >
           <Select
@@ -118,7 +121,10 @@ export function TableFile({ slot, description, label, accept = TABLE_FILE_TYPES 
       <ConfirmDialog
         open={confirmingRemove}
         onOpenChange={setConfirmingRemove}
-        title={t`Remove the ${tableName}?`}
+        title={t({
+          message: `Remove “${tableName}”?`,
+          comment: "{tableName} is the table's name as shown in its heading, such as Allele table",
+        })}
         description={t`The file and your column choices for it are removed from this draft. You can add the file again later.`}
         confirmLabel={t`Remove`}
         tone="danger"

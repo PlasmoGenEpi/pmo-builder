@@ -66,7 +66,10 @@ function MethodSteps({ method }: { readonly method: MethodRecord }) {
         items={method.steps}
         variant="inset"
         headingLevel={4}
-        noun={t`step`}
+        listLabel={t({
+          message: "steps",
+          comment: "Accessible name of the list of a method's step cards",
+        })}
         title={stepTitle}
         isBlank={isBlankRecord}
         state={(step) => recordState(METHOD_STEP_FORM_FIELDS, step.values, step.extra)}
@@ -138,7 +141,10 @@ function MethodRecords() {
   return (
     <RecordList
       items={records}
-      noun={t`method`}
+      listLabel={t({
+        message: "methods",
+        comment: "Accessible name of the list of bioinformatics method cards",
+      })}
       title={methodTitle}
       isBlank={isBlankMethod}
       state={(method) => methodState(method)}

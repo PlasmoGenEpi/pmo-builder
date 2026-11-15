@@ -25,7 +25,14 @@ export function useCopy(value: string): {
 }
 
 /** A value to paste into Zenodo, with a button that copies it. */
-export function CopyValue({ label, value }: { readonly label: string; readonly value: string }) {
+export function CopyValue({
+  copyLabel,
+  value,
+}: {
+  /** The copy button's accessible name, as a whole phrase, such as "Copy title". */
+  readonly copyLabel: string;
+  readonly value: string;
+}) {
   const { copied, copy } = useCopy(value);
   return (
     <div className="flex items-start gap-3 rounded-lg border border-border bg-surface-subtle p-3">
@@ -34,7 +41,7 @@ export function CopyValue({ label, value }: { readonly label: string; readonly v
         size="sm"
         icon={copied ? Check : Copy}
         onClick={() => void copy()}
-        aria-label={t`Copy ${label}`}
+        aria-label={copyLabel}
       >
         <span aria-live="polite">
           {copied

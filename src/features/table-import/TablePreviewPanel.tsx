@@ -38,8 +38,7 @@ export interface TablePreviewPanelProps {
  * The first rows of the table, with the matched columns highlighted and
  * labelled with their field. Open at first on wide screens.
  */
-export function TablePreviewPanel({ matching, label }: TablePreviewPanelProps) {
-  const tableName = label.toLowerCase();
+export function TablePreviewPanel({ matching, label: tableName }: TablePreviewPanelProps) {
   const [defaultOpen] = useState(isWideScreen);
   const { preview, fieldSet, mapped } = matching;
   const highlights = useMemo(() => {
@@ -74,7 +73,11 @@ export function TablePreviewPanel({ matching, label }: TablePreviewPanelProps) {
         </output>
       ) : preview.kind === "ready" ? (
         <DataTable
-          label={t`Preview of the ${tableName}`}
+          label={t({
+            message: `Preview of “${tableName}”`,
+            comment:
+              "{tableName} is the table's name as shown in its heading, such as Allele table",
+          })}
           columns={preview.columns}
           rows={preview.rows}
           totalRows={preview.totalRows}

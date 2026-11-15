@@ -82,7 +82,7 @@ export function resolveRunName(
             t({
               message: `The run name "${runName}" is also the name of a column in the ${table}, so it would be read as that column. Choose "from a column" instead, or use another name.`,
               comment:
-                "{table} is the name of a table, such as 'allele table'. \"from a column\" is the name of a choice on the page; use the same words as there.",
+                "{table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). \"from a column\" is the name of a choice on the page; use the same words as there.",
             }),
           ),
         };
@@ -100,7 +100,8 @@ export function resolveRunName(
             "run-name/missing-column",
             t({
               message: `Choose the column of the ${table} that holds the run name.`,
-              comment: "{table} is the name of a table, such as 'allele table'.",
+              comment:
+                "{table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
             }),
           ),
         };
@@ -115,7 +116,8 @@ export function resolveRunName(
             "run-name/unknown-column",
             t({
               message: `The ${table} has no column "${column}" for the run name. Choose another column.`,
-              comment: "{table} is the name of a table, such as 'allele table'.",
+              comment:
+                "{table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
             }),
           ),
         };

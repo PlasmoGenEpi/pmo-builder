@@ -189,6 +189,7 @@ export const SPECIMEN_FIELDS = defineFieldSet({
       aliases: ["admin1", "admin_level_1", "region", "province", "state"],
       group: t({
         message: "Location",
+        context: "place where a specimen was collected",
         comment: "Heading for a group of optional fields in the column-matching editor",
       }),
     },
@@ -201,6 +202,7 @@ export const SPECIMEN_FIELDS = defineFieldSet({
       aliases: ["admin2", "admin_level_2", "district", "county"],
       group: t({
         message: "Location",
+        context: "place where a specimen was collected",
         comment: "Heading for a group of optional fields in the column-matching editor",
       }),
     },
@@ -213,6 +215,7 @@ export const SPECIMEN_FIELDS = defineFieldSet({
       aliases: ["admin3", "admin_level_3", "city", "town", "health_facility", "site"],
       group: t({
         message: "Location",
+        context: "place where a specimen was collected",
         comment: "Heading for a group of optional fields in the column-matching editor",
       }),
     },
@@ -225,6 +228,7 @@ export const SPECIMEN_FIELDS = defineFieldSet({
       aliases: ["latitude_longitude", "lat_long", "coordinates", "gps"],
       group: t({
         message: "Location",
+        context: "place where a specimen was collected",
         comment: "Heading for a group of optional fields in the column-matching editor",
       }),
     },
@@ -237,6 +241,7 @@ export const SPECIMEN_FIELDS = defineFieldSet({
       aliases: ["environmental_broad_scale", "broad_environment"],
       group: t({
         message: "Location",
+        context: "place where a specimen was collected",
         comment: "Heading for a group of optional fields in the column-matching editor",
       }),
     },
@@ -249,6 +254,7 @@ export const SPECIMEN_FIELDS = defineFieldSet({
       aliases: ["environmental_local_scale", "local_environment"],
       group: t({
         message: "Location",
+        context: "place where a specimen was collected",
         comment: "Heading for a group of optional fields in the column-matching editor",
       }),
     },
@@ -261,6 +267,7 @@ export const SPECIMEN_FIELDS = defineFieldSet({
       aliases: ["environmental_medium", "environment_medium"],
       group: t({
         message: "Location",
+        context: "place where a specimen was collected",
         comment: "Heading for a group of optional fields in the column-matching editor",
       }),
     },

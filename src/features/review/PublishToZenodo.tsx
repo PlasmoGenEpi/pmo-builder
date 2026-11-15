@@ -159,7 +159,10 @@ function RecordDetails({
           <Trans>Title</Trans>
         </span>
         <CopyValue
-          label={t({ message: "title", comment: 'Completes "Copy {label}": the record\'s title' })}
+          copyLabel={t({
+            message: "Copy title",
+            comment: "Button: copy the Zenodo record's title to the clipboard",
+          })}
           value={record.title}
         />
       </div>
@@ -168,9 +171,9 @@ function RecordDetails({
           <Trans>Description</Trans>
         </span>
         <CopyValue
-          label={t({
-            message: "description",
-            comment: 'Completes "Copy {label}": the record\'s description',
+          copyLabel={t({
+            message: "Copy description",
+            comment: "Button: copy the Zenodo record's description to the clipboard",
           })}
           value={record.description}
         />

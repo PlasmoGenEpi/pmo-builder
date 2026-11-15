@@ -175,6 +175,11 @@ msgstr "{0, plural, one {Country} other {Countries}}"
 msgid "{0, plural, one {Dataset} other {Datasets}}"
 msgstr "{0, plural, one {Dataset} other {Datasets}}"
 
+#. placeholder {0}: repeatedNames.length
+#: src/domain/build/panel.ts
+msgid "{0, plural, one {Each panel needs its own name, but {panelNames} is used more than once.} other {Each panel needs its own name, but {panelNames} are used more than once.}}"
+msgstr "{0, plural, one {Each panel needs its own name, but {panelNames} is used more than once.} other {Each panel needs its own name, but {panelNames} are used more than once.}}"
+
 #. placeholder {0}: summary.genomes
 #: src/features/panel/PanelStep.tsx
 msgid "{0, plural, one {Genome} other {Genomes}}"
@@ -235,11 +240,6 @@ msgstr "{0, plural, one {specimen} other {specimens}}"
 msgid "{0, plural, one {Specimen} other {Specimens}}"
 msgstr "{0, plural, one {Specimen} other {Specimens}}"
 
-#. placeholder {0}: missing.length
-#: src/features/records/NameCoverage.tsx
-msgid "{0, plural, one {The {source} names a {noun} with no record here} other {The {source} names # {noun}s with no record here}}"
-msgstr "{0, plural, one {The {source} names a {noun} with no record here} other {The {source} names # {noun}s with no record here}}"
-
 #. placeholder {0}: panelNames.length
 #: src/features/panel/PanelNameField.tsx
 msgid "{0, plural, one {The library sample table names its panel {tableNames}, not \"{name}\". Its samples link to this panel only if the names match.} other {The library sample table names its panels {tableNames}, not \"{name}\". Its samples link to this panel only if the names match.}}"
@@ -250,51 +250,67 @@ msgstr "{0, plural, one {The library sample table names its panel {tableNames}, 
 msgid "{0, plural, one {This needs {neededFields} as well. Match it too, or set this field to \"Not in this table\".} other {This needs {neededFields} as well. Match them too, or set this field to \"Not in this table\".}}"
 msgstr "{0, plural, one {This needs {neededFields} as well. Match it too, or set this field to \"Not in this table\".} other {This needs {neededFields} as well. Match them too, or set this field to \"Not in this table\".}}"
 
+#. {tableName} is the table's name as shown in its heading, such as Allele table
 #. placeholder {0}: sheets.length
 #: src/features/table-import/TableFile.tsx
-msgid "{0, plural, one {This workbook has # sheet. Choose the one that holds the {tableName}.} other {This workbook has # sheets. Choose the one that holds the {tableName}.}}"
-msgstr "{0, plural, one {This workbook has # sheet. Choose the one that holds the {tableName}.} other {This workbook has # sheets. Choose the one that holds the {tableName}.}}"
+msgid "{0, plural, one {This workbook has # sheet. Choose the one that holds “{tableName}”.} other {This workbook has # sheets. Choose the one that holds “{tableName}”.}}"
+msgstr "{0, plural, one {This workbook has # sheet. Choose the one that holds “{tableName}”.} other {This workbook has # sheets. Choose the one that holds “{tableName}”.}}"
 
 #: src/features/review/reviewModel.ts
 msgid "{alleleCalls, plural, one {# allele call} other {# allele calls}} for {samples, plural, one {# sample} other {# samples}} at {targets, plural, one {# target} other {# targets}}, {alleles, plural, one {# distinct allele} other {# distinct alleles}}"
 msgstr "{alleleCalls, plural, one {# allele call} other {# allele calls}} for {samples, plural, one {# sample} other {# samples}} at {targets, plural, one {# target} other {# targets}}, {alleles, plural, one {# distinct allele} other {# distinct alleles}}"
 
-#. {column} names a column, such as 'Column "Host taxon"'. {row} is such as 'row 5'.
+#. {column} starts the sentence and names a column, with any article, such as 'Column "Host taxon"'. {row} is one row without an article, such as 'row 5'.
 #: src/domain/build/notices.ts
 msgid "{column} must hold NCBI taxonomy numbers such as 5833, separated by commas, but {row} holds \"{value}\". Correct it, or unmap the column if the field is optional."
 msgstr "{column} must hold NCBI taxonomy numbers such as 5833, separated by commas, but {row} holds \"{value}\". Correct it, or unmap the column if the field is optional."
 
-#. {column} names a column, such as 'Column "Density"'. {row} is such as 'row 5'.
+#. {column} starts the sentence and names a column, with any article, such as 'Column "Host taxon"'.
+#: src/domain/build/notices.ts
+msgid "{column} must hold NCBI taxonomy numbers such as 5833, separated by commas, but a row holds \"{value}\". Correct it, or unmap the column if the field is optional."
+msgstr "{column} must hold NCBI taxonomy numbers such as 5833, separated by commas, but a row holds \"{value}\". Correct it, or unmap the column if the field is optional."
+
+#. {column} starts the sentence and names a column, with any article, such as 'Column "Density"'. {row} is one row without an article, such as 'row 5'.
 #: src/domain/build/notices.ts
 msgid "{column} must hold numbers, but {row} holds \"{value}\". Correct it, or unmap the column if the field is optional."
 msgstr "{column} must hold numbers, but {row} holds \"{value}\". Correct it, or unmap the column if the field is optional."
 
-#. {column} names a column, such as 'Column "Well"'. {values} is a list of quoted values.
+#. {column} starts the sentence and names a column, with any article, such as 'Column "Density"'.
+#: src/domain/build/notices.ts
+msgid "{column} must hold numbers, but a row holds \"{value}\". Correct it, or unmap the column if the field is optional."
+msgstr "{column} must hold numbers, but a row holds \"{value}\". Correct it, or unmap the column if the field is optional."
+
+#. {column} starts the sentence and names a column, with any article, such as 'Column "Well"'. {values} is a list of quoted values.
 #: src/domain/build/notices.ts
 msgid "{column} must hold wells such as A01 or H12 (a letter A to H, then 1 to 12), but holds {values}."
 msgstr "{column} must hold wells such as A01 or H12 (a letter A to H, then 1 to 12), but holds {values}."
 
-#. {column} names a column, such as 'Column "Masking"'. {rows} is such as 'rows 5 and 9'.
+#. {column} starts the sentence and names a column, with any article, such as 'Column "Masking"'. {rows} is such as 'rows 5 and 9'.
 #: src/domain/build/notices.ts
 msgid "{column} must hold whole numbers separated by commas, but holds \"{value}\" ({rows})."
 msgstr "{column} must hold whole numbers separated by commas, but holds \"{value}\" ({rows})."
 
-#. {column} names a column, such as 'Column "Masking"'.
+#. {column} starts the sentence and names a column, with any article, such as 'Column "Masking"'.
 #: src/domain/build/notices.ts
 msgid "{column} must hold whole numbers separated by commas, but holds \"{value}\"."
 msgstr "{column} must hold whole numbers separated by commas, but holds \"{value}\"."
 
-#. {column} names a column, such as 'Column "Age"'. {row} is such as 'row 5'.
+#. {column} starts the sentence and names a column, with any article, such as 'Column "Age"'. {row} is one row without an article, such as 'row 5'.
 #: src/domain/build/notices.ts
 msgid "{column} must hold whole numbers, but {row} holds \"{value}\". Correct it, or unmap the column if the field is optional."
 msgstr "{column} must hold whole numbers, but {row} holds \"{value}\". Correct it, or unmap the column if the field is optional."
 
-#. {column} names a column, such as 'Column "Start"'.
+#. {column} starts the sentence and names a column, with any article, such as 'Column "Age"'.
+#: src/domain/build/notices.ts
+msgid "{column} must hold whole numbers, but a row holds \"{value}\". Correct it, or unmap the column if the field is optional."
+msgstr "{column} must hold whole numbers, but a row holds \"{value}\". Correct it, or unmap the column if the field is optional."
+
+#. {column} starts the sentence and names a column, with any article, such as 'Column "Start"'.
 #: src/domain/build/notices.ts
 msgid "{column} must hold whole numbers, but target \"{target}\" has \"{value}\"."
 msgstr "{column} must hold whole numbers, but target \"{target}\" has \"{value}\"."
 
-#. {issueTable} is the name of a table, such as 'allele table'. {columns} is a list of quoted column names.
+#. {issueTable} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {columns} is a list of quoted column names.
 #: src/domain/build/notices.ts
 msgid "{columnCount, plural, one {The {issueTable} has no column {columns}. Check the column mapping.} other {The {issueTable} has no columns {columns}. Check the column mapping.}}"
 msgstr "{columnCount, plural, one {The {issueTable} has no column {columns}. Check the column mapping.} other {The {issueTable} has no columns {columns}. Check the column mapping.}}"
@@ -303,7 +319,7 @@ msgstr "{columnCount, plural, one {The {issueTable} has no column {columns}. Che
 msgid "{columnCount, plural, one {The allele table has no column {columns}, chosen to carry onto each microhaplotype. Untick it.} other {The allele table has no columns {columns}, chosen to carry onto each microhaplotype. Untick them.}}"
 msgstr "{columnCount, plural, one {The allele table has no column {columns}, chosen to carry onto each microhaplotype. Untick it.} other {The allele table has no columns {columns}, chosen to carry onto each microhaplotype. Untick them.}}"
 
-#. {issueTable} is the name of a table, such as 'allele table'. {columns} is a list of quoted column names.
+#. {issueTable} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {columns} is a list of quoted column names.
 #: src/domain/build/notices.ts
 msgid "{columnCount, plural, one {The extra column {columns} chosen to carry into the PMO is not in the {issueTable}. Untick it.} other {The extra columns {columns} chosen to carry into the PMO are not in the {issueTable}. Untick them.}}"
 msgstr "{columnCount, plural, one {The extra column {columns} chosen to carry into the PMO is not in the {issueTable}. Untick it.} other {The extra columns {columns} chosen to carry into the PMO are not in the {issueTable}. Untick them.}}"
@@ -312,7 +328,7 @@ msgstr "{columnCount, plural, one {The extra column {columns} chosen to carry in
 msgid "{columns, plural, one {{columnCount} column} other {{columnCount} columns}}"
 msgstr "{columns, plural, one {{columnCount} column} other {{columnCount} columns}}"
 
-#. A column and the rows where it is blank, such as 'column "Date" (rows 5 and 9)'.
+#. An item of a list: a column and the rows where it is blank, such as 'column "Date" (rows 5 and 9)'. {columnText} and {rows} have no article.
 #: src/domain/build/notices.ts
 msgid "{columnText} ({rows})"
 msgstr "{columnText} ({rows})"
@@ -361,28 +377,21 @@ msgstr "{count, plural, one {Problem} other {Problems}}"
 msgid "{count, plural, one {Sequencing run} other {Sequencing runs}}"
 msgstr "{count, plural, one {Sequencing run} other {Sequencing runs}}"
 
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "{count, plural, one {The allele table names a run with no record here} other {The allele table names # runs with no record here}}"
+msgstr "{count, plural, one {The allele table names a run with no record here} other {The allele table names # runs with no record here}}"
+
+#: src/features/sequencing/SequencingStep.tsx
+msgid "{count, plural, one {The library sample table names a sequencing run with no record here} other {The library sample table names # sequencing runs with no record here}}"
+msgstr "{count, plural, one {The library sample table names a sequencing run with no record here} other {The library sample table names # sequencing runs with no record here}}"
+
+#: src/features/project/ProjectStep.tsx
+msgid "{count, plural, one {The specimen table names a project with no record here} other {The specimen table names # projects with no record here}}"
+msgstr "{count, plural, one {The specimen table names a project with no record here} other {The specimen table names # projects with no record here}}"
+
 #: src/features/review/noticeKinds.ts
 msgid "{count, plural, one {Warning} other {Warnings}}"
 msgstr "{count, plural, one {Warning} other {Warnings}}"
-
-#. {description} is a field's description, already translated, without its full stop
-#: src/domain/fields/records.ts
-msgid "{description}, as YYYY-MM or YYYY-MM-DD."
-msgstr "{description}, as YYYY-MM or YYYY-MM-DD."
-
-#. {description} is a field's description, already translated, without its full stop
-#: src/domain/fields/records.ts
-msgid "{description}, one per line."
-msgstr "{description}, one per line."
-
-#. {description} is a field's description, already translated, without its full stop
-#: src/domain/fields/records.ts
-msgid "{description}, separated by commas."
-msgstr "{description}, separated by commas."
-
-#: src/features/panel/GenomeSection.tsx
-msgid "{description}, such as {example}."
-msgstr "{description}, such as {example}."
 
 #: src/features/review/VerdictCard.tsx
 msgid "{errors, plural, one {Your PMO can be downloaded, but it does not fully match the PMO format, so other tools may not read it. See the # problem below.} other {Your PMO can be downloaded, but it does not fully match the PMO format, so other tools may not read it. See the # problems below.}}"
@@ -469,11 +478,6 @@ msgstr "{includedCount} of {columnCount} included"
 msgid "{includedCount} of {columnCount} included, {problemCount} to fix"
 msgstr "{includedCount} of {columnCount} included, {problemCount} to fix"
 
-#. {issueTable} is the name of a table, starting the sentence, such as 'Totals table'. {rows} is such as 'row 5'.
-#: src/domain/build/notices.ts
-msgid "{issueTable} {rows} has no value in column \"{column}\"."
-msgstr "{issueTable} {rows} has no value in column \"{column}\"."
-
 #. {examples} quotes some of the specimens. {kind} is 'all' when it quotes every one, 'some' when it quotes only some, and 'none' when it is empty.
 #: src/domain/build/merge.ts
 msgid "{kind, select, all {{missingCount, plural, one {Projects are entered, but # specimen has no project name ({examples}). Fill in the project name column of the specimen table in every row.} other {Projects are entered, but # specimens have no project name ({examples}). Fill in the project name column of the specimen table in every row.}}} some {{missingCount, plural, one {Projects are entered, but # specimen has no project name (such as {examples}). Fill in the project name column of the specimen table in every row.} other {Projects are entered, but # specimens have no project name (such as {examples}). Fill in the project name column of the specimen table in every row.}}} other {{missingCount, plural, one {Projects are entered, but # specimen has no project name. Fill in the project name column of the specimen table in every row.} other {Projects are entered, but # specimens have no project name. Fill in the project name column of the specimen table in every row.}}}}"
@@ -514,10 +518,10 @@ msgstr "{label}: add the method this run used."
 msgid "{label}: choose the method this run used."
 msgstr "{label}: choose the method this run used."
 
-#. {label} names a record, such as 'Project 2' or 'Row 5'. {fieldList} is a list of fields, such as 'project name and description'.
+#. {label} names a record, such as 'Project 2' or 'Row 5'. {fieldList} is a list of quoted field labels, such as '“Project name” and “Description”'.
 #: src/domain/build/records.ts
-msgid "{label}: fill in the {fieldList}."
-msgstr "{label}: fill in the {fieldList}."
+msgid "{label}: fill in {fieldList}."
+msgstr "{label}: fill in {fieldList}."
 
 #. {label} names a run, such as 'Run 2', 'Row 5' or 'Runs table'.
 #: src/domain/build/bioinformatics.ts
@@ -575,11 +579,9 @@ msgstr "{noun} \"{name}\""
 msgid "{noun} {position}"
 msgstr "{noun} {position}"
 
-#: src/features/records/RecordList.tsx
-msgid "{noun}s"
-msgstr "{noun}s"
-
 #. {libraryMessage} is a technical message from the PMO library, in English.
+#. {libraryMessage} is a technical message from the PMO library, in English.
+#: src/domain/build/checkFile.ts
 #: src/domain/build/merge.ts
 msgid "{omitted, plural, one {{libraryMessage} (and # more like it)} other {{libraryMessage} (and # more like it)}}"
 msgstr "{omitted, plural, one {{libraryMessage} (and # more like it)} other {{libraryMessage} (and # more like it)}}"
@@ -670,14 +672,12 @@ msgstr "{rest, plural, one {# more problem with the PMO format is not listed.} o
 msgid "{rest, plural, one {# more} other {# more}}"
 msgstr "{rest, plural, one {# more} other {# more}}"
 
-#. {columnText} names a column, such as 'Column "Target"'. {rowList} is such as 'rows 5 and 9'. {fieldName} is a field, such as 'target name'. The 'an' or 'a' choice follows English spelling; use whatever your language needs.
-#. placeholder {0}: englishArticle(fieldName)
-#. placeholder {1}: englishArticle(fieldName)
+#. {columnText} starts the sentence and names a column, with any article, such as 'Column "Target"'. {rowList} is such as 'rows 5 and 9', without an article; {rowCount} is how many rows it lists. {fieldName} is a field label, quoted as a name, such as 'Target name'.
 #: src/domain/build/table.ts
-msgid "{rowCount, plural, one {{0, select, an {{columnText} is blank in {rowList}. Every row needs an {fieldName}. Fill it in.} other {{columnText} is blank in {rowList}. Every row needs a {fieldName}. Fill it in.}}} other {{1, select, an {{columnText} is blank in {rowList}. Every row needs an {fieldName}. Fill them in.} other {{columnText} is blank in {rowList}. Every row needs a {fieldName}. Fill them in.}}}}"
-msgstr "{rowCount, plural, one {{0, select, an {{columnText} is blank in {rowList}. Every row needs an {fieldName}. Fill it in.} other {{columnText} is blank in {rowList}. Every row needs a {fieldName}. Fill it in.}}} other {{1, select, an {{columnText} is blank in {rowList}. Every row needs an {fieldName}. Fill them in.} other {{columnText} is blank in {rowList}. Every row needs a {fieldName}. Fill them in.}}}}"
+msgid "{rowCount, plural, one {{columnText} is blank in {rowList}. Every row needs a value for “{fieldName}”. Fill it in.} other {{columnText} is blank in {rowList}. Every row needs a value for “{fieldName}”. Fill them in.}}"
+msgstr "{rowCount, plural, one {{columnText} is blank in {rowList}. Every row needs a value for “{fieldName}”. Fill it in.} other {{columnText} is blank in {rowList}. Every row needs a value for “{fieldName}”. Fill them in.}}"
 
-#. {columnText} names a column, such as 'Column "Present"'. {rowList} is such as 'rows 5 and 9'. {valueList} is a list of quoted values. TRUE, FALSE, yes, no, 1 and 0 are the values a file may hold; keep them in English.
+#. {columnText} starts the sentence and names a column, with any article, such as 'Column "Present"'. {rowList} is such as 'rows 5 and 9', without an article. {valueList} is a list of quoted values. TRUE, FALSE, yes, no, 1 and 0 are the values a file may hold; keep them in English.
 #: src/domain/build/table.ts
 msgid "{rowCount, plural, one {{columnText} must hold yes or no (such as TRUE, FALSE, yes, no, 1 or 0), but {rowList} holds {valueList}. Correct it, leave it blank, or unmap the column.} other {{columnText} must hold yes or no (such as TRUE, FALSE, yes, no, 1 or 0), but {rowList} hold {valueList}. Correct them, leave them blank, or unmap the column.}}"
 msgstr "{rowCount, plural, one {{columnText} must hold yes or no (such as TRUE, FALSE, yes, no, 1 or 0), but {rowList} holds {valueList}. Correct it, leave it blank, or unmap the column.} other {{columnText} must hold yes or no (such as TRUE, FALSE, yes, no, 1 or 0), but {rowList} hold {valueList}. Correct them, leave them blank, or unmap the column.}}"
@@ -696,11 +696,16 @@ msgstr "{rowCount, plural, one {# row repeats the sample, target and sequence of
 msgid "{rowCount, plural, one {# row repeats the sample, target and sequence of an earlier row: {rowList} (sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.} other {# rows repeat the sample, target and sequence of an earlier row: {rowList} (such as sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.}}"
 msgstr "{rowCount, plural, one {# row repeats the sample, target and sequence of an earlier row: {rowList} (sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.} other {# rows repeat the sample, target and sequence of an earlier row: {rowList} (such as sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.}}"
 
+#. {rows} is such as 'rows 5 and 9', without an article; {rowCount} is how many rows it lists.
+#: src/domain/build/bioinformatics.ts
+msgid "{rowCount, plural, one {Column \"{column}\" names the method of each step, but it is blank in {rows}.} other {Column \"{column}\" names the method of each step, but it is blank in {rows}.}}"
+msgstr "{rowCount, plural, one {Column \"{column}\" names the method of each step, but it is blank in {rows}.} other {Column \"{column}\" names the method of each step, but it is blank in {rows}.}}"
+
 #: src/features/table-import/TablePreviewPanel.tsx
 msgid "{rowCount, plural, one {First {shownRows} of {totalRows} row} other {First {shownRows} of {totalRows} rows}}"
 msgstr "{rowCount, plural, one {First {shownRows} of {totalRows} row} other {First {shownRows} of {totalRows} rows}}"
 
-#. Spreadsheet rows, used inside other messages, such as 'is blank in rows 5, 9 and 12'. {rowList} is the list of row numbers.
+#. Spreadsheet rows, used inside other messages, such as 'is blank in rows 5, 9 and 12'. {rowList} is the list of row numbers. Write it without an article: the message around it adds any article or preposition your language needs.
 #: src/domain/build/notices.ts
 msgid "{rowCount, plural, one {row {rowList}} other {rows {rowList}}}"
 msgstr "{rowCount, plural, one {row {rowList}} other {rows {rowList}}}"
@@ -757,7 +762,7 @@ msgstr "{samples, plural, one {# sample} other {# samples}} over {stages, plural
 msgid "{samples, plural, one {# sample} other {# samples}} over {stages, plural, one {# stage} other {# stages}} ({stageNames})"
 msgstr "{samples, plural, one {# sample} other {# samples}} over {stages, plural, one {# stage} other {# stages}} ({stageNames})"
 
-#. {section} is the name of a step, such as 'Specimens'.
+#. {section} is the name of a step, such as 'Specimens'. It is a name: if your language needs an article or agreement, write it as 'the {section} step'.
 #: src/domain/build/merge.ts
 msgid "{section} is not finished, so it is left out of the PMO."
 msgstr "{section} is not finished, so it is left out of the PMO."
@@ -786,7 +791,7 @@ msgstr "{targetCount} before merging"
 msgid "{targets, plural, one {# target, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.} other {# targets, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.}}"
 msgstr "{targets, plural, one {# target, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.} other {# targets, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.}}"
 
-#. Joins what is wrong with one value of the PMO, as in 'should be integer, and it has characters the PMO format does not allow there'.
+#. Joins what is wrong with one value of the PMO, as in 'should be integer, and it has characters the PMO format does not allow there'. {text} and {reason} are verb phrases whose subject is the value, such as 'must be a number' or 'is missing specimen_name'; {text} may already hold several phrases joined this way. The whole follows 'It' in a sentence.
 #: src/domain/build/merge.ts
 msgid "{text}, and it {reason}"
 msgstr "{text}, and it {reason}"
@@ -852,7 +857,7 @@ msgstr "{where} does not match the PMO format. Check it on the {section} step."
 msgid "{where} is {value}, which has characters the PMO format does not allow there."
 msgstr "{where} is {value}, which has characters the PMO format does not allow there."
 
-#. {where} is a place in the PMO, such as 'Specimen "S1", field "host_taxon_id"'. {value} is the value there. {reasonText} says what is wrong, such as 'should be integer'.
+#. {where} is a place in the PMO, such as 'Specimen "S1", field "host_taxon_id"'. {value} is the value there. {reasonText} says what is wrong: one or more verb phrases joined with ', and it', such as 'should be integer'.
 #: src/domain/build/merge.ts
 msgid "{where} is {value}. It {reasonText}."
 msgstr "{where} is {value}. It {reasonText}."
@@ -867,12 +872,22 @@ msgstr "{where} is blank. The PMO format needs a value there."
 msgid "{where} is missing {field}."
 msgstr "{where} is missing {field}."
 
+#. {where} is a place in the PMO, such as 'Specimen "S1"'.
+#: src/domain/build/merge.ts
+msgid "{where} is missing a required field."
+msgstr "{where} is missing a required field."
+
 #. {where} is a place in the PMO, such as 'Specimen "S1", field "host_taxon_id"'. {type} is a PMO value type, in English, such as 'integer'. {value} is the value there.
 #: src/domain/build/merge.ts
 msgid "{where} should be {type}, but is {value}."
 msgstr "{where} should be {type}, but is {value}."
 
-#. {where} is a place in the PMO, such as 'Specimen "S1"'. {reasonText} says what is wrong, such as 'is missing specimen_name'.
+#. {where} is a place in the PMO, such as 'Specimen "S1", field "host_taxon_id"'. {value} is the value there.
+#: src/domain/build/merge.ts
+msgid "{where} should be another type, but is {value}."
+msgstr "{where} should be another type, but is {value}."
+
+#. {where} is a place in the PMO, such as 'Specimen "S1"'. {reasonText} says what is wrong: one or more verb phrases joined with ', and it', such as 'is missing specimen_name'.
 #: src/domain/build/merge.ts
 msgid "{where}. It {reasonText}."
 msgstr "{where}. It {reasonText}."
@@ -917,11 +932,6 @@ msgstr "<0>Specimen name</0> must match a name in the table on the Specimens ste
 #: src/app/HomePage.tsx
 msgid "<0>Your data stays on this device.</0> Files are read inside this browser and are never uploaded."
 msgstr "<0>Your data stays on this device.</0> Files are read inside this browser and are never uploaded."
-
-#. Stands for a column inside other messages, when its name is not known.
-#: src/domain/build/notices.ts
-msgid "a column"
-msgstr "a column"
 
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "A column holds each run's method name, as given in the methods above."
@@ -1028,25 +1038,19 @@ msgstr "A pseudo-CIGAR column is mapped, so the location it refers to is needed 
 msgid "A published record is public and cannot be withdrawn. Check that you may share each of these. To leave one out, set its column to None on the Specimens step."
 msgstr "A published record is public and cannot be withdrawn. Check that you may share each of these. To leave one out, set its column to None on the Specimens step."
 
-#. Stands for a field of the PMO whose name is not known.
-#: src/domain/build/merge.ts
-msgid "a required field"
-msgstr "a required field"
-
-#. Stands for a row inside other messages, when its number is not known.
-#: src/domain/build/notices.ts
-msgid "a row"
-msgstr "a row"
-
-#. {column} names a column, such as 'column "ASV"'. {rows} is such as 'rows 5 and 9'.
+#. {column} names a column without an article, such as 'column "ASV"'; add any article your language needs. {rows} is such as 'rows 5 and 9'.
 #: src/domain/build/notices.ts
 msgid "A row for target \"{target}\" has no sequence in {column} ({rows})."
 msgstr "A row for target \"{target}\" has no sequence in {column} ({rows})."
 
-#. {column} names a column, such as 'column "ASV"'.
+#. {column} names a column without an article, such as 'column "ASV"'; add any article your language needs.
 #: src/domain/build/notices.ts
 msgid "A row for target \"{target}\" has no sequence in {column}."
 msgstr "A row for target \"{target}\" has no sequence in {column}."
+
+#: src/domain/build/notices.ts
+msgid "A row for target \"{target}\" has no sequence in the sequence column."
+msgstr "A row for target \"{target}\" has no sequence in the sequence column."
 
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "A run is one time the pipeline was run. Name runs as the allele table does, so its alleles are linked to the method that called them."
@@ -1198,6 +1202,7 @@ msgstr "Additional arguments"
 msgid "Age"
 msgstr "Age"
 
+#. {stepTitle} is a step's title, such as Project
 #: src/features/shared/NameCheck.tsx
 msgid "All found on the {stepTitle} step."
 msgstr "All found on the {stepTitle} step."
@@ -1214,13 +1219,12 @@ msgstr "All runs used the same pipeline."
 msgid "Allele name"
 msgstr "Allele name"
 
-#. Names the table of microhaplotypes inside other messages, such as 'The allele table has no rows.'
+#. The table of microhaplotypes: a table name in lower case, used inside other messages, such as 'The allele table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/microhaplotypes.ts
-#: src/features/bioinformatics/RunsPart.tsx
-#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
 msgid "allele table"
 msgstr "allele table"
 
+#. Title of the table of microhaplotypes. A table name: French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/app/HomePage.tsx
 #: src/domain/fields/microhaplotypes.ts
 #: src/features/microhaplotypes/MicrohaplotypesStep.tsx
@@ -1272,11 +1276,6 @@ msgstr "Annotation link"
 msgid "Annotations"
 msgstr "Annotations"
 
-#. Stands for a kind of value in the PMO, such as 'integer', when it is not known.
-#: src/domain/build/merge.ts
-msgid "another type"
-msgstr "another type"
-
 #: src/features/published/PublishedPage.tsx
 msgid "Any country"
 msgstr "Any country"
@@ -1306,8 +1305,12 @@ msgid "Arguments and link"
 msgstr "Arguments and link"
 
 #: src/domain/fields/records.ts
-msgid "Arguments that differ from the program's defaults."
-msgstr "Arguments that differ from the program's defaults."
+msgid "Arguments that differ from the program's defaults, one per line."
+msgstr "Arguments that differ from the program's defaults, one per line."
+
+#: src/domain/fields/records.ts
+msgid "Arguments that differ from the program's defaults, separated by commas."
+msgstr "Arguments that differ from the program's defaults, separated by commas."
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "Asking the community to review it"
@@ -1396,8 +1399,8 @@ msgstr "Build a PMO from your tables, or publish a PMO file you already have."
 msgid "Build a PMO from your tables, or publish a PMO file you already have. It appears here once a curator accepts it."
 msgstr "Build a PMO from your tables, or publish a PMO file you already have. It appears here once a curator accepts it."
 
-#. The table of reads per sample, target and processing stage, named inside other messages.
-#. The table of reads per sample, target and processing stage, named inside other messages.
+#. The table of reads per sample, target and processing stage: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
+#. The table of reads per sample, target and processing stage: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
 #: src/domain/build/readCounts.ts
 msgid "by-stage table"
@@ -1454,6 +1457,7 @@ msgstr "Chief scientist"
 msgid "Choose"
 msgstr "Choose"
 
+#. Accessible name of the file picker input. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.
 #: src/ui/FileDropzone.tsx
 msgid "Choose {fileLabel} file"
 msgstr "Choose {fileLabel} file"
@@ -1484,12 +1488,12 @@ msgstr "Choose another saved panel"
 msgid "Choose Submit for review. The record is published once a curator accepts it."
 msgstr "Choose Submit for review. The record is published once a curator accepts it."
 
-#. {table} is the name of a table, such as 'allele table'. {field} is a field, such as 'sample name'.
+#. {table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {field} is a field label, quoted as a name, such as 'Sample name'.
 #: src/domain/build/notices.ts
-msgid "Choose the column of the {table} that holds the {field}."
-msgstr "Choose the column of the {table} that holds the {field}."
+msgid "Choose the column of the {table} that holds “{field}”."
+msgstr "Choose the column of the {table} that holds “{field}”."
 
-#. {table} is the name of a table, such as 'allele table'.
+#. {table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/runName.ts
 msgid "Choose the column of the {table} that holds the run name."
 msgstr "Choose the column of the {table} that holds the run name."
@@ -1513,11 +1517,6 @@ msgstr "Chromosome"
 #: src/domain/fields/records.ts
 msgid "Chromosomes"
 msgstr "Chromosomes"
-
-#. Completes "Copy {label}": the citation
-#: src/features/published/DatasetPage.tsx
-msgid "citation"
-msgstr "citation"
 
 #: src/features/published/PublishedPage.tsx
 msgid "Clear the filters"
@@ -1568,22 +1567,32 @@ msgstr "Collection dates that name the day"
 msgid "Collection method"
 msgstr "Collection method"
 
-#. Names a column of the user's table inside other messages, such as 'column "SampleID" must hold whole numbers'. {column} is the column's name in the file.
+#. Names a column of the user's table inside other messages, such as 'is blank in column "SampleID"'. {column} is the column's name in the file. Write it without an article: the message around it adds any article or preposition your language needs.
 #: src/domain/build/notices.ts
 msgid "column \"{column}\""
 msgstr "column \"{column}\""
 
-#. Names a column of the user's table inside other messages. {column} is the column's name in the file; {field} is the field it is matched to, such as 'sample name'.
+#. Names a column of the user's table at the start of a sentence, such as 'Column "Start" must hold whole numbers'. {column} is the column's name in the file. Include the article your language starts the sentence with, such as French 'La colonne'.
+#: src/domain/build/notices.ts
+msgid "Column \"{column}\""
+msgstr "Column \"{column}\""
+
+#. Names a column of the user's table inside other messages. {column} is the column's name in the file; {field} is the field it is matched to, in lower case, such as 'sample name'. Write it without an article: the message around it adds any article or preposition your language needs.
 #: src/domain/build/notices.ts
 msgid "column \"{column}\" ({field})"
 msgstr "column \"{column}\" ({field})"
 
-#. {field} is a field, such as 'sample name'.
+#. Names a column of the user's table at the start of a sentence. {column} is the column's name in the file; {field} is the field it is matched to, in lower case, such as 'sample name'. Include the article your language starts the sentence with, such as French 'La colonne'.
 #: src/domain/build/notices.ts
-msgid "Column \"{column}\" is chosen for {field} and also to carry into the PMO as it is. Untick it, or choose another column for the field."
-msgstr "Column \"{column}\" is chosen for {field} and also to carry into the PMO as it is. Untick it, or choose another column for the field."
+msgid "Column \"{column}\" ({field})"
+msgstr "Column \"{column}\" ({field})"
 
-#. {column} is a column of the user's table. {fields} is a list of fields, such as 'sample name and target name'.
+#. {field} is a field label, quoted as a name, such as 'Sample name'.
+#: src/domain/build/notices.ts
+msgid "Column \"{column}\" is chosen for “{field}” and also to carry into the PMO as it is. Untick it, or choose another column for the field."
+msgstr "Column \"{column}\" is chosen for “{field}” and also to carry into the PMO as it is. Untick it, or choose another column for the field."
+
+#. {column} is a column of the user's table. {fields} is a list of quoted field labels, such as '“Sample name” and “Target name”'.
 #: src/domain/build/notices.ts
 msgid "Column \"{column}\" is chosen for {fields}. Each column can feed only one field."
 msgstr "Column \"{column}\" is chosen for {fields}. Each column can feed only one field."
@@ -1593,17 +1602,12 @@ msgstr "Column \"{column}\" is chosen for {fields}. Each column can feed only on
 msgid "Column \"{column}\" names methods that are not in the methods: {unknown}. The method names are {known}."
 msgstr "Column \"{column}\" names methods that are not in the methods: {unknown}. The method names are {known}."
 
-#. {rows} is such as 'rows 5 and 9'.
-#: src/domain/build/bioinformatics.ts
-msgid "Column \"{column}\" names the method of each step, but it is blank in {rows}."
-msgstr "Column \"{column}\" names the method of each step, but it is blank in {rows}."
-
-#. {issueTable} is the name of a table, such as 'totals table'. {rows} is such as 'row 5'.
+#. {issueTable} is a table name in lower case, such as 'totals table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {rows} is one row without an article, such as 'row 5'.
 #: src/domain/build/notices.ts
 msgid "Column \"{column}\" of the {issueTable} needs a whole number in {rows}, but holds \"{value}\"."
 msgstr "Column \"{column}\" of the {issueTable} needs a whole number in {rows}, but holds \"{value}\"."
 
-#. {issueTable} is the name of a table, such as 'totals table'.
+#. {issueTable} is a table name in lower case, such as 'totals table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
 msgid "Column \"{column}\" of the {issueTable} needs a whole number, but holds \"{value}\"."
 msgstr "Column \"{column}\" of the {issueTable} needs a whole number, but holds \"{value}\"."
@@ -1650,17 +1654,28 @@ msgstr "Copied"
 msgid "Copy"
 msgstr "Copy"
 
-#: src/features/shared/CopyValue.tsx
-msgid "Copy {label}"
-msgstr "Copy {label}"
+#: src/features/sequencing/SequencingStep.tsx
+msgid "Copy {name} into a new sequencing run"
+msgstr "Copy {name} into a new sequencing run"
 
-#: src/features/records/RecordList.tsx
-msgid "Copy {name} into a new {noun}"
-msgstr "Copy {name} into a new {noun}"
+#. Button: copy the dataset's citation to the clipboard
+#: src/features/published/DatasetPage.tsx
+msgid "Copy citation"
+msgstr "Copy citation"
+
+#. Button: copy the Zenodo record's description to the clipboard
+#: src/features/review/PublishToZenodo.tsx
+msgid "Copy description"
+msgstr "Copy description"
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "Copy keyword {keyword}"
 msgstr "Copy keyword {keyword}"
+
+#. Button: copy the Zenodo record's title to the clipboard
+#: src/features/review/PublishToZenodo.tsx
+msgid "Copy title"
+msgstr "Copy title"
 
 #. Field label: the country a specimen was collected in
 #: src/domain/fields/samples.ts
@@ -1727,11 +1742,6 @@ msgstr "Describe each specimen: where and when it was collected, and from which 
 msgid "Describe the pipeline and the runs that produced your allele table."
 msgstr "Describe the pipeline and the runs that produced your allele table."
 
-#. Completes "Copy {label}": the record's description
-#: src/features/review/PublishToZenodo.tsx
-msgid "description"
-msgstr "description"
-
 #. Field label: a short description
 #. Field label: a short description
 #. Heading for a group of optional fields in the column-matching editor
@@ -1787,7 +1797,7 @@ msgstr "Distinct alleles"
 msgid "District"
 msgstr "District"
 
-#. Part of a sentence: follows 'It', as in 'It does not match the PMO format'.
+#. Part of a sentence: a verb phrase that follows 'It', as in 'It does not match the PMO format'. Several such phrases may be joined with ', and it'.
 #: src/domain/build/merge.ts
 msgid "does not match the PMO format"
 msgstr "does not match the PMO format"
@@ -1844,10 +1854,6 @@ msgstr "Drugs taken"
 #: src/features/table-import/MatchingParts.tsx
 msgid "Each field of the PMO is matched to a column of your table. Check the matches and change any that are wrong."
 msgstr "Each field of the PMO is matched to a column of your table. Check the matches and change any that are wrong."
-
-#: src/domain/build/panel.ts
-msgid "Each panel needs its own name, but {panelNames} is used more than once."
-msgstr "Each panel needs its own name, but {panelNames} is used more than once."
 
 #: src/features/bioinformatics/MethodsPart.tsx
 msgid "Each program the pipeline ran, in order. Most pipelines need only the main one."
@@ -1911,13 +1917,13 @@ msgstr "Environment medium"
 msgid "Error"
 msgstr "Error"
 
-#: src/features/records/NameCoverage.tsx
-msgid "Every {noun} the {source} names has a record here."
-msgstr "Every {noun} the {source} names has a record here."
-
 #: src/features/readCounts/ReadCountsStep.tsx
 msgid "Every count came from the same analysis run."
 msgstr "Every count came from the same analysis run."
+
+#: src/features/project/ProjectStep.tsx
+msgid "Every project the specimen table names has a record here."
+msgstr "Every project the specimen table names has a record here."
 
 #: src/features/microhaplotypes/MicrohaplotypesStep.tsx
 msgid "Every row came from the same analysis run."
@@ -1927,9 +1933,17 @@ msgstr "Every row came from the same analysis run."
 msgid "Every row is one step of a single method."
 msgstr "Every row is one step of a single method."
 
+#: src/features/bioinformatics/RunsPart.tsx
+msgid "Every run the allele table names has a record here."
+msgstr "Every run the allele table names has a record here."
+
 #: src/features/review/noticeKinds.ts
 msgid "Every sample is put on the first panel"
 msgstr "Every sample is put on the first panel"
+
+#: src/features/sequencing/SequencingStep.tsx
+msgid "Every sequencing run the library sample table names has a record here."
+msgstr "Every sequencing run the library sample table names has a record here."
 
 #: src/app/privacy/PrivacyDetails.tsx
 msgid "Everything you type and every column you match."
@@ -1985,9 +1999,10 @@ msgstr "field \"{segment}\""
 msgid "Fields the PMO format needs are missing"
 msgstr "Fields the PMO format needs are missing"
 
+#. {fieldLabel} is the field's label as shown above it, such as Project name
 #: src/features/records/checks.ts
-msgid "Fill in the {fieldLabel}. The PMO needs it."
-msgstr "Fill in the {fieldLabel}. The PMO needs it."
+msgid "Fill in “{fieldLabel}”. The PMO needs it."
+msgstr "Fill in “{fieldLabel}”. The PMO needs it."
 
 #: src/domain/build/panel.ts
 msgid "Fill in the genome, or choose no genome."
@@ -2018,7 +2033,7 @@ msgstr "Finish"
 msgid "Fix on {stepTitle}"
 msgstr "Fix on {stepTitle}"
 
-#. {sections} is a list of step names, such as 'Panel and Specimens'.
+#. {sections} is a list of step names, such as 'Panel and Specimens'. They are names: if your language needs an article or agreement, write it as 'the steps {sections}'.
 #: src/domain/build/merge.ts
 msgid "Fix the problems in {sections} before the PMO can be built."
 msgstr "Fix the problems in {sections} before the PMO can be built."
@@ -2026,6 +2041,10 @@ msgstr "Fix the problems in {sections} before the PMO can be built."
 #: src/features/table-import/MatchingParts.tsx
 msgid "For example {example}"
 msgstr "For example {example}"
+
+#: src/features/panel/GenomeSection.tsx
+msgid "For example: {example}."
+msgstr "For example: {example}."
 
 #: src/features/panel/PanelStep.tsx
 msgid "For runs that use more than one panel. Panels that share targets are merged."
@@ -2094,7 +2113,7 @@ msgstr "Genome number"
 msgid "Genome records in the PMO have a problem. Check the Panel step."
 msgstr "Genome records in the PMO have a problem. Check the Panel step."
 
-#. Names a table inside other messages, such as 'The genome table has no rows.'
+#. A table name in lower case, used inside other messages, such as 'The genome table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/panel.ts
 msgid "genome table"
 msgstr "genome table"
@@ -2137,7 +2156,7 @@ msgstr "Go to the home page"
 msgid "Got it"
 msgstr "Got it"
 
-#. Part of a sentence: follows 'It', as in 'It has characters ...'.
+#. Part of a sentence: a verb phrase that follows 'It', as in 'It has characters ...'. Several such phrases may be joined with ', and it'.
 #: src/domain/build/merge.ts
 msgid "has characters the PMO format does not allow there"
 msgstr "has characters the PMO format does not allow there"
@@ -2345,10 +2364,15 @@ msgstr "Insert start"
 msgid "Instrument model"
 msgstr "Instrument model"
 
-#. Part of a sentence: follows 'It', as in 'It is missing specimen_name'. {field} is a PMO field name.
+#. Part of a sentence: a verb phrase that follows 'It', as in 'It is missing specimen_name'. {field} is a PMO field name. Several such phrases may be joined with ', and it'.
 #: src/domain/build/merge.ts
 msgid "is missing {field}"
 msgstr "is missing {field}"
+
+#. Part of a sentence: a verb phrase that follows 'It', as in 'It is missing a required field'. Several such phrases may be joined with ', and it'.
+#: src/domain/build/merge.ts
+msgid "is missing a required field"
+msgstr "is missing a required field"
 
 #: src/features/publish-file/PublishFilePage.tsx
 msgid "It cannot be published as it is. Build the PMO again from your tables in PMO Builder, which checks it as you go."
@@ -2501,9 +2525,8 @@ msgstr "Library sample name"
 msgid "Library sample records in the PMO have a problem. Check the Library samples step."
 msgstr "Library sample records in the PMO have a problem. Check the Library samples step."
 
-#. Names a table inside other messages, such as 'The library sample table has no rows.'
+#. A table name in lower case, used inside other messages, such as 'The library sample table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/samples.ts
-#: src/features/sequencing/SequencingStep.tsx
 msgid "library sample table"
 msgstr "library sample table"
 
@@ -2595,13 +2618,18 @@ msgstr "location"
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
+#: src/domain/fields/samples.ts
+msgctxt "place where a specimen was collected"
+msgid "Location"
+msgstr "Location"
+
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #: src/domain/fields/microhaplotypes.ts
-#: src/domain/fields/samples.ts
+msgctxt "position on a chromosome"
 msgid "Location"
 msgstr "Location"
 
@@ -2665,10 +2693,6 @@ msgstr "Matched by a similar name. Check it is right."
 msgid "May this site send anonymous usage counts, such as which steps are used and whether deposits work? They never include your files, sample names or anything you type, and nothing in them identifies you. Nothing is sent until you choose."
 msgstr "May this site send anonymous usage counts, such as which steps are used and whether deposits work? They never include your files, sample names or anything you type, and nothing in them identifies you. Nothing is sent until you choose."
 
-#: src/features/bioinformatics/MethodsPart.tsx
-msgid "method"
-msgstr "method"
-
 #. A bioinformatics method record in the PMO, starting a place in the file, such as 'Method 1'.
 #: src/domain/build/merge.ts
 #: src/features/bioinformatics/RunsPart.tsx
@@ -2715,11 +2739,16 @@ msgstr "Method name column"
 msgid "Method records in the PMO have a problem. Check the Bioinformatics step."
 msgstr "Method records in the PMO have a problem. Check the Bioinformatics step."
 
+#. Accessible name of the list of bioinformatics method cards
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "methods"
+msgstr "methods"
+
 #: src/features/bioinformatics/MethodsPart.tsx
 msgid "Methods"
 msgstr "Methods"
 
-#. Names a table inside other messages, such as 'The methods table has no rows.'
+#. A table name in lower case, used inside other messages, such as 'The methods table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/bioinformatics.ts
 msgid "methods table"
 msgstr "methods table"
@@ -2788,10 +2817,6 @@ msgstr "Name the project this data belongs to and the people behind it."
 #: src/features/records/ExtraDetails.tsx
 msgid "Name, such as funding"
 msgstr "Name, such as funding"
-
-#: src/features/librarySamples/LibrarySamplesStep.tsx
-msgid "named panels"
-msgstr "named panels"
 
 #: src/features/review/noticeKinds.ts
 msgid "Names missing that link tables together"
@@ -2898,10 +2923,15 @@ msgstr "No steps yet"
 msgid "No usage counts will be sent"
 msgstr "No usage counts will be sent"
 
-#. Reference genome choice: no genome
-#. The choice of nothing in a list
-#: src/features/panel/GenomeSection.tsx
+#. The choice of no column in a list of columns
 #: src/ui/Combobox.tsx
+msgctxt "no column"
+msgid "None"
+msgstr "None"
+
+#. Reference genome choice: no genome
+#: src/features/panel/GenomeSection.tsx
+msgctxt "no genome"
 msgid "None"
 msgstr "None"
 
@@ -2929,6 +2959,7 @@ msgstr "Not in this table"
 msgid "Not kept after you close this tab"
 msgstr "Not kept after you close this tab"
 
+#. {stepTitle} is a step's title, such as Project. {missingNames} lists names
 #: src/features/shared/NameCheck.tsx
 msgid "Not on the {stepTitle} step: {missingNames}."
 msgstr "Not on the {stepTitle} step: {missingNames}."
@@ -3142,12 +3173,20 @@ msgid "Opening your draft"
 msgstr "Opening your draft"
 
 #. Marks a field that may be left blank
-#. Marks a step a PMO file can do without
-#. Marks a table a PMO file can do without
-#: src/app/HomePage.tsx
-#: src/app/StepPage.tsx
 #: src/features/readCounts/ReadCountsStep.tsx
 #: src/ui/Field.tsx
+msgid "Optional"
+msgstr "Optional"
+
+#. Marks a step a PMO file can do without
+#: src/app/StepPage.tsx
+msgctxt "step"
+msgid "Optional"
+msgstr "Optional"
+
+#. Marks a table a PMO file can do without
+#: src/app/HomePage.tsx
+msgctxt "table"
 msgid "Optional"
 msgstr "Optional"
 
@@ -3303,8 +3342,12 @@ msgid "PCR conditions"
 msgstr "PCR conditions"
 
 #: src/domain/fields/records.ts
-msgid "People who contributed to the project."
-msgstr "People who contributed to the project."
+msgid "People who contributed to the project, one per line."
+msgstr "People who contributed to the project, one per line."
+
+#: src/domain/fields/records.ts
+msgid "People who contributed to the project, separated by commas."
+msgstr "People who contributed to the project, separated by commas."
 
 #: src/features/panel/PanelEditor.tsx
 msgid "Pick one to skip the steps below, or add the target table as usual."
@@ -3322,7 +3365,7 @@ msgstr "Picking one replaces the target table below for this panel. The table is
 msgid "Plate"
 msgstr "Plate"
 
-#. {table} is the name of a table, such as 'specimen table'.
+#. {table} is a table name in lower case, such as 'specimen table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
 msgid "Plate columns of the {table} are mapped twice over: give the plate position, or the plate row and column, not both. Unmap one of them."
 msgstr "Plate columns of the {table} are mapped twice over: give the plate position, or the plate row and column, not both. Unmap one of them."
@@ -3370,9 +3413,10 @@ msgstr "Preparing the file"
 msgid "Preview"
 msgstr "Preview"
 
+#. {tableName} is the table's name as shown in its heading, such as Allele table
 #: src/features/table-import/TablePreviewPanel.tsx
-msgid "Preview of the {tableName}"
-msgstr "Preview of the {tableName}"
+msgid "Preview of “{tableName}”"
+msgstr "Preview of “{tableName}”"
 
 #: src/features/review/PmoPreview.tsx
 msgid "Preview the PMO"
@@ -3402,10 +3446,6 @@ msgstr "Program"
 #: src/domain/fields/records.ts
 msgid "Program link"
 msgstr "Program link"
-
-#: src/features/project/ProjectStep.tsx
-msgid "project"
-msgstr "project"
 
 #. A record type in the PMO, starting a place in the file, such as 'Project "Study 1"'.
 #. Field label: the name of the research project
@@ -3439,7 +3479,7 @@ msgstr "Project names that link to nothing"
 msgid "Project records in the PMO have a problem. Check the Project step."
 msgstr "Project records in the PMO have a problem. Check the Project step."
 
-#. Names a table inside other messages, such as 'The project table has no rows with values.'
+#. A table name in lower case, used inside other messages, such as 'The project table has no rows with values.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/records.ts
 msgid "project table"
 msgstr "project table"
@@ -3456,7 +3496,8 @@ msgstr "Project type"
 msgid "Project, sequencing and bioinformatics details, typed in or from a file."
 msgstr "Project, sequencing and bioinformatics details, typed in or from a file."
 
-#: src/features/specimens/SpecimensStep.tsx
+#. Accessible name of the list of project cards
+#: src/features/project/ProjectStep.tsx
 msgid "projects"
 msgstr "projects"
 
@@ -3603,10 +3644,17 @@ msgstr "Reads at each stage"
 msgid "Reads per stage"
 msgstr "Reads per stage"
 
-#. Status of a step
+#. The PMO file is ready to download
 #: src/features/review/ReviewStep.tsx
+msgctxt "PMO file"
+msgid "Ready"
+msgstr "Ready"
+
+#. Status of a step
+#. Status of a step
 #: src/features/review/SectionChecklist.tsx
 #: src/ui/StatusBadge.tsx
+msgctxt "step status"
 msgid "Ready"
 msgstr "Ready"
 
@@ -3619,6 +3667,7 @@ msgstr "Ready to download"
 msgid "Ready, with things to check"
 msgstr "Ready, with things to check"
 
+#. Status of a step, as a sentence
 #: src/features/review/SectionChecklist.tsx
 msgid "Ready."
 msgstr "Ready."
@@ -3672,6 +3721,12 @@ msgstr "Reload the page to try again."
 msgid "Remove"
 msgstr "Remove"
 
+#. {tableName} is the table's name as shown in its heading, such as Allele table
+#: src/features/table-import/TableFile.tsx
+msgid "Remove “{tableName}”?"
+msgstr "Remove “{tableName}”?"
+
+#. Accessible name of a button. Removes this file. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.
 #: src/ui/FileDropzone.tsx
 msgid "Remove {fileLabel} file"
 msgstr "Remove {fileLabel} file"
@@ -3695,10 +3750,6 @@ msgstr "Remove detail {number}"
 #: src/features/panel/PanelStep.tsx
 msgid "Remove panel"
 msgstr "Remove panel"
-
-#: src/features/table-import/TableFile.tsx
-msgid "Remove the {tableName}?"
-msgstr "Remove the {tableName}?"
 
 #: src/features/panel/PanelStep.tsx
 msgid "Remove the panel \"{title}\"?"
@@ -3726,6 +3777,7 @@ msgstr "Renaming it here changes this draft only, not the saved panel."
 msgid "Replace"
 msgstr "Replace"
 
+#. Accessible name of a button. Chooses another file in place of this one. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.
 #: src/ui/FileDropzone.tsx
 msgid "Replace {fileLabel} file"
 msgstr "Replace {fileLabel} file"
@@ -3747,16 +3799,29 @@ msgid "Replaces the file and keeps the record's details and authors. It gets its
 msgstr "Replaces the file and keeps the record's details and authors. It gets its own DOI, and the record's overall DOI points to it. It is already in the community, so there is no review."
 
 #. Marks a field that must be filled in
-#. Marks a step a PMO file needs
-#. Marks a step a PMO file needs
-#. Marks a table a PMO file needs
+#: src/ui/Field.tsx
+msgid "Required"
+msgstr "Required"
+
 #. Sidebar heading: the steps a PMO file needs
-#: src/app/HomePage.tsx
+#: src/app/steps.ts
+msgctxt "sidebar heading"
+msgid "Required"
+msgstr "Required"
+
+#. Marks a step a PMO file needs
+#. Marks a step a PMO file needs
+#. Marks a step a PMO file needs
 #: src/app/StepNav.tsx
 #: src/app/StepPage.tsx
-#: src/app/steps.ts
 #: src/features/review/SectionChecklist.tsx
-#: src/ui/Field.tsx
+msgctxt "step"
+msgid "Required"
+msgstr "Required"
+
+#. Marks a table a PMO file needs
+#: src/app/HomePage.tsx
+msgctxt "table"
 msgid "Required"
 msgstr "Required"
 
@@ -3791,10 +3856,15 @@ msgstr "Review and download"
 msgid "Row"
 msgstr "Row"
 
-#. A spreadsheet row, starting a message about it, such as 'Row 5: fill in the program.'
+#. A spreadsheet row, starting a message about it, such as 'Row 5: fill in “Program”.'
 #: src/domain/build/records.ts
 msgid "Row {row}"
 msgstr "Row {row}"
+
+#. {row} is a spreadsheet row number. {issueTable} is a table name in lower case, such as 'totals table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
+#: src/domain/build/notices.ts
+msgid "Row {row} of the {issueTable} has no value in column \"{column}\"."
+msgstr "Row {row} of the {issueTable} has no value in column \"{column}\"."
 
 #: src/features/microhaplotypes/MicrohaplotypesStep.tsx
 msgid "Rows read"
@@ -3803,10 +3873,6 @@ msgstr "Rows read"
 #: src/features/bioinformatics/MethodsPart.tsx
 msgid "Rows with the same value form one method, named by that value."
 msgstr "Rows with the same value form one method, named by that value."
-
-#: src/features/bioinformatics/RunsPart.tsx
-msgid "run"
-msgstr "run"
 
 #. Noun: an analysis run
 #: src/features/readCounts/ReadCountsStep.tsx
@@ -3843,8 +3909,8 @@ msgstr "Run name column"
 msgid "Run names already given:"
 msgstr "Run names already given:"
 
-#. Sequencing runs, in: The Sequencing step has no runs yet.
-#: src/features/librarySamples/LibrarySamplesStep.tsx
+#. Accessible name of the list of bioinformatics run cards
+#: src/features/bioinformatics/RunsPart.tsx
 msgid "runs"
 msgstr "runs"
 
@@ -3852,12 +3918,12 @@ msgstr "runs"
 msgid "Runs"
 msgstr "Runs"
 
-#. Names the table of bioinformatics runs inside other messages, such as 'The runs table has no rows.'
+#. The table of bioinformatics runs: a table name in lower case, used inside other messages, such as 'The runs table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/bioinformatics.ts
 msgid "runs table"
 msgstr "runs table"
 
-#. Starts a message about every run of the runs table, such as 'Runs table: choose the method this run used.'
+#. A table name, capitalised to start a message about every run of the runs table, such as 'Runs table: choose the method this run used.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/bioinformatics.ts
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "Runs table"
@@ -3867,25 +3933,33 @@ msgstr "Runs table"
 msgid "Runs without a method"
 msgstr "Runs without a method"
 
-#. {column} names a column, such as 'column "Reads"'. {rows} is such as 'rows 5 and 9'.
+#. {column} names a column without an article, such as 'column "Reads"'; add any article your language needs. {rows} is such as 'rows 5 and 9'.
 #: src/domain/build/notices.ts
 msgid "Sample \"{sample}\" has no read count in {column} ({rows}). Every row needs a read count."
 msgstr "Sample \"{sample}\" has no read count in {column} ({rows}). Every row needs a read count."
 
-#. {column} names a column, such as 'column "Reads"'.
+#. {column} names a column without an article, such as 'column "Reads"'; add any article your language needs.
 #: src/domain/build/notices.ts
 msgid "Sample \"{sample}\" has no read count in {column}. Every row needs a read count."
 msgstr "Sample \"{sample}\" has no read count in {column}. Every row needs a read count."
 
-#. {column} names a column, such as 'column "Reads"'. {rows} is such as 'rows 5 and 9'.
+#: src/domain/build/notices.ts
+msgid "Sample \"{sample}\" has no read count in the read count column. Every row needs a read count."
+msgstr "Sample \"{sample}\" has no read count in the read count column. Every row needs a read count."
+
+#. {column} names a column without an article, such as 'column "Reads"'; add any article your language needs. {rows} is such as 'rows 5 and 9'.
 #: src/domain/build/notices.ts
 msgid "Sample \"{sample}\", target \"{target}\" has no read count in {column} ({rows}). Every row needs a read count."
 msgstr "Sample \"{sample}\", target \"{target}\" has no read count in {column} ({rows}). Every row needs a read count."
 
-#. {column} names a column, such as 'column "Reads"'.
+#. {column} names a column without an article, such as 'column "Reads"'; add any article your language needs.
 #: src/domain/build/notices.ts
 msgid "Sample \"{sample}\", target \"{target}\" has no read count in {column}. Every row needs a read count."
 msgstr "Sample \"{sample}\", target \"{target}\" has no read count in {column}. Every row needs a read count."
+
+#: src/domain/build/notices.ts
+msgid "Sample \"{sample}\", target \"{target}\" has no read count in the read count column. Every row needs a read count."
+msgstr "Sample \"{sample}\", target \"{target}\" has no read count in the read count column. Every row needs a read count."
 
 #: src/app/HomePage.tsx
 msgid "Sample metadata"
@@ -4010,10 +4084,6 @@ msgstr "Sequencing centre"
 msgid "Sequencing date"
 msgstr "Sequencing date"
 
-#: src/features/sequencing/SequencingStep.tsx
-msgid "sequencing run"
-msgstr "sequencing run"
-
 #. A record type in the PMO, starting a place in the file, such as 'Sequencing run "Run 1"'.
 #: src/domain/build/merge.ts
 #: src/domain/fields/samples.ts
@@ -4040,6 +4110,11 @@ msgstr "Sequencing run names that link to nothing"
 msgid "Sequencing run records in the PMO have a problem. Check the Sequencing step."
 msgstr "Sequencing run records in the PMO have a problem. Check the Sequencing step."
 
+#. Accessible name of the list of sequencing run cards
+#: src/features/sequencing/SequencingStep.tsx
+msgid "sequencing runs"
+msgstr "sequencing runs"
+
 #: src/domain/fields/study.ts
 #: src/features/review/PmoContents.tsx
 msgid "Sequencing runs"
@@ -4049,7 +4124,7 @@ msgstr "Sequencing runs"
 msgid "Sequencing runs named in this table"
 msgstr "Sequencing runs named in this table"
 
-#. Names a table inside other messages, such as 'The sequencing table has no rows with values.'
+#. A table name in lower case, used inside other messages, such as 'The sequencing table has no rows with values.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/records.ts
 msgid "sequencing table"
 msgstr "sequencing table"
@@ -4095,10 +4170,15 @@ msgstr "Sheet"
 msgid "Sheet {shownSheet}"
 msgstr "Sheet {shownSheet}"
 
-#. Part of a sentence: follows 'It', as in 'It should be integer or null'. {type} is a PMO value type, in English.
+#. Part of a sentence: a verb phrase that follows 'It', as in 'It should be integer or null'. {type} is a PMO value type, in English. Several such phrases may be joined with ', and it'.
 #: src/domain/build/merge.ts
 msgid "should be {type}"
 msgstr "should be {type}"
+
+#. Part of a sentence: a verb phrase that follows 'It', as in 'It should be another type'. Several such phrases may be joined with ', and it'.
+#: src/domain/build/merge.ts
+msgid "should be another type"
+msgstr "should be another type"
 
 #: src/features/shared/SectionResult.tsx
 msgid "Show all {count}"
@@ -4137,7 +4217,7 @@ msgstr "Skip to content"
 msgid "Smallest administrative area"
 msgstr "Smallest administrative area"
 
-#. {table} is the name of a table, such as 'allele table'. {fields} is a list of quoted field keys.
+#. {table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {fields} is a list of quoted field keys.
 #: src/domain/build/table.ts
 msgid "Some fields of the {table} are not used when building: {fields}."
 msgstr "Some fields of the {table} are not used when building: {fields}."
@@ -4187,7 +4267,7 @@ msgstr "Something went wrong on this page"
 msgid "Something went wrong while putting the steps together into one PMO. Check the results on each step for problems, then try again."
 msgstr "Something went wrong while putting the steps together into one PMO. Check the results on each step for problems, then try again."
 
-#. {table} is the name of a table, such as 'allele table'.
+#. {table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
 msgid "Something went wrong while reading the {table}. Check its column mapping and the values in the mapped columns, then try again."
 msgstr "Something went wrong while reading the {table}. Check its column mapping and the values in the mapped columns, then try again."
@@ -4221,9 +4301,8 @@ msgstr "Specimen names are not used"
 msgid "Specimen records in the PMO have a problem. Check the Specimens step."
 msgstr "Specimen records in the PMO have a problem. Check the Specimens step."
 
-#. Names a table inside other messages, such as 'The specimen table has no rows.'
+#. A table name in lower case, used inside other messages, such as 'The specimen table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/samples.ts
-#: src/features/project/ProjectStep.tsx
 msgid "specimen table"
 msgstr "specimen table"
 
@@ -4238,10 +4317,6 @@ msgstr "Specimen taxon ID"
 #: src/domain/fields/samples.ts
 msgid "Specimen type"
 msgstr "Specimen type"
-
-#: src/features/librarySamples/LibrarySamplesStep.tsx
-msgid "specimens"
-msgstr "specimens"
 
 #. Step title, shown in the sidebar and as the page heading
 #. The name of a step of the app
@@ -4271,9 +4346,13 @@ msgstr "Stage"
 msgid "Stages"
 msgstr "Stages"
 
-#. Field label: where an allele starts on the chromosome
 #: src/app/HomePage.tsx
+msgid "Start"
+msgstr "Start"
+
+#. Field label: where an allele starts on the chromosome
 #: src/domain/fields/microhaplotypes.ts
+msgctxt "position on a chromosome"
 msgid "Start"
 msgstr "Start"
 
@@ -4295,10 +4374,6 @@ msgid "Starting a new version of the record"
 msgstr "Starting a new version of the record"
 
 #: src/features/bioinformatics/MethodsPart.tsx
-msgid "step"
-msgstr "step"
-
-#: src/features/bioinformatics/MethodsPart.tsx
 msgid "Step {number}"
 msgstr "Step {number}"
 
@@ -4309,6 +4384,11 @@ msgstr "Step {number}: {program}"
 #: src/app/StepPage.tsx
 msgid "Step {stepNumber} of {stepCount}"
 msgstr "Step {stepNumber} of {stepCount}"
+
+#. Accessible name of the list of a method's step cards
+#: src/features/bioinformatics/MethodsPart.tsx
+msgid "steps"
+msgstr "steps"
 
 #. Heading for a count of pipeline steps
 #. Heading of the step list on narrow screens
@@ -4455,7 +4535,7 @@ msgstr "Target name"
 msgid "Target records in the PMO have a problem. Check the Panel step."
 msgstr "Target records in the PMO have a problem. Check the Panel step."
 
-#. Names a panel's table of targets inside other messages, such as 'The target table has no rows.'
+#. A panel's table of targets: a table name in lower case, used inside other messages, such as 'The target table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/panel.ts
 msgid "target table"
 msgstr "target table"
@@ -4531,41 +4611,57 @@ msgstr "That Zenodo record could not be found. Check its address or DOI."
 msgid "The {location} was left out for targets with blank location cells: {targets}."
 msgstr "The {location} was left out for targets with blank location cells: {targets}."
 
-#: src/features/shared/NameCheck.tsx
-msgid "The {stepTitle} step has no {things} yet."
-msgstr "The {stepTitle} step has no {things} yet."
+#. {stepTitle} is the Panel step's title
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "The {stepTitle} step has no named panels yet."
+msgstr "The {stepTitle} step has no named panels yet."
 
-#. {table} is the name of a table, such as 'allele table'. {detail} is a technical message from the PMO library, in English.
+#. {stepTitle} is the Project step's title
+#: src/features/specimens/SpecimensStep.tsx
+msgid "The {stepTitle} step has no projects yet."
+msgstr "The {stepTitle} step has no projects yet."
+
+#. {stepTitle} is the Sequencing step's title. Runs are sequencing runs
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "The {stepTitle} step has no runs yet."
+msgstr "The {stepTitle} step has no runs yet."
+
+#. {stepTitle} is the Specimens step's title
+#: src/features/librarySamples/LibrarySamplesStep.tsx
+msgid "The {stepTitle} step has no specimens yet."
+msgstr "The {stepTitle} step has no specimens yet."
+
+#. {table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {detail} is a technical message from the PMO library, in English.
 #: src/domain/build/table.ts
 msgid "The {table} could not be read: {detail}"
 msgstr "The {table} could not be read: {detail}"
 
-#. {table} is the name of a table, such as 'allele table'.
+#. {table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
 msgid "The {table} could not be turned into its part of the PMO. Check the column mapping of the {table} and the values in the mapped columns."
 msgstr "The {table} could not be turned into its part of the PMO. Check the column mapping of the {table} and the values in the mapped columns."
 
-#. {table} is the name of a table, such as 'allele table'.
+#. {table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/runName.ts
 msgid "The {table} has no column \"{column}\" for the run name. Choose another column."
 msgstr "The {table} has no column \"{column}\" for the run name. Choose another column."
 
-#. {table} is the name of a table, such as 'allele table'.
+#. {table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
 msgid "The {table} has no column \"{column}\", chosen to carry into the PMO. Untick it."
 msgstr "The {table} has no column \"{column}\", chosen to carry into the PMO. Untick it."
 
-#. {table} is the name of a table, such as 'allele table'. {field} is a field, such as 'sample name'.
+#. {table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {field} is a field label, quoted as a name, such as 'Sample name'.
 #: src/domain/build/notices.ts
-msgid "The {table} has no column \"{column}\", which is chosen for {field}. Choose another column."
-msgstr "The {table} has no column \"{column}\", which is chosen for {field}. Choose another column."
+msgid "The {table} has no column \"{column}\", which is chosen for “{field}”. Choose another column."
+msgstr "The {table} has no column \"{column}\", which is chosen for “{field}”. Choose another column."
 
-#. {table} is the name of a table, such as 'project table'.
+#. {table} is a table name in lower case, such as 'project table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/records.ts
 msgid "The {table} has no rows with values."
 msgstr "The {table} has no rows with values."
 
-#. {table} is the name of a table, such as 'target table'.
+#. {table} is a table name in lower case, such as 'target table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
 msgid "The {table} has no rows."
 msgstr "The {table} has no rows."
@@ -4636,8 +4732,12 @@ msgid "The chromosome the target lies on, needed when any location is given."
 msgstr "The chromosome the target lies on, needed when any location is given."
 
 #: src/domain/fields/records.ts
-msgid "The chromosomes or contigs in the genome."
-msgstr "The chromosomes or contigs in the genome."
+msgid "The chromosomes or contigs in the genome, one per line."
+msgstr "The chromosomes or contigs in the genome, one per line."
+
+#: src/domain/fields/records.ts
+msgid "The chromosomes or contigs in the genome, separated by commas."
+msgstr "The chromosomes or contigs in the genome, separated by commas."
 
 #: src/domain/fields/samples.ts
 msgid "The column number of the library on its plate, such as 1."
@@ -4647,9 +4747,13 @@ msgstr "The column number of the library on its plate, such as 1."
 msgid "The column number of the specimen on its storage plate, such as 1."
 msgstr "The column number of the specimen on its storage plate, such as 1."
 
-#: src/features/shared/RunNameChoice.tsx
-msgid "The column of the {tableName} that holds each row's run name."
-msgstr "The column of the {tableName} that holds each row's run name."
+#: src/features/microhaplotypes/MicrohaplotypesStep.tsx
+msgid "The column of the allele table that holds each row's run name."
+msgstr "The column of the allele table that holds each row's run name."
+
+#: src/features/readCounts/ReadCountsStep.tsx
+msgid "The column of the totals table that holds each row's run name."
+msgstr "The column of the totals table that holds each row's run name."
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "The community could not be asked to review the draft. Choose the community on the draft yourself."
@@ -4707,12 +4811,12 @@ msgstr "The example tables take the place of the tables and choices in your draf
 msgid "The extra field \"{key}\" has the same name as a field above. Fill in that field instead."
 msgstr "The extra field \"{key}\" has the same name as a field above. Fill in that field instead."
 
-#. {table} is the name of a table, such as 'allele table'. {reason} is a translated message saying why the file could not be read, or a technical message in English.
+#. {table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {reason} is a translated message saying why the file could not be read, or a technical message in English.
 #: src/domain/build/table.ts
 msgid "The file \"{fileName}\" for the {table} could not be read: {reason}"
 msgstr "The file \"{fileName}\" for the {table} could not be read: {reason}"
 
-#. {table} is the name of a table, such as 'allele table'.
+#. {table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/table.ts
 msgid "The file \"{fileName}\" for the {table} is not loaded. Import it again."
 msgstr "The file \"{fileName}\" for the {table} is not loaded. Import it again."
@@ -4864,8 +4968,12 @@ msgid "The NCBI taxonomy number of the organism in the specimen, such as 5833."
 msgstr "The NCBI taxonomy number of the organism in the specimen, such as 5833."
 
 #: src/domain/fields/records.ts
-msgid "The NCBI taxonomy number of the organism, such as 5833, or several for a combined genome."
-msgstr "The NCBI taxonomy number of the organism, such as 5833, or several for a combined genome."
+msgid "The NCBI taxonomy number of the organism, such as 5833, or several for a combined genome, one per line."
+msgstr "The NCBI taxonomy number of the organism, such as 5833, or several for a combined genome, one per line."
+
+#: src/domain/fields/records.ts
+msgid "The NCBI taxonomy number of the organism, such as 5833, or several for a combined genome, separated by commas."
+msgstr "The NCBI taxonomy number of the organism, such as 5833, or several for a combined genome, separated by commas."
 
 #: src/domain/fields/samples.ts
 msgid "The next smaller area, such as a district or county."
@@ -4907,7 +5015,7 @@ msgstr "The panel's genome information is incomplete or not in the right form. C
 msgid "The panels could not be combined into one. Check that each target appears with the same primers and location in every panel that has it, or remove the extra panel."
 msgstr "The panels could not be combined into one. Check that each target appears with the same primers and location in every panel that has it, or remove the extra panel."
 
-#. {table} is the name of a table, such as 'specimen table'.
+#. {table} is a table name in lower case, such as 'specimen table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
 msgid "The parasite density method of the {table} is mapped without the parasite density. Map both or neither."
 msgstr "The parasite density method of the {table} is mapped without the parasite density. Map both or neither."
@@ -4924,7 +5032,7 @@ msgstr "The PCR reaction or pool the target is amplified in."
 msgid "The person who leads the project, or several names separated by semicolons."
 msgstr "The person who leads the project, or several names separated by semicolons."
 
-#. {table} is the name of a table, such as 'specimen table'.
+#. {table} is a table name in lower case, such as 'specimen table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
 msgid "The plate row and plate column of the {table} go together. Map both or neither."
 msgstr "The plate row and plate column of the {table} go together. Map both or neither."
@@ -4965,11 +5073,6 @@ msgstr "The program's version, ideally written v1.2.3."
 msgid "The quality score of each base, written as in a FASTQ file."
 msgstr "The quality score of each base, written as in a FASTQ file."
 
-#. Stands for a column inside other messages, when its name is not known.
-#: src/domain/build/notices.ts
-msgid "the read count column"
-msgstr "the read count column"
-
 #: src/features/review/PublishToZenodo.tsx
 msgid "The record"
 msgstr "The record"
@@ -5006,20 +5109,24 @@ msgstr "The row letter of the specimen on its storage plate, such as A."
 msgid "The run {runName} uses this method and will need another one."
 msgstr "The run {runName} uses this method and will need another one."
 
-#. {table} is the name of a table, such as 'allele table'. "from a column" is the name of a choice on the page; use the same words as there.
+#. {table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). "from a column" is the name of a choice on the page; use the same words as there.
 #: src/domain/build/runName.ts
 msgid "The run name \"{runName}\" is also the name of a column in the {table}, so it would be read as that column. Choose \"from a column\" instead, or use another name."
 msgstr "The run name \"{runName}\" is also the name of a column in the {table}, so it would be read as that column. Choose \"from a column\" instead, or use another name."
 
-#. {column} names a column, such as 'column "Run"'. {rows} is such as 'rows 5 and 9'.
+#. {column} names a column without an article, such as 'column "Run"'; add any article your language needs. {rows} is such as 'rows 5 and 9'.
 #: src/domain/build/notices.ts
 msgid "The run name comes from {column}, but it is blank in some rows ({rows}). Fill them in or give one run name for the whole table."
 msgstr "The run name comes from {column}, but it is blank in some rows ({rows}). Fill them in or give one run name for the whole table."
 
-#. {column} names a column, such as 'column "Run"'.
+#. {column} names a column without an article, such as 'column "Run"'; add any article your language needs.
 #: src/domain/build/notices.ts
 msgid "The run name comes from {column}, but it is blank in some rows. Fill them in or give one run name for the whole table."
 msgstr "The run name comes from {column}, but it is blank in some rows. Fill them in or give one run name for the whole table."
+
+#: src/domain/build/notices.ts
+msgid "The run name comes from a column, but it is blank in some rows. Fill them in or give one run name for the whole table."
+msgstr "The run name comes from a column, but it is blank in some rows. Fill them in or give one run name for the whole table."
 
 #: src/domain/build/runName.ts
 msgid "The run name is not valid."
@@ -5045,11 +5152,6 @@ msgstr "The saved panel \"{savedName}\" is damaged or was saved by an older vers
 #: src/features/panel/SavedPanelList.tsx
 msgid "The saved panel could not be used"
 msgstr "The saved panel could not be used"
-
-#. Stands for a column inside other messages, when its name is not known.
-#: src/domain/build/notices.ts
-msgid "the sequence column"
-msgstr "the sequence column"
 
 #: src/domain/fields/panel.ts
 msgid "The sequence of the forward primer."
@@ -5123,18 +5225,14 @@ msgstr "The table holds several runs, with the run name in one column."
 msgid "The tables could not be put together"
 msgstr "The tables could not be put together"
 
-#. Stands for a column inside other messages, when its name is not known.
-#: src/domain/build/notices.ts
-msgid "the target name column"
-msgstr "the target name column"
-
 #: src/features/panel/GenomeSection.tsx
 msgid "The target positions need a genome"
 msgstr "The target positions need a genome"
 
+#. {positionFields} lists field labels as shown in the table, such as Chromosome, Insert start and Insert end
 #: src/features/panel/GenomeSection.tsx
-msgid "The target table gives the {positionFields} of each target. Add the reference genome they refer to, or set those fields to \"Not in this table\" above."
-msgstr "The target table gives the {positionFields} of each target. Add the reference genome they refer to, or set those fields to \"Not in this table\" above."
+msgid "The target table gives these fields for each target: {positionFields}. Add the reference genome they refer to, or set those fields to \"Not in this table\" above."
+msgstr "The target table gives these fields for each target: {positionFields}. Add the reference genome they refer to, or set those fields to \"Not in this table\" above."
 
 #: src/features/readCounts/ReadCountsStep.tsx
 msgid "The totals table holds several runs, with the run name in one column."
@@ -5188,7 +5286,7 @@ msgstr "These are the exact records from this visit, as sent or as they would ha
 msgid "These columns are not matched to a field. Tick the ones to carry into the PMO as they are."
 msgstr "These columns are not matched to a field. Tick the ones to carry into the PMO as they are."
 
-#. {table} is the name of a table, such as 'specimen table'. {columns} lists the columns and their blank rows.
+#. {table} is a table name in lower case, such as 'specimen table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {columns} lists the columns and their blank rows, after a colon, such as 'column "Date" (rows 5 and 9)'.
 #: src/domain/build/notices.ts
 msgid "These columns of the {table} have blank cells, which these fields do not allow: {columns}. Fill them in, or unmap the column if the field is optional."
 msgstr "These columns of the {table} have blank cells, which these fields do not allow: {columns}. Fill them in, or unmap the column if the field is optional."
@@ -5253,10 +5351,14 @@ msgstr "These specimen names are in the library sample table but not in the spec
 msgid "These specimens are in the specimen table but have no results in the allele table: {samples}."
 msgstr "These specimens are in the specimen table but have no results in the allele table: {samples}."
 
-#. {column} names a column, such as 'column "Target"'.
+#. {column} names a column without an article, such as 'column "Target"'; add any article your language needs.
 #: src/domain/build/notices.ts
 msgid "These targets appear more than once in {column}: {targets}. Each target needs one row."
 msgstr "These targets appear more than once in {column}: {targets}. Each target needs one row."
+
+#: src/domain/build/notices.ts
+msgid "These targets appear more than once in the target name column: {targets}. Each target needs one row."
+msgstr "These targets appear more than once in the target name column: {targets}. Each target needs one row."
 
 #: src/domain/build/merge.ts
 msgid "These targets are in the allele table but not in the panel: {nameList}. Check that the panel's target table lists every target."
@@ -5422,11 +5524,6 @@ msgstr "This table no longer has this column. Untick it."
 msgid "This translation is a preview and may be incomplete. <0>Leave the preview</0>"
 msgstr "This translation is a preview and may be incomplete. <0>Leave the preview</0>"
 
-#. Completes "Copy {label}": the record's title
-#: src/features/review/PublishToZenodo.tsx
-msgid "title"
-msgstr "title"
-
 #: src/features/review/PublishToZenodo.tsx
 msgid "Title"
 msgstr "Title"
@@ -5448,11 +5545,10 @@ msgstr "Total reads per sample"
 msgid "Totals only"
 msgstr "Totals only"
 
-#. The table of total reads per sample, named inside other messages.
-#. The table of total reads per sample, named inside other messages.
+#. The table of total reads per sample: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
+#. The table of total reads per sample: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
 #: src/domain/build/readCounts.ts
-#: src/features/readCounts/ReadCountsStep.tsx
 msgid "totals table"
 msgstr "totals table"
 
@@ -5655,20 +5751,20 @@ msgid "What you will need"
 msgstr "What you will need"
 
 #: src/domain/fields/records.ts
-msgid "When nucleic acids were amplified."
-msgstr "When nucleic acids were amplified."
+msgid "When nucleic acids were amplified, as YYYY-MM or YYYY-MM-DD."
+msgstr "When nucleic acids were amplified, as YYYY-MM or YYYY-MM-DD."
 
 #: src/domain/fields/records.ts
-msgid "When nucleic acids were extracted."
-msgstr "When nucleic acids were extracted."
+msgid "When nucleic acids were extracted, as YYYY-MM or YYYY-MM-DD."
+msgstr "When nucleic acids were extracted, as YYYY-MM or YYYY-MM-DD."
 
 #: src/domain/fields/records.ts
-msgid "When the pipeline was run."
-msgstr "When the pipeline was run."
+msgid "When the pipeline was run, as YYYY-MM or YYYY-MM-DD."
+msgstr "When the pipeline was run, as YYYY-MM or YYYY-MM-DD."
 
 #: src/domain/fields/records.ts
-msgid "When the sequencing was done."
-msgstr "When the sequencing was done."
+msgid "When the sequencing was done, as YYYY-MM or YYYY-MM-DD."
+msgstr "When the sequencing was done, as YYYY-MM or YYYY-MM-DD."
 
 #: src/domain/fields/samples.ts
 msgid "When the specimen was collected, as YYYY, YYYY-MM or YYYY-MM-DD."

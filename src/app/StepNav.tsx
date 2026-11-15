@@ -104,7 +104,11 @@ export function StepNav({
                     <span className="min-w-0 flex-1 truncate">{step.title}</span>
                     {step.required ? (
                       <span className="shrink-0 text-xs font-normal text-text-subtle">
-                        {t({ message: "Required", comment: "Marks a step a PMO file needs" })}
+                        {t({
+                          message: "Required",
+                          context: "step",
+                          comment: "Marks a step a PMO file needs",
+                        })}
                       </span>
                     ) : null}
                   </RouterLink>

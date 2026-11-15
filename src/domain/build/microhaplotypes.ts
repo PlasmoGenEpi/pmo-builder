@@ -49,7 +49,7 @@ export const MHAP_COLUMN_OPTIONS = [
 const TABLE_LABEL = t({
   message: "allele table",
   comment:
-    "Names the table of microhaplotypes inside other messages, such as 'The allele table has no rows.'",
+    "The table of microhaplotypes: a table name in lower case, used inside other messages, such as 'The allele table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
 });
 
 /**

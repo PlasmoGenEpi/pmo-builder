@@ -65,7 +65,7 @@ describe("RecordForm", () => {
     const name = screen.getByRole("textbox", { name: /^Project name/ });
     await user.click(name);
     await user.tab();
-    expect(screen.getByText("Fill in the project name. The PMO needs it.")).toBeInTheDocument();
+    expect(screen.getByText("Fill in “Project name”. The PMO needs it.")).toBeInTheDocument();
     expect(name).toHaveAttribute("aria-invalid", "true");
 
     await user.type(name, "My study: 2024");

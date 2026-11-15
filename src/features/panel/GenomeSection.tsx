@@ -20,7 +20,14 @@ import { Callout, SegmentedControl, TextArea, TextField, type Segment } from "@/
 import { genomeNotices, mappedPositionFields } from "./panelModel";
 
 const MODES: readonly Segment<GenomeMode>[] = [
-  { value: "none", label: t({ message: "None", comment: "Reference genome choice: no genome" }) },
+  {
+    value: "none",
+    label: t({
+      message: "None",
+      context: "no genome",
+      comment: "Reference genome choice: no genome",
+    }),
+  },
   { value: "manual", label: t`Enter by hand` },
   { value: "table", label: t`From a file` },
 ];
@@ -31,18 +38,17 @@ const MODE_LINE: Readonly<Record<GenomeMode, string>> = {
   table: t`A table with one row for each reference genome, for panels that use several.`,
 };
 
+/** The field labels of the given target table keys, as a list: "Chromosome, Insert start and Insert end". */
 function positionLabels(keys: readonly string[]): string {
   const fields = getFieldSet("panelTargets").fields;
   const labels = keys.map((key) => fields.find((field) => field.key === key)?.label ?? key);
-  const lower = labels.map((label) => label.toLowerCase());
-  return new Intl.ListFormat(intlLocale(), { type: "conjunction" }).format(lower);
+  return new Intl.ListFormat(intlLocale(), { type: "conjunction" }).format(labels);
 }
 
-/** A text field's hint with its example: "The genome's name, such as GRCh38." */
+/** A text field's hint with its example: "The genome's name. For example: GRCh38." */
 function exampleHint(field: { readonly description: string; readonly example: string }): string {
-  const description = field.description.replace(/\.$/, "");
   const example = field.example;
-  return t`${description}, such as ${example}.`;
+  return `${field.description} ${t`For example: ${example}.`}`;
 }
 
 /** The hand-entered genome: one field for each key, checked as the user types. */
@@ -172,7 +178,11 @@ export function GenomeSection({ entry, notices, headingLevel }: GenomeSectionPro
       </div>
       {needsGenome ? (
         <Callout tone="warning" title={t`The target positions need a genome`}>
-          {t`The target table gives the ${positionFields} of each target. Add the reference genome they refer to, or set those fields to "Not in this table" above.`}
+          {t({
+            message: `The target table gives these fields for each target: ${positionFields}. Add the reference genome they refer to, or set those fields to "Not in this table" above.`,
+            comment:
+              "{positionFields} lists field labels as shown in the table, such as Chromosome, Insert start and Insert end",
+          })}
         </Callout>
       ) : null}
       {unused ? (

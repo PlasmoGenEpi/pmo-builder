@@ -1,4 +1,4 @@
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 import { PlayCircle } from "lucide-react";
 
 import { RUN_FORM_FIELDS, isBlankRecord, type RunMethodMode, type RunRecord } from "@/domain/draft";
@@ -114,13 +114,21 @@ function RunRecords() {
       <NameCoverage
         referenced={runNames}
         defined={records.map((run) => run.values.bioinformatics_run_name)}
-        source={t`allele table`}
-        noun={t`run`}
+        allNamed={t`Every run the allele table names has a record here.`}
+        missingTitle={(count) =>
+          plural(count, {
+            one: "The allele table names a run with no record here",
+            other: "The allele table names # runs with no record here",
+          })
+        }
         onCreate={addNamed}
       />
       <RecordList
         items={records}
-        noun={t`run`}
+        listLabel={t({
+          message: "runs",
+          comment: "Accessible name of the list of bioinformatics run cards",
+        })}
         title={runTitle}
         isBlank={isBlankRecord}
         state={(run) => runState(run, methodProblem(run, options, fromFile))}

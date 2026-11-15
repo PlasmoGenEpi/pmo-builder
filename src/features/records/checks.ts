@@ -21,8 +21,11 @@ export function checkFieldValue(
   const read = readFieldValue(spec, value, "form");
   if (read.kind === "invalid") return read.message;
   if (read.kind === "blank" && spec.required && options.showBlank) {
-    const fieldLabel = spec.label.toLowerCase();
-    return t`Fill in the ${fieldLabel}. The PMO needs it.`;
+    const fieldLabel = spec.label;
+    return t({
+      message: `Fill in “${fieldLabel}”. The PMO needs it.`,
+      comment: "{fieldLabel} is the field's label as shown above it, such as Project name",
+    });
   }
   return null;
 }

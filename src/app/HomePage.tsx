@@ -245,12 +245,17 @@ export function HomePage({
                       <h3 className="text-base font-medium text-text">{need.title}</h3>
                       {need.required ? (
                         <Badge tone="accent">
-                          {t({ message: "Required", comment: "Marks a table a PMO file needs" })}
+                          {t({
+                            message: "Required",
+                            context: "table",
+                            comment: "Marks a table a PMO file needs",
+                          })}
                         </Badge>
                       ) : (
                         <Badge>
                           {t({
                             message: "Optional",
+                            context: "table",
                             comment: "Marks a table a PMO file can do without",
                           })}
                         </Badge>

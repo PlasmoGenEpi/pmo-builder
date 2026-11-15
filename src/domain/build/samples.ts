@@ -83,7 +83,8 @@ export function buildSpecimens(
   if (section.table === null) return notReady("specimens", "empty");
   const tableLabel = t({
     message: "specimen table",
-    comment: "Names a table inside other messages, such as 'The specimen table has no rows.'",
+    comment:
+      "A table name in lower case, used inside other messages, such as 'The specimen table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
   });
   const prepared = prepareTable(
     { mapped: section.table, fieldSetId: "specimens", tableLabel },
@@ -118,7 +119,8 @@ export function buildLibrarySamples(
   if (section.table === null) return notReady("librarySamples", "empty");
   const tableLabel = t({
     message: "library sample table",
-    comment: "Names a table inside other messages, such as 'The library sample table has no rows.'",
+    comment:
+      "A table name in lower case, used inside other messages, such as 'The library sample table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
   });
   const prepared = prepareTable(
     { mapped: section.table, fieldSetId: "librarySamples", tableLabel },

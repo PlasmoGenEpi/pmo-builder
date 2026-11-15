@@ -1,8 +1,15 @@
+import { PmoError } from "pmotools-ts";
 import { describe, expect, it } from "vitest";
 
 import { getFieldSet } from "@/domain/fields";
 
-import { mappingProblemNotice, type TableIssueContext } from "./notices";
+import {
+  describeColumn,
+  describeColumnAtStart,
+  errorNotice,
+  mappingProblemNotice,
+  type TableIssueContext,
+} from "./notices";
 
 const context: TableIssueContext = {
   tableLabel: "allele table",
@@ -59,5 +66,39 @@ describe("notices for fields that only make sense together", () => {
       column: "Patient name",
     });
     expect(notice.code).not.toContain("Patient");
+  });
+});
+
+describe("field and column names inside messages", () => {
+  it("quotes field labels as names rather than lower-casing them", () => {
+    expect(
+      mappingProblemNotice({ kind: "missing-required", fieldKey: "targetName" }, context).message,
+    ).toBe("Choose the column of the allele table that holds “Target name”.");
+    expect(
+      mappingProblemNotice(
+        { kind: "duplicate-column", column: "id", fieldKeys: ["librarySampleName", "targetName"] },
+        context,
+      ).message,
+    ).toBe(
+      'Column "id" is chosen for “Library sample name” and “Target name”. Each column can feed only one field.',
+    );
+  });
+
+  it("names a column with its own words at the start of a sentence and inside one", () => {
+    const mapped = { ...context, columns: { targetName: "locus" } };
+    expect(describeColumnAtStart(mapped, "locus")).toBe('Column "locus" (target name)');
+    expect(describeColumn(mapped, "locus")).toBe('column "locus" (target name)');
+    expect(describeColumnAtStart(mapped, "other")).toBe('Column "other"');
+  });
+
+  it("puts a read count table's row number in a whole sentence", () => {
+    const error = new PmoError("read-counts/missing-name", "missing name", {
+      table: "total_raw_count_table",
+      row: 3,
+      column: "sample",
+    });
+    expect(errorNotice(error, context).message).toBe(
+      'Row 5 of the totals table has no value in column "sample".',
+    );
   });
 });

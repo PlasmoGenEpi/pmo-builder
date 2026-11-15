@@ -93,11 +93,19 @@ export function StepPage({ stepId, children, width = "reading", status, actions 
             </h1>
             {stepId === "review" ? null : step.required ? (
               <Badge tone="accent">
-                {t({ message: "Required", comment: "Marks a step a PMO file needs" })}
+                {t({
+                  message: "Required",
+                  context: "step",
+                  comment: "Marks a step a PMO file needs",
+                })}
               </Badge>
             ) : (
               <Badge>
-                {t({ message: "Optional", comment: "Marks a step a PMO file can do without" })}
+                {t({
+                  message: "Optional",
+                  context: "step",
+                  comment: "Marks a step a PMO file can do without",
+                })}
               </Badge>
             )}
           </div>

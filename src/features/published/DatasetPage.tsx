@@ -147,7 +147,10 @@ function Dataset({ dataset }: { readonly dataset: PublishedDataset }) {
           <Trans>If you use this data, cite the record so its authors get the credit.</Trans>
         </p>
         <CopyValue
-          label={t({ message: "citation", comment: 'Completes "Copy {label}": the citation' })}
+          copyLabel={t({
+            message: "Copy citation",
+            comment: "Button: copy the dataset's citation to the clipboard",
+          })}
           value={citationOf(dataset)}
         />
       </section>

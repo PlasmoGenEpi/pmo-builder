@@ -63,7 +63,12 @@ function ProjectNames() {
         noneMessage={t`No project column is matched yet.`}
         stepId="project"
         known={known}
-        things={t`projects`}
+        emptyMessage={(stepTitle) =>
+          t({
+            message: `The ${stepTitle} step has no projects yet.`,
+            comment: "{stepTitle} is the Project step's title",
+          })
+        }
         emptyAdvice={t`Add them there to keep the link.`}
       />
     </dl>

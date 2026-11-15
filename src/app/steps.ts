@@ -20,7 +20,11 @@ export type StepGroup = (typeof STEP_GROUPS)[number];
 
 /** The heading shown for each sidebar group, in the interface language. */
 export const STEP_GROUP_LABELS: Readonly<Record<StepGroup, string>> = {
-  Required: t({ message: "Required", comment: "Sidebar heading: the steps a PMO file needs" }),
+  Required: t({
+    message: "Required",
+    context: "sidebar heading",
+    comment: "Sidebar heading: the steps a PMO file needs",
+  }),
   Samples: t({ message: "Samples", comment: "Sidebar heading" }),
   "Study and methods": t({ message: "Study and methods", comment: "Sidebar heading" }),
   Extras: t({ message: "Extras", comment: "Sidebar heading: optional extra steps" }),

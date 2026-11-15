@@ -48,8 +48,20 @@ export function setCurrentLocale(locale: Locale): void {
  * language formats as English.
  */
 export function intlLocale(): string {
-  return current === PSEUDO || current === "en" ? "en-GB" : current;
+  return INTL_LOCALES[current];
 }
+
+/**
+ * The `Intl` locale of each interface locale. Portuguese is the European and
+ * African standard (Mozambique, Angola, Guinea-Bissau), which also sets its
+ * plural rule: 0 takes the plural, unlike Brazilian Portuguese.
+ */
+export const INTL_LOCALES: Readonly<Record<Locale, string>> = {
+  en: "en-GB",
+  fr: "fr",
+  pt: "pt-PT",
+  pseudo: "en-GB",
+};
 
 /** True when `value` is a locale with a catalog. */
 export function isLocale(value: unknown): value is Locale {

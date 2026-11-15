@@ -29,9 +29,12 @@ export interface NameCheckProps {
   readonly stepId: StepId;
   /** The names on that step, or `null` when the step has none yet. */
   readonly known: readonly string[] | null;
-  /** What the step holds, plural, such as "panels". */
-  readonly things: string;
-  /** Said after "The ... step has no ... yet." when the step is empty, such as "Add them there to keep the link." */
+  /**
+   * Said when that step has no names yet, as one whole sentence, given the
+   * step's title, such as "The Project step has no projects yet."
+   */
+  readonly emptyMessage: (stepTitle: string) => string;
+  /** Said after `emptyMessage` when the step is empty, such as "Add them there to keep the link." */
   readonly emptyAdvice?: string;
 }
 
@@ -47,7 +50,7 @@ export function NameCheck({
   noneMessage,
   stepId,
   known,
-  things,
+  emptyMessage,
   emptyAdvice,
 }: NameCheckProps) {
   const stepTitle = getStep(stepId).title;
@@ -55,7 +58,7 @@ export function NameCheck({
   let check: { readonly ok: boolean; readonly text: string } | null = null;
   if (names !== null && names.length > 0) {
     if (known === null || known.length === 0) {
-      const empty = t`The ${stepTitle} step has no ${things} yet.`;
+      const empty = emptyMessage(stepTitle);
       check = {
         ok: false,
         text: emptyAdvice === undefined ? empty : `${empty} ${emptyAdvice}`,
@@ -66,8 +69,21 @@ export function NameCheck({
       const missingNames = listNames(missing);
       check =
         missing.length === 0
-          ? { ok: true, text: t`All found on the ${stepTitle} step.` }
-          : { ok: false, text: t`Not on the ${stepTitle} step: ${missingNames}.` };
+          ? {
+              ok: true,
+              text: t({
+                message: `All found on the ${stepTitle} step.`,
+                comment: "{stepTitle} is a step's title, such as Project",
+              }),
+            }
+          : {
+              ok: false,
+              text: t({
+                message: `Not on the ${stepTitle} step: ${missingNames}.`,
+                comment:
+                  "{stepTitle} is a step's title, such as Project. {missingNames} lists names",
+              }),
+            };
     }
   }
   const Icon = check?.ok === true ? CircleCheck : TriangleExclamationPoint;

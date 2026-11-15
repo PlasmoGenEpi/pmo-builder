@@ -46,13 +46,21 @@ function ProjectRecords() {
       <NameCoverage
         referenced={suggestions.projectNames}
         defined={defined}
-        source={t`specimen table`}
-        noun={t`project`}
+        allNamed={t`Every project the specimen table names has a record here.`}
+        missingTitle={(count) =>
+          plural(count, {
+            one: "The specimen table names a project with no record here",
+            other: "The specimen table names # projects with no record here",
+          })
+        }
         onCreate={addNamed}
       />
       <RecordList
         items={records}
-        noun={t`project`}
+        listLabel={t({
+          message: "projects",
+          comment: "Accessible name of the list of project cards",
+        })}
         title={(record, index) => projectTitle(record, index, records.length)}
         isBlank={isBlankRecord}
         state={(record) => recordState(PROJECT_FORM_FIELDS, record.values, record.extra)}

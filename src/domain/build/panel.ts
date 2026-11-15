@@ -3,7 +3,7 @@
  * optional genome) or from the saved-panel library, merged with
  * `mergePanelInfoDicts` when there are several.
  */
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 import {
   collectWarnings,
   mergePanelInfoDicts,
@@ -205,7 +205,8 @@ function buildGenome(genome: GenomeChoice, context: BuildContext): GenomeResult 
           fieldSetId: "genomes",
           tableLabel: t({
             message: "genome table",
-            comment: "Names a table inside other messages, such as 'The genome table has no rows.'",
+            comment:
+              "A table name in lower case, used inside other messages, such as 'The genome table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
           }),
         },
         context,
@@ -335,7 +336,7 @@ function buildEntry(entry: PanelEntry, context: BuildContext): EntryResult {
   const tableLabel = t({
     message: "target table",
     comment:
-      "Names a panel's table of targets inside other messages, such as 'The target table has no rows.'",
+      "A panel's table of targets: a table name in lower case, used inside other messages, such as 'The target table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
   });
   const prepared = prepareTable(
     { mapped: entry.table, fieldSetId: "panelTargets", tableLabel },
@@ -420,12 +421,16 @@ export function buildPanel(section: PanelDraft, context: BuildContext): SectionR
   const names = built.map((item) => item.name);
   const repeated = names.filter((name, index) => names.indexOf(name) !== index);
   if (repeated.length > 0) {
-    const panelNames = quoteItems([...new Set(repeated)]);
+    const repeatedNames = [...new Set(repeated)];
+    const panelNames = quoteItems(repeatedNames);
     notices.push(
       makeNotice(
         "error",
         "panel/duplicate-panel-names",
-        t`Each panel needs its own name, but ${panelNames} is used more than once.`,
+        plural(repeatedNames.length, {
+          one: `Each panel needs its own name, but ${panelNames} is used more than once.`,
+          other: `Each panel needs its own name, but ${panelNames} are used more than once.`,
+        }),
       ),
     );
     statuses.push("error");

@@ -93,7 +93,12 @@ function References({ mapped }: { readonly mapped: MappedTable }) {
             noneMessage={t`No specimen name column is matched yet.`}
             stepId="specimens"
             known={knownSpecimens}
-            things={t`specimens`}
+            emptyMessage={(stepTitle) =>
+              t({
+                message: `The ${stepTitle} step has no specimens yet.`,
+                comment: "{stepTitle} is the Specimens step's title",
+              })
+            }
           />
           <NameCheck
             label={t`Panels named in this table`}
@@ -101,7 +106,12 @@ function References({ mapped }: { readonly mapped: MappedTable }) {
             noneMessage={t`No panel column is matched yet.`}
             stepId="panel"
             known={panels}
-            things={t`named panels`}
+            emptyMessage={(stepTitle) =>
+              t({
+                message: `The ${stepTitle} step has no named panels yet.`,
+                comment: "{stepTitle} is the Panel step's title",
+              })
+            }
           />
           <NameCheck
             label={t`Sequencing runs named in this table`}
@@ -111,10 +121,12 @@ function References({ mapped }: { readonly mapped: MappedTable }) {
             noneMessage={t`No sequencing run column. That is fine: it is optional.`}
             stepId="sequencing"
             known={sequencing}
-            things={t({
-              message: "runs",
-              comment: "Sequencing runs, in: The Sequencing step has no runs yet.",
-            })}
+            emptyMessage={(stepTitle) =>
+              t({
+                message: `The ${stepTitle} step has no runs yet.`,
+                comment: "{stepTitle} is the Sequencing step's title. Runs are sequencing runs",
+              })
+            }
           />
         </dl>
         {notices.map((notice) => (

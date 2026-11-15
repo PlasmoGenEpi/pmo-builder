@@ -11,6 +11,7 @@ import { i18n, type Messages } from "@lingui/core";
 import { messages as english } from "../locales/en.po";
 import {
   chooseLocale,
+  INTL_LOCALES,
   LANGUAGE_KEY,
   PSEUDO,
   setCurrentLocale,
@@ -39,7 +40,8 @@ export async function activateLocale(locale: Locale): Promise<void> {
     const { messages } = await CATALOGS[locale]();
     i18n.load(locale, messages);
   }
-  i18n.activate(locale);
+  // The second argument sets the plural rules and Intl formats, for example pt-PT for Portuguese.
+  i18n.activate(locale, [INTL_LOCALES[locale]]);
   setCurrentLocale(locale);
   if (typeof document !== "undefined") {
     document.documentElement.lang = locale === PSEUDO ? "en" : locale;

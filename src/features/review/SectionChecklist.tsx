@@ -23,7 +23,11 @@ const STATE_META: Readonly<
     { readonly label: string; readonly tone: BadgeTone; readonly icon: LucideIcon }
   >
 > = {
-  ready: { label: t`Ready`, tone: "success", icon: CircleCheck },
+  ready: {
+    label: t({ message: "Ready", context: "step status", comment: "Status of a step" }),
+    tone: "success",
+    icon: CircleCheck,
+  },
   errors: { label: t`Has errors`, tone: "danger", icon: CircleX },
   unfinished: { label: t`Not finished`, tone: "warning", icon: CircleDot },
   "left-out": { label: t`Left out`, tone: "neutral", icon: CircleMinus },
@@ -42,7 +46,8 @@ function Row({ section, view }: { readonly section: SectionId; readonly view: Bu
   if (sectionView === null) line = t`Working out where this step stands.`;
   else if (state === "ready" && sectionView.summary !== null) {
     line = summaryLine(section, sectionView.summary);
-  } else if (state === "ready") line = t`Ready.`;
+  } else if (state === "ready")
+    line = t({ message: "Ready.", comment: "Status of a step, as a sentence" });
   else line = STATE_LINE[state];
 
   return (
@@ -57,7 +62,9 @@ function Row({ section, view }: { readonly section: SectionId; readonly view: Bu
           </RouterLink>
           {isRequiredSection(section) ? (
             <span className="text-xs text-text-subtle">
-              <Trans>Required</Trans>
+              <Trans context="step" comment="Marks a step a PMO file needs">
+                Required
+              </Trans>
             </span>
           ) : null}
         </div>

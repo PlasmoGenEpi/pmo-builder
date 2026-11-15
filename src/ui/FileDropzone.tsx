@@ -129,7 +129,11 @@ export function FileDropzone({
       type="file"
       hidden
       accept={accept.join(",")}
-      aria-label={t`Choose ${fileLabel} file`}
+      aria-label={t({
+        message: `Choose ${fileLabel} file`,
+        comment:
+          'Accessible name of the file picker input. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
+      })}
       onChange={(event) => {
         take(event.target.files);
         // Allow choosing the same file again after it was removed.
@@ -197,7 +201,11 @@ export function FileDropzone({
               size="sm"
               onClick={choose}
               disabled={inactive}
-              aria-label={t`Replace ${fileLabel} file`}
+              aria-label={t({
+                message: `Replace ${fileLabel} file`,
+                comment:
+                  'Accessible name of a button. Chooses another file in place of this one. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
+              })}
             >
               {t({
                 message: "Replace",
@@ -212,7 +220,11 @@ export function FileDropzone({
                 onRemove();
               }}
               disabled={inactive}
-              aria-label={t`Remove ${fileLabel} file`}
+              aria-label={t({
+                message: `Remove ${fileLabel} file`,
+                comment:
+                  'Accessible name of a button. Removes this file. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
+              })}
             >
               {t({ message: "Remove", comment: "Button: remove this file" })}
             </Button>

@@ -21,8 +21,11 @@ export interface RunNameChoiceProps {
   readonly description: string;
   /** What each choice means for this table. */
   readonly modeDescriptions: Readonly<Record<RunNameMode, string>>;
-  /** What the table is called in "The column of the ... that holds each row's run name". */
-  readonly tableName: string;
+  /**
+   * The run name column's hint until its values are read, as one whole
+   * sentence, such as "The column of the allele table that holds each row's run name."
+   */
+  readonly columnHint: string;
   /** Run names to offer as one-click choices. Blank names and the current name are left out. */
   readonly knownNames: readonly string[];
   /** Said before the run names on offer, such as "From the Bioinformatics step:". */
@@ -80,7 +83,7 @@ export function RunNameChoice({
   headingLevel = 2,
   description,
   modeDescriptions,
-  tableName,
+  columnHint,
   knownNames,
   knownLabel,
 }: RunNameChoiceProps) {
@@ -175,7 +178,7 @@ export function RunNameChoice({
           hint={
             values?.kind === "ready" && values.values.length > 0
               ? runsHint(values.values, values.truncated)
-              : t`The column of the ${tableName} that holds each row's run name.`
+              : columnHint
           }
           error={problem}
           className="sm:max-w-md"

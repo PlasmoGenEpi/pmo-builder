@@ -89,7 +89,11 @@ export function Combobox({
   options,
   value,
   onChange,
-  noneLabel = t({ message: "None", comment: "The choice of nothing in a list" }),
+  noneLabel = t({
+    message: "None",
+    context: "no column",
+    comment: "The choice of no column in a list of columns",
+  }),
   noneDescription,
   placeholder,
   emptyMessage = t`Nothing matches your search.`,

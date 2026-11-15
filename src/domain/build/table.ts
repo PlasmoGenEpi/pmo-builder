@@ -2,7 +2,7 @@
  * Getting an imported table ready for a pmotools-ts builder: find its rows,
  * check its mapping, type it, and turn the mapping into builder options.
  */
-import { plural, select, t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 import type { Table } from "pmotools-ts";
 
 import { mappedColumns, type MappedTable } from "@/domain/draft";
@@ -18,10 +18,8 @@ import type {
 
 import type { BuildContext } from "./context";
 import {
-  capitalise,
-  describeColumn,
+  describeColumnAtStart,
   describeRows,
-  inSentence,
   makeNotice,
   mappingProblemNotice,
   quoteItems,
@@ -63,7 +61,7 @@ export type TablePreparation = PreparedTable | BlockedTable;
 export interface PrepareTableInput {
   readonly mapped: MappedTable;
   readonly fieldSetId: FieldSetId;
-  /** The table as the user knows it, such as "allele table". */
+  /** The table as the user knows it, in lower case to go inside a sentence, such as "allele table". */
   readonly tableLabel: string;
   /** More columns to keep as text, such as a run-name column. */
   readonly extraTextColumns?: readonly string[];
@@ -105,7 +103,8 @@ export function checkTable(
           "table/file-missing",
           t({
             message: `The file "${fileName}" for the ${table} is not loaded. Import it again.`,
-            comment: "{table} is the name of a table, such as 'allele table'.",
+            comment:
+              "{table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
           }),
           { tableId },
         ),
@@ -124,7 +123,7 @@ export function checkTable(
           t({
             message: `The file "${fileName}" for the ${table} could not be read: ${reason}`,
             comment:
-              "{table} is the name of a table, such as 'allele table'. {reason} is a translated message saying why the file could not be read, or a technical message in English.",
+              "{table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {reason} is a translated message saying why the file could not be read, or a technical message in English.",
           }),
           { tableId },
         ),
@@ -175,38 +174,27 @@ function blankRequiredNotices(checked: CheckedTable): Notice[] {
       if ((row[column] ?? "").trim() === "") rows.push(index);
     });
     if (rows.length === 0) continue;
-    const columnText = capitalise(describeColumn(checked.issues, column));
+    const columnText = describeColumnAtStart(checked.issues, column);
     const rowList = describeRows(rows);
     const rowCount = rows.length;
-    const fieldName = inSentence(field.label);
+    const fieldName = field.label;
     notices.push(
       makeNotice(
         "error",
         "table/blank-required",
         t({
           message: plural(rowCount, {
-            one: select(englishArticle(fieldName), {
-              an: `${columnText} is blank in ${rowList}. Every row needs an ${fieldName}. Fill it in.`,
-              other: `${columnText} is blank in ${rowList}. Every row needs a ${fieldName}. Fill it in.`,
-            }),
-            other: select(englishArticle(fieldName), {
-              an: `${columnText} is blank in ${rowList}. Every row needs an ${fieldName}. Fill them in.`,
-              other: `${columnText} is blank in ${rowList}. Every row needs a ${fieldName}. Fill them in.`,
-            }),
+            one: `${columnText} is blank in ${rowList}. Every row needs a value for “${fieldName}”. Fill it in.`,
+            other: `${columnText} is blank in ${rowList}. Every row needs a value for “${fieldName}”. Fill them in.`,
           }),
           comment:
-            "{columnText} names a column, such as 'Column \"Target\"'. {rowList} is such as 'rows 5 and 9'. {fieldName} is a field, such as 'target name'. The 'an' or 'a' choice follows English spelling; use whatever your language needs.",
+            "{columnText} starts the sentence and names a column, with any article, such as 'Column \"Target\"'. {rowList} is such as 'rows 5 and 9', without an article; {rowCount} is how many rows it lists. {fieldName} is a field label, quoted as a name, such as 'Target name'.",
         }),
         { tableId: checked.issues.tableId ?? undefined, column, fieldKey: field.key },
       ),
     );
   }
   return notices;
-}
-
-/** "an" before a noun that starts with a vowel, otherwise "a": the English article, for `select`. */
-function englishArticle(noun: string): "an" | "a" {
-  return /^[aeiou]/i.test(noun) ? "an" : "a";
 }
 
 /** Error notices for cells of yes-or-no columns that are neither yes nor no. */
@@ -222,7 +210,7 @@ function booleanNotices(checked: CheckedTable, booleanColumns: readonly string[]
       values.add(read.text.trim());
     });
     if (rows.length === 0) continue;
-    const columnText = capitalise(describeColumn(checked.issues, column));
+    const columnText = describeColumnAtStart(checked.issues, column);
     const rowList = describeRows(rows);
     const rowCount = rows.length;
     const valueList = quoteItems([...values]);
@@ -236,7 +224,7 @@ function booleanNotices(checked: CheckedTable, booleanColumns: readonly string[]
             other: `${columnText} must hold yes or no (such as TRUE, FALSE, yes, no, 1 or 0), but ${rowList} hold ${valueList}. Correct them, leave them blank, or unmap the column.`,
           }),
           comment:
-            "{columnText} names a column, such as 'Column \"Present\"'. {rowList} is such as 'rows 5 and 9'. {valueList} is a list of quoted values. TRUE, FALSE, yes, no, 1 and 0 are the values a file may hold; keep them in English.",
+            "{columnText} starts the sentence and names a column, with any article, such as 'Column \"Present\"'. {rowList} is such as 'rows 5 and 9', without an article. {valueList} is a list of quoted values. TRUE, FALSE, yes, no, 1 and 0 are the values a file may hold; keep them in English.",
         }),
         {
           tableId: checked.issues.tableId ?? undefined,
@@ -303,7 +291,7 @@ export function prepareTable(input: PrepareTableInput, context: BuildContext): T
           t({
             message: `The ${table} could not be read: ${detail}`,
             comment:
-              "{table} is the name of a table, such as 'allele table'. {detail} is a technical message from the PMO library, in English.",
+              "{table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {detail} is a technical message from the PMO library, in English.",
           }),
           { tableId: issues.tableId ?? undefined },
         ),
@@ -356,7 +344,7 @@ export function unknownKeysNotice(keys: readonly string[], tableLabel: string): 
       t({
         message: `Some fields of the ${table} are not used when building: ${fields}.`,
         comment:
-          "{table} is the name of a table, such as 'allele table'. {fields} is a list of quoted field keys.",
+          "{table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {fields} is a list of quoted field keys.",
       }),
     ),
   ];

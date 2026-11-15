@@ -30,7 +30,7 @@ function TotalsRunName({ matching }: { readonly matching: ColumnMatching }) {
         fixed: t`Every count came from the same analysis run.`,
         column: t`The totals table holds several runs, with the run name in one column.`,
       }}
-      tableName={t`totals table`}
+      columnHint={t`The column of the totals table that holds each row's run name.`}
       knownNames={[...typed, ...runNames]}
       knownLabel={t`Run names already given:`}
     />

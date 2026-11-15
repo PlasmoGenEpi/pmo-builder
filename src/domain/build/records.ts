@@ -23,7 +23,7 @@ import {
 import type { FieldSetId, Notice, RawTable, SectionId, SectionStatus } from "@/domain/types";
 
 import type { BuildContext } from "./context";
-import { listItems, makeNotice, quoteItems } from "./notices";
+import { listItems, makeNotice, quoteItems, quoteLabel } from "./notices";
 import {
   notReady,
   ready,
@@ -87,7 +87,7 @@ export function checkRecords<K extends string, E extends EnteredRecord<K>>(
       const value = readFieldValue(field, record.values[field.key], record.origin);
       switch (value.kind) {
         case "blank":
-          if (field.required) blanks.push(field.label.toLowerCase());
+          if (field.required) blanks.push(quoteLabel(field.label));
           break;
         case "invalid":
           problems.push(value.message);
@@ -125,9 +125,9 @@ export function checkRecords<K extends string, E extends EnteredRecord<K>>(
           "error",
           "form/missing-required",
           t({
-            message: `${label}: fill in the ${fieldList}.`,
+            message: `${label}: fill in ${fieldList}.`,
             comment:
-              "{label} names a record, such as 'Project 2' or 'Row 5'. {fieldList} is a list of fields, such as 'project name and description'.",
+              "{label} names a record, such as 'Project 2' or 'Row 5'. {fieldList} is a list of quoted field labels, such as '“Project name” and “Description”'.",
           }),
         ),
       );
@@ -220,8 +220,7 @@ export function rowLabel(index: number): string {
   const row = index + 2;
   return t({
     message: `Row ${row}`,
-    comment:
-      "A spreadsheet row, starting a message about it, such as 'Row 5: fill in the program.'",
+    comment: "A spreadsheet row, starting a message about it, such as 'Row 5: fill in “Program”.'",
   });
 }
 
@@ -344,7 +343,8 @@ function buildRecordSection<S extends SectionId, K extends string, T>(
             "table/no-rows",
             t({
               message: `The ${table} has no rows with values.`,
-              comment: "{table} is the name of a table, such as 'project table'.",
+              comment:
+                "{table} is a table name in lower case, such as 'project table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
             }),
           ),
         ])
@@ -386,7 +386,7 @@ export function buildProject(
       tableLabel: t({
         message: "project table",
         comment:
-          "Names a table inside other messages, such as 'The project table has no rows with values.'",
+          "A table name in lower case, used inside other messages, such as 'The project table has no rows with values.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
       }),
       nameKey: "project_name",
       toRecord: (record): ProjectInfo => {
@@ -431,7 +431,7 @@ export function buildSequencing(
       tableLabel: t({
         message: "sequencing table",
         comment:
-          "Names a table inside other messages, such as 'The sequencing table has no rows with values.'",
+          "A table name in lower case, used inside other messages, such as 'The sequencing table has no rows with values.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
       }),
       nameKey: "sequencing_info_name",
       toRecord: (record): SequencingInfo => {

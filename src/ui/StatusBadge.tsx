@@ -29,7 +29,7 @@ export const STATUS_META: Readonly<Record<SectionStatus, StatusMeta>> = {
     iconClass: "text-warning",
   },
   ready: {
-    label: t({ message: "Ready", comment: "Status of a step" }),
+    label: t({ message: "Ready", context: "step status", comment: "Status of a step" }),
     icon: CircleCheck,
     tone: "success",
     iconClass: "text-success",

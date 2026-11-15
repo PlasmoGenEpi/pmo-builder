@@ -91,14 +91,17 @@ export function quoteItems(items: readonly unknown[], max = MAX_LISTED): string 
   );
 }
 
-/** "row 5" or "rows 5, 9 and 12", from 0-based data row indexes. */
+/**
+ * "row 5" or "rows 5, 9 and 12", from 0-based data row indexes. It has no
+ * article, so the message around it supplies one where its language needs it.
+ */
 export function describeRows(indexes: readonly number[]): string {
   const rowCount = indexes.length;
   const rowList = listItems(indexes.map((index) => String(index + 2)));
   return t({
     message: plural(rowCount, { one: `row ${rowList}`, other: `rows ${rowList}` }),
     comment:
-      "Spreadsheet rows, used inside other messages, such as 'is blank in rows 5, 9 and 12'. {rowList} is the list of row numbers.",
+      "Spreadsheet rows, used inside other messages, such as 'is blank in rows 5, 9 and 12'. {rowList} is the list of row numbers. Write it without an article: the message around it adds any article or preposition your language needs.",
   });
 }
 
@@ -148,7 +151,11 @@ function count(details: IssueDetails, key: string): number | null {
 
 /** Where a table problem happened, for wording messages. */
 export interface TableIssueContext {
-  /** The table as the user knows it, such as "allele table". */
+  /**
+   * The table as the user knows it, in lower case, to go inside a sentence:
+   * "allele table". Translators start every table name with the same word
+   * ("tableau", "tabela"), so a sentence can agree with any of them.
+   */
   readonly tableLabel: string;
   /** The imported table's id, or `null` when the problem is not in an imported table. */
   readonly tableId: string | null;
@@ -162,29 +169,67 @@ export interface TableIssueContext {
 }
 
 /**
- * `column "SampleID" (sample name)`, naming the field it is mapped to when
- * there is one and its name says more than the column's own name does.
+ * The field a column is mapped to, as it reads in brackets after the column
+ * ("sample name"), or `null` when it is not mapped or its name says no more
+ * than the column's own name does.
  */
-export function describeColumn(context: TableIssueContext, column: string): string {
+function bracketedField(context: TableIssueContext, column: string): string | null {
   const key = Object.entries(context.columns).find(([, mapped]) => mapped === column)?.[0];
   const label =
     key === undefined ? undefined : context.fieldSet.fields.find((f) => f.key === key)?.label;
-  if (label === undefined || sameWords(label, column)) {
+  if (label === undefined || sameWords(label, column)) return null;
+  return inSentence(label);
+}
+
+/**
+ * `column "SampleID" (sample name)`, to go inside a sentence, naming the
+ * field it is mapped to when there is one and its name says more than the
+ * column's own name does. It has no article: the sentence around it supplies
+ * one where its language needs it. To start a sentence, use
+ * {@link describeColumnAtStart}.
+ */
+export function describeColumn(context: TableIssueContext, column: string): string {
+  const field = bracketedField(context, column);
+  if (field === null) {
     return t({
       message: `column "${column}"`,
       comment:
-        "Names a column of the user's table inside other messages, such as 'column \"SampleID\" must hold whole numbers'. {column} is the column's name in the file.",
+        "Names a column of the user's table inside other messages, such as 'is blank in column \"SampleID\"'. {column} is the column's name in the file. Write it without an article: the message around it adds any article or preposition your language needs.",
     });
   }
-  const field = inSentence(label);
   return t({
     message: `column "${column}" (${field})`,
     comment:
-      "Names a column of the user's table inside other messages. {column} is the column's name in the file; {field} is the field it is matched to, such as 'sample name'.",
+      "Names a column of the user's table inside other messages. {column} is the column's name in the file; {field} is the field it is matched to, in lower case, such as 'sample name'. Write it without an article: the message around it adds any article or preposition your language needs.",
   });
 }
 
-/** A field label as it reads mid-sentence: lower case, except acronyms such as "ID". */
+/**
+ * `Column "SampleID" (sample name)`, to start a sentence: like
+ * {@link describeColumn}, but its own message, so a translator can give it
+ * a capital and the article a sentence starts with.
+ */
+export function describeColumnAtStart(context: TableIssueContext, column: string): string {
+  const field = bracketedField(context, column);
+  if (field === null) {
+    return t({
+      message: `Column "${column}"`,
+      comment:
+        "Names a column of the user's table at the start of a sentence, such as 'Column \"Start\" must hold whole numbers'. {column} is the column's name in the file. Include the article your language starts the sentence with, such as French 'La colonne'.",
+    });
+  }
+  return t({
+    message: `Column "${column}" (${field})`,
+    comment:
+      "Names a column of the user's table at the start of a sentence. {column} is the column's name in the file; {field} is the field it is matched to, in lower case, such as 'sample name'. Include the article your language starts the sentence with, such as French 'La colonne'.",
+  });
+}
+
+/**
+ * A field label as it reads in brackets after a column name: lower case,
+ * except acronyms such as "ID". Used only there, where no article or other
+ * word has to agree with it.
+ */
 export function inSentence(label: string): string {
   return label
     .split(" ")
@@ -200,6 +245,11 @@ function plainName(value: string): string {
 /** Whether two names differ only in case, spaces, dashes and underscores. */
 function sameWords(a: string, b: string): boolean {
   return plainName(a) === plainName(b);
+}
+
+/** A field label quoted as a name, “Sample name”, for lists of fields inside a sentence. */
+export function quoteLabel(label: string): string {
+  return `“${label}”`;
 }
 
 function fieldLabel(context: TableIssueContext, key: string): string {
@@ -294,14 +344,14 @@ export function mappingProblemNotice(problem: MappingProblem, context: TableIssu
   const table = context.tableLabel;
   switch (problem.kind) {
     case "missing-required": {
-      const field = fieldLabel(context, problem.fieldKey).toLowerCase();
+      const field = fieldLabel(context, problem.fieldKey);
       return makeNotice(
         "error",
         "mapping/missing-required",
         t({
-          message: `Choose the column of the ${table} that holds the ${field}.`,
+          message: `Choose the column of the ${table} that holds “${field}”.`,
           comment:
-            "{table} is the name of a table, such as 'allele table'. {field} is a field, such as 'sample name'.",
+            "{table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {field} is a field label, quoted as a name, such as 'Sample name'.",
         }),
         { tableId, fieldKey: problem.fieldKey },
       );
@@ -309,7 +359,7 @@ export function mappingProblemNotice(problem: MappingProblem, context: TableIssu
     case "duplicate-column": {
       const column = problem.column;
       const fields = listItems(
-        problem.fieldKeys.map((key) => fieldLabel(context, key).toLowerCase()),
+        problem.fieldKeys.map((key) => quoteLabel(fieldLabel(context, key))),
       );
       return makeNotice(
         "error",
@@ -317,21 +367,21 @@ export function mappingProblemNotice(problem: MappingProblem, context: TableIssu
         t({
           message: `Column "${column}" is chosen for ${fields}. Each column can feed only one field.`,
           comment:
-            "{column} is a column of the user's table. {fields} is a list of fields, such as 'sample name and target name'.",
+            "{column} is a column of the user's table. {fields} is a list of quoted field labels, such as '“Sample name” and “Target name”'.",
         }),
         { tableId, column: problem.column, fieldKey: problem.fieldKeys[0] },
       );
     }
     case "unknown-column": {
       const column = problem.column;
-      const field = fieldLabel(context, problem.fieldKey).toLowerCase();
+      const field = fieldLabel(context, problem.fieldKey);
       return makeNotice(
         "error",
         "mapping/unknown-column",
         t({
-          message: `The ${table} has no column "${column}", which is chosen for ${field}. Choose another column.`,
+          message: `The ${table} has no column "${column}", which is chosen for “${field}”. Choose another column.`,
           comment:
-            "{table} is the name of a table, such as 'allele table'. {field} is a field, such as 'sample name'.",
+            "{table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {field} is a field label, quoted as a name, such as 'Sample name'.",
         }),
         { tableId, fieldKey: problem.fieldKey, column: problem.column },
       );
@@ -353,20 +403,21 @@ export function mappingProblemNotice(problem: MappingProblem, context: TableIssu
         "mapping/unknown-additional-column",
         t({
           message: `The ${table} has no column "${column}", chosen to carry into the PMO. Untick it.`,
-          comment: "{table} is the name of a table, such as 'allele table'.",
+          comment:
+            "{table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
         }),
         { tableId, column: problem.column },
       );
     }
     case "additional-column-mapped": {
       const column = problem.column;
-      const field = fieldLabel(context, problem.fieldKey).toLowerCase();
+      const field = fieldLabel(context, problem.fieldKey);
       return makeNotice(
         "error",
         "mapping/additional-column-mapped",
         t({
-          message: `Column "${column}" is chosen for ${field} and also to carry into the PMO as it is. Untick it, or choose another column for the field.`,
-          comment: "{field} is a field, such as 'sample name'.",
+          message: `Column "${column}" is chosen for “${field}” and also to carry into the PMO as it is. Untick it, or choose another column for the field.`,
+          comment: "{field} is a field label, quoted as a name, such as 'Sample name'.",
         }),
         { tableId, column: problem.column, fieldKey: problem.fieldKey },
       );
@@ -405,7 +456,8 @@ export function errorNotice(error: unknown, context: TableIssueContext): Notice 
     withLibraryDetail(
       t({
         message: `Something went wrong while reading the ${table}. Check its column mapping and the values in the mapped columns, then try again.`,
-        comment: "{table} is the name of a table, such as 'allele table'.",
+        comment:
+          "{table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
       }),
       message,
     ),
@@ -428,14 +480,15 @@ function readCountTableLabel(details: IssueDetails, fallback: string): string {
   if (table === "total_raw_count_table") {
     return t({
       message: "totals table",
-      comment: "The table of total reads per sample, named inside other messages.",
+      comment:
+        "The table of total reads per sample: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
     });
   }
   if (table === "reads_by_stage_table") {
     return t({
       message: "by-stage table",
       comment:
-        "The table of reads per sample, target and processing stage, named inside other messages.",
+        "The table of reads per sample, target and processing stage: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
     });
   }
   return fallback;
@@ -475,7 +528,7 @@ function describeIssue(
           other: `The ${issueTable} has no columns ${columns}. Check the column mapping.`,
         }),
         comment:
-          "{issueTable} is the name of a table, such as 'allele table'. {columns} is a list of quoted column names.",
+          "{issueTable} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {columns} is a list of quoted column names.",
       });
     }
     case "mhap/missing-additional-columns":
@@ -490,7 +543,7 @@ function describeIssue(
           other: `The extra columns ${columns} chosen to carry into the PMO are not in the ${issueTable}. Untick them.`,
         }),
         comment:
-          "{issueTable} is the name of a table, such as 'allele table'. {columns} is a list of quoted column names.",
+          "{issueTable} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {columns} is a list of quoted column names.",
       });
     }
     case "metatable/null-values": {
@@ -501,14 +554,14 @@ function describeIssue(
         return t({
           message: `${columnText} (${rows})`,
           comment:
-            "A column and the rows where it is blank, such as 'column \"Date\" (rows 5 and 9)'.",
+            "An item of a list: a column and the rows where it is blank, such as 'column \"Date\" (rows 5 and 9)'. {columnText} and {rows} have no article.",
         });
       });
       const columns = listItems(parts);
       return t({
         message: `These columns of the ${table} have blank cells, which these fields do not allow: ${columns}. Fill them in, or unmap the column if the field is optional.`,
         comment:
-          "{table} is the name of a table, such as 'specimen table'. {columns} lists the columns and their blank rows.",
+          "{table} is a table name in lower case, such as 'specimen table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {columns} lists the columns and their blank rows, after a colon, such as 'column \"Date\" (rows 5 and 9)'.",
       });
     }
     case "metatable/duplicate-selected-columns": {
@@ -536,35 +589,36 @@ function describeIssue(
               (row) => sampleColumn === null || String(row[sampleColumn] ?? "") === sample,
             )
           : [];
-      const column =
-        readsColumn === null
-          ? t({
-              message: "the read count column",
-              comment: "Stands for a column inside other messages, when its name is not known.",
-            })
-          : describeColumn(context, readsColumn);
+      if (readsColumn === null) {
+        return target === null
+          ? t`Sample "${sample}" has no read count in the read count column. Every row needs a read count.`
+          : t`Sample "${sample}", target "${target}" has no read count in the read count column. Every row needs a read count.`;
+      }
+      const column = describeColumn(context, readsColumn);
       if (rowIndexes.length > 0) {
         const rows = describeRows(rowIndexes);
         return target === null
           ? t({
               message: `Sample "${sample}" has no read count in ${column} (${rows}). Every row needs a read count.`,
               comment:
-                "{column} names a column, such as 'column \"Reads\"'. {rows} is such as 'rows 5 and 9'.",
+                "{column} names a column without an article, such as 'column \"Reads\"'; add any article your language needs. {rows} is such as 'rows 5 and 9'.",
             })
           : t({
               message: `Sample "${sample}", target "${target}" has no read count in ${column} (${rows}). Every row needs a read count.`,
               comment:
-                "{column} names a column, such as 'column \"Reads\"'. {rows} is such as 'rows 5 and 9'.",
+                "{column} names a column without an article, such as 'column \"Reads\"'; add any article your language needs. {rows} is such as 'rows 5 and 9'.",
             });
       }
       return target === null
         ? t({
             message: `Sample "${sample}" has no read count in ${column}. Every row needs a read count.`,
-            comment: "{column} names a column, such as 'column \"Reads\"'.",
+            comment:
+              "{column} names a column without an article, such as 'column \"Reads\"'; add any article your language needs.",
           })
         : t({
             message: `Sample "${sample}", target "${target}" has no read count in ${column}. Every row needs a read count.`,
-            comment: "{column} names a column, such as 'column \"Reads\"'.",
+            comment:
+              "{column} names a column without an article, such as 'column \"Reads\"'; add any article your language needs.",
           });
     }
     case "mhap/missing-seq":
@@ -576,41 +630,37 @@ function describeIssue(
       const target = text(details, "target_name") ?? "";
       const rows = columnName === null ? null : blankRows(context, columnName);
       if (code === "mhap/missing-run-name") {
-        const column =
-          columnName === null
-            ? t({
-                message: "a column",
-                comment: "Stands for a column inside other messages, when its name is not known.",
-              })
-            : describeColumn(context, columnName);
+        if (columnName === null) {
+          return t`The run name comes from a column, but it is blank in some rows. Fill them in or give one run name for the whole table.`;
+        }
+        const column = describeColumn(context, columnName);
         return rows === null
           ? t({
               message: `The run name comes from ${column}, but it is blank in some rows. Fill them in or give one run name for the whole table.`,
-              comment: "{column} names a column, such as 'column \"Run\"'.",
+              comment:
+                "{column} names a column without an article, such as 'column \"Run\"'; add any article your language needs.",
             })
           : t({
               message: `The run name comes from ${column}, but it is blank in some rows (${rows}). Fill them in or give one run name for the whole table.`,
               comment:
-                "{column} names a column, such as 'column \"Run\"'. {rows} is such as 'rows 5 and 9'.",
+                "{column} names a column without an article, such as 'column \"Run\"'; add any article your language needs. {rows} is such as 'rows 5 and 9'.",
             });
       }
       if (code === "mhap/missing-seq") {
-        const column =
-          columnName === null
-            ? t({
-                message: "the sequence column",
-                comment: "Stands for a column inside other messages, when its name is not known.",
-              })
-            : describeColumn(context, columnName);
+        if (columnName === null) {
+          return t`A row for target "${target}" has no sequence in the sequence column.`;
+        }
+        const column = describeColumn(context, columnName);
         return rows === null
           ? t({
               message: `A row for target "${target}" has no sequence in ${column}.`,
-              comment: "{column} names a column, such as 'column \"ASV\"'.",
+              comment:
+                "{column} names a column without an article, such as 'column \"ASV\"'; add any article your language needs.",
             })
           : t({
               message: `A row for target "${target}" has no sequence in ${column} (${rows}).`,
               comment:
-                "{column} names a column, such as 'column \"ASV\"'. {rows} is such as 'rows 5 and 9'.",
+                "{column} names a column without an article, such as 'column \"ASV\"'; add any article your language needs. {rows} is such as 'rows 5 and 9'.",
             });
       }
       return t`Target "${target}" has a chromosome but no start or end in its first row. Fill in the location or unmap the location columns.`;
@@ -620,18 +670,19 @@ function describeIssue(
       const value = text(details, "value") ?? "";
       const rowIndexes =
         context.raw === null ? [] : rowIndexesWithValue(context.raw, columnName, value);
-      const column = capitalise(describeColumn(context, columnName));
+      const column = describeColumnAtStart(context, columnName);
       if (rowIndexes.length > 0) {
         const rows = describeRows(rowIndexes);
         return t({
           message: `${column} must hold whole numbers separated by commas, but holds "${value}" (${rows}).`,
           comment:
-            "{column} names a column, such as 'Column \"Masking\"'. {rows} is such as 'rows 5 and 9'.",
+            "{column} starts the sentence and names a column, with any article, such as 'Column \"Masking\"'. {rows} is such as 'rows 5 and 9'.",
         });
       }
       return t({
         message: `${column} must hold whole numbers separated by commas, but holds "${value}".`,
-        comment: "{column} names a column, such as 'Column \"Masking\"'.",
+        comment:
+          "{column} starts the sentence and names a column, with any article, such as 'Column \"Masking\"'.",
       });
     }
     case "mhap/incomplete-masking-columns":
@@ -655,27 +706,26 @@ function describeIssue(
       return t`Some targets list the same sequence more than once with different details (${targets}). Reads are counted against the last copy. Check the extra columns carried onto each microhaplotype.`;
     }
     case "panel/invalid-integer": {
-      const column = capitalise(describeColumn(context, text(details, "column") ?? ""));
+      const column = describeColumnAtStart(context, text(details, "column") ?? "");
       const target = text(details, "target") ?? "";
       const value = text(details, "value") ?? "";
       return t({
         message: `${column} must hold whole numbers, but target "${target}" has "${value}".`,
-        comment: "{column} names a column, such as 'Column \"Start\"'.",
+        comment:
+          "{column} starts the sentence and names a column, with any article, such as 'Column \"Start\"'.",
       });
     }
     case "panel/duplicate-target-names": {
       const columnName = columnFor(context, "targetName");
-      const column =
-        columnName === null
-          ? t({
-              message: "the target name column",
-              comment: "Stands for a column inside other messages, when its name is not known.",
-            })
-          : describeColumn(context, columnName);
       const targets = quoteItems(strings(details, "targets"));
+      if (columnName === null) {
+        return t`These targets appear more than once in the target name column: ${targets}. Each target needs one row.`;
+      }
+      const column = describeColumn(context, columnName);
       return t({
         message: `These targets appear more than once in ${column}: ${targets}. Each target needs one row.`,
-        comment: "{column} names a column, such as 'column \"Target\"'.",
+        comment:
+          "{column} names a column without an article, such as 'column \"Target\"'; add any article your language needs.",
       });
     }
     case "panel/duplicate-target-info": {
@@ -698,7 +748,8 @@ function describeIssue(
     case "panel/empty-table":
       return t({
         message: `The ${table} has no rows.`,
-        comment: "{table} is the name of a table, such as 'target table'.",
+        comment:
+          "{table} is a table name in lower case, such as 'target table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
       });
     case "panel/location-without-genome": {
       const target = text(details, "target") ?? "";
@@ -725,58 +776,78 @@ function describeIssue(
     case "metatable/plate-position-conflict":
       return t({
         message: `Plate columns of the ${table} are mapped twice over: give the plate position, or the plate row and column, not both. Unmap one of them.`,
-        comment: "{table} is the name of a table, such as 'specimen table'.",
+        comment:
+          "{table} is a table name in lower case, such as 'specimen table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
       });
     case "metatable/plate-row-col-mismatch":
       return t({
         message: `The plate row and plate column of the ${table} go together. Map both or neither.`,
-        comment: "{table} is the name of a table, such as 'specimen table'.",
+        comment:
+          "{table} is a table name in lower case, such as 'specimen table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
       });
     case "metatable/invalid-plate-position": {
-      const column = capitalise(describeColumn(context, text(details, "column") ?? ""));
+      const column = describeColumnAtStart(context, text(details, "column") ?? "");
       const valueList = Array.isArray(details["values"]) ? details["values"] : [];
       const values = quoteItems([...new Set(valueList.map((value: unknown) => String(value)))]);
       return t({
         message: `${column} must hold wells such as A01 or H12 (a letter A to H, then 1 to 12), but holds ${values}.`,
         comment:
-          "{column} names a column, such as 'Column \"Well\"'. {values} is a list of quoted values.",
+          "{column} starts the sentence and names a column, with any article, such as 'Column \"Well\"'. {values} is a list of quoted values.",
       });
     }
     case "metatable/invalid-taxon-id":
     case "metatable/invalid-integer":
     case "metatable/invalid-number": {
-      const column = capitalise(describeColumn(context, text(details, "column") ?? ""));
+      const column = describeColumnAtStart(context, text(details, "column") ?? "");
       const rowIndex = count(details, "row");
-      const row =
-        rowIndex === null
-          ? t({
-              message: "a row",
-              comment: "Stands for a row inside other messages, when its number is not known.",
-            })
-          : describeRows([rowIndex]);
       const value = text(details, "value") ?? "";
+      if (rowIndex === null) {
+        if (code === "metatable/invalid-taxon-id") {
+          return t({
+            message: `${column} must hold NCBI taxonomy numbers such as 5833, separated by commas, but a row holds "${value}". Correct it, or unmap the column if the field is optional.`,
+            comment:
+              "{column} starts the sentence and names a column, with any article, such as 'Column \"Host taxon\"'.",
+          });
+        }
+        if (code === "metatable/invalid-integer") {
+          return t({
+            message: `${column} must hold whole numbers, but a row holds "${value}". Correct it, or unmap the column if the field is optional.`,
+            comment:
+              "{column} starts the sentence and names a column, with any article, such as 'Column \"Age\"'.",
+          });
+        }
+        return t({
+          message: `${column} must hold numbers, but a row holds "${value}". Correct it, or unmap the column if the field is optional.`,
+          comment:
+            "{column} starts the sentence and names a column, with any article, such as 'Column \"Density\"'.",
+        });
+      }
+      const row = describeRows([rowIndex]);
       if (code === "metatable/invalid-taxon-id") {
         return t({
           message: `${column} must hold NCBI taxonomy numbers such as 5833, separated by commas, but ${row} holds "${value}". Correct it, or unmap the column if the field is optional.`,
           comment:
-            "{column} names a column, such as 'Column \"Host taxon\"'. {row} is such as 'row 5'.",
+            "{column} starts the sentence and names a column, with any article, such as 'Column \"Host taxon\"'. {row} is one row without an article, such as 'row 5'.",
         });
       }
       if (code === "metatable/invalid-integer") {
         return t({
           message: `${column} must hold whole numbers, but ${row} holds "${value}". Correct it, or unmap the column if the field is optional.`,
-          comment: "{column} names a column, such as 'Column \"Age\"'. {row} is such as 'row 5'.",
+          comment:
+            "{column} starts the sentence and names a column, with any article, such as 'Column \"Age\"'. {row} is one row without an article, such as 'row 5'.",
         });
       }
       return t({
         message: `${column} must hold numbers, but ${row} holds "${value}". Correct it, or unmap the column if the field is optional.`,
-        comment: "{column} names a column, such as 'Column \"Density\"'. {row} is such as 'row 5'.",
+        comment:
+          "{column} starts the sentence and names a column, with any article, such as 'Column \"Density\"'. {row} is one row without an article, such as 'row 5'.",
       });
     }
     case "metatable/density-method-without-density":
       return t({
         message: `The parasite density method of the ${table} is mapped without the parasite density. Map both or neither.`,
-        comment: "{table} is the name of a table, such as 'specimen table'.",
+        comment:
+          "{table} is a table name in lower case, such as 'specimen table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
       });
     case "read-counts/invalid-count": {
       const issueTable = readCountTableLabel(details, table);
@@ -786,14 +857,15 @@ function describeIssue(
       if (rowIndex === null) {
         return t({
           message: `Column "${column}" of the ${issueTable} needs a whole number, but holds "${value}".`,
-          comment: "{issueTable} is the name of a table, such as 'totals table'.",
+          comment:
+            "{issueTable} is a table name in lower case, such as 'totals table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
         });
       }
       const rows = describeRows([rowIndex]);
       return t({
         message: `Column "${column}" of the ${issueTable} needs a whole number in ${rows}, but holds "${value}".`,
         comment:
-          "{issueTable} is the name of a table, such as 'totals table'. {rows} is such as 'row 5'.",
+          "{issueTable} is a table name in lower case, such as 'totals table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine). {rows} is one row without an article, such as 'row 5'.",
       });
     }
     case "read-counts/duplicate-library-sample-names": {
@@ -804,12 +876,12 @@ function describeIssue(
       const rowIndex = count(details, "row");
       const column = text(details, "column");
       if (rowIndex !== null && column !== null) {
-        const issueTable = capitalise(readCountTableLabel(details, table));
-        const rows = describeRows([rowIndex]);
+        const issueTable = readCountTableLabel(details, table);
+        const row = rowIndex + 2;
         return t({
-          message: `${issueTable} ${rows} has no value in column "${column}".`,
+          message: `Row ${row} of the ${issueTable} has no value in column "${column}".`,
           comment:
-            "{issueTable} is the name of a table, starting the sentence, such as 'Totals table'. {rows} is such as 'row 5'.",
+            "{row} is a spreadsheet row number. {issueTable} is a table name in lower case, such as 'totals table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
         });
       }
       const sample = text(details, "library_sample_name") ?? "";
@@ -829,14 +901,10 @@ function describeIssue(
       return withLibraryDetail(
         t({
           message: `The ${table} could not be turned into its part of the PMO. Check the column mapping of the ${table} and the values in the mapped columns.`,
-          comment: "{table} is the name of a table, such as 'allele table'.",
+          comment:
+            "{table} is a table name in lower case, such as 'allele table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
         }),
         libraryMessage,
       );
   }
-}
-
-/** The text with its first letter in upper case. */
-export function capitalise(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }

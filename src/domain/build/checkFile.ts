@@ -3,6 +3,7 @@
  * can be read, is in the PMO version the community takes, matches the PMO
  * format and its tables link up.
  */
+import { plural, t } from "@lingui/core/macro";
 import { checkPmoIntegrity, parsePmo, PmoError, readPmoVersion, validatePmo } from "pmotools-ts";
 
 import { IMPORT_LIMITS } from "@/domain/import";
@@ -10,6 +11,17 @@ import { IMPORT_LIMITS } from "@/domain/import";
 import { summarisePmo } from "./merge";
 import { MAX_LISTED, PUBLISHABLE_PMO_VERSION, type PmoFileCheck } from "./checkFileResult";
 import { summarisePublication } from "./publication";
+
+/** A problem from the PMO library, in English, and how many more like it there are. */
+function moreLikeIt(libraryMessage: string, omitted: number): string {
+  return t({
+    message: plural(omitted, {
+      one: `${libraryMessage} (and # more like it)`,
+      other: `${libraryMessage} (and # more like it)`,
+    }),
+    comment: "{libraryMessage} is a technical message from the PMO library, in English.",
+  });
+}
 
 /**
  * Lists problems, once for each kind: messages that differ only in an index,
@@ -29,7 +41,7 @@ function listProblems(
   const listed = [...groups.values()].slice(0, MAX_LISTED);
   return {
     problems: listed.map(({ first, count }) =>
-      count === 1 ? first : `${first} (and ${count - 1} more like it)`,
+      count === 1 ? first : moreLikeIt(first, count - 1),
     ),
     unlisted: Math.max(0, total - listed.reduce((sum, group) => sum + group.count, 0)),
   };
@@ -81,9 +93,7 @@ export async function checkPmoFile(
       kind: "invalid",
       ...listProblems(
         errors.map((issue) =>
-          issue.omitted === undefined
-            ? issue.message
-            : `${issue.message} (and ${issue.omitted} more like it)`,
+          issue.omitted === undefined ? issue.message : moreLikeIt(issue.message, issue.omitted),
         ),
         errors.length,
       ),

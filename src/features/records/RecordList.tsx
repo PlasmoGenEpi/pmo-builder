@@ -17,8 +17,8 @@ import { RecordBadge } from "./RecordBadge";
 /** Props for {@link RecordList}. */
 export interface RecordListProps<T extends { readonly id: string }> {
   readonly items: readonly T[];
-  /** What one item is, lower case, such as "sequencing run". */
-  readonly noun: string;
+  /** The list's accessible name, such as "sequencing runs". */
+  readonly listLabel: string;
   /** A card's title: the record's name, or a fallback such as "Sequencing run 2". */
   readonly title: (item: T, index: number) => string;
   /** Whether a record holds nothing. Removing one that holds something asks first. */
@@ -28,8 +28,16 @@ export interface RecordListProps<T extends { readonly id: string }> {
   readonly onRemove: (id: string) => void;
   /** Moves a record. Give it only where order matters. */
   readonly onMove?: (id: string, toIndex: number) => void;
-  /** Adds a copy of a record. Give it where records share most of their values. */
-  readonly onDuplicate?: (id: string) => string;
+  /** Offers to copy a record. Give it where records share most of their values. */
+  readonly duplicate?: {
+    /** Adds a copy of a record and returns the copy's id. */
+    readonly onDuplicate: (id: string) => string;
+    /**
+     * The copy button's accessible name for a record's title, as one whole
+     * sentence, such as "Copy Run A into a new sequencing run".
+     */
+    readonly label: (name: string) => string;
+  };
   /** A record's form. */
   readonly children: (item: T, index: number) => ReactNode;
   /** Where a record stands, shown as a badge after its title. */
@@ -121,13 +129,13 @@ function Frame({
  */
 export function RecordList<T extends { readonly id: string }>({
   items,
-  noun,
+  listLabel,
   title,
   isBlank,
   onAdd,
   onRemove,
   onMove,
-  onDuplicate,
+  duplicate,
   children,
   state,
   addLabel,
@@ -158,7 +166,7 @@ export function RecordList<T extends { readonly id: string }>({
 
   return (
     <div className="flex flex-col gap-5">
-      <ol className="flex flex-col gap-5" aria-label={t`${noun}s`}>
+      <ol className="flex flex-col gap-5" aria-label={listLabel}>
         {items.map((item, index) => {
           const name = title(item, index);
           const headingId = `record-${item.id}-title`;
@@ -193,11 +201,11 @@ export function RecordList<T extends { readonly id: string }>({
                           />
                         </>
                       ) : null}
-                      {onDuplicate === undefined || isBlank(item) ? null : (
+                      {duplicate === undefined || isBlank(item) ? null : (
                         <IconButton
                           icon={Copy}
-                          label={t`Copy ${name} into a new ${noun}`}
-                          onClick={() => focusCard(onDuplicate(item.id))}
+                          label={duplicate.label(name)}
+                          onClick={() => focusCard(duplicate.onDuplicate(item.id))}
                         />
                       )}
                       {items.length === 1 && isBlank(item) ? null : (

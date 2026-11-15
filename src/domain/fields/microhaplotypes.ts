@@ -10,7 +10,11 @@ import { defineFieldSet } from "./define";
  */
 export const MICROHAPLOTYPE_FIELDS = defineFieldSet({
   id: "microhaplotypes",
-  title: t`Allele table`,
+  title: t({
+    message: "Allele table",
+    comment:
+      "Title of the table of microhaplotypes. A table name: French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
+  }),
   allowsAdditionalColumns: true,
   fields: [
     {
@@ -109,6 +113,7 @@ export const MICROHAPLOTYPE_FIELDS = defineFieldSet({
       aliases: ["chromosome", "chr", "contig"],
       group: t({
         message: "Location",
+        context: "position on a chromosome",
         comment: "Heading for a group of optional fields in the column-matching editor",
       }),
     },
@@ -116,6 +121,7 @@ export const MICROHAPLOTYPE_FIELDS = defineFieldSet({
       key: "start",
       label: t({
         message: "Start",
+        context: "position on a chromosome",
         comment: "Field label: where an allele starts on the chromosome",
       }),
       description: t`Where the allele starts on the chromosome, counting from 0.`,
@@ -124,6 +130,7 @@ export const MICROHAPLOTYPE_FIELDS = defineFieldSet({
       aliases: ["start_position", "genomic_start", "start_pos", "pos_start"],
       group: t({
         message: "Location",
+        context: "position on a chromosome",
         comment: "Heading for a group of optional fields in the column-matching editor",
       }),
     },
@@ -136,6 +143,7 @@ export const MICROHAPLOTYPE_FIELDS = defineFieldSet({
       aliases: ["end_position", "genomic_end", "end_pos", "pos_end", "stop"],
       group: t({
         message: "Location",
+        context: "position on a chromosome",
         comment: "Heading for a group of optional fields in the column-matching editor",
       }),
     },
@@ -148,6 +156,7 @@ export const MICROHAPLOTYPE_FIELDS = defineFieldSet({
       aliases: ["reference_sequence", "reference_seq", "ref_sequence"],
       group: t({
         message: "Location",
+        context: "position on a chromosome",
         comment: "Heading for a group of optional fields in the column-matching editor",
       }),
     },
@@ -160,6 +169,7 @@ export const MICROHAPLOTYPE_FIELDS = defineFieldSet({
       aliases: ["strand_orientation", "orientation"],
       group: t({
         message: "Location",
+        context: "position on a chromosome",
         comment: "Heading for a group of optional fields in the column-matching editor",
       }),
     },

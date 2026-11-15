@@ -76,6 +76,25 @@ describe("one definition of the record fields", () => {
     expect(column).toEqual(typed);
   });
 
+  it("says a list is one per line in a form and separated by commas in a table", () => {
+    const sets = [
+      [PROJECT_FIELDS, PROJECT_FORM_FIELDS],
+      [BIOINFORMATICS_METHOD_FIELDS, METHOD_STEP_FORM_FIELDS],
+      [GENOME_FIELDS, GENOME_FORM_FIELDS],
+    ] as const;
+    let lists = 0;
+    for (const [fieldSet, form] of sets) {
+      for (const field of form) {
+        if (field.kind !== "list" && field.kind !== "integerList") continue;
+        lists += 1;
+        const column = fieldSet.fields.find((entry) => entry.key === field.key);
+        expect(field.description).toMatch(/, one per line\.$/);
+        expect(column?.description).toMatch(/, separated by commas\.$/);
+      }
+    }
+    expect(lists).toBe(4);
+  });
+
   it("lets every date take YYYY-MM or YYYY-MM-DD, as the PMO format does", () => {
     const sets = [SEQUENCING_FIELDS, BIOINFORMATICS_RUN_FIELDS];
     const dates = sets.flatMap((set) => set.fields.filter((field) => field.kind === "date"));

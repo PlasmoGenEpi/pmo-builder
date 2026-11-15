@@ -27,7 +27,7 @@ async function setup(section: RunNameSection, knownNames: readonly string[]) {
           matching={matching}
           description="Which run."
           modeDescriptions={MODES}
-          tableName="test table"
+          columnHint="The column of the test table that holds each row's run name."
           knownNames={knownNames}
           knownLabel="Known runs:"
         />

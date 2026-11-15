@@ -15,7 +15,7 @@ function renderCheck(known: readonly string[] | null, names: readonly string[] |
           noneMessage="No project column is matched yet."
           stepId="project"
           known={known}
-          things="projects"
+          emptyMessage={(stepTitle) => `The ${stepTitle} step has no projects yet.`}
           emptyAdvice="Add them there to keep the link."
         />
       </dl>

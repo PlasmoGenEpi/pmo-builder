@@ -75,12 +75,13 @@ export function buildReadCounts(
   }
   const totalsLabel = t({
     message: "totals table",
-    comment: "The table of total reads per sample, named inside other messages.",
+    comment:
+      "The table of total reads per sample: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
   });
   const byStageLabel = t({
     message: "by-stage table",
     comment:
-      "The table of reads per sample, target and processing stage, named inside other messages.",
+      "The table of reads per sample, target and processing stage: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
   });
   const runName = resolveRunName(section.runName, section.totals.table.columns, totalsLabel);
   const totals = prepareTable(

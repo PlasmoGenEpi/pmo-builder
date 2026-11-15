@@ -55,8 +55,18 @@ export interface FormFieldSpec<K extends string = string> {
   readonly suggestions?: readonly string[];
 }
 
-/** One record field, defined once: what a form needs, and what matching a table column needs. */
+/**
+ * One record field, defined once: what a form needs, and what matching a
+ * table column needs. `description` is the form's: a list says "one per
+ * line", a date "as YYYY-MM or YYYY-MM-DD".
+ */
 export interface RecordFieldDefinition<K extends string = string> extends FormFieldSpec<K> {
+  /**
+   * The description for a table column, where it differs from the form's: a
+   * list says "separated by commas". Each is a whole sentence, so it
+   * translates as one.
+   */
+  readonly columnDescription?: string;
   /** Other header names that mean this field, most likely first. */
   readonly aliases: readonly string[];
   /** Optional heading that groups related optional fields in the mapping editor. */
@@ -255,7 +265,8 @@ export const PROJECT_RECORD_FIELDS = [
       message: "Contributors",
       comment: "Field label: people who contributed to the project",
     }),
-    description: t`People who contributed to the project.`,
+    description: t`People who contributed to the project, one per line.`,
+    columnDescription: t`People who contributed to the project, separated by commas.`,
     required: false,
     kind: "list",
     format: NAME,
@@ -426,7 +437,7 @@ export const SEQUENCING_RECORD_FIELDS = [
   {
     key: "nucl_acid_ext_date",
     label: t`Extraction date`,
-    description: t`When nucleic acids were extracted.`,
+    description: t`When nucleic acids were extracted, as YYYY-MM or YYYY-MM-DD.`,
     required: false,
     kind: "date",
     format: DATE,
@@ -454,7 +465,7 @@ export const SEQUENCING_RECORD_FIELDS = [
   {
     key: "nucl_acid_amp_date",
     label: t`Amplification date`,
-    description: t`When nucleic acids were amplified.`,
+    description: t`When nucleic acids were amplified, as YYYY-MM or YYYY-MM-DD.`,
     required: false,
     kind: "date",
     format: DATE,
@@ -489,7 +500,7 @@ export const SEQUENCING_RECORD_FIELDS = [
   {
     key: "seq_date",
     label: t`Sequencing date`,
-    description: t`When the sequencing was done.`,
+    description: t`When the sequencing was done, as YYYY-MM or YYYY-MM-DD.`,
     required: false,
     kind: "date",
     format: DATE,
@@ -544,7 +555,8 @@ export const METHOD_STEP_RECORD_FIELDS = [
   {
     key: "additional_argument",
     label: t`Additional arguments`,
-    description: t`Arguments that differ from the program's defaults.`,
+    description: t`Arguments that differ from the program's defaults, one per line.`,
+    columnDescription: t`Arguments that differ from the program's defaults, separated by commas.`,
     required: false,
     kind: "list",
     format: ARGUMENT,
@@ -598,7 +610,7 @@ export const RUN_RECORD_FIELDS = [
   {
     key: "run_date",
     label: t`Run date`,
-    description: t`When the pipeline was run.`,
+    description: t`When the pipeline was run, as YYYY-MM or YYYY-MM-DD.`,
     required: false,
     kind: "date",
     format: DATE,
@@ -636,7 +648,8 @@ export const GENOME_RECORD_FIELDS = [
   {
     key: "taxon_id",
     label: t`Taxon ID`,
-    description: t`The NCBI taxonomy number of the organism, such as 5833, or several for a combined genome.`,
+    description: t`The NCBI taxonomy number of the organism, such as 5833, or several for a combined genome, one per line.`,
+    columnDescription: t`The NCBI taxonomy number of the organism, such as 5833, or several for a combined genome, separated by commas.`,
     required: true,
     kind: "integerList",
     format: WHOLE_NUMBER,
@@ -675,7 +688,8 @@ export const GENOME_RECORD_FIELDS = [
       message: "Chromosomes",
       comment: "Field label: the chromosomes of a reference genome",
     }),
-    description: t`The chromosomes or contigs in the genome.`,
+    description: t`The chromosomes or contigs in the genome, one per line.`,
+    columnDescription: t`The chromosomes or contigs in the genome, separated by commas.`,
     required: false,
     kind: "list",
     format: NAME_NO_SPACE,
@@ -698,43 +712,14 @@ const COLUMN_KINDS: Readonly<Record<FormFieldKind, FieldKind>> = {
   integerList: "integer",
 };
 
-/**
- * A field's description, ending with how the value is entered there: lists
- * one per line in a form and separated by commas in a table, dates as
- * YYYY-MM or YYYY-MM-DD. Still one sentence.
- */
-function describe(field: FormFieldSpec, where: "form" | "column"): string {
-  const description = field.description.replace(/\.$/, "");
-  if (field.kind === "list" || field.kind === "integerList") {
-    return where === "form"
-      ? t({
-          message: `${description}, one per line.`,
-          comment:
-            "{description} is a field's description, already translated, without its full stop",
-        })
-      : t({
-          message: `${description}, separated by commas.`,
-          comment:
-            "{description} is a field's description, already translated, without its full stop",
-        });
-  }
-  if (field.kind === "date") {
-    return t({
-      message: `${description}, as YYYY-MM or YYYY-MM-DD.`,
-      comment: "{description} is a field's description, already translated, without its full stop",
-    });
-  }
-  return `${description}.`;
-}
-
 /** The fields a form shows, from their definitions. */
 export function toFormFields<K extends string>(
   definitions: readonly RecordFieldDefinition<K>[],
 ): FormFieldSpec<K>[] {
-  return definitions.map(({ aliases: _aliases, group: _group, ...field }) => ({
-    ...field,
-    description: describe(field, "form"),
-  }));
+  return definitions.map(
+    ({ aliases: _aliases, group: _group, columnDescription: _columnDescription, ...field }) =>
+      field,
+  );
 }
 
 /** The fields a table column can be matched to, from their definitions. */
@@ -744,7 +729,7 @@ export function toColumnFields<K extends string>(
   return definitions.map((field) => ({
     key: field.key,
     label: field.label,
-    description: describe(field, "column"),
+    description: field.columnDescription ?? field.description,
     required: field.required,
     kind: COLUMN_KINDS[field.kind],
     aliases: field.aliases,

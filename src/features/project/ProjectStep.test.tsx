@@ -39,7 +39,7 @@ describe("ProjectStep", () => {
     const { user } = await setup();
     await user.type(screen.getByRole("textbox", { name: /^Project name/ }), "Study");
     await user.tab();
-    expect(await screen.findByText("Project 1: fill in the description.")).toBeInTheDocument();
+    expect(await screen.findByText("Project 1: fill in “Description”.")).toBeInTheDocument();
     expect(screen.getByText("1 field to fill in")).toBeInTheDocument();
   });
 

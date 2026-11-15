@@ -70,7 +70,7 @@ describe("hooks", () => {
     act(() => screen.getByRole("button", { name: "Name it" }).click());
     await act(() => store.getState().actions.flush());
     expect(screen.getByText("status: incomplete")).toBeInTheDocument();
-    expect(screen.getByText("notices: Project 1: fill in the description.")).toBeInTheDocument();
+    expect(screen.getByText("notices: Project 1: fill in “Description”.")).toBeInTheDocument();
     expect(screen.getByText("saving: saved")).toBeInTheDocument();
   });
 });

@@ -208,7 +208,8 @@ export function mergeSections(results: SectionResults, options: MergeOptions = {
           code: "draft/section-errors",
           message: t({
             message: `Fix the problems in ${sections} before the PMO can be built.`,
-            comment: "{sections} is a list of step names, such as 'Panel and Specimens'.",
+            comment:
+              "{sections} is a list of step names, such as 'Panel and Specimens'. They are names: if your language needs an article or agreement, write it as 'the steps {sections}'.",
           }),
         },
         withErrors,
@@ -236,7 +237,8 @@ export function mergeSections(results: SectionResults, options: MergeOptions = {
             code: "draft/section-left-out",
             message: t({
               message: `${section} is not finished, so it is left out of the PMO.`,
-              comment: "{section} is the name of a step, such as 'Specimens'.",
+              comment:
+                "{section} is the name of a step, such as 'Specimens'. It is a name: if your language needs an article or agreement, write it as 'the {section} step'.",
             }),
           },
           [id],
@@ -1153,10 +1155,10 @@ export function pathInWords(path: readonly PathSegment[]): string {
   return parts.join(", ");
 }
 
-function paramText(value: unknown, fallback: string): string {
+function paramText(value: unknown): string | null {
   if (typeof value === "string" || typeof value === "number") return String(value);
   if (Array.isArray(value)) return listAlternatives(value.map((item: unknown) => String(item)));
-  return fallback;
+  return null;
 }
 
 /** Schema errors at one place in the PMO, in the order the validator found them. */
@@ -1185,26 +1187,14 @@ function groupByPath(errors: readonly SchemaValidationError[]): readonly SchemaE
   return [...groups.values()];
 }
 
-/** The field a `required` error names, or words for it. */
-function missingField(error: SchemaValidationError): string {
-  return paramText(
-    error.params["missingProperty"],
-    t({
-      message: "a required field",
-      comment: "Stands for a field of the PMO whose name is not known.",
-    }),
-  );
+/** The field a `required` error names, or `null` when it names none. */
+function missingField(error: SchemaValidationError): string | null {
+  return paramText(error.params["missingProperty"]);
 }
 
-/** The type a `type` error asks for, or words for it. */
-function expectedType(error: SchemaValidationError): string {
-  return paramText(
-    error.params["type"],
-    t({
-      message: "another type",
-      comment: "Stands for a kind of value in the PMO, such as 'integer', when it is not known.",
-    }),
-  );
+/** The type a `type` error asks for, or `null` when it names none. */
+function expectedType(error: SchemaValidationError): string | null {
+  return paramText(error.params["type"]);
 }
 
 /** What is wrong, to follow "it": "should be integer". `null` for a rule without its own words. */
@@ -1213,22 +1203,37 @@ function schemaReason(error: SchemaValidationError): string | null {
     case "pattern":
       return t({
         message: "has characters the PMO format does not allow there",
-        comment: "Part of a sentence: follows 'It', as in 'It has characters ...'.",
+        comment:
+          "Part of a sentence: a verb phrase that follows 'It', as in 'It has characters ...'. Several such phrases may be joined with ', and it'.",
       });
     case "required": {
       const field = missingField(error);
+      if (field === null) {
+        return t({
+          message: "is missing a required field",
+          comment:
+            "Part of a sentence: a verb phrase that follows 'It', as in 'It is missing a required field'. Several such phrases may be joined with ', and it'.",
+        });
+      }
       return t({
         message: `is missing ${field}`,
         comment:
-          "Part of a sentence: follows 'It', as in 'It is missing specimen_name'. {field} is a PMO field name.",
+          "Part of a sentence: a verb phrase that follows 'It', as in 'It is missing specimen_name'. {field} is a PMO field name. Several such phrases may be joined with ', and it'.",
       });
     }
     case "type": {
       const type = expectedType(error);
+      if (type === null) {
+        return t({
+          message: "should be another type",
+          comment:
+            "Part of a sentence: a verb phrase that follows 'It', as in 'It should be another type'. Several such phrases may be joined with ', and it'.",
+        });
+      }
       return t({
         message: `should be ${type}`,
         comment:
-          "Part of a sentence: follows 'It', as in 'It should be integer or null'. {type} is a PMO value type, in English.",
+          "Part of a sentence: a verb phrase that follows 'It', as in 'It should be integer or null'. {type} is a PMO value type, in English. Several such phrases may be joined with ', and it'.",
       });
     }
     default:
@@ -1263,6 +1268,12 @@ function oneSchemaMessage(
       });
     case "required": {
       const field = missingField(error);
+      if (field === null) {
+        return t({
+          message: `${where} is missing a required field.`,
+          comment: "{where} is a place in the PMO, such as 'Specimen \"S1\"'.",
+        });
+      }
       return t({
         message: `${where} is missing ${field}.`,
         comment:
@@ -1271,6 +1282,13 @@ function oneSchemaMessage(
     }
     case "type": {
       const type = expectedType(error);
+      if (type === null) {
+        return t({
+          message: `${where} should be another type, but is ${value}.`,
+          comment:
+            '{where} is a place in the PMO, such as \'Specimen "S1", field "host_taxon_id"\'. {value} is the value there.',
+        });
+      }
       return t({
         message: `${where} should be ${type}, but is ${value}.`,
         comment:
@@ -1316,7 +1334,7 @@ function schemaNotice(group: SchemaErrorGroup, pmo: PortableMicrohaplotypeObject
             t({
               message: "does not match the PMO format",
               comment:
-                "Part of a sentence: follows 'It', as in 'It does not match the PMO format'.",
+                "Part of a sentence: a verb phrase that follows 'It', as in 'It does not match the PMO format'. Several such phrases may be joined with ', and it'.",
             }),
         ),
       ),
@@ -1329,7 +1347,7 @@ function schemaNotice(group: SchemaErrorGroup, pmo: PortableMicrohaplotypeObject
         t({
           message: `${text}, and it ${reason}`,
           comment:
-            "Joins what is wrong with one value of the PMO, as in 'should be integer, and it has characters the PMO format does not allow there'.",
+            "Joins what is wrong with one value of the PMO, as in 'should be integer, and it has characters the PMO format does not allow there'. {text} and {reason} are verb phrases whose subject is the value, such as 'must be a number' or 'is missing specimen_name'; {text} may already hold several phrases joined this way. The whole follows 'It' in a sentence.",
         }),
       firstReason,
     );
@@ -1337,12 +1355,12 @@ function schemaNotice(group: SchemaErrorGroup, pmo: PortableMicrohaplotypeObject
       ? t({
           message: `${where}. It ${reasonText}.`,
           comment:
-            "{where} is a place in the PMO, such as 'Specimen \"S1\"'. {reasonText} says what is wrong, such as 'is missing specimen_name'.",
+            "{where} is a place in the PMO, such as 'Specimen \"S1\"'. {reasonText} says what is wrong: one or more verb phrases joined with ', and it', such as 'is missing specimen_name'.",
         })
       : t({
           message: `${where} is ${value}. It ${reasonText}.`,
           comment:
-            "{where} is a place in the PMO, such as 'Specimen \"S1\", field \"host_taxon_id\"'. {value} is the value there. {reasonText} says what is wrong, such as 'should be integer'.",
+            "{where} is a place in the PMO, such as 'Specimen \"S1\", field \"host_taxon_id\"'. {value} is the value there. {reasonText} says what is wrong: one or more verb phrases joined with ', and it', such as 'should be integer'.",
         });
     message = withLibraryDetail(lead, unworded.map((error) => error.message).join(" "));
   }

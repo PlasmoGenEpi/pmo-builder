@@ -21,7 +21,9 @@ function VerdictBadge({ verdict }: { readonly verdict: Verdict }) {
     case "ready":
       return (
         <Badge tone="success" icon={CircleCheck}>
-          <Trans>Ready</Trans>
+          <Trans context="PMO file" comment="The PMO file is ready to download">
+            Ready
+          </Trans>
         </Badge>
       );
     case "check":
