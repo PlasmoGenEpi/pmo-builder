@@ -682,6 +682,10 @@ msgstr "{requiredMatched} sur {requiredTotal, plural, one {# champ obligatoire a
 msgid "{requiredMatched} of {requiredTotal, plural, one {# required field} other {# required fields}} matched."
 msgstr "{requiredMatched} sur {requiredTotal, plural, one {# champ obligatoire associé} other {# champs obligatoires associés}}."
 
+#: src/domain/tools/alleleLabels.ts
+msgid "{rest, plural, one {{shown} and # more} other {{shown} and # more}}"
+msgstr "{rest, plural, one {{shown} et # autre} other {{shown} et # autres}}"
+
 #: src/features/review/reviewModel.ts
 msgid "{rest, plural, one {{shownNames} and # more} other {{shownNames} and # more}}"
 msgstr "{rest, plural, one {{shownNames} et # autre} other {{shownNames} et # autres}}"
@@ -1997,10 +2001,6 @@ msgstr "Médicaments pris"
 msgid "Each field of the PMO is matched to a column of your table. Check the matches and change any that are wrong."
 msgstr "Chaque champ du PMO est associé à une colonne de votre tableau. Vérifiez les associations et corrigez celles qui sont erronées."
 
-#: src/features/pmo-file/summary/AlleleBars.tsx
-msgid "Each microhaplotype is labelled by its bases where the sequences differ; hover over one to see the whole sequence. Each bar is a share of the target's detections: a sample with two microhaplotypes here counts once for each."
-msgstr "Chaque microhaplotype est désigné par ses bases aux positions où les séquences diffèrent ; survolez-en un pour voir sa séquence entière. Chaque barre est une part des détections de la cible : un échantillon ayant deux microhaplotypes ici compte une fois pour chacun."
-
 #: src/features/bioinformatics/MethodsPart.tsx
 msgid "Each program the pipeline ran, in order. Most pipelines need only the main one."
 msgstr "Chaque programme exécuté par le pipeline, dans l’ordre. La plupart des pipelines n’ont besoin que du programme principal."
@@ -2411,6 +2411,10 @@ msgstr "Sexe de l’hôte"
 msgid "Host taxon ID"
 msgstr "Identifiant du taxon de l’hôte"
 
+#: src/features/pmo-file/summary/AlleleBars.tsx
+msgid "Hover over a label to see the whole sequence. Each bar is a share of the target's detections: a sample with two microhaplotypes here counts once for each."
+msgstr "Survolez une étiquette pour voir la séquence entière. Chaque barre est une part des détections de la cible : un échantillon ayant deux microhaplotypes ici compte une fois pour chacun."
+
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "How is the method given?"
 msgstr "Comment la méthode est-elle indiquée ?"
@@ -2631,6 +2635,18 @@ msgstr "Kit, dates et autres détails"
 #: src/domain/fields/panel.ts
 msgid "Labels for the kind of target, such as diversity or resistance, separated by commas."
 msgstr "Étiquettes indiquant le type de cible, comme diversity ou resistance, séparées par des virgules."
+
+#: src/features/pmo-file/summary/AlleleBars.tsx
+msgid "Labels give the differences from the most common microhaplotype, found by aligning the sequences: a substitution such as C12T, a deletion such as del 101–109, an insertion such as ins 140 ATT. Positions count along the most common sequence."
+msgstr "Les étiquettes donnent les différences avec le microhaplotype le plus fréquent, trouvées en alignant les séquences : une substitution comme C12T, une délétion comme del 101–109, une insertion comme ins 140 ATT. Les positions sont comptées le long de la séquence la plus fréquente."
+
+#: src/features/pmo-file/summary/AlleleBars.tsx
+msgid "Labels in the pipeline's pseudoCIGAR notation are shown as the PMO gives them."
+msgstr "Les étiquettes en notation pseudoCIGAR du pipeline sont affichées telles que le PMO les donne."
+
+#: src/features/pmo-file/summary/AlleleBars.tsx
+msgid "Labels with a chromosome position are the variants the PMO lists for that microhaplotype."
+msgstr "Les étiquettes avec une position chromosomique sont les variants que le PMO indique pour ce microhaplotype."
 
 #: src/app/TopBar.tsx
 msgid "Language"
@@ -3036,6 +3052,11 @@ msgstr "Plus d’une colonne serait écrite dans « {field} » : {columns}. D
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Most alleles at a target"
 msgstr "Allèles au maximum sur une cible"
+
+#. Label of a target's most common microhaplotype
+#: src/domain/tools/alleleLabels.ts
+msgid "most common"
+msgstr "le plus fréquent"
 
 #: src/features/records/RecordList.tsx
 msgid "Move {name} down"
@@ -3591,6 +3612,10 @@ msgstr "Autres"
 #: src/features/records/ExtraDetails.tsx
 msgid "Other details"
 msgstr "Autres informations"
+
+#: src/features/pmo-file/summary/AlleleBars.tsx
+msgid "Other labels give the differences from the most common microhaplotype, found by aligning the sequences: a substitution such as C12T, a deletion such as del 101–109, an insertion such as ins 140 ATT. Positions count along the most common sequence."
+msgstr "Les autres étiquettes donnent les différences avec le microhaplotype le plus fréquent, trouvées en alignant les séquences : une substitution comme C12T, une délétion comme del 101–109, une insertion comme ins 140 ATT. Les positions sont comptées le long de la séquence la plus fréquente."
 
 #: src/domain/fields/samples.ts
 msgid "Other names"
@@ -4314,6 +4339,11 @@ msgstr "Tableau des runs"
 #: src/features/review/noticeKinds.ts
 msgid "Runs without a method"
 msgstr "Runs sans méthode"
+
+#. A microhaplotype with no differences found
+#: src/domain/tools/alleleLabels.ts
+msgid "same sequence"
+msgstr "même séquence"
 
 #. {column} names a column without an article, such as 'column "Reads"'; add any article your language needs. {rows} is such as 'rows 5 and 9'.
 #: src/domain/build/notices.ts

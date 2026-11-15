@@ -9,27 +9,6 @@ import { SERIES } from "@/ui";
 const MAX_BARS = 20;
 
 /**
- * Labels that tell microhaplotypes apart: the bases at the positions where the
- * sequences differ, as microhaplotypes are usually written. When lengths
- * differ, the length is added, since an insertion shifts every base after it.
- */
-function variantLabels(sequences: readonly string[]): string[] {
-  if (sequences.length === 0) return [];
-  const lengths = new Set(sequences.map((seq) => seq.length));
-  const shortest = Math.min(...sequences.map((seq) => seq.length));
-  const positions: number[] = [];
-  for (let index = 0; index < shortest; index += 1) {
-    const base = sequences[0]?.[index];
-    if (sequences.some((seq) => seq[index] !== base)) positions.push(index);
-  }
-  return sequences.map((seq) => {
-    const signature = positions.map((index) => seq[index] ?? "").join("");
-    const shown = signature.length > 24 ? `${signature.slice(0, 23)}…` : signature;
-    return lengths.size > 1 ? `${shown} · ${seq.length} bp` : shown;
-  });
-}
-
-/**
  * One target's microhaplotypes as horizontal bars: each one's share of the
  * target's detections, with its sequence and how many samples carry it.
  */
@@ -42,7 +21,7 @@ export function AlleleBars({ target }: { readonly target: TargetSummary }) {
   const shown = target.alleles.slice(0, MAX_BARS);
   const rest = target.alleles.length - shown.length;
   const top = shown[0]?.freq ?? 1;
-  const labels = variantLabels(shown.map((allele) => allele.seq));
+  const sources = new Set(shown.map((allele) => allele.label.source));
   const targetName = target.name;
   const sampleCount = target.samples;
 
@@ -60,16 +39,21 @@ export function AlleleBars({ target }: { readonly target: TargetSummary }) {
         })}
       </figcaption>
       <ul className="flex flex-col gap-2">
-        {shown.map((allele, index) => {
+        {shown.map((allele) => {
           const share = percent.format(allele.freq);
           const count = allele.count;
           return (
             <li
               key={allele.mhapId}
-              className="grid grid-cols-[minmax(0,12rem)_1fr] items-center gap-3"
+              className="grid grid-cols-[minmax(0,16rem)_1fr] items-center gap-3"
             >
-              <span className="truncate font-mono text-xs text-text-muted" title={allele.seq}>
-                {allele.seq === "" || labels[index] === "" ? `#${allele.mhapId}` : labels[index]}
+              <span
+                className="truncate font-mono text-xs text-text-muted"
+                title={
+                  allele.label.note === null ? allele.seq : `${allele.seq}\n${allele.label.note}`
+                }
+              >
+                {allele.label.label === "" ? `#${allele.mhapId}` : allele.label.label}
               </span>
               <span className="flex items-center gap-2">
                 <span
@@ -97,9 +81,24 @@ export function AlleleBars({ target }: { readonly target: TargetSummary }) {
           })}
         </p>
       ) : null}
-      <p className="text-xs text-text-subtle">
-        {t`Each microhaplotype is labelled by its bases where the sequences differ; hover over one to see the whole sequence. Each bar is a share of the target's detections: a sample with two microhaplotypes here counts once for each.`}
-      </p>
+      <div className="flex flex-col gap-1 text-xs text-text-subtle">
+        {sources.has("pseudocigar") ? (
+          <p>{t`Labels in the pipeline's pseudoCIGAR notation are shown as the PMO gives them.`}</p>
+        ) : null}
+        {sources.has("variants") ? (
+          <p>{t`Labels with a chromosome position are the variants the PMO lists for that microhaplotype.`}</p>
+        ) : null}
+        {sources.has("alignment") ? (
+          <p>
+            {sources.size > 1
+              ? t`Other labels give the differences from the most common microhaplotype, found by aligning the sequences: a substitution such as C12T, a deletion such as del 101–109, an insertion such as ins 140 ATT. Positions count along the most common sequence.`
+              : t`Labels give the differences from the most common microhaplotype, found by aligning the sequences: a substitution such as C12T, a deletion such as del 101–109, an insertion such as ins 140 ATT. Positions count along the most common sequence.`}
+          </p>
+        ) : null}
+        <p>
+          {t`Hover over a label to see the whole sequence. Each bar is a share of the target's detections: a sample with two microhaplotypes here counts once for each.`}
+        </p>
+      </div>
     </figure>
   );
 }

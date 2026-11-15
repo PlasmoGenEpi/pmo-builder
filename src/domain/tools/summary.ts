@@ -10,7 +10,10 @@ import {
   extractAlleleCountsFreqFromPmo,
   extractFromPmoWithReadFilter,
   type PortableMicrohaplotypeObject,
+  type RepresentativeMicrohaplotype,
 } from "pmotools-ts";
+
+import { alleleLabels } from "./alleleLabels";
 
 import type { PmoSummary, SampleSummary, TargetSummary } from "./types";
 
@@ -107,26 +110,26 @@ export function summaryOf(pmo: Pmo, minReads: number): PmoSummary {
     list.push({ mhap, count, freq });
     frequencies.set(name, list);
   }
-  const sequences = new Map<string, readonly string[]>();
+  const microhaplotypes = new Map<string, readonly RepresentativeMicrohaplotype[]>();
   for (const target of representative) {
     const name = filtered.target_info[target.target_id]?.target_name;
-    if (name !== undefined)
-      sequences.set(
-        name,
-        target.microhaplotypes.map((mhap) => mhap.seq),
-      );
+    if (name !== undefined) microhaplotypes.set(name, target.microhaplotypes);
   }
   const targets: TargetSummary[] = targetNames.map((name) => {
     const alleles = (frequencies.get(name) ?? []).toSorted(
       (a, b) => b.freq - a.freq || a.mhap - b.mhap,
     );
-    const seqs = sequences.get(name) ?? [];
+    const known = microhaplotypes.get(name) ?? [];
+    // The others are described against the most common one: the first after
+    // sorting by frequency.
+    const labels = alleleLabels(known, alleles[0]?.mhap ?? 0);
     return {
       name,
       samples: sampleCounts.get(name) ?? 0,
       alleles: alleles.map((allele) => ({
         mhapId: allele.mhap,
-        seq: seqs[allele.mhap] ?? "",
+        seq: known[allele.mhap]?.seq ?? "",
+        label: labels[allele.mhap] ?? { label: "", source: "alignment", note: null },
         count: allele.count,
         freq: allele.freq,
       })),

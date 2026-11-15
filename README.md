@@ -130,7 +130,11 @@ depositing again, but a subset of it can be. The tabs:
   a sample table (targets with data, reads, and the most alleles at one
   target, a simple estimate of complexity of infection); a target table
   (samples with data, alleles, expected heterozygosity) with each target's
-  allele frequencies. One read threshold applies to every figure. The counts
+  allele frequencies. Each allele is labelled by its pseudoCIGAR when the
+  PMO has one (shown as written: the format does not define its grammar),
+  else by its structured variants, else by its differences from the
+  target's most common allele, found by alignment so that an indel reads as
+  one difference (`del 104–111`). One read threshold applies to every figure. The counts
   come from pmotools-ts (`countLibrarySamplesPerTarget`,
   `extractAlleleCountsFreqFromPmo`), checked against pmotools-python. A
   published dataset's page links straight to its summary

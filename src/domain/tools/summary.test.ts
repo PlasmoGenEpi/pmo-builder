@@ -73,8 +73,20 @@ describe("summaryOf", () => {
       name: "t1",
       samples: 2,
       alleles: [
-        { mhapId: 0, seq: "AAAA", count: 2, freq: 2 / 3 },
-        { mhapId: 1, seq: "AAAT", count: 1, freq: 1 / 3 },
+        {
+          mhapId: 0,
+          seq: "AAAA",
+          label: { label: "most common", source: "alignment", note: null },
+          count: 2,
+          freq: 2 / 3,
+        },
+        {
+          mhapId: 1,
+          seq: "AAAT",
+          label: { label: "A4T", source: "alignment", note: null },
+          count: 1,
+          freq: 1 / 3,
+        },
       ],
       heterozygosity: 1 - (4 / 9 + 1 / 9),
     });

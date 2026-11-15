@@ -6,6 +6,8 @@ import type { PmoFileCheck } from "@/domain/build/checkFileResult";
 import type { MergeSummary } from "@/domain/build/merge";
 import type { PublicationSummary } from "@/domain/build/publication";
 
+import type { AlleleLabel } from "./alleleLabels";
+
 /** A flat table that can be downloaded from a PMO. */
 export const TABLE_IDS = [
   "alleles",
@@ -161,6 +163,8 @@ export interface SampleSummary {
 export interface AlleleShare {
   readonly mhapId: number;
   readonly seq: string;
+  /** What tells it apart from the target's other microhaplotypes. */
+  readonly label: AlleleLabel;
   /** How many library samples carry it. */
   readonly count: number;
   /** Its share of the target's detections, 0 to 1. */
