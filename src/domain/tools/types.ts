@@ -136,3 +136,72 @@ export interface TableFile {
 
 /** The delimited formats a table can be written in. */
 export type TableFormat = "csv" | "tsv";
+
+/** One library sample of one run, in a PMO's summary. */
+export interface SampleSummary {
+  readonly name: string;
+  readonly specimen: string | null;
+  /**
+   * The bioinformatics run's name, or its position when it has none. Empty for
+   * a library sample with no detected microhaplotypes in any run.
+   */
+  readonly run: string;
+  /** Targets with at least one microhaplotype counted. */
+  readonly targets: number;
+  /** Reads of the microhaplotypes counted, over every target. */
+  readonly reads: number;
+  /**
+   * The most microhaplotypes counted at any one target: a simple estimate of
+   * the number of clones (complexity of infection) in the sample.
+   */
+  readonly maxAlleles: number;
+}
+
+/** One microhaplotype of a target, and how often it was seen. */
+export interface AlleleShare {
+  readonly mhapId: number;
+  readonly seq: string;
+  /** How many library samples carry it. */
+  readonly count: number;
+  /** Its share of the target's detections, 0 to 1. */
+  readonly freq: number;
+}
+
+/** One target, in a PMO's summary. */
+export interface TargetSummary {
+  readonly name: string;
+  /** Library samples with at least one microhaplotype counted here. */
+  readonly samples: number;
+  /** Its microhaplotypes, most frequent first. */
+  readonly alleles: readonly AlleleShare[];
+  /** Expected heterozygosity, 1 minus the sum of squared frequencies; `null` without data. */
+  readonly heterozygosity: number | null;
+}
+
+/** What the Summary tab shows. */
+export interface PmoSummary {
+  /** Microhaplotypes with fewer reads were left out of every figure. */
+  readonly minReads: number;
+  readonly runs: number;
+  readonly librarySamples: number;
+  /**
+   * One per library sample of each run, in file order, including those with
+   * nothing above the threshold; then each library sample with no detections.
+   */
+  readonly samples: readonly SampleSummary[];
+  /** Every target, in the order of the panel's target table. */
+  readonly targets: readonly TargetSummary[];
+  /**
+   * Reads per sample and target: row `i` is `samples[i]`, column `j` is
+   * `targets[j]`, stored row by row. `0` where nothing was counted.
+   */
+  readonly grid: { readonly columns: number; readonly reads: readonly number[] };
+  readonly headline: {
+    readonly samplesWithData: number;
+    readonly targetsWithData: number;
+    readonly medianTargets: number | null;
+    readonly medianReads: number | null;
+    /** Samples with more than one microhaplotype at some target. */
+    readonly polyclonal: number;
+  };
+}

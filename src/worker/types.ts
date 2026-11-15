@@ -17,6 +17,7 @@ import type {
 import type { Draft, JsonValue, TableRef } from "@/domain/draft";
 import type {
   OpenOutcome,
+  PmoSummary,
   SubsetOutcome,
   SubsetRequest,
   TableFile,
@@ -208,6 +209,14 @@ export interface Engine {
     readonly id: TableId;
     readonly format: TableFormat;
   }): Promise<TableFile | null>;
+  /**
+   * The summary of the opened PMO or its subset, counting microhaplotypes with
+   * at least `minReads` reads. `null` when there is none.
+   */
+  workingPmoSummary(request: {
+    readonly source: WorkingSource;
+    readonly minReads: number;
+  }): Promise<PmoSummary | null>;
   /** The opened PMO's subset as a file, or `null` when none was made. */
   workingPmoFile(request: { readonly gzip: boolean }): Promise<PmoFile | null>;
   /** Releases the engine. A worker is terminated. */

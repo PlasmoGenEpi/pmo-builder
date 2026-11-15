@@ -13,6 +13,7 @@ import {
 import { useActions } from "@/state";
 import { Button, ButtonLink, Callout, Spinner, buttonClassName, formatBytes } from "@/ui";
 
+import { PMO_TABS, type PmoTab } from "./PmoFilePage";
 import { finishOpening, startOpening, workspaceState } from "./workspace";
 
 /** The largest published file this opens: as much as the browser can check. */
@@ -44,9 +45,12 @@ function OpenDataset({
   dataset,
   fetcher,
   onRetry,
+  tab,
 }: {
   readonly dataset: PublishedDataset;
   readonly fetcher: FileFetcher;
+  /** The tab to land on once it is open. */
+  readonly tab: PmoTab;
   /** Starts again from the download. */
   readonly onRetry: () => void;
 }) {
@@ -61,7 +65,7 @@ function OpenDataset({
   useEffect(() => {
     if (dataset.file.size > MAX_BYTES) return undefined;
     if (isAlreadyOpen(dataset.id)) {
-      navigate("/pmo/overview", { replace: true });
+      navigate(`/pmo/${tab}`, { replace: true });
       return undefined;
     }
     let live = true;
@@ -101,13 +105,13 @@ function OpenDataset({
           recordUrl: dataset.zenodoUrl,
         },
       });
-      navigate("/pmo/overview", { replace: true });
+      navigate(`/pmo/${tab}`, { replace: true });
     }
     void open();
     return () => {
       live = false;
     };
-  }, [actions, dataset, fetcher, navigate]);
+  }, [actions, dataset, fetcher, navigate, tab]);
 
   const download = (
     <ButtonLink href={dataset.file.url} size="sm" target="_blank" rel="noreferrer noopener">
@@ -180,6 +184,8 @@ function OpenDataset({
 export interface OpenPublishedProps {
   /** The Zenodo record id, as in `#/published/<id>`. */
   readonly id: string;
+  /** The tab to land on once it is open. Default the overview. */
+  readonly tab?: PmoTab;
   readonly load?: CatalogueLoader;
   readonly fetcher?: FileFetcher;
 }
@@ -191,6 +197,7 @@ export interface OpenPublishedProps {
  */
 export function OpenPublished({
   id,
+  tab = "overview",
   load = loadSharedCatalogue,
   fetcher = fetchFile,
 }: OpenPublishedProps) {
@@ -230,6 +237,7 @@ export function OpenPublished({
           key={attempt}
           dataset={dataset}
           fetcher={fetcher}
+          tab={tab}
           onRetry={() => setAttempt((count) => count + 1)}
         />
       );
@@ -246,8 +254,9 @@ export function OpenPublished({
   );
 }
 
-/** The route: `/pmo/published/:id`. The dataset pages link here. */
+/** The routes `/pmo/published/:id` and `/pmo/published/:id/:tab`. The dataset pages link here. */
 export function OpenPublishedRoute() {
-  const { id } = useParams<{ id: string }>();
-  return <OpenPublished id={id} />;
+  const { id, tab } = useParams<{ id: string; tab?: string }>();
+  const landing = PMO_TABS.find((candidate) => candidate === tab) ?? "overview";
+  return <OpenPublished id={id} tab={landing} />;
 }

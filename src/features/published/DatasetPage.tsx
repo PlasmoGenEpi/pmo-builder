@@ -1,6 +1,6 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { ArrowLeft, Download, ExternalLink, FileSearch } from "lucide-react";
+import { ArrowLeft, ChartColumn, Download, ExternalLink, FileSearch } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link as RouterLink, useParams } from "wouter";
 
@@ -109,6 +109,13 @@ function Dataset({ dataset }: { readonly dataset: PublishedDataset }) {
           >
             <FileSearch aria-hidden="true" className="size-4.5" />
             <Trans>Open in My PMO file</Trans>
+          </RouterLink>
+          <RouterLink
+            href={`/pmo/published/${dataset.id}/summary`}
+            className={buttonClassName({ variant: "secondary", size: "lg" })}
+          >
+            <ChartColumn aria-hidden="true" className="size-4.5" />
+            <Trans>See its summary</Trans>
           </RouterLink>
           <div className="flex flex-col gap-1.5">
             <ButtonLink

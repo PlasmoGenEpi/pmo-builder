@@ -130,6 +130,7 @@ function Routes() {
           <Route path="/published/:id" component={PublishedDataset.component} />
           <Route path="/pmo" component={PmoFile.component} />
           <Route path="/pmo/published/:id" component={PmoPublished.component} />
+          <Route path="/pmo/published/:id/:tab" component={PmoPublished.component} />
           <Route path="/pmo/:tab" component={PmoFile.component} />
           {/* Addresses from before the Build and My PMO file sections, kept working. */}
           {STEPS.map((step) => (

@@ -26,6 +26,7 @@ export const ENGINE_METHODS = [
   "openBuiltPmo",
   "subsetPmo",
   "workingPmoTable",
+  "workingPmoSummary",
   "workingPmoFile",
   "dispose",
 ] as const satisfies readonly (keyof Engine)[];
@@ -111,6 +112,7 @@ function handlersFor(engine: Engine): Handlers {
     openBuiltPmo: (args) => engine.openBuiltPmo(...args),
     subsetPmo: (args) => engine.subsetPmo(...args),
     workingPmoTable: (args) => engine.workingPmoTable(...args),
+    workingPmoSummary: (args) => engine.workingPmoSummary(...args),
     workingPmoFile: (args) => engine.workingPmoFile(...args),
     dispose: (args) => engine.dispose(...args),
   };

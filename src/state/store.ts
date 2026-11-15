@@ -11,6 +11,7 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 import type { PmoFile, PmoFileCheck, Suggestions } from "@/domain/build";
 import type {
   OpenOutcome,
+  PmoSummary,
   SubsetOutcome,
   SubsetRequest,
   TableFile,
@@ -359,6 +360,11 @@ export interface AppActions {
     readonly id: TableId;
     readonly format: TableFormat;
   }): Promise<TableFile | null>;
+  /** A summary of the opened PMO or its subset. `null` when there is none or the engine failed. */
+  workingPmoSummary(request: {
+    readonly source: WorkingSource;
+    readonly minReads: number;
+  }): Promise<PmoSummary | null>;
   /** The subset as a file. `null` when there is none or the engine failed. */
   workingPmoFile(request: { readonly gzip: boolean }): Promise<PmoFile | null>;
   /** Reports a publishing step, for usage counts. Changes nothing. */
@@ -1076,6 +1082,15 @@ export function createAppStore(options: AppStoreOptions): AppStore {
       async workingPmoTable(request) {
         try {
           return await engine.workingPmoTable(request);
+        } catch (error) {
+          engineFailed(error);
+          return null;
+        }
+      },
+
+      async workingPmoSummary(request) {
+        try {
+          return await engine.workingPmoSummary(request);
         } catch (error) {
           engineFailed(error);
           return null;

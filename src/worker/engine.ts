@@ -51,6 +51,7 @@ import {
   openPmo as openWorkingPmo,
   tableFile,
 } from "@/domain/tools/workingPmo";
+import { summaryOf } from "@/domain/tools/summary";
 import type { Notice, ParsedFile, RawTable, SectionId } from "@/domain/types";
 import { SECTION_IDS } from "@/domain/types";
 
@@ -542,6 +543,12 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       const baseName =
         baseNameOf(working.fileName) + (request.source === "subset" ? "-subset" : "");
       return Promise.resolve(tableFile(pmo, { id: request.id, format: request.format, baseName }));
+    },
+
+    workingPmoSummary(request) {
+      if (working === null) return Promise.resolve(null);
+      const pmo = request.source === "subset" ? working.subset : working.original;
+      return Promise.resolve(pmo === null ? null : summaryOf(pmo, request.minReads));
     },
 
     async workingPmoFile(request) {

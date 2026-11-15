@@ -126,6 +126,15 @@ depositing again, but a subset of it can be. The tabs:
 
 - **Overview**: whether the file is valid, anything worth a look, and what it
   holds.
+- **Summary**: headline numbers; a grid of reads for every sample and target;
+  a sample table (targets with data, reads, and the most alleles at one
+  target, a simple estimate of complexity of infection); a target table
+  (samples with data, alleles, expected heterozygosity) with each target's
+  allele frequencies. One read threshold applies to every figure. The counts
+  come from pmotools-ts (`countLibrarySamplesPerTarget`,
+  `extractAlleleCountsFreqFromPmo`), checked against pmotools-python. A
+  published dataset's page links straight to its summary
+  (`#/pmo/published/<record id>/summary`).
 
 - **Tables**: any of its tables as CSV or TSV: the allele table (one row per
   microhaplotype in each library sample, with reads), specimens, library

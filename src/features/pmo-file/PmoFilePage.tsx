@@ -27,6 +27,7 @@ import {
 } from "@/ui";
 
 import { PublishPanel } from "./PublishPanel";
+import { SummaryPanel } from "./summary/SummaryPanel";
 import { SubsetPanel } from "./SubsetPanel";
 import { TablesPanel } from "./TablesPanel";
 import {
@@ -42,7 +43,7 @@ import {
 } from "./workspace";
 
 /** The workspace's tabs, which are also the last part of its address (`#/pmo/tables`). */
-export const PMO_TABS = ["overview", "tables", "subset", "publish"] as const;
+export const PMO_TABS = ["overview", "summary", "tables", "subset", "publish"] as const;
 
 /** One of {@link PMO_TABS}. */
 export type PmoTab = (typeof PMO_TABS)[number];
@@ -255,6 +256,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
   const file = useWorkspace((state) => state.file);
   const subset = useWorkspace((state) => state.subset);
   const tableSource = useWorkspace((state) => state.tableSource);
+  const summarySource = useWorkspace((state) => state.summarySource);
   const build = useBuildState();
   const canOpenBuilt = build.view?.overall.pmo === "valid";
   const version = PUBLISHABLE_PMO_VERSION;
@@ -279,7 +281,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
   const shownFile = file.kind === "none" ? null : { name: file.name, size: file.size };
 
   return (
-    <PageContainer>
+    <PageContainer width={tab === "summary" && file.kind === "opened" ? "full" : "reading"}>
       <div className="flex flex-col gap-6">
         <header className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight text-text">
@@ -327,6 +329,18 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                 value: "overview",
                 label: t`Overview`,
                 content: <Overview opened={file.opened} origin={file.origin} />,
+              },
+              {
+                value: "summary",
+                label: t`Summary`,
+                content: (
+                  <SummaryPanel
+                    key={workspaceState().generation}
+                    hasSubset={made !== null}
+                    source={summarySource}
+                    onSourceChange={(next) => updateWorkspace({ summarySource: next })}
+                  />
+                ),
               },
               {
                 value: "tables",

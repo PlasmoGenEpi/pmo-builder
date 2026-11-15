@@ -85,6 +85,9 @@ const RESULT_GUARDS: {
   workingPmoTable: (value): value is EngineResult<"workingPmoTable"> =>
     value === null ||
     (isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string"),
+  workingPmoSummary: (value): value is EngineResult<"workingPmoSummary"> =>
+    value === null ||
+    (isRecord(value) && Array.isArray(value["samples"]) && Array.isArray(value["targets"])),
   workingPmoFile: (value): value is EngineResult<"workingPmoFile"> =>
     value === null ||
     (isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string"),
@@ -214,6 +217,7 @@ export function createEngineClient(
     openBuiltPmo: (...args) => call("openBuiltPmo", args),
     subsetPmo: (...args) => call("subsetPmo", args),
     workingPmoTable: (...args) => call("workingPmoTable", args),
+    workingPmoSummary: (...args) => call("workingPmoSummary", args),
     workingPmoFile: (...args) => call("workingPmoFile", args),
     async dispose(...args) {
       try {
@@ -316,6 +320,7 @@ export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
     openBuiltPmo: async (...args) => engine().openBuiltPmo(...args),
     subsetPmo: async (...args) => engine().subsetPmo(...args),
     workingPmoTable: async (...args) => engine().workingPmoTable(...args),
+    workingPmoSummary: async (...args) => engine().workingPmoSummary(...args),
     workingPmoFile: async (...args) => engine().workingPmoFile(...args),
     async dispose() {
       files.clear();
@@ -404,6 +409,7 @@ export function createLazyEngine(make: () => Promise<Engine>): Engine {
     openBuiltPmo: async (...args) => (await load()).openBuiltPmo(...args),
     subsetPmo: async (...args) => (await load()).subsetPmo(...args),
     workingPmoTable: async (...args) => (await load()).workingPmoTable(...args),
+    workingPmoSummary: async (...args) => (await load()).workingPmoSummary(...args),
     workingPmoFile: async (...args) => (await load()).workingPmoFile(...args),
     // Nothing to release if the engine was never loaded.
     dispose: async (...args) => (loading === null ? undefined : (await load()).dispose(...args)),

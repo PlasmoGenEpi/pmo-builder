@@ -2517,7 +2517,7 @@ packages:
     hasBin: true
 
   pmotools-ts@file:vendor/pmotools-ts-0.0.0.tgz:
-    resolution: {integrity: sha512-nIst9feISL5Su1nGahMqfBkBMRWZ31bcO/ysD5vzMg+Xr4czYlv02ZLAhCar8U4IB3NnxBSoSqaO0VjelZWIKg==, tarball: file:vendor/pmotools-ts-0.0.0.tgz}
+    resolution: {integrity: sha512-DmriVFe++XZFMbXdFGeVOvgceLAZRqni6at2Q/5xE/HtGPHFTePt7AIAn77N724A5n+fcFyZhj2ibuWH0yFVUQ==, tarball: file:vendor/pmotools-ts-0.0.0.tgz}
     version: 0.0.0
     engines: {node: '>=20'}
 

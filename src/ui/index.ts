@@ -15,6 +15,14 @@ export {
 } from "./Button";
 export { Callout, type CalloutProps, type CalloutTone } from "./Callout";
 export { Card, type CardProps } from "./Card";
+export {
+  CANVAS_TEXT,
+  EMPTY_CELL,
+  SEQUENTIAL,
+  SERIES,
+  rampColour,
+  type ChartTheme,
+} from "./chartPalette";
 export { Checkbox, type CheckboxProps } from "./Checkbox";
 export { cn } from "./cn";
 export { CodeBlock, type CodeBlockProps } from "./CodeBlock";

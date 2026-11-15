@@ -56,6 +56,8 @@ export interface WorkspaceState {
   readonly tableSource: WorkingSource;
   /** Which PMO the Publish tab deposits. */
   readonly publishSource: WorkingSource;
+  /** Which PMO the Summary tab sums up. */
+  readonly summarySource: WorkingSource;
   /** Counts opens, so a slow open overtaken by a newer one is ignored. */
   readonly generation: number;
 }
@@ -65,6 +67,7 @@ const INITIAL: WorkspaceState = {
   subset: null,
   tableSource: "original",
   publishSource: "original",
+  summarySource: "original",
   generation: 0,
 };
 
@@ -96,6 +99,7 @@ export function startOpening(name: string, size: number): number {
     subset: null,
     tableSource: "original",
     publishSource: "original",
+    summarySource: "original",
     generation,
   });
   return generation;

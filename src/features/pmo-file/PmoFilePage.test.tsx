@@ -268,3 +268,53 @@ describe("PmoFilePage: publishing", () => {
     expect(screen.getByRole("tab", { name: "Subset" })).toBeInTheDocument();
   });
 });
+
+describe("PmoFilePage: summary", () => {
+  it("sums up the file: headline numbers, samples, targets and a target's alleles", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    expect(await screen.findByText("Reads by sample and target")).toBeInTheDocument();
+    expect(screen.getByText("Median targets per sample")).toBeInTheDocument();
+
+    const samples = screen.getByRole("table", { name: "Samples" });
+    expect(within(samples).getAllByRole("row").length).toBe(EXAMPLE.library_sample_info.length + 1);
+
+    const targets = screen.getByRole("table", { name: "Targets" });
+    const [, firstRow] = within(targets).getAllByRole("row");
+    if (firstRow === undefined) throw new Error("no target rows");
+    const name = within(firstRow).getAllByRole("cell")[0]?.textContent ?? "";
+    expect(
+      screen.getByText(new RegExp(`^Microhaplotypes at ${name}, seen in \\d+ samples?$`)),
+    ).toBeInTheDocument();
+  });
+
+  it("recounts with a read threshold", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    const samples = await screen.findByRole("table", { name: "Samples" });
+    const readsBefore = within(samples).getAllByRole("row").length;
+    await user.type(screen.getByLabelText(/Count microhaplotypes with at least/), "100000");
+    // Nothing reaches the threshold: no target has data, but every sample stays listed.
+    await vi.waitFor(
+      () =>
+        expect(
+          within(screen.getByRole("table", { name: "Targets" })).getAllByRole("row"),
+        ).toHaveLength(1),
+      { timeout: 3000 },
+    );
+    expect(within(screen.getByRole("table", { name: "Samples" })).getAllByRole("row")).toHaveLength(
+      readsBefore,
+    );
+  });
+
+  it("sorts a table by the chosen column", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    const samples = await screen.findByRole("table", { name: "Samples" });
+    const header = within(samples).getByRole("columnheader", { name: /Reads/ });
+    // Fewest reads first, so failing samples are at the top.
+    expect(header).toHaveAttribute("aria-sort", "ascending");
+    await user.click(within(samples).getByRole("button", { name: "Sort by Reads" }));
+    expect(header).toHaveAttribute("aria-sort", "descending");
+  });
+});
