@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { StepLink } from "@/app/StepLink";
 import type { MergeSummary, PublicationSummary } from "@/domain/build";
 import { unreachable } from "@/domain/draft";
-import { useActions } from "@/state";
+import { useActions, type DepositEnd } from "@/state";
 import {
   Button,
   ButtonLink,
@@ -223,6 +223,16 @@ const STEP_TEXT: Readonly<Record<DepositStep, string>> = {
   review: "Asking the community to review it",
 };
 
+/** How a failed sign-in is counted. */
+const SIGN_IN_OUTCOMES: Readonly<
+  Record<Exclude<SignInResult, { ok: true }>["reason"], DepositEnd>
+> = {
+  blocked: "pop-up-blocked",
+  refused: "sign-in-refused",
+  "timed-out": "sign-in-timed-out",
+  cancelled: "cancelled",
+};
+
 function signInMessage(reason: Exclude<SignInResult, { ok: true }>["reason"]): string | null {
   switch (reason) {
     case "blocked":
@@ -302,6 +312,10 @@ function useDeposit(
     const clientId = zenodo.clientId;
     // The example data is never sent, whatever the screen offers.
     if (clientId === null || blocked) return;
+    const report = (outcome: DepositEnd): void =>
+      actions.notePublishing({ kind: "deposit-finished", outcome });
+    // Reporting is synchronous, so the sign-in window below still opens from the click.
+    actions.notePublishing({ kind: "deposit-started", source: source.kind });
     let access = token.current;
     if (access === null) {
       const controller = new AbortController();
@@ -311,6 +325,7 @@ function useDeposit(
       const signed = await signIn({ clientId, signal: controller.signal });
       waiting.current = null;
       if (!signed.ok) {
+        report(SIGN_IN_OUTCOMES[signed.reason]);
         const message = signInMessage(signed.reason);
         setPhase(message === null ? { kind: "idle" } : { kind: "failed", message, draftUrl: null });
         return;
@@ -325,6 +340,7 @@ function useDeposit(
           ? { blob: source.file, fileName: source.fileName }
           : await actions.downloadPmo({ gzip: true });
       if (file === null) {
+        report("failed");
         setPhase({
           kind: "failed",
           message: "There is no PMO to deposit. Something changed. Check the steps on the page.",
@@ -343,9 +359,11 @@ function useDeposit(
         onProgress: (sent, total) => setPhase({ kind: "depositing", step: "file", sent, total }),
       });
       if (result.ok) {
+        report("draft-ready");
         setPhase({ kind: "done", draftUrl: result.draftUrl });
         return;
       }
+      report(result.failure);
       if (result.failure === "signed-out") token.current = null;
       setPhase({
         kind: "failed",
@@ -354,6 +372,7 @@ function useDeposit(
       });
     } catch (error) {
       console.error(error);
+      report("failed");
       setPhase({
         kind: "failed",
         message:
@@ -540,6 +559,7 @@ export function PublishToZenodo({
 }: PublishToZenodoProps) {
   const record = useMemo(() => suggestRecord(summary, publication), [summary, publication]);
   const deposit = useDeposit(zenodo, record, publication.exampleData, source);
+  const actions = useActions();
   const [open, setOpen] = useState(false);
   const direct = zenodo.clientId !== null;
 
@@ -572,7 +592,10 @@ export function PublishToZenodo({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <Dialog
           open={open}
-          onOpenChange={setOpen}
+          onOpenChange={(next) => {
+            if (next) actions.notePublishing({ kind: "publish-opened", source: source.kind });
+            setOpen(next);
+          }}
           size="lg"
           title="Publish to Zenodo"
           description={

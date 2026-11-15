@@ -116,3 +116,16 @@ describe("App", () => {
     expect(await screen.findByText("This page does not exist")).toBeInTheDocument();
   });
 });
+
+describe("usage counts for pages outside the steps", () => {
+  it("counts the published list, a dataset page and the publish page by kind only", async () => {
+    const spy = vi.spyOn(await import("@/analytics"), "recordPageOpened");
+    for (const path of ["/published", "/published/24237928", "/publish"]) {
+      const { unmount } = render(
+        <App locationHook={memoryLocation({ path }).hook} store={createTestStore()} />,
+      );
+      unmount();
+    }
+    expect(spy.mock.calls).toEqual([["published"], ["dataset"], ["publish-file"]]);
+  });
+});

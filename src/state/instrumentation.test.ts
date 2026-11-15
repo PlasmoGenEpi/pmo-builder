@@ -92,7 +92,7 @@ describe("usage counts from the store", () => {
     if (pending === null) throw new Error("no session record");
     const record: unknown = JSON.parse(pending);
     expect(record).toMatchObject({
-      v: 1,
+      v: 2,
       kind: "session",
       tables: {
         microhaplotypes: {
@@ -172,6 +172,36 @@ describe("usage counts from the store", () => {
       "issue:import/empty-file",
     ]);
     expect(calls).toContain("build:built");
+  });
+
+  it("counts publishing steps and file checks by their fixed names", async () => {
+    const calls: string[] = [];
+    const recorder: UsageRecorder = {
+      ...ANALYTICS_RECORDER,
+      recordPublishOpened: (source) => calls.push(`opened:${source}`),
+      recordDepositStarted: (source) => calls.push(`started:${source}`),
+      recordDepositFinished: (outcome) => calls.push(`finished:${outcome}`),
+      recordFileChecked: (result) => calls.push(`checked:${result}`),
+      recordSectionStatus: () => undefined,
+      recordValidation: () => undefined,
+      recordBuild: () => undefined,
+    };
+    const store = makeStore();
+    instrumentAppStore(store, recorder);
+    const { actions } = store.getState();
+    await actions.initialise();
+    actions.notePublishing({ kind: "publish-opened", source: "file" });
+    actions.notePublishing({ kind: "deposit-started", source: "file" });
+    actions.notePublishing({ kind: "deposit-finished", outcome: "pop-up-blocked" });
+    await actions.checkPmoFile(new File(["sample,reads"], "Kisumu_patient_042.json"));
+    await actions.checkPmoFile(new File(['{"pmo_header": {"pmo_version": "1.0.0"}}'], "old.json"));
+    expect(calls).toEqual([
+      "opened:file",
+      "started:file",
+      "finished:pop-up-blocked",
+      "checked:unreadable",
+      "checked:wrong-version",
+    ]);
   });
 
   it("does not let a restored draft alone count as a build", async () => {

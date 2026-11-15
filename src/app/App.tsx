@@ -3,7 +3,7 @@ import { Route, Router, Switch, useLocation, type BaseLocationHook } from "woute
 // Aliased: the router takes the hook itself as a value.
 import { useHashLocation as hashLocation } from "wouter/use-hash-location";
 
-import { recordStepOpened } from "@/analytics";
+import { recordPageOpened, recordStepOpened } from "@/analytics";
 import { AppStoreProvider, type AppStore } from "@/state";
 import { Skeleton, ToastProvider } from "@/ui";
 
@@ -81,6 +81,10 @@ function useRecordStepOpened(location: string): void {
     }
     const step = STEPS.find((candidate) => candidate.path === location);
     if (step !== undefined) recordStepOpened(step.id);
+    // Other pages are counted by kind. A dataset page never says which dataset.
+    if (location === "/published") recordPageOpened("published");
+    else if (location.startsWith("/published/")) recordPageOpened("dataset");
+    else if (location === "/publish") recordPageOpened("publish-file");
   }, [location]);
 }
 

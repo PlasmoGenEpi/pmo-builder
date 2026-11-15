@@ -6,13 +6,17 @@
  * vocabulary is dropped or counted as `other`, never copied.
  */
 import { bucketColumns, bucketCount, bucketDuration, bucketRows, bucketSize } from "./buckets";
-import type { SizeBucket } from "./buckets";
+import type { CountBucket, SizeBucket } from "./buckets";
 import { toIssueCode } from "./codes";
 import type { IssueCode } from "./codes";
 import { MAX_ISSUES, PAYLOAD_VERSION } from "./payload";
 import type { AppVersion, ImportSummary, IssueCount, SessionRecord, TableSummary } from "./payload";
 import {
+  DEPOSIT_OUTCOMES,
   DOWNLOAD_KINDS,
+  FILE_CHECK_RESULTS,
+  PAGES,
+  PUBLISH_SOURCES,
   FILE_FORMATS,
   IMPORT_ROUTES,
   ISSUE_SEVERITIES,
@@ -23,14 +27,18 @@ import {
   isOneOf,
 } from "./vocabulary";
 import type {
+  AnalyticsPage,
   AnalyticsSection,
   AnalyticsSectionStatus,
   AnalyticsStep,
   AnalyticsTable,
+  DepositOutcome,
   DownloadKind,
+  FileCheckResult,
   FileFormat,
   ImportRoute,
   IssueSeverity,
+  PublishSource,
   ValidationResult,
 } from "./vocabulary";
 
@@ -73,6 +81,11 @@ export interface Issue {
 /** The running tally for one page load. */
 export interface Session {
   stepOpened(step: unknown): void;
+  pageOpened(page: unknown): void;
+  publishOpened(source: unknown): void;
+  depositStarted(source: unknown): void;
+  depositFinished(outcome: unknown): void;
+  fileChecked(result: unknown): void;
   tableImported(input: unknown): void;
   mappingEdited(table: unknown): void;
   sectionStatus(section: unknown, status: unknown): void;
@@ -114,10 +127,28 @@ function readImport(input: unknown): [AnalyticsTable, ImportSummary] | null {
   ];
 }
 
+/** The counts that happened, bucketed, in the order of `keys`. */
+function countsOf<K extends string>(
+  keys: readonly K[],
+  counts: ReadonlyMap<K, number>,
+): Partial<Record<K, CountBucket>> {
+  const result: Partial<Record<K, CountBucket>> = {};
+  for (const key of keys) {
+    const count = counts.get(key);
+    if (count !== undefined) result[key] = bucketCount(count);
+  }
+  return result;
+}
+
 /** Starts an empty tally. */
 export function createSession(): Session {
   let active = false;
   const steps = new Set<AnalyticsStep>();
+  const pages = new Set<AnalyticsPage>();
+  const opened: Record<PublishSource, number> = { built: 0, file: 0 };
+  const deposits: Record<PublishSource, number> = { built: 0, file: 0 };
+  const outcomes = new Map<DepositOutcome, number>();
+  const fileChecks = new Map<FileCheckResult, number>();
   const tables = new Map<AnalyticsTable, TableSummary>();
   const sections = new Map<AnalyticsSection, AnalyticsSectionStatus>();
   const issues = new Map<string, IssueTally>();
@@ -133,6 +164,31 @@ export function createSession(): Session {
     stepOpened(step) {
       if (!isOneOf(STEPS, step)) return;
       steps.add(step);
+      active = true;
+    },
+    pageOpened(page) {
+      if (!isOneOf(PAGES, page)) return;
+      pages.add(page);
+      active = true;
+    },
+    publishOpened(source) {
+      if (!isOneOf(PUBLISH_SOURCES, source)) return;
+      opened[source] += 1;
+      active = true;
+    },
+    depositStarted(source) {
+      if (!isOneOf(PUBLISH_SOURCES, source)) return;
+      deposits[source] += 1;
+      active = true;
+    },
+    depositFinished(outcome) {
+      if (!isOneOf(DEPOSIT_OUTCOMES, outcome)) return;
+      outcomes.set(outcome, (outcomes.get(outcome) ?? 0) + 1);
+      active = true;
+    },
+    fileChecked(result) {
+      if (!isOneOf(FILE_CHECK_RESULTS, result)) return;
+      fileChecks.set(result, (fileChecks.get(result) ?? 0) + 1);
       active = true;
     },
     tableImported(input) {
@@ -206,6 +262,7 @@ export function createSession(): Session {
         kind: "session",
         app,
         steps: STEPS.filter((step) => steps.has(step)),
+        pages: PAGES.filter((page) => pages.has(page)),
         tables: Object.fromEntries(
           TABLES.flatMap((table) => {
             const summary = tables.get(table);
@@ -225,6 +282,12 @@ export function createSession(): Session {
           schemaErrors: bucketCount(schemaErrors),
           downloads: { plain: bucketCount(downloads.plain), gzip: bucketCount(downloads.gzip) },
           downloadSize,
+        },
+        publish: {
+          opened: { built: bucketCount(opened.built), file: bucketCount(opened.file) },
+          deposits: { built: bucketCount(deposits.built), file: bucketCount(deposits.file) },
+          outcomes: countsOf(DEPOSIT_OUTCOMES, outcomes),
+          fileChecks: countsOf(FILE_CHECK_RESULTS, fileChecks),
         },
         issues: issueList,
         draftRestored: restored,

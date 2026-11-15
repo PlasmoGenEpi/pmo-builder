@@ -17,10 +17,14 @@ import type { BuildOutcome, Download, Issue, TableImport, ValidationOutcome } fr
 import { PREFERENCE_KEY } from "./status";
 import type { AnalyticsStatus } from "./status";
 import type {
+  AnalyticsPage,
   AnalyticsSection,
   AnalyticsSectionStatus,
   AnalyticsStep,
   AnalyticsTable,
+  DepositOutcome,
+  FileCheckResult,
+  PublishSource,
 } from "./vocabulary";
 
 export type { AnalyticsPreference } from "./hooks";
@@ -29,10 +33,14 @@ export type { AnalyticsOffReason, AnalyticsStatus } from "./status";
 export type { BuildOutcome, Download, Issue, TableImport, ValidationOutcome } from "./session";
 export type { TransparencyEntry, TransparencySnapshot } from "./analytics";
 export type {
+  AnalyticsPage,
   AnalyticsSection,
   AnalyticsSectionStatus,
   AnalyticsStep,
   AnalyticsTable,
+  DepositOutcome,
+  FileCheckResult,
+  PublishSource,
   DownloadKind,
   FileFormat,
   ImportRoute,
@@ -98,6 +106,31 @@ export function recordStepOpened(step: AnalyticsStep): void {
  * Records that a table was imported. Pass raw row and column counts; only
  * coarse buckets are kept. Use `fileFormatFromName` for `format` and `gzip`.
  */
+/** Counts a page outside the builder's steps being opened. */
+export function recordPageOpened(page: AnalyticsPage): void {
+  analytics.recordPageOpened(page);
+}
+
+/** Counts the publish dialog being opened. */
+export function recordPublishOpened(source: PublishSource): void {
+  analytics.recordPublishOpened(source);
+}
+
+/** Counts a deposit on Zenodo being started. */
+export function recordDepositStarted(source: PublishSource): void {
+  analytics.recordDepositStarted(source);
+}
+
+/** Counts how a deposit on Zenodo ended. */
+export function recordDepositFinished(outcome: DepositOutcome): void {
+  analytics.recordDepositFinished(outcome);
+}
+
+/** Counts what checking a PMO file on the publish page found. */
+export function recordFileChecked(result: FileCheckResult): void {
+  analytics.recordFileChecked(result);
+}
+
 export function recordTableImported(input: TableImport): void {
   analytics.recordTableImported(input);
 }

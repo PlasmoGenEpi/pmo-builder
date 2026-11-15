@@ -91,7 +91,7 @@ export default defineConfig(({ mode }) => {
           test: {
             name: "tooling",
             environment: "node",
-            include: ["vite/**/*.test.ts"],
+            include: ["vite/**/*.test.ts", "receiver/src/**/*.test.ts"],
           },
         },
       ],

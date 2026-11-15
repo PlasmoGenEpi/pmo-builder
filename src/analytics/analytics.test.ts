@@ -84,7 +84,7 @@ describe("records", () => {
     analytics.start();
     analytics.start();
     expect(fake.beacons).toEqual([
-      { url: DESTINATION, body: '{"v":1,"kind":"visit","app":"1.2.3"}' },
+      { url: DESTINATION, body: '{"v":2,"kind":"visit","app":"1.2.3"}' },
     ]);
   });
 
@@ -130,10 +130,11 @@ describe("records", () => {
 
     expect(fake.beacons).toHaveLength(2);
     expect(bodies(fake.beacons)[1]).toEqual({
-      v: 1,
+      v: 2,
       kind: "session",
       app: "1.2.3",
       steps: ["microhaplotypes", "panel"],
+      pages: [],
       tables: {
         panelTargets: {
           import: { route: "example", format: "csv", gzip: false, rows: "100-999", columns: "5-9" },
@@ -148,6 +149,12 @@ describe("records", () => {
         schemaErrors: "2-4",
         downloads: { plain: "0", gzip: "1" },
         downloadSize: "100kb-1mb",
+      },
+      publish: {
+        opened: { built: "0", file: "0" },
+        deposits: { built: "0", file: "0" },
+        outcomes: {},
+        fileChecks: {},
       },
       issues: [
         { code: "mhap/other", severity: "warning", count: "1" },
@@ -201,7 +208,7 @@ describe("transport", () => {
     expect(fake.fetches).toHaveLength(1);
     expect(fake.fetches[0]?.init).toMatchObject({
       method: "POST",
-      body: '{"v":1,"kind":"visit","app":"1.2.3"}',
+      body: '{"v":2,"kind":"visit","app":"1.2.3"}',
       keepalive: true,
       credentials: "omit",
       referrerPolicy: "no-referrer",

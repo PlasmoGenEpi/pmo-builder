@@ -7,19 +7,12 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@cfworker/json-schema':
-        specifier: ^4.1.1
-        version: 4.1.6
     devDependencies:
       wrangler:
         specifier: ^4.162.0
         version: 4.162.0
 
 packages:
-
-  '@cfworker/json-schema@4.1.6':
-    resolution: {integrity: sha512-YzVGTHXf4bzlyAL5KAvHYCdNbbt6zM5cYkAgxqxQPDQM6aZ4ShIIN5yJ+6q7YeonnevxT8k/LmD2tJi/jOiKkg==}
 
   '@cloudflare/kv-asset-handler@0.5.0':
     resolution: {integrity: sha512-jxQYkj8dSIzc0cD6cMMNdOc1UVjqSqu8BZdor5s8cGjW2I8BjODt/kWPVdY+u9zj3ms75Q5qaZgnxUad83+eAg==}
@@ -520,8 +513,6 @@ packages:
     resolution: {integrity: sha512-rLfVLB4FgQneDr0dv1oddCVZmKjcJ6yX6mS4pU82Mq/Dt9a3cLZQ62pDBL4AUO+uVrCvtWz3ZFUL2HFAFJ/BXQ==}
 
 snapshots:
-
-  '@cfworker/json-schema@4.1.6': {}
 
   '@cloudflare/kv-asset-handler@0.5.0': {}
 

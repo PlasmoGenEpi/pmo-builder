@@ -10,18 +10,26 @@ app's build does not touch it.
 ## What it does
 
 - Accepts a `POST` with one record as JSON. Anything else gets `405`.
-- Rejects a record that does not match
-  [the schema](../docs/analytics-payload.schema.json), or is larger than
-  8 KB, with `400`. So a record with a file name, a sample name or any free
-  text in it is never stored.
+- Refuses with `400` a body over 8 KB, or anything that is not a visit or
+  session record.
 - Never reads the IP address or any header.
-- Adds one to a counter per fact, keyed by day. It keeps no record, so the
-  facts of one visit cannot be joined back together.
+- Cuts the record into facts, such as `steps = panel`, and keeps only the
+  facts on [its allowed list](src/allowed-facts.json). The list is generated
+  from the app's own record format, so a file name, a sample name or any free
+  text is never stored. A fact not on the list is dropped on its own and
+  counted as `receiver.dropped`; the rest of the record still counts.
+- Adds to a counter per fact, keyed by day. It keeps no record, so the facts
+  of one visit cannot be joined back together.
 
 ## Deploying
 
-You need a Cloudflare API token with the account permissions Workers Scripts
-(Edit), D1 (Edit) and Account Settings (Read).
+The Deploy workflow deploys the receiver on every push to `main`, before the
+site, from the same commit. It needs the repository secrets
+`CLOUDFLARE_API_TOKEN` (account permissions Workers Scripts: Edit, D1: Edit,
+Account Settings: Read) and `CLOUDFLARE_ACCOUNT_ID`. Without them the step
+is skipped.
+
+To deploy by hand:
 
 ```bash
 cd receiver
@@ -29,9 +37,6 @@ pnpm install --ignore-workspace
 export CLOUDFLARE_API_TOKEN=...   # and CLOUDFLARE_ACCOUNT_ID if the token sees several accounts
 pnpm exec wrangler deploy
 ```
-
-Deploy again whenever `docs/analytics-payload.schema.json` changes, or the
-receiver will turn the new records away.
 
 For a new account, create the database first and put its id in
 `wrangler.jsonc`:

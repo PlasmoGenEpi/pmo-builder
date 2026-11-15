@@ -29,6 +29,52 @@ export const STEPS = ["home", ...SECTIONS, "review"] as const;
 /** A page a user can open. */
 export type AnalyticsStep = (typeof STEPS)[number];
 
+/** Pages outside the builder's steps. A dataset page is counted, never which dataset. */
+export const PAGES = ["published", "dataset", "publish-file"] as const;
+
+/** A page outside the builder's steps. */
+export type AnalyticsPage = (typeof PAGES)[number];
+
+/** Where the PMO being published came from: built from the draft, or a file the user chose. */
+export const PUBLISH_SOURCES = ["built", "file"] as const;
+
+/** Where the PMO being published came from. */
+export type PublishSource = (typeof PUBLISH_SOURCES)[number];
+
+/** How a deposit on Zenodo ended. */
+export const DEPOSIT_OUTCOMES = [
+  "draft-ready",
+  "cancelled",
+  "pop-up-blocked",
+  "sign-in-refused",
+  "sign-in-timed-out",
+  "signed-out",
+  "not-allowed",
+  "no-community",
+  "too-large",
+  "offline",
+  "refused",
+  "failed",
+] as const;
+
+/** How a deposit ended. */
+export type DepositOutcome = (typeof DEPOSIT_OUTCOMES)[number];
+
+/** What checking a PMO file on the publish page found. */
+export const FILE_CHECK_RESULTS = [
+  "ready",
+  "example",
+  "too-large",
+  "unreadable",
+  "not-pmo",
+  "wrong-version",
+  "invalid",
+  "failed",
+] as const;
+
+/** What checking a PMO file found. */
+export type FileCheckResult = (typeof FILE_CHECK_RESULTS)[number];
+
 /** Kinds of table a user can import. Mirrors `FIELD_SET_IDS` in `@/domain/types`. */
 export const TABLES = [
   "microhaplotypes",

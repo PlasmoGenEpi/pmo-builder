@@ -3,13 +3,16 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { createFactFilter, factsOf, MAX_FACTS } from "../../receiver/src/facts";
+
 import { createAnalytics } from "./analytics";
 import { fakeEnvironment } from "./fakeEnvironment";
-import { PAYLOAD_SCHEMA } from "./payloadSchema";
+import { allowedFacts, PAYLOAD_SCHEMA } from "./payloadSchema";
 import type { JsonSchema } from "./payloadSchema";
 
 // Vitest runs from the repository root.
 const SCHEMA_FILE = resolve("docs/analytics-payload.schema.json");
+const FACTS_FILE = resolve("receiver/src/allowed-facts.json");
 
 /** Checks `value` against the subset of JSON Schema that `payloadSchema.ts` uses. */
 function matches(schema: JsonSchema, value: unknown): boolean {
@@ -77,6 +80,14 @@ function fullSession(): unknown {
   analytics.recordDownload({ kind: "plain", bytes: 12_000_000 });
   analytics.recordIssue({ code: "io/invalid-gzip", severity: "error" });
   analytics.recordIssue({ code: "Something else", severity: "warning" });
+  analytics.recordPageOpened("published");
+  analytics.recordPageOpened("publish-file");
+  analytics.recordFileChecked("ready");
+  analytics.recordFileChecked("wrong-version");
+  analytics.recordPublishOpened("file");
+  analytics.recordDepositStarted("file");
+  analytics.recordDepositFinished("draft-ready");
+  analytics.recordDepositFinished("pop-up-blocked");
   fake.hide();
   return fake.beacons.map((beacon): unknown => JSON.parse(beacon.body));
 }
@@ -92,6 +103,18 @@ describe("payload schema", () => {
     ).toEqual(PAYLOAD_SCHEMA);
   });
 
+  it("lists the receiver's allowed facts in the file it reads", () => {
+    const generated = allowedFacts();
+    if (process.env["UPDATE_ANALYTICS_SCHEMA"] === "1") {
+      writeFileSync(FACTS_FILE, `${JSON.stringify(generated, null, 2)}\n`);
+    }
+    const onDisk: unknown = JSON.parse(readFileSync(FACTS_FILE, "utf8"));
+    expect(
+      onDisk,
+      "Run UPDATE_ANALYTICS_SCHEMA=1 pnpm vitest run src/analytics, then pnpm format",
+    ).toEqual(generated);
+  });
+
   it("accepts the records the instrumentation produces", () => {
     const records = fullSession();
     expect(Array.isArray(records) && records.length).toBe(2);
@@ -100,13 +123,13 @@ describe("payload schema", () => {
   });
 
   it("rejects anything else", () => {
-    const visit = { v: 1, kind: "visit", app: "1.2.3" };
+    const visit = { v: 2, kind: "visit", app: "1.2.3" };
     expect(matches(PAYLOAD_SCHEMA, visit)).toBe(true);
     for (const bad of [
       { ...visit, fileName: "samples.csv" },
       { ...visit, app: "1.2.3; Sample ID" },
-      { ...visit, v: 2 },
-      { v: 1, kind: "session", app: "1.2.3" },
+      { ...visit, v: 3 },
+      { v: 2, kind: "session", app: "1.2.3" },
       null,
       "visit",
     ]) {
@@ -126,5 +149,70 @@ describe("payload schema", () => {
         tweak({ issues: [{ code: "panel/x", severity: "error", count: "1" }] }),
       ),
     ).toBe(false);
+  });
+});
+
+describe("the receiver's fact filter", () => {
+  const sort = createFactFilter(allowedFacts());
+
+  it("keeps every fact of every record the instrumentation produces", () => {
+    const records = fullSession();
+    if (!Array.isArray(records)) throw new Error("expected records");
+    for (const record of records) {
+      const sorted = sort(record);
+      expect(sorted?.dropped).toBe(0);
+      expect(sorted?.kept.length).toBe(factsOf(record).length);
+    }
+    const session: unknown = records[1];
+    expect(factsOf(session)).toEqual(
+      expect.arrayContaining([
+        ["pages", "published"],
+        ["publish.deposits.file", "1"],
+        ["publish.outcomes.draft-ready", "1"],
+        ["publish.fileChecks.wrong-version", "1"],
+        ["issues", "io/invalid-gzip error 1"],
+      ]),
+    );
+  });
+
+  it("still keeps the facts of a record from the earlier version", () => {
+    expect(sort({ v: 1, kind: "visit", app: "0.1.0" })).toEqual({
+      kept: [
+        ["v", "1"],
+        ["kind", "visit"],
+        ["app", "0.1.0"],
+      ],
+      dropped: 0,
+    });
+  });
+
+  it("drops an unknown value on its own and keeps the rest of the record", () => {
+    const records = fullSession();
+    if (!Array.isArray(records)) throw new Error("expected records");
+    const session = Object(records[1]);
+    const sorted = sort({
+      ...session,
+      steps: ["home", "a-page-from-a-newer-app"],
+      fileName: "Kisumu_patient_042.csv",
+      app: "1.2.3; Sample ID",
+    });
+    expect(sorted?.dropped).toBe(3);
+    const kept = JSON.stringify(sorted?.kept);
+    expect(kept).not.toMatch(/Kisumu|Sample ID|newer/);
+    expect(sorted?.kept).toEqual(
+      expect.arrayContaining([
+        ["steps", "home"],
+        ["kind", "session"],
+      ]),
+    );
+  });
+
+  it("refuses what is not a usage record, and caps the facts kept", () => {
+    expect(sort(null)).toBeNull();
+    expect(sort([1, 2])).toBeNull();
+    expect(sort({ kind: "something" })).toBeNull();
+    const many = sort({ kind: "visit", steps: Array.from({ length: 900 }, () => "home") });
+    expect(many?.kept).toHaveLength(MAX_FACTS);
+    expect(many?.dropped).toBe(901 - MAX_FACTS);
   });
 });

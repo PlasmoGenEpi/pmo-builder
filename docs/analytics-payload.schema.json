@@ -8,7 +8,7 @@
       "properties": {
         "v": {
           "type": "integer",
-          "const": 1
+          "const": 2
         },
         "kind": {
           "type": "string",
@@ -27,7 +27,7 @@
       "properties": {
         "v": {
           "type": "integer",
-          "const": 1
+          "const": 2
         },
         "kind": {
           "type": "string",
@@ -55,6 +55,15 @@
             ]
           },
           "maxItems": 10,
+          "uniqueItems": true
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["published", "dataset", "publish-file"]
+          },
+          "maxItems": 3,
           "uniqueItems": true
         },
         "tables": {
@@ -718,6 +727,135 @@
           ],
           "additionalProperties": false
         },
+        "publish": {
+          "type": "object",
+          "properties": {
+            "opened": {
+              "type": "object",
+              "properties": {
+                "built": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "file": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                }
+              },
+              "required": ["built", "file"],
+              "additionalProperties": false
+            },
+            "deposits": {
+              "type": "object",
+              "properties": {
+                "built": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "file": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                }
+              },
+              "required": ["built", "file"],
+              "additionalProperties": false
+            },
+            "outcomes": {
+              "type": "object",
+              "properties": {
+                "draft-ready": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "cancelled": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "pop-up-blocked": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "sign-in-refused": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "sign-in-timed-out": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "signed-out": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "not-allowed": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "no-community": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "too-large": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "offline": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "refused": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "failed": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                }
+              },
+              "additionalProperties": false
+            },
+            "fileChecks": {
+              "type": "object",
+              "properties": {
+                "ready": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "example": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "too-large": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "unreadable": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "not-pmo": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "wrong-version": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "invalid": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                },
+                "failed": {
+                  "type": "string",
+                  "enum": ["0", "1", "2-4", "5-9", "10-99", "100+"]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": ["opened", "deposits", "outcomes", "fileChecks"],
+          "additionalProperties": false
+        },
         "issues": {
           "type": "array",
           "maxItems": 32,
@@ -916,9 +1054,11 @@
         "kind",
         "app",
         "steps",
+        "pages",
         "tables",
         "sections",
         "build",
+        "publish",
         "issues",
         "draftRestored",
         "duration"

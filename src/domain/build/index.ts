@@ -4,6 +4,7 @@
  */
 export * from "./bioinformatics";
 export * from "./checkFile";
+export * from "./checkFileResult";
 export * from "./context";
 export * from "./exampleData";
 export * from "./export";

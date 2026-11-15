@@ -1,7 +1,8 @@
 import { gzipPmo, stringifyPmo, type PortableMicrohaplotypeObject } from "pmotools-ts";
 import { describe, expect, it } from "vitest";
 
-import { checkPmoFile, MAX_LISTED } from "./checkFile";
+import { checkPmoFile } from "./checkFile";
+import { MAX_LISTED } from "./checkFileResult";
 import { buildExamplePmo } from "./testing";
 
 const text = (value: string) => new Blob([value]);

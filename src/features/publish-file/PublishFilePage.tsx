@@ -3,7 +3,12 @@ import { useRef, useState } from "react";
 import { Link as RouterLink } from "wouter";
 
 import { PageContainer } from "@/app/PageContainer";
-import { MAX_LISTED, PUBLISHABLE_PMO_VERSION, type PmoFileCheck } from "@/domain/build";
+// By path, not the barrel: the barrel would bring pmotools-ts onto the main thread.
+import {
+  MAX_LISTED,
+  PUBLISHABLE_PMO_VERSION,
+  type PmoFileCheck,
+} from "@/domain/build/checkFileResult";
 import { PmoContents } from "@/features/review/PmoContents";
 import { PublishToZenodo } from "@/features/review/PublishToZenodo";
 import { communityUrl, zenodoConfig, type ZenodoConfig } from "@/features/review/zenodo";

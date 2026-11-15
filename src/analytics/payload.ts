@@ -12,19 +12,23 @@
 import type { ColumnBucket, CountBucket, DurationBucket, RowBucket, SizeBucket } from "./buckets";
 import type { IssueCode } from "./codes";
 import type {
+  AnalyticsPage,
   AnalyticsSection,
   AnalyticsSectionStatus,
   AnalyticsStep,
   AnalyticsTable,
+  DepositOutcome,
   DownloadKind,
+  FileCheckResult,
   FileFormat,
   ImportRoute,
   IssueSeverity,
+  PublishSource,
   ValidationResult,
 } from "./vocabulary";
 
 /** Bumped when the shape of a record changes. */
-export const PAYLOAD_VERSION = 1;
+export const PAYLOAD_VERSION = 2;
 
 /**
  * The app version as `major.minor.patch`, or `unknown`. Only `toAppVersion`
@@ -68,6 +72,18 @@ export interface BuildSummary {
   readonly downloadSize: SizeBucket | null;
 }
 
+/** Publishing to Zenodo during the session. */
+export interface PublishSummary {
+  /** Times the publish dialog was opened, by where the PMO came from. */
+  readonly opened: Readonly<Record<PublishSource, CountBucket>>;
+  /** Deposits started, by where the PMO came from. */
+  readonly deposits: Readonly<Record<PublishSource, CountBucket>>;
+  /** How deposits ended. Only outcomes that happened are listed. */
+  readonly outcomes: Partial<Readonly<Record<DepositOutcome, CountBucket>>>;
+  /** What checking files on the publish page found. Only results that happened are listed. */
+  readonly fileChecks: Partial<Readonly<Record<FileCheckResult, CountBucket>>>;
+}
+
 /** How often one code was seen. */
 export interface IssueCount {
   readonly code: IssueCode;
@@ -82,10 +98,13 @@ export interface SessionRecord {
   readonly app: AppVersion;
   /** Steps opened, in navigation order, each once. */
   readonly steps: readonly AnalyticsStep[];
+  /** Other pages opened, in a fixed order, each once. */
+  readonly pages: readonly AnalyticsPage[];
   readonly tables: Partial<Readonly<Record<AnalyticsTable, TableSummary>>>;
   /** The last status the app reported for each section. */
   readonly sections: Partial<Readonly<Record<AnalyticsSection, AnalyticsSectionStatus>>>;
   readonly build: BuildSummary;
+  readonly publish: PublishSummary;
   /** Sorted by code, at most `MAX_ISSUES` entries. */
   readonly issues: readonly IssueCount[];
   readonly draftRestored: boolean;

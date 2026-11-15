@@ -120,9 +120,10 @@ function UsageCounts() {
         <>
           <p className="text-text-muted">
             At most two small records are sent per visit. They say things like &quot;the panel step
-            was opened&quot; or &quot;a table of 100 to 999 rows was imported&quot;. They never
-            contain your file names, column names, sample names, cell values or error messages, and
-            they carry no identifier, so two visits cannot be linked.
+            was opened&quot;, &quot;a table of 100 to 999 rows was imported&quot; or &quot;a deposit
+            on Zenodo was started&quot;. They never contain your file names, column names, sample
+            names, cell values or error messages, or which published dataset you looked at, and they
+            carry no identifier, so two visits cannot be linked.
           </p>
           <Switch
             label="Send anonymous usage counts"

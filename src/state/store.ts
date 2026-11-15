@@ -27,6 +27,7 @@ import {
   setSlotTable,
   slotExists,
   slotKey,
+  unreachable,
   updateListItem,
   type Draft,
   type DraftStorage,
@@ -162,7 +163,62 @@ export type AppEvent =
   /** The saved draft could not be read and was set aside. */
   | { readonly kind: "draft-set-aside" }
   | { readonly kind: "save-failed" }
-  | { readonly kind: "engine-stopped" };
+  | { readonly kind: "engine-stopped" }
+  /** A PMO file was checked on the publish page. */
+  | { readonly kind: "pmo-file-checked"; readonly result: PmoFileCheckResult }
+  | PublishingEvent;
+
+/** Where the PMO being published came from. */
+export type PublishingSource = "built" | "file";
+
+/** How a deposit on Zenodo ended. */
+export type DepositEnd =
+  | "draft-ready"
+  | "cancelled"
+  | "pop-up-blocked"
+  | "sign-in-refused"
+  | "sign-in-timed-out"
+  | "signed-out"
+  | "not-allowed"
+  | "no-community"
+  | "too-large"
+  | "offline"
+  | "refused"
+  | "failed";
+
+/** What checking a PMO file found, in a word. `failed` when the check could not run. */
+export type PmoFileCheckResult =
+  | "ready"
+  | "example"
+  | "too-large"
+  | "unreadable"
+  | "not-pmo"
+  | "wrong-version"
+  | "invalid"
+  | "failed";
+
+/** Publishing steps the publish panel reports, for usage counts. */
+export type PublishingEvent =
+  | { readonly kind: "publish-opened"; readonly source: PublishingSource }
+  | { readonly kind: "deposit-started"; readonly source: PublishingSource }
+  | { readonly kind: "deposit-finished"; readonly outcome: DepositEnd };
+
+/** The word for what a file check found. */
+export function fileCheckResult(check: PmoFileCheck | null): PmoFileCheckResult {
+  if (check === null) return "failed";
+  switch (check.kind) {
+    case "ready":
+      return check.publication.exampleData ? "example" : "ready";
+    case "unreadable":
+      return check.reason === "not-pmo" ? "not-pmo" : "unreadable";
+    case "too-large":
+    case "wrong-version":
+    case "invalid":
+      return check.kind;
+    default:
+      return unreachable(check);
+  }
+}
 
 const eventListeners = new WeakMap<AppStore, Set<(event: AppEvent) => void>>();
 
@@ -272,6 +328,8 @@ export interface AppActions {
    * touched. `null` when the engine failed.
    */
   checkPmoFile(file: Blob): Promise<PmoFileCheck | null>;
+  /** Reports a publishing step, for usage counts. Changes nothing. */
+  notePublishing(event: PublishingEvent): void;
   /** Runs any scheduled build and save now, the save without waiting for the build. */
   flush(): Promise<void>;
   /**
@@ -943,12 +1001,18 @@ export function createAppStore(options: AppStoreOptions): AppStore {
       },
 
       async checkPmoFile(file) {
+        let check: PmoFileCheck | null = null;
         try {
-          return await engine.checkPmoFile(file);
+          check = await engine.checkPmoFile(file);
         } catch (error) {
           engineFailed(error);
-          return null;
         }
+        emit({ kind: "pmo-file-checked", result: fileCheckResult(check) });
+        return check;
+      },
+
+      notePublishing(event) {
+        emit(event);
       },
 
       async flush() {

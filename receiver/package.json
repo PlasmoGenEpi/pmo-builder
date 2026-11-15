@@ -8,9 +8,6 @@
     "deploy": "wrangler deploy",
     "counts": "wrangler d1 execute pmo-builder-usage --remote --command \"SELECT metric, value, SUM(n) AS n FROM counts GROUP BY metric, value ORDER BY metric, n DESC\""
   },
-  "dependencies": {
-    "@cfworker/json-schema": "^4.1.1"
-  },
   "devDependencies": {
     "wrangler": "^4.162.0"
   }

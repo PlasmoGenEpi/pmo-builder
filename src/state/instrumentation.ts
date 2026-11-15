@@ -24,9 +24,13 @@ import {
   fileFormatFromName,
   recordBuild,
   recordDownload,
+  recordDepositFinished,
+  recordDepositStarted,
   recordDraftRestored,
+  recordFileChecked,
   recordIssue,
   recordMappingEdited,
+  recordPublishOpened,
   recordSectionStatus,
   recordTableImported,
   recordValidation,
@@ -39,6 +43,10 @@ import { subscribeAppEvents, type AppEvent, type AppStore } from "./store";
 
 /** The recording functions the instrumentation calls. The real ones by default. */
 export interface UsageRecorder {
+  readonly recordPublishOpened: typeof recordPublishOpened;
+  readonly recordDepositStarted: typeof recordDepositStarted;
+  readonly recordDepositFinished: typeof recordDepositFinished;
+  readonly recordFileChecked: typeof recordFileChecked;
   readonly recordTableImported: typeof recordTableImported;
   readonly recordMappingEdited: typeof recordMappingEdited;
   readonly recordSectionStatus: typeof recordSectionStatus;
@@ -51,6 +59,10 @@ export interface UsageRecorder {
 
 /** The functions of `@/analytics`. */
 export const ANALYTICS_RECORDER: UsageRecorder = {
+  recordPublishOpened,
+  recordDepositStarted,
+  recordDepositFinished,
+  recordFileChecked,
   recordTableImported,
   recordMappingEdited,
   recordSectionStatus,
@@ -126,6 +138,18 @@ function recordEvent(event: AppEvent, recorder: UsageRecorder): void {
       return;
     case "engine-stopped":
       recorder.recordIssue({ code: "worker/crashed", severity: "error" });
+      return;
+    case "pmo-file-checked":
+      recorder.recordFileChecked(event.result);
+      return;
+    case "publish-opened":
+      recorder.recordPublishOpened(event.source);
+      return;
+    case "deposit-started":
+      recorder.recordDepositStarted(event.source);
+      return;
+    case "deposit-finished":
+      recorder.recordDepositFinished(event.outcome);
       return;
     default:
       return;

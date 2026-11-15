@@ -68,8 +68,10 @@ settings show whether this copy sends them.
 
 If it does, it sends at most two small records per visit. They say things
 like "the panel step was opened", "a table of 100 to 999 rows was imported",
-"a PMO was downloaded" or "this error code came up". They never contain your
-file names, column names, sample names, cell values or error messages. They
+"a PMO was downloaded", "a deposit on Zenodo was started and its draft was
+made" or "this error code came up". They never contain your file names,
+column names, sample names, cell values or error messages, or which
+published dataset you looked at. They
 contain no identifier, so two visits cannot be linked. You can see the exact
 records in the app before or after they are sent.
 

@@ -18,19 +18,21 @@ browser.
 
 | Field  | Values                           |
 | ------ | -------------------------------- |
-| `v`    | `1`, the payload version         |
+| `v`    | `2`, the payload version         |
 | `kind` | `visit`                          |
 | `app`  | app version, `major.minor.patch` |
 
 **Session summary.** Sent at most once per page load, when the page is hidden
-or closed, and only if the user did something: opened a step, imported a
-table, changed a column match, built, validated or downloaded. A restored
-draft or a status change alone does not count.
+or closed, and only if the user did something: opened a step or page,
+imported a table, changed a column match, built, validated, downloaded,
+checked a file or worked on a deposit. A restored draft or a status change
+alone does not count.
 
 | Field                          | Values                                                    |
 | ------------------------------ | --------------------------------------------------------- |
-| `v`, `kind`, `app`             | `1`, `session`, app version                               |
+| `v`, `kind`, `app`             | `2`, `session`, app version                               |
 | `steps`                        | steps opened, each once, in navigation order              |
+| `pages`                        | `published`, `dataset` or `publish-file`, each once       |
 | `tables.<table>.import`        | last import of that table this session, or `null`         |
 | `tables.<table>.import.route`  | `upload`, `example` or `saved-panel`                      |
 | `...import.format`, `.gzip`    | `csv`, `tsv`, `txt`, `xlsx` or `other`; `true` or `false` |
@@ -43,19 +45,30 @@ draft or a status change alone does not count.
 | `build.schemaErrors`           | count bucket for the last validation                      |
 | `build.downloads.plain/gzip`   | count bucket                                              |
 | `build.downloadSize`           | `0-10kb` up to `100mb+`, or `null`                        |
+| `publish.opened.built/file`    | count bucket: times the publish dialog was opened         |
+| `publish.deposits.built/file`  | count bucket: deposits started                            |
+| `publish.outcomes.<outcome>`   | count bucket per way a deposit ended                      |
+| `publish.fileChecks.<result>`  | count bucket per result of checking a file                |
 | `issues[]`                     | `{ code, severity, count }`, at most 32, sorted by code   |
 | `draftRestored`                | whether a saved draft was restored on load                |
 | `duration`                     | `0-1m`, `1-5m`, `5-15m`, `15-60m`, `60m+`                 |
 
 `<table>` and `<section>` are fixed names such as `panelTargets` and
-`microhaplotypes`. An issue `code` is a pmotools-ts code such as
+`microhaplotypes`. `built` and `file` say whether the PMO was built from the
+draft or chosen as a file on the publish page. A deposit `<outcome>` is one of
+`draft-ready`, `cancelled`, `pop-up-blocked`, `sign-in-refused`,
+`sign-in-timed-out`, `signed-out`, `not-allowed`, `no-community`, `too-large`,
+`offline`, `refused` or `failed`. A file-check `<result>` is one of `ready`,
+`example`, `too-large`, `unreadable`, `not-pmo`, `wrong-version`, `invalid` or
+`failed`. A dataset page is counted as `dataset`, never by which dataset. An issue `code` is a pmotools-ts code such as
 `panel/duplicate-target-names`, an app code from the list in
 `src/analytics/codes.ts`, `<module>/other` for an unlisted code from a known
 module, or `other`.
 
 The full contract is the JSON Schema in
 [`analytics-payload.schema.json`](analytics-payload.schema.json). It lists
-every allowed value. A receiver should reject anything that does not match.
+every allowed value. The receiver stores only the facts it allows (see
+below).
 
 Neither record has a timestamp. The receiver adds the date.
 
@@ -89,9 +102,11 @@ a cell value and look-alike codes through every exported function and hook,
 in every argument position and as extra properties, then checks that none of
 it appears in what was sent, the transparency log or the preview.
 
-**Schema.** `docs/analytics-payload.schema.json` is generated from the same
-lists as the types. A test fails if the file and the code disagree, and checks
-real records against it. The reference receiver rejects anything else.
+**Schema and allowed facts.** `docs/analytics-payload.schema.json` and the
+receiver's list of allowed facts, `receiver/src/allowed-facts.json`, are both
+generated from the same lists as the types. Tests fail if either file and the
+code disagree, check real records against the schema, and check that the
+receiver keeps every fact of a real record and nothing else.
 
 **Content Security Policy.** The build writes a policy into `index.html`
 (`vite/csp.ts`). `connect-src` allows the app's own origin and, when
@@ -165,7 +180,9 @@ to the receiving service, which discards them before anything is stored.
 
 ## Switching it on
 
-1. Deploy a receiver (see below) and note its https URL.
+1. Deploy a receiver (see below) and note its https URL. For the receiver in
+   this repository, add the repository secrets `CLOUDFLARE_API_TOKEN` and
+   `CLOUDFLARE_ACCOUNT_ID`, and the Deploy workflow deploys it.
 2. In the GitHub repository, open Settings, then Secrets and variables, then
    Actions, then Variables, and add `VITE_ANALYTICS_URL` with that URL.
 3. Run the Deploy workflow, or push to `main`.
@@ -183,12 +200,15 @@ allowed for `localhost`, to test a receiver).
 Pages do not record anything. The recording is wired in two places:
 
 - `src/main.tsx` calls `initAnalytics()` once at start-up, and the router in
-  `src/app/App.tsx` calls `recordStepOpened` on every navigation.
+  `src/app/App.tsx` calls `recordStepOpened` or `recordPageOpened` on every
+  navigation.
 - `src/state/instrumentation.ts` watches the app store's state and events and
   calls every other `record*` function: imports and failed imports, mapping
   edits, section statuses, builds, validation, downloads, error and warning
-  codes, a restored draft, a failed save and a stopped worker. The default
-  store is instrumented when it is created (`src/state/hooks.tsx`).
+  codes, a restored draft, a failed save, a stopped worker, file checks on
+  the publish page, and the publishing steps the publish panel reports with
+  `notePublishing`. The default store is instrumented when it is created
+  (`src/state/hooks.tsx`).
 
 So a new page gets its counts by going through the store's actions. If a new
 kind of user action should be counted, emit an event from the store and
@@ -199,11 +219,19 @@ label.
 
 `codes.test.ts` reads the app's sources and fails when a notice code is not
 on `APP_CODES` in `src/analytics/codes.ts`, or when a listed code is no longer
-raised. After changing the list, regenerate the schema:
+raised. After changing that list or any list in `vocabulary.ts`, regenerate
+the schema and the receiver's allowed facts:
 
 ```bash
 UPDATE_ANALYTICS_SCHEMA=1 pnpm vitest run src/analytics && pnpm format
 ```
+
+Then push: the Deploy workflow deploys the receiver from the same commit
+before the site, so the receiver always knows every value the site can send.
+If a browser still runs an older or newer copy of the app, the receiver drops
+only the facts it does not know and keeps the rest of the record. Bump
+`PAYLOAD_VERSION` when a field changes meaning, and list the old version in
+`EARLIER_PAYLOAD_VERSIONS` while old copies may still be open.
 
 ## Choosing a receiver
 
@@ -278,12 +306,16 @@ and accepts any data.
 ### The receiver
 
 [`receiver/`](../receiver) holds the Worker, its Wrangler configuration and
-how to deploy it ([`receiver/README.md`](../receiver/README.md)). The Worker
-is about 55 lines. It validates each record with `@cfworker/json-schema`
-against [`analytics-payload.schema.json`](analytics-payload.schema.json),
-never reads the IP address or headers, and adds one to a
-`(day, metric, value)` counter for each fact in the record. It keeps no
-record, so stored facts cannot be joined back into sessions.
+how to deploy it ([`receiver/README.md`](../receiver/README.md)). The Deploy
+workflow deploys it on every push, before the site.
+
+It never reads the IP address or headers. It cuts each record into
+`[metric, value]` facts, such as `steps = panel`, keeps each fact whose
+metric and value are on its allowed list, and adds one to a
+`(day, metric, value)` counter for each. A fact not on the list is dropped on
+its own and only counted, as `receiver.dropped = facts`, so it never costs the
+rest of the record. It keeps no record, so stored facts cannot be joined back
+into sessions.
 
 To read the counts, from `receiver/`:
 
@@ -292,5 +324,8 @@ pnpm exec wrangler d1 execute pmo-builder-usage --remote --command \
   "SELECT metric, value, SUM(n) AS n FROM counts WHERE day >= '2026-11-01' GROUP BY metric, value ORDER BY metric, n DESC"
 ```
 
-Useful metrics: `kind` (visits and sessions), `steps`, `tables.<table>.import.route`,
-`sections.<section>`, `build.validation`, `issues`.
+Useful metrics: `kind` (visits and sessions), `steps`, `pages`,
+`tables.<table>.import.route`, `sections.<section>`, `build.validation`,
+`publish.deposits.*`, `publish.outcomes.*`, `publish.fileChecks.*`, `issues`.
+A rising `receiver.dropped` means the app sends values the receiver does not
+know, which should not happen while the two are deployed together.

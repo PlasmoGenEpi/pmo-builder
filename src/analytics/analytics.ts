@@ -23,10 +23,14 @@ import { transmit } from "./transport";
 import type { BeaconSender, FetchSender } from "./transport";
 import { toAppVersion } from "./version";
 import type {
+  AnalyticsPage,
   AnalyticsSection,
   AnalyticsSectionStatus,
   AnalyticsStep,
   AnalyticsTable,
+  DepositOutcome,
+  FileCheckResult,
+  PublishSource,
 } from "./vocabulary";
 
 /** Everything the instrumentation reads from the outside world. */
@@ -80,6 +84,11 @@ export interface Analytics {
   /** Sends the visit record and starts listening for the page being hidden. Runs once. */
   readonly start: () => void;
   readonly recordStepOpened: (step: AnalyticsStep) => void;
+  readonly recordPageOpened: (page: AnalyticsPage) => void;
+  readonly recordPublishOpened: (source: PublishSource) => void;
+  readonly recordDepositStarted: (source: PublishSource) => void;
+  readonly recordDepositFinished: (outcome: DepositOutcome) => void;
+  readonly recordFileChecked: (result: FileCheckResult) => void;
   readonly recordTableImported: (input: TableImport) => void;
   readonly recordMappingEdited: (table: AnalyticsTable) => void;
   readonly recordSectionStatus: (section: AnalyticsSection, status: AnalyticsSectionStatus) => void;
@@ -193,6 +202,11 @@ export function createAnalytics(env: AnalyticsEnvironment): Analytics {
       emit({ v: PAYLOAD_VERSION, kind: "visit", app });
     }),
     recordStepOpened: safely(update((step: unknown) => session.stepOpened(step))),
+    recordPageOpened: safely(update((page: unknown) => session.pageOpened(page))),
+    recordPublishOpened: safely(update((source: unknown) => session.publishOpened(source))),
+    recordDepositStarted: safely(update((source: unknown) => session.depositStarted(source))),
+    recordDepositFinished: safely(update((outcome: unknown) => session.depositFinished(outcome))),
+    recordFileChecked: safely(update((result: unknown) => session.fileChecked(result))),
     recordTableImported: safely(update((input: unknown) => session.tableImported(input))),
     recordMappingEdited: safely(update((table: unknown) => session.mappingEdited(table))),
     recordSectionStatus: safely(
