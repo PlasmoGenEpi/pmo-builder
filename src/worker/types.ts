@@ -7,6 +7,7 @@
 import type {
   DistinctValues,
   MergeSummary,
+  PublicationSummary,
   PmoFile,
   SectionSummaries,
   Suggestions,
@@ -93,6 +94,8 @@ export interface OverallView {
   readonly status: SectionStatus;
   readonly notices: readonly Notice[];
   readonly summary: MergeSummary | null;
+  /** Set whenever `summary` is. */
+  readonly publication: PublicationSummary | null;
   /** `valid` or `invalid` when a PMO can be downloaded; `none` otherwise. */
   readonly pmo: PmoAvailability;
   /** How many problems the schema validation found. `0` when valid or when no PMO was built. */

@@ -29,6 +29,15 @@ describe("content security policy", () => {
     expect(policy).toContain("script-src 'self';");
   });
 
+  it("adds zenodo.org to connect-src only when the build can deposit there", () => {
+    const off = buildContentSecurityPolicy({ analyticsUrl: undefined, dev: false });
+    expect(off).not.toContain("zenodo");
+    const on = buildContentSecurityPolicy({ analyticsUrl: undefined, zenodo: true, dev: false });
+    expect(on).toContain("connect-src 'self' https://zenodo.org;");
+    expect(on.match(/zenodo\.org/g)).toHaveLength(1);
+    expect(on.replace(" https://zenodo.org", "")).toBe(off);
+  });
+
   it("treats an empty value as not configured", () => {
     expect(buildContentSecurityPolicy({ analyticsUrl: "  ", dev: false })).toContain(
       "connect-src 'self';",

@@ -26,6 +26,35 @@ The draft, including the imported files, is saved in the browser and comes
 back on the next visit. "Try with example data" on the home page loads the
 MAD4HATTER example.
 
+## Publishing to Zenodo
+
+When a PMO is valid, the review step can show a "Publish to Zenodo" panel for
+one Zenodo community. It lists the personal details the PMO holds
+(coordinates, exact dates, age and so on) and suggests a title, description
+and keywords written from the PMO.
+
+| Build variable               | Effect                                                                  |
+| ---------------------------- | ----------------------------------------------------------------------- |
+| `VITE_ZENODO_COMMUNITY`      | The community's identifier. Unset hides the panel                       |
+| `VITE_ZENODO_COMMUNITY_NAME` | What to call the community on screen. Default: the identifier           |
+| `VITE_ZENODO_CLIENT_ID`      | The Client ID of an application registered with Zenodo. Enables deposit |
+
+Without a Client ID the panel guides the user through uploading by hand, and
+the app sends nothing. With one, a deposit button signs the user in to Zenodo
+in a new window, then creates a draft there with the file, the details and a
+review request to the community. The user submits the draft on Zenodo. The
+build then allows `https://zenodo.org` in the Content Security Policy.
+
+To register the application, sign in to Zenodo and open Applications, then
+Developer Applications. Set the client type to Public and the redirect URI to
+`zenodo-callback.html` beside the app, such as
+`https://v2.pmotools.app/zenodo-callback.html`.
+
+The deployed app uses the
+[`plasmogenepi`](https://zenodo.org/communities/plasmogenepi/) community,
+where the keyword "Portable Microhaplotype Object" places a record with the
+other PMO files.
+
 ## Large files
 
 Files are read in the browser, so the limit is the memory of a browser tab.
@@ -104,7 +133,10 @@ to GitHub Actions. The build uses relative paths, so it works from any
 subpath.
 
 Usage counts stay off unless the repository variable `VITE_ANALYTICS_URL` is
-set. Read [docs/analytics.md](docs/analytics.md) before setting it.
+set. Read [docs/analytics.md](docs/analytics.md) before setting it. The
+"Publish to Zenodo" panel stays hidden unless the repository variable
+`VITE_ZENODO_COMMUNITY` is set, and offers a deposit only when
+`VITE_ZENODO_CLIENT_ID` is set too.
 
 Any other static host works too: run `pnpm build` and upload `dist/`.
 

@@ -103,8 +103,10 @@ lab user would not use, and no internal names (say "sample table", not
 "library_sample_info", unless you are naming a PMO field). Error messages name
 the column or row at fault.
 
-**Privacy.** The app makes no network request that carries user data. No
-third-party scripts, fonts or images. Analytics events go through
+**Privacy.** The app makes no network request that carries user data, with
+one exception: a deposit on Zenodo that the user asks for, sent only by
+`src/features/review/zenodoDeposit.ts`. No third-party scripts, fonts or
+images. Analytics events go through
 `src/analytics` only, and their payloads are typed so they cannot hold file
 names, column names or cell values.
 

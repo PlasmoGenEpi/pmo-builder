@@ -9,6 +9,7 @@ export * from "./merge";
 export * from "./microhaplotypes";
 export * from "./notices";
 export * from "./panel";
+export * from "./publication";
 export * from "./readCounts";
 export * from "./records";
 export * from "./results";

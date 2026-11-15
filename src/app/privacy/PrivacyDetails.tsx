@@ -7,19 +7,27 @@ import {
   type AnalyticsStatus,
   type TransparencyEntry,
 } from "@/analytics";
+import { zenodoConfig } from "@/features/review/zenodo";
 import { CodeBlock, Disclosure, Switch } from "@/ui";
 
 /**
  * The body of the "Your data stays on this device" dialog. The wording
  * follows `docs/privacy.md`. The dialog already has the title.
  */
-export function PrivacyDetails() {
+export function PrivacyDetails({
+  canDeposit = (zenodoConfig()?.clientId ?? null) !== null,
+}: {
+  /** Whether this copy can deposit a PMO on Zenodo when the user asks. */
+  readonly canDeposit?: boolean;
+} = {}) {
   return (
     <div className="flex flex-col gap-6">
       <p className="text-md text-text">
         PMO Builder runs entirely in your browser. Your files, tables, sample names, sequences and
-        metadata stay on this device. They are never uploaded, and the app has no server to upload
-        them to.
+        metadata stay on this device.{" "}
+        {canDeposit
+          ? "They leave it only if you choose to deposit a PMO on Zenodo. The app has no server of its own to upload them to."
+          : "They are never uploaded, and the app has no server to upload them to."}
       </p>
 
       <Section title="What stays on this device">
@@ -48,6 +56,17 @@ export function PrivacyDetails() {
           including saved panels, clear this site&apos;s data in your browser&apos;s settings.
         </p>
       </Section>
+
+      {canDeposit ? (
+        <Section title="Depositing on Zenodo">
+          <p>
+            If you choose to deposit on the review step, you sign in to Zenodo in its own window,
+            and your PMO file and the record details go from this browser straight to Zenodo.
+            Nothing goes to Zenodo before you choose that, and nothing passes through a server of
+            ours. The sign-in is forgotten when you close or reload the page.
+          </p>
+        </Section>
+      ) : null}
 
       <UsageCounts />
     </div>

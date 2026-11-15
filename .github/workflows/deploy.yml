@@ -38,6 +38,11 @@ jobs:
           # (Settings > Secrets and variables > Actions > Variables).
           # See docs/analytics.md before setting it.
           VITE_ANALYTICS_URL: ${{ vars.VITE_ANALYTICS_URL }}
+          # The "Publish to Zenodo" panel. No community hides it. No client ID
+          # leaves it as a guide to uploading by hand. See the README.
+          VITE_ZENODO_COMMUNITY: ${{ vars.VITE_ZENODO_COMMUNITY }}
+          VITE_ZENODO_COMMUNITY_NAME: ${{ vars.VITE_ZENODO_COMMUNITY_NAME }}
+          VITE_ZENODO_CLIENT_ID: ${{ vars.VITE_ZENODO_CLIENT_ID }}
 
       - uses: actions/configure-pages@v6
 

@@ -1,14 +1,14 @@
 import { CircleCheck, CircleDashed, Download, TriangleExclamationPoint } from "lucide-react";
 import { StepLink } from "@/app/StepLink";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { getStep } from "@/app/steps";
 import { unreachable } from "@/domain/draft";
-import { useActions, useBuildState } from "@/state";
-import { Button, Callout, Card, cn, formatBytes, useToast } from "@/ui";
+import { useBuildState } from "@/state";
+import { Button, Callout, Card, cn, formatBytes } from "@/ui";
 
 import { count, type Blocker, type BlockerProblem, type Verdict } from "./reviewModel";
-import { saveFile } from "./saveFile";
+import { usePmoDownload } from "./usePmoDownload";
 import { usePmoFiles, type PmoFileInfo } from "./usePmoFiles";
 
 const PROBLEM_TEXT: Readonly<Record<BlockerProblem, string>> = {
@@ -45,36 +45,8 @@ function sizeText(info: PmoFileInfo | null): string {
 
 /** The download buttons, each with the file name and size it gives. */
 function DownloadActions() {
-  const actions = useActions();
-  const { toast } = useToast();
   const files = usePmoFiles();
-  const [busy, setBusy] = useState<"gzip" | "json" | null>(null);
-
-  async function download(gzip: boolean) {
-    setBusy(gzip ? "gzip" : "json");
-    try {
-      const file = await actions.downloadPmo({ gzip });
-      if (file === null) {
-        toast({
-          title: "There is no PMO to download",
-          description: "Something changed. Check the steps listed above.",
-          tone: "warning",
-        });
-        return;
-      }
-      saveFile(file.blob, file.fileName);
-      toast({ title: `Saved ${file.fileName}`, tone: "success" });
-    } catch (error) {
-      console.error(error);
-      toast({
-        title: "The PMO could not be saved",
-        description: "Try again. If it keeps failing, reload the page.",
-        tone: "error",
-      });
-    } finally {
-      setBusy(null);
-    }
-  }
+  const { busy, download } = usePmoDownload();
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:gap-6">
@@ -205,9 +177,16 @@ function wording(verdict: Verdict): Wording {
 
 /**
  * The answer to "can I download a PMO": the verdict, what stops it, and the
- * download buttons whenever a PMO was built.
+ * download buttons whenever a PMO was built, with `children` under them.
  */
-export function VerdictCard({ verdict }: { readonly verdict: Verdict }) {
+export function VerdictCard({
+  verdict,
+  children,
+}: {
+  readonly verdict: Verdict;
+  /** What else can be done with the PMO, shown under the download buttons. */
+  readonly children?: ReactNode;
+}) {
   const build = useBuildState();
   const updating = build.phase === "pending";
   const { icon: Icon, iconClass, title, body } = wording(verdict);
@@ -246,6 +225,7 @@ export function VerdictCard({ verdict }: { readonly verdict: Verdict }) {
         >
           {body}
           {canDownload ? <DownloadActions /> : null}
+          {canDownload ? children : null}
           {build.phase === "failed" ? (
             <Callout tone="error" title="The PMO could not be worked out">
               {build.message} Reload the page to try again.

@@ -14,12 +14,17 @@ const src = fileURLToPath(new URL("./src", import.meta.url));
 
 export default defineConfig(({ mode }) => {
   // Reads .env files and VITE_* variables from the shell, as the app does.
-  const analyticsUrl = loadEnv(mode, root, "VITE_")["VITE_ANALYTICS_URL"] || undefined;
+  const env = loadEnv(mode, root, "VITE_");
+  const analyticsUrl = env["VITE_ANALYTICS_URL"] || undefined;
+  // Direct deposit needs both: where to deposit, and the application to sign in with.
+  const zenodo = Boolean(
+    env["VITE_ZENODO_COMMUNITY"]?.trim() && env["VITE_ZENODO_CLIENT_ID"]?.trim(),
+  );
 
   return {
     // Relative asset paths, so the build works from any subpath (GitHub Pages).
     base: "./",
-    plugins: [react(), tailwindcss(), contentSecurityPolicy({ analyticsUrl })],
+    plugins: [react(), tailwindcss(), contentSecurityPolicy({ analyticsUrl, zenodo })],
     resolve: {
       alias: { "@": src },
     },

@@ -466,6 +466,7 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
             status: merge.status,
             notices: merge.notices,
             summary: merge.outcome.kind === "built" ? merge.outcome.summary : null,
+            publication: merge.outcome.kind === "built" ? merge.outcome.publication : null,
             pmo:
               merge.outcome.kind === "built" ? (merge.outcome.valid ? "valid" : "invalid") : "none",
             schemaErrors: merge.outcome.kind === "built" ? merge.outcome.schemaErrors : 0,

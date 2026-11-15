@@ -2,7 +2,8 @@
 
 PMO Builder runs entirely in your browser. Your files, tables, sample names,
 sequences and metadata stay on this device. They are never uploaded, and the
-app has no server to upload them to.
+app has no server to upload them to. The one exception is a deposit on Zenodo
+that you ask for yourself, described below.
 
 ## What stays on this device
 
@@ -30,6 +31,25 @@ browser's settings.
 
 If you open the app in two tabs, only one of them saves your draft. The other
 says so and offers to take over, so the two never overwrite each other.
+
+## Publishing to Zenodo
+
+A copy of PMO Builder can show a "Publish to Zenodo" panel on the review
+step. A record published on Zenodo is public and cannot be withdrawn, so the
+panel first lists the details about the people sampled that your PMO holds.
+
+The panel works in one of two ways, depending on how the copy was set up.
+
+- **Upload by hand.** The app sends nothing. The panel links to Zenodo's
+  upload page, which opens in a new tab without telling Zenodo where you came
+  from. Your PMO reaches Zenodo only when you upload the file there yourself.
+- **Deposit.** When you choose the deposit button, you sign in to Zenodo in
+  its own window. Your PMO file and the record's title, description and
+  keywords then go from your browser straight to Zenodo, which makes a draft.
+  Nothing is published until you submit that draft on Zenodo. Nothing goes to
+  Zenodo before you choose the button, and nothing passes through a server
+  of this project. The sign-in allows making and changing drafts, not
+  publishing them, and the app forgets it when you close or reload the page.
 
 ## Usage counts
 

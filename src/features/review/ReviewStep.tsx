@@ -7,11 +7,13 @@ import { Badge } from "@/ui";
 
 import { PmoContents } from "./PmoContents";
 import { PmoPreview } from "./PmoPreview";
+import { PublishToZenodo } from "./PublishToZenodo";
 import { getVerdict, reviewNotices, type Verdict } from "./reviewModel";
 import { SectionChecklist } from "./SectionChecklist";
 import { ThingsToCheck } from "./ThingsToCheck";
 import { VerdictCard } from "./VerdictCard";
 import { WhatNext } from "./WhatNext";
+import { zenodoConfig, type ZenodoConfig } from "./zenodo";
 
 function VerdictBadge({ verdict }: { readonly verdict: Verdict }) {
   switch (verdict.kind) {
@@ -37,11 +39,16 @@ function VerdictBadge({ verdict }: { readonly verdict: Verdict }) {
 }
 
 /**
- * The review step: whether a PMO can be downloaded and the download, where
- * each step stands, what the PMO holds, what to check, a preview, and what
- * to do next. While a rebuild runs the last result stays on screen.
+ * The review step: whether a PMO can be downloaded, the download and how to
+ * publish a valid PMO, where each step stands, what the PMO holds, what to
+ * check, a preview, and what to do next. While a rebuild runs the last result stays on screen.
  */
-export function ReviewStep() {
+export function ReviewStep({
+  zenodo = zenodoConfig(),
+}: {
+  /** Where to publish, or `null` to leave the publish panel out. */
+  readonly zenodo?: ZenodoConfig | null;
+} = {}) {
   const build = useBuildState();
   const view = build.view;
   const verdict = getVerdict(view);
@@ -50,7 +57,18 @@ export function ReviewStep() {
   return (
     <StepPage stepId="review" status={<VerdictBadge verdict={verdict} />}>
       <div className="flex flex-col gap-8">
-        <VerdictCard verdict={verdict} />
+        <VerdictCard verdict={verdict}>
+          {zenodo !== null &&
+          view?.overall.pmo === "valid" &&
+          view.overall.summary !== null &&
+          view.overall.publication !== null ? (
+            <PublishToZenodo
+              zenodo={zenodo}
+              summary={view.overall.summary}
+              publication={view.overall.publication}
+            />
+          ) : null}
+        </VerdictCard>
         <SectionChecklist view={view} />
         {view === null ? null : (
           <>

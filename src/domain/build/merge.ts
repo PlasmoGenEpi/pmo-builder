@@ -37,6 +37,7 @@ import { buildMicrohaplotypes } from "./microhaplotypes";
 import { countText, listItems, makeNotice, quoteItems, withLibraryDetail } from "./notices";
 import { buildPanel } from "./panel";
 import { buildProject, buildSequencing } from "./records";
+import { summarisePublication, type PublicationSummary } from "./publication";
 import { buildReadCounts } from "./readCounts";
 import type { SectionResult, SectionResults } from "./results";
 import { buildLibrarySamples, buildSpecimens } from "./samples";
@@ -74,6 +75,8 @@ export type PmoOutcome =
        */
       readonly schemaErrors: number;
       readonly summary: MergeSummary;
+      /** What a repository record would say about the PMO, and the personal details it holds. */
+      readonly publication: PublicationSummary;
     };
 
 /** The result of building a whole draft. */
@@ -388,6 +391,7 @@ export function mergeSections(results: SectionResults, options: MergeOptions = {
       valid,
       schemaErrors: schemaProblems,
       summary: summarisePmo(pmo),
+      publication: summarisePublication(pmo),
     },
   };
 }
