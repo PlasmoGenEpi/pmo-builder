@@ -50,6 +50,11 @@ Developer Applications. Set the client type to Public and the redirect URI to
 `zenodo-callback.html` beside the app, such as
 `https://v2.pmotools.app/zenodo-callback.html`.
 
+The panel does not offer to publish the app's own example data. The example
+tables use made-up sample names that start with `example_sample_`, and a PMO
+holding any such sample cannot be published
+(`src/domain/build/exampleData.ts`).
+
 The deployed app uses the
 [`plasmogenepi`](https://zenodo.org/communities/plasmogenepi/) community,
 where the keyword "Portable Microhaplotype Object" places a record with the

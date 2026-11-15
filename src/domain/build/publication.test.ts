@@ -5,6 +5,7 @@ import { summarisePublication, type PublicationSource } from "./publication";
 function pmo(specimens: PublicationSource["specimen_info"]): PublicationSource {
   return {
     specimen_info: specimens,
+    library_sample_info: [],
     panel_info: [{ panel_name: "Mad4hatter", reactions: [] }],
     project_info: [
       {
@@ -14,6 +15,18 @@ function pmo(specimens: PublicationSource["specimen_info"]): PublicationSource {
       },
     ],
   };
+}
+
+function samples(names: readonly string[]): PublicationSource["library_sample_info"] {
+  return names.map((name, index) => ({
+    library_sample_name: name,
+    panel_id: 0,
+    specimen_id: index,
+  }));
+}
+
+function isExample(names: readonly string[]): boolean {
+  return summarisePublication({ ...pmo([]), library_sample_info: samples(names) }).exampleData;
 }
 
 describe("summarisePublication", () => {
@@ -81,11 +94,19 @@ describe("summarisePublication", () => {
   it("reports nothing personal and no years for bare specimens", () => {
     const summary = summarisePublication({
       specimen_info: [{ specimen_name: "s1" }],
+      library_sample_info: [],
       panel_info: [],
     });
     expect(summary.personalFields).toEqual([]);
     expect(summary.countries).toEqual([]);
     expect(summary.collectionYears).toBeNull();
     expect(summary.projects).toEqual([]);
+  });
+
+  it("marks the PMO as the example when its library samples are the example's", () => {
+    expect(isExample(["example_sample_01", "example_sample_02"])).toBe(true);
+    expect(isExample(["SRR26819135", "SRR26819139"])).toBe(false);
+    expect(isExample(["sample-1", "sample-2"])).toBe(false);
+    expect(isExample([])).toBe(false);
   });
 });

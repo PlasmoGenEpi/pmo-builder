@@ -287,7 +287,7 @@ describe("linking projects and sequencing runs", () => {
         code: "merge/incomplete-name-fields",
         sections: ["librarySamples", "sequencing"],
         message:
-          'Sequencing runs are entered, but 2 library samples have no sequencing run name ("SRR26819135" and "SRR26819139"). Fill in the sequencing run name column of the library sample table in every row.',
+          'Sequencing runs are entered, but 2 library samples have no sequencing run name ("example_sample_01" and "example_sample_02"). Fill in the sequencing run name column of the library sample table in every row.',
       }),
     ]);
   });

@@ -291,7 +291,11 @@ interface DepositControl {
  * suggested details and the request to the community. The state is kept by
  * the caller, so it outlives the dialog the deposit is started from.
  */
-function useDeposit(zenodo: ZenodoConfig, record: SuggestedRecord): DepositControl {
+function useDeposit(
+  zenodo: ZenodoConfig,
+  record: SuggestedRecord,
+  blocked: boolean,
+): DepositControl {
   const actions = useActions();
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   /** Kept in memory only, so a second deposit does not ask to sign in again. */
@@ -301,7 +305,8 @@ function useDeposit(zenodo: ZenodoConfig, record: SuggestedRecord): DepositContr
 
   async function start(): Promise<void> {
     const clientId = zenodo.clientId;
-    if (clientId === null) return;
+    // The example data is never sent, whatever the screen offers.
+    if (clientId === null || blocked) return;
     let access = token.current;
     if (access === null) {
       const controller = new AbortController();
@@ -528,9 +533,30 @@ function PublishBody({
  */
 export function PublishToZenodo({ zenodo, summary, publication }: PublishToZenodoProps) {
   const record = useMemo(() => suggestRecord(summary, publication), [summary, publication]);
-  const deposit = useDeposit(zenodo, record);
+  const deposit = useDeposit(zenodo, record, publication.exampleData);
   const [open, setOpen] = useState(false);
   const direct = zenodo.clientId !== null;
+
+  if (publication.exampleData) {
+    return (
+      <section
+        aria-labelledby="review-publish-heading"
+        className="flex flex-col gap-3 border-t border-border pt-5"
+      >
+        <h3 id="review-publish-heading" className="text-md font-semibold text-text">
+          Publish to Zenodo
+        </h3>
+        <p className="max-w-prose text-base text-text-muted">
+          This PMO is built from the example data, so it cannot be published. With your own tables,
+          you can add your PMO to the{" "}
+          <Link href={communityUrl(zenodo.community)} external>
+            {zenodo.communityName} community
+          </Link>{" "}
+          on Zenodo from here and get a DOI that others can cite.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section

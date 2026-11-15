@@ -102,13 +102,13 @@ describe("engine", () => {
       columns: ["sample", "target", "stage", "reads"],
       rows: [
         {
-          sample: "SRR26819135",
+          sample: "example_sample_01",
           target: "Pf3D7_01_v3-145388-145662-1A",
           stage: "dada2",
           reads: "7",
         },
         {
-          sample: "SRR26819139",
+          sample: "example_sample_02",
           target: "Pf3D7_01_v3-145388-145662-1A",
           stage: "demux",
           reads: "6",
@@ -122,7 +122,7 @@ describe("engine", () => {
       truncated: false,
     });
     expect(await engine.distinctValues({ tableId: table.id, column: "sample", limit: 2 })).toEqual({
-      values: ["SRR26819135", "SRR26819139"],
+      values: ["example_sample_01", "example_sample_02"],
       truncated: true,
     });
     await engine.dropTable(table.id);
@@ -413,7 +413,7 @@ describe("worker protocol", () => {
       tableId: draft.readCounts.totals?.table.id ?? "",
       limit: 1,
     });
-    expect(preview).toMatchObject({ kind: "ready", rows: [{ sample: "SRR26819135" }] });
+    expect(preview).toMatchObject({ kind: "ready", rows: [{ sample: "example_sample_01" }] });
     stop();
   });
 

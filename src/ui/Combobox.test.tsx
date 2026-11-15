@@ -10,7 +10,7 @@ import { installDomPolyfills } from "./testPolyfills";
 beforeAll(installDomPolyfills);
 
 const OPTIONS: ComboboxOption[] = [
-  { value: "SampleID", label: "SampleID", description: "SRR26819553" },
+  { value: "SampleID", label: "SampleID", description: "example_sample_47" },
   { value: "Locus", label: "Locus", description: "Pf3D7_01_v3-145388" },
   { value: "ASV", label: "ASV", description: "GATATGTTTAAATAT" },
   { value: "Reads", label: "Reads", description: "13" },
@@ -65,7 +65,7 @@ describe("Combobox", () => {
     const options = within(listbox).getAllByRole("option");
     expect(options.map((option) => option.textContent)).toEqual([
       "(current choice)None",
-      "SampleIDSRR26819553",
+      "SampleIDexample_sample_47",
       "LocusPf3D7_01_v3-145388",
       "ASVGATATGTTTAAATAT",
       "Reads13",

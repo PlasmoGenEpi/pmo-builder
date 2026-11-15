@@ -5,6 +5,8 @@
  */
 import type { PortableMicrohaplotypeObject } from "pmotools-ts";
 
+import { isExampleData } from "./exampleData";
+
 /**
  * Specimen fields that can help identify a person, alone or together.
  * `collection_date` counts only when it names a day.
@@ -56,12 +58,14 @@ export interface PublicationSummary {
   readonly countries: readonly string[];
   /** `null` when no specimen has a collection date with a year. */
   readonly collectionYears: YearRange | null;
+  /** True when the PMO is the app's own example data, which must not be published. */
+  readonly exampleData: boolean;
 }
 
 /** The parts of a PMO the publication facts are read from. */
 export type PublicationSource = Pick<
   PortableMicrohaplotypeObject,
-  "specimen_info" | "project_info" | "panel_info"
+  "specimen_info" | "library_sample_info" | "project_info" | "panel_info"
 >;
 
 type Specimen = PublicationSource["specimen_info"][number];
@@ -134,5 +138,6 @@ export function summarisePublication(pmo: PublicationSource): PublicationSummary
     panels: pmo.panel_info.map((panel) => panel.panel_name),
     countries: [...countries].toSorted((a, b) => a.localeCompare(b)),
     collectionYears: collectionYears(specimens),
+    exampleData: isExampleData(pmo.library_sample_info.map((sample) => sample.library_sample_name)),
   };
 }

@@ -1,4 +1,4 @@
 sample	raw_count
-SRR26819135	10
-SRR26819139	7
-SRR26819141	25
+example_sample_01	10
+example_sample_02	7
+example_sample_03	25

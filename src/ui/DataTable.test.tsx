@@ -5,8 +5,8 @@ import { DataTable } from "./DataTable";
 
 const COLUMNS = ["SampleID", "Locus", "Reads", "Notes"];
 const ROWS = [
-  { SampleID: "SRR26819553", Locus: "Pf3D7_01_v3-145388-145662-1A", Reads: 13, Notes: null },
-  { SampleID: "SRR26819207", Locus: "Pf3D7_01_v3-145388-145662-1A", Reads: 4, Notes: "  " },
+  { SampleID: "example_sample_47", Locus: "Pf3D7_01_v3-145388-145662-1A", Reads: 13, Notes: null },
+  { SampleID: "example_sample_08", Locus: "Pf3D7_01_v3-145388-145662-1A", Reads: 4, Notes: "  " },
 ];
 
 describe("DataTable", () => {

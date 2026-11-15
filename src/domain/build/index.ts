@@ -4,6 +4,7 @@
  */
 export * from "./bioinformatics";
 export * from "./context";
+export * from "./exampleData";
 export * from "./export";
 export * from "./merge";
 export * from "./microhaplotypes";

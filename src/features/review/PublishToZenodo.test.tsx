@@ -69,6 +69,7 @@ const PUBLICATION: PublicationSummary = {
   panels: ["Mad4hatter"],
   countries: ["Mozambique"],
   collectionYears: { first: 2021, last: 2021 },
+  exampleData: false,
 };
 
 /** The invitation under the download buttons. */
@@ -88,12 +89,23 @@ async function openDialog(user: UserEvent, zenodo: ZenodoConfig): Promise<HTMLEl
   return screen.findByRole("dialog", { name: "Publish to Zenodo" });
 }
 
-/** Renders the review step with the example loaded. */
-async function renderReview(zenodo: ZenodoConfig | null) {
+/** Marks the loaded tables as a user's own, so the PMO can be published. */
+function treatAsOwnData(store: AppStore): void {
+  const publication = store.getState().build.view?.overall.publication;
+  if (publication === null || publication === undefined) throw new Error("no PMO");
+  setOverall(store, { publication: { ...publication, exampleData: false } });
+}
+
+/**
+ * Renders the review step with the example tables loaded, standing in for a
+ * user's own data unless `example` is set.
+ */
+async function renderReview(zenodo: ZenodoConfig | null, options: { example?: boolean } = {}) {
   const stubs = storeWithStubs();
   const user = userEvent.setup();
   await renderWithStore(<ReviewStep zenodo={zenodo} />, { store: stubs.store });
   await loadExample(stubs.store);
+  if (options.example !== true) treatAsOwnData(stubs.store);
   return { ...stubs, user };
 }
 
@@ -118,12 +130,36 @@ describe("Publish to Zenodo", () => {
     expect(queryInvitation()).not.toBeInTheDocument();
     await loadExample(stubs.store);
     expect(stubs.store.getState().build.view?.overall.publication?.panels).toEqual(["Mad4hatter"]);
+    treatAsOwnData(stubs.store);
     const verdict = screen.getByRole("region", { name: /^ready/i });
     expect(within(verdict).getByRole("button", { name: "Download PMO" })).toBeInTheDocument();
     expect(within(verdict).getByRole("region", { name: "Publish to Zenodo" })).toBeInTheDocument();
     expect(
       within(invitation()).getByRole("link", { name: /PlasmoGenEpi community/ }),
     ).toHaveAttribute("href", "https://zenodo.org/communities/plasmogenepi/");
+  });
+
+  it("does not offer to publish the example data", async () => {
+    const { store } = await renderReview(DIRECT, { example: true });
+    expect(store.getState().build.view?.overall.publication?.exampleData).toBe(true);
+    expect(
+      within(invitation()).getByText(/built from the example data, so it cannot be published/),
+    ).toBeInTheDocument();
+    expect(within(invitation()).queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(signIn).not.toHaveBeenCalled();
+    expect(depositDraft).not.toHaveBeenCalled();
+
+    // The same tables, once they count as the user's own, can be published.
+    treatAsOwnData(store);
+    expect(
+      within(invitation()).getByRole("button", { name: "Deposit in the PlasmoGenEpi community" }),
+    ).toBeEnabled();
+  });
+
+  it("does not offer the steps for uploading the example data by hand either", async () => {
+    await renderReview(MANUAL, { example: true });
+    expect(within(invitation()).queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("is left out when the PMO does not match the format", async () => {

@@ -26,6 +26,7 @@ const PUBLICATION: PublicationSummary = {
   panels: ["Mad4hatter"],
   countries: ["Angola", "Mozambique"],
   collectionYears: { first: 2021, last: 2022 },
+  exampleData: false,
 };
 
 describe("zenodoCommunity", () => {
