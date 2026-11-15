@@ -45,6 +45,43 @@ export type DepositResult =
       readonly draftUrl: string | null;
     };
 
+/** One file upload. */
+export interface UploadRequest {
+  readonly url: string;
+  readonly token: string;
+  readonly file: Blob;
+  /** Called as bytes go out, with the bytes sent so far and the total. */
+  readonly onProgress?: ((sent: number, total: number) => void) | undefined;
+}
+
+/**
+ * Sends a file's bytes and resolves with the HTTP status. Rejects when
+ * Zenodo cannot be reached.
+ */
+export type UploadFile = (request: UploadRequest) => Promise<number>;
+
+/**
+ * Uploads with `XMLHttpRequest`, because `fetch` cannot report how much of a
+ * request body has gone out. Sends no cookies. The page's own referrer
+ * policy (`no-referrer`) keeps this site's address out of the request.
+ */
+export const uploadWithProgress: UploadFile = (request) =>
+  new Promise<number>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", request.url);
+    xhr.setRequestHeader("Authorization", `Bearer ${request.token}`);
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.setRequestHeader("Accept", RECORD_JSON);
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) request.onProgress?.(event.loaded, event.total);
+    });
+    xhr.addEventListener("load", () => resolve(xhr.status));
+    for (const type of ["error", "abort", "timeout"] as const) {
+      xhr.addEventListener(type, () => reject(new Error(`upload ${type}`)));
+    }
+    xhr.send(request.file);
+  });
+
 /** What a deposit needs. */
 export interface DepositInput {
   /** The access token from the sign-in. */
@@ -58,8 +95,16 @@ export interface DepositInput {
   readonly date: string;
   /** Called as each step starts. */
   readonly onStep?: (step: DepositStep) => void;
+  /** Called during the `file` step, with the bytes sent so far and the total. */
+  readonly onProgress?: (sent: number, total: number) => void;
   /** For tests. Default: the browser's `fetch`. */
   readonly fetch?: typeof fetch;
+  /**
+   * How the file's bytes are sent. Default: {@link uploadWithProgress} in a
+   * browser. When `fetch` is given and this is not, the bytes go through
+   * that `fetch`, without progress.
+   */
+  readonly upload?: UploadFile;
 }
 
 class DepositError extends Error {
@@ -181,7 +226,28 @@ export async function depositDraft(input: DepositInput): Promise<DepositResult> 
     begin("file");
     const file = `${record}/files/${encodeURIComponent(input.fileName)}`;
     await call(`${record}/files`, { method: "POST", json: [{ key: input.fileName }] });
-    await call(`${file}/content`, { method: "PUT", body: input.file });
+    const upload =
+      input.upload ??
+      (input.fetch === undefined && typeof XMLHttpRequest !== "undefined"
+        ? uploadWithProgress
+        : null);
+    if (upload === null) {
+      await call(`${file}/content`, { method: "PUT", body: input.file });
+    } else {
+      let status: number;
+      try {
+        status = await upload({
+          url: `${ZENODO}${file}/content`,
+          token: input.token,
+          file: input.file,
+          onProgress: input.onProgress,
+        });
+      } catch {
+        throw new DepositError("offline");
+      }
+      if (status === 0) throw new DepositError("offline");
+      if (status < 200 || status >= 300) throw new DepositError(failureFor(status));
+    }
     await call(`${file}/commit`, { method: "POST" });
 
     begin("review");

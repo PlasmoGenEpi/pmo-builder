@@ -5,7 +5,16 @@ import { StepLink } from "@/app/StepLink";
 import type { MergeSummary, PublicationSummary } from "@/domain/build";
 import { unreachable } from "@/domain/draft";
 import { useActions } from "@/state";
-import { Button, ButtonLink, Callout, Dialog, Disclosure, Link } from "@/ui";
+import {
+  Button,
+  ButtonLink,
+  Callout,
+  Dialog,
+  Disclosure,
+  formatBytes,
+  Link,
+  ProgressBar,
+} from "@/ui";
 
 import { count } from "./reviewModel";
 import { usePmoDownload } from "./usePmoDownload";
@@ -201,7 +210,15 @@ function ManualSteps({ community }: { readonly community: string }) {
 type Phase =
   | { readonly kind: "idle" }
   | { readonly kind: "signing-in" }
-  | { readonly kind: "depositing"; readonly step: DepositStep }
+  /** The PMO file is being made in the browser. */
+  | { readonly kind: "preparing" }
+  | {
+      readonly kind: "depositing";
+      readonly step: DepositStep;
+      /** Bytes of the file sent so far and in all, once the upload reports them. */
+      readonly sent: number | null;
+      readonly total: number | null;
+    }
   | { readonly kind: "done"; readonly draftUrl: string }
   | { readonly kind: "failed"; readonly message: string; readonly draftUrl: string | null };
 
@@ -258,6 +275,10 @@ function today(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
+function isBusy(phase: Phase): boolean {
+  return phase.kind === "signing-in" || phase.kind === "preparing" || phase.kind === "depositing";
+}
+
 /** A deposit in progress, and how to start or cancel one. */
 interface DepositControl {
   readonly phase: Phase;
@@ -297,7 +318,7 @@ function useDeposit(zenodo: ZenodoConfig, record: SuggestedRecord): DepositContr
       access = signed.token;
       token.current = access;
     }
-    setPhase({ kind: "depositing", step: "community" });
+    setPhase({ kind: "preparing" });
     try {
       const file = await actions.downloadPmo({ gzip: true });
       if (file === null) {
@@ -315,7 +336,8 @@ function useDeposit(zenodo: ZenodoConfig, record: SuggestedRecord): DepositContr
         fileName: file.fileName,
         record,
         date: today(),
-        onStep: (step) => setPhase({ kind: "depositing", step }),
+        onStep: (step) => setPhase({ kind: "depositing", step, sent: null, total: null }),
+        onProgress: (sent, total) => setPhase({ kind: "depositing", step: "file", sent, total }),
       });
       if (result.ok) {
         setPhase({ kind: "done", draftUrl: result.draftUrl });
@@ -353,7 +375,7 @@ function DraftLink({ draftUrl }: { readonly draftUrl: string }) {
 /** The button that starts a deposit, and how the deposit is going. */
 function Deposit({ deposit }: { readonly deposit: DepositControl }) {
   const { phase } = deposit;
-  const busy = phase.kind === "signing-in" || phase.kind === "depositing";
+  const busy = isBusy(phase);
 
   return (
     <div className="flex flex-col gap-4">
@@ -385,8 +407,22 @@ function Deposit({ deposit }: { readonly deposit: DepositControl }) {
             Waiting for you to sign in to Zenodo in the other window.
           </p>
         ) : null}
-        {phase.kind === "depositing" ? (
+        {phase.kind === "preparing" ? (
+          <p className="text-base text-text-muted">Preparing the file</p>
+        ) : null}
+        {phase.kind === "depositing" && phase.step !== "file" ? (
           <p className="text-base text-text-muted">{STEP_TEXT[phase.step]}</p>
+        ) : null}
+        {phase.kind === "depositing" && phase.step === "file" ? (
+          <ProgressBar
+            label={
+              phase.sent === null || phase.total === null
+                ? STEP_TEXT.file
+                : `${STEP_TEXT.file}, ${formatBytes(phase.sent)} of ${formatBytes(phase.total)}`
+            }
+            value={phase.sent}
+            max={phase.total ?? 100}
+          />
         ) : null}
         {phase.kind === "done" ? (
           <Callout
@@ -548,7 +584,7 @@ export function PublishToZenodo({ zenodo, summary, publication }: PublishToZenod
             </Link>
           </span>
         ) : null}
-        {!open && (deposit.phase.kind === "signing-in" || deposit.phase.kind === "depositing") ? (
+        {!open && isBusy(deposit.phase) ? (
           <span className="text-base text-text-muted">A deposit is under way.</span>
         ) : null}
       </div>

@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { SuggestedRecord } from "./zenodo";
-import { depositDraft, draftBody, type DepositInput, type DepositStep } from "./zenodoDeposit";
+import {
+  depositDraft,
+  draftBody,
+  type DepositInput,
+  type DepositStep,
+  type UploadFile,
+  type UploadRequest,
+} from "./zenodoDeposit";
 
 const RECORD: SuggestedRecord = {
   title: "MOZ2021: microhaplotype data in PMO format",
@@ -159,6 +166,56 @@ describe("depositDraft", () => {
     expect(await depositDraft(input(send))).toMatchObject({
       ok: false,
       step: "community",
+      failure: "offline",
+    });
+  });
+
+  it("sends the file through the uploader and passes its progress on", async () => {
+    const { send, calls } = fakeZenodo(HAPPY);
+    const requests: UploadRequest[] = [];
+    const upload = vi.fn<UploadFile>((request) => {
+      requests.push(request);
+      request.onProgress?.(1, 2);
+      request.onProgress?.(2, 2);
+      return Promise.resolve(200);
+    });
+    const progress: [number, number][] = [];
+    const result = await depositDraft(
+      input(send, { upload, onProgress: (sent, total) => progress.push([sent, total]) }),
+    );
+    expect(result).toEqual({ ok: true, draftUrl: "https://zenodo.org/uploads/24237640" });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      url: "https://zenodo.org/api/records/24237640/draft/files/My%20PMO.pmo.json.gz/content",
+      token: "secret-token",
+    });
+    expect(requests[0]?.file).toBeInstanceOf(Blob);
+    expect(progress).toEqual([
+      [1, 2],
+      [2, 2],
+    ]);
+    // The bytes went through the uploader, not through fetch.
+    expect(calls.some((call) => call.path.endsWith("/content"))).toBe(false);
+  });
+
+  it("reports what the uploader ran into", async () => {
+    const { send } = fakeZenodo(HAPPY);
+    expect(await depositDraft(input(send, { upload: () => Promise.resolve(413) }))).toMatchObject({
+      ok: false,
+      step: "file",
+      failure: "too-large",
+    });
+    expect(
+      await depositDraft(input(send, { upload: () => Promise.reject(new Error("upload error")) })),
+    ).toMatchObject({
+      ok: false,
+      step: "file",
+      failure: "offline",
+      draftUrl: "https://zenodo.org/uploads/24237640",
+    });
+    expect(await depositDraft(input(send, { upload: () => Promise.resolve(0) }))).toMatchObject({
+      ok: false,
+      step: "file",
       failure: "offline",
     });
   });

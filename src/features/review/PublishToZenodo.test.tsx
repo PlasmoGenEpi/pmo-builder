@@ -320,6 +320,31 @@ describe("Deposit on Zenodo", () => {
     expect(signIn).toHaveBeenCalledTimes(2);
   });
 
+  it("shows how much of the file has been uploaded", async () => {
+    vi.mocked(signIn).mockResolvedValue({ ok: true, token: "token-1" });
+    let finish: (() => void) | undefined;
+    vi.mocked(depositDraft).mockImplementation(
+      (input) =>
+        new Promise((resolve) => {
+          input.onStep?.("file");
+          input.onProgress?.(12_000_000, 48_000_000);
+          finish = () => resolve({ ok: true, draftUrl: DRAFT_URL });
+        }),
+    );
+    const { user } = await renderReview(DIRECT);
+    const dialog = await openDialog(user, DIRECT);
+    await user.click(depositButton(dialog));
+    const bar = await within(dialog).findByRole("progressbar", {
+      name: "Uploading the file, 12 MB of 48 MB",
+    });
+    expect(bar).toHaveAttribute("aria-valuenow", "12000000");
+    expect(bar).toHaveAttribute("aria-valuemax", "48000000");
+    expect(within(dialog).getByText("25%")).toBeInTheDocument();
+    act(() => finish?.());
+    expect(await within(dialog).findByText("Your draft is ready on Zenodo")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+
   it("keeps the steps for uploading by hand behind a disclosure", async () => {
     const { user } = await renderReview(DIRECT);
     const dialog = await openDialog(user, DIRECT);
