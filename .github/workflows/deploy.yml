@@ -71,7 +71,9 @@ jobs:
             echo "No CLOUDFLARE_API_TOKEN secret, so the receiver is not deployed."
             exit 0
           fi
-          pnpm install --frozen-lockfile --ignore-workspace
+          # receiver/pnpm-workspace.yaml makes this its own project and allows
+          # the build scripts of Wrangler's esbuild and workerd.
+          pnpm install --frozen-lockfile
           pnpm exec wrangler deploy
 
       - name: Read the published PMOs from Zenodo

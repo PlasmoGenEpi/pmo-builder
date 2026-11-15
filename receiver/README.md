@@ -33,7 +33,7 @@ To deploy by hand:
 
 ```bash
 cd receiver
-pnpm install --ignore-workspace
+pnpm install
 export CLOUDFLARE_API_TOKEN=...   # and CLOUDFLARE_ACCOUNT_ID if the token sees several accounts
 pnpm exec wrangler deploy
 ```
