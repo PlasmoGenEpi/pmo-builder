@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { buildExamplePmo as examplePmo } from "@/domain/build/testing";
 
-import { harvest, HarvestError, pmoFileOf } from "./harvest";
+import { harvest, HarvestError, latestVersions, pmoFileOf } from "./harvest";
 
 function record(id: string, files: readonly string[], title = `Dataset ${id}`): unknown {
   return {
@@ -182,5 +182,20 @@ describe("pmoFileOf", () => {
   it("is null without a JSON file", () => {
     expect(pmoFileOf(record("1", ["data.csv"]))).toBeNull();
     expect(pmoFileOf({})).toBeNull();
+  });
+});
+
+function version(id: string, parent: string, index: number) {
+  return { id, parent: { id: parent }, versions: { index } };
+}
+
+describe("latestVersions", () => {
+  it("keeps the newest version of each record, in listing order", () => {
+    const kept = latestVersions([
+      version("11", "10", 1),
+      version("21", "20", 1),
+      version("12", "10", 2),
+    ]);
+    expect(kept).toEqual([version("12", "10", 2), version("21", "20", 1)]);
   });
 });

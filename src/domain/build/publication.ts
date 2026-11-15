@@ -39,6 +39,11 @@ export interface PublicationProject {
   readonly description: string;
   /** The BioProject accession, or `null` when none is given. */
   readonly accession: string | null;
+  /**
+   * The chief scientist and the contributors, as written in the PMO, chief
+   * scientist first. The PMO stores them as free text, often "Given Family".
+   */
+  readonly people: readonly string[];
 }
 
 /** The first and last year specimens were collected. */
@@ -97,6 +102,17 @@ const PERSONAL: Readonly<Record<PersonalField, (specimen: Specimen) => boolean>>
   specimen_comments: (specimen) => hasValue(specimen.specimen_comments),
 };
 
+/** Names of people, once each, from the chief scientist field (which may hold several) and the contributors. */
+function peopleOf(
+  chief: string | null | undefined,
+  contributors: readonly string[] | null | undefined,
+): string[] {
+  const names = [...(typeof chief === "string" ? chief.split(/[;|]/) : []), ...(contributors ?? [])]
+    .map((name) => name.trim().replaceAll(/\s+/g, " "))
+    .filter((name) => name !== "");
+  return [...new Set(names)];
+}
+
 function collectionYears(specimens: readonly Specimen[]): YearRange | null {
   let range: YearRange | null = null;
   for (const specimen of specimens) {
@@ -134,6 +150,7 @@ export function summarisePublication(pmo: PublicationSource): PublicationSummary
       accession: hasValue(project.BioProject_accession)
         ? String(project.BioProject_accession).trim()
         : null,
+      people: peopleOf(project.project_collector_chief_scientist, project.project_contributors),
     })),
     panels: pmo.panel_info.map((panel) => panel.panel_name),
     countries: [...countries].toSorted((a, b) => a.localeCompare(b)),

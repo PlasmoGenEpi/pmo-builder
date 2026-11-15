@@ -6,7 +6,7 @@
  * This is the only module that sends anything to Zenodo, and it runs only
  * when the user asks for a deposit.
  */
-import type { SuggestedRecord } from "./zenodo";
+import type { Creator, SuggestedRecord } from "./zenodo";
 
 const ZENODO = "https://zenodo.org";
 
@@ -14,7 +14,7 @@ const ZENODO = "https://zenodo.org";
 const RECORD_JSON = "application/vnd.inveniordm.v1+json";
 
 /** The parts of a deposit, in order. */
-export const DEPOSIT_STEPS = ["community", "draft", "file", "review"] as const;
+export const DEPOSIT_STEPS = ["community", "version", "draft", "file", "review"] as const;
 
 /** One of {@link DEPOSIT_STEPS}. */
 export type DepositStep = (typeof DEPOSIT_STEPS)[number];
@@ -32,7 +32,13 @@ export type DepositFailure =
   /** Zenodo could not be reached. */
   | "offline"
   /** Zenodo answered with something else. */
-  | "refused";
+  | "refused"
+  /** The record to add a version to was not found. */
+  | "no-record"
+  /** The record belongs to someone else, so this account cannot add a version. */
+  | "not-owner"
+  /** The record is not in the community. */
+  | "other-community";
 
 /** What a deposit gave. */
 export type DepositResult =
@@ -93,6 +99,14 @@ export interface DepositInput {
   readonly record: SuggestedRecord;
   /** Today as `YYYY-MM-DD`. Zenodo needs a publication date on every draft. */
   readonly date: string;
+  /** The authors, in order. Empty leaves them to be added on Zenodo. */
+  readonly creators: readonly Creator[];
+  /**
+   * The Zenodo record to add a new version to, by its number, or `null` for a
+   * new record. A new version keeps the record's details and its place in the
+   * community, so only the file is sent.
+   */
+  readonly newVersionOf?: string | null;
   /** Called as each step starts. */
   readonly onStep?: (step: DepositStep) => void;
   /** Called during the `file` step, with the bytes sent so far and the total. */
@@ -131,8 +145,23 @@ function escapeHtml(text: string): string {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
-/** The draft's metadata. Authors are left for the user to add on Zenodo. */
-export function draftBody(record: SuggestedRecord, date: string): unknown {
+/** An INSDC BioProject accession, such as `PRJNA1040019` or `PRJEB12345`. */
+const BIOPROJECT = /^PRJ[A-Z]{1,2}\d+$/;
+
+/** The draft's metadata, with the authors given and links to the BioProjects the data comes from. */
+export function draftBody(
+  record: SuggestedRecord,
+  date: string,
+  creators: readonly Creator[] = [],
+): unknown {
+  const related = record.accessions
+    .filter((accession) => BIOPROJECT.test(accession))
+    .map((accession) => ({
+      identifier: `https://www.ncbi.nlm.nih.gov/bioproject/${accession}`,
+      scheme: "url",
+      relation_type: { id: "isderivedfrom" },
+      resource_type: { id: "dataset" },
+    }));
   return {
     access: { record: "public", files: "public" },
     files: { enabled: true },
@@ -144,6 +173,18 @@ export function draftBody(record: SuggestedRecord, date: string): unknown {
       subjects: record.keywords.map((subject) => ({ subject })),
       rights: [{ id: "cc-by-4.0" }],
       publisher: "Zenodo",
+      ...(creators.length === 0
+        ? {}
+        : {
+            creators: creators.map((creator) => ({
+              person_or_org: {
+                type: "personal",
+                family_name: creator.family,
+                ...(creator.given === "" ? {} : { given_name: creator.given }),
+              },
+            })),
+          }),
+      ...(related.length === 0 ? {} : { related_identifiers: related }),
     },
   };
 }
@@ -191,6 +232,65 @@ export async function depositDraft(input: DepositInput): Promise<DepositResult> 
     }
   };
 
+  /**
+   * Starts a new version of the record `recordId` (or the latest version of
+   * its record) and returns the new draft's id. The record must be in the
+   * community and belong to the signed-in account.
+   */
+  const newVersionDraft = async (recordId: string, communityId: string): Promise<unknown> => {
+    let latest: unknown = null;
+    try {
+      // Without the token: the record is public, and a plain request follows
+      // Zenodo's redirect to the latest version without a preflight.
+      latest = await call(
+        `/api/records/${encodeURIComponent(recordId)}/versions/latest`,
+        {},
+        { anonymous: true },
+      );
+    } catch (error) {
+      if (!(error instanceof DepositError) || error.failure !== "refused") throw error;
+    }
+    if (latest === null) {
+      // A concept DOI names the record as a whole, and Zenodo answers it as
+      // gone here. Search for the newest version of that record instead.
+      let found: unknown;
+      try {
+        found = await call(
+          `/api/records?q=${encodeURIComponent(`parent.id:${recordId}`)}&size=1`,
+          {},
+          { anonymous: true },
+        );
+      } catch (error) {
+        throw error instanceof DepositError && error.failure === "refused"
+          ? new DepositError("no-record")
+          : error;
+      }
+      const hits = isRecord(found) && isRecord(found["hits"]) ? found["hits"]["hits"] : undefined;
+      latest = Array.isArray(hits) ? hits[0] : undefined;
+    }
+    const latestId = isRecord(latest) ? latest["id"] : undefined;
+    if (typeof latestId !== "string" && typeof latestId !== "number") {
+      throw new DepositError("no-record");
+    }
+    const parent = isRecord(latest) ? latest["parent"] : undefined;
+    const communities = isRecord(parent) ? parent["communities"] : undefined;
+    const ids = isRecord(communities) ? communities["ids"] : undefined;
+    if (!Array.isArray(ids) || !ids.includes(communityId)) {
+      throw new DepositError("other-community");
+    }
+    let draft: unknown;
+    try {
+      draft = await call(`/api/records/${encodeURIComponent(String(latestId))}/versions`, {
+        method: "POST",
+      });
+    } catch (error) {
+      throw error instanceof DepositError && error.failure === "not-allowed"
+        ? new DepositError("not-owner")
+        : error;
+    }
+    return isRecord(draft) ? draft["id"] : undefined;
+  };
+
   const begin = (next: DepositStep): void => {
     step = next;
     input.onStep?.(next);
@@ -213,12 +313,19 @@ export async function depositDraft(input: DepositInput): Promise<DepositResult> 
     const communityId = isRecord(community) ? community["id"] : undefined;
     if (typeof communityId !== "string") throw new DepositError("no-community");
 
-    begin("draft");
-    const draft = await call("/api/records", {
-      method: "POST",
-      json: draftBody(input.record, input.date),
-    });
-    const id = isRecord(draft) ? draft["id"] : undefined;
+    const versionOf = input.newVersionOf ?? null;
+    let id: unknown;
+    if (versionOf === null) {
+      begin("draft");
+      const draft = await call("/api/records", {
+        method: "POST",
+        json: draftBody(input.record, input.date, input.creators),
+      });
+      id = isRecord(draft) ? draft["id"] : undefined;
+    } else {
+      begin("version");
+      id = await newVersionDraft(versionOf, communityId);
+    }
     if (typeof id !== "string" && typeof id !== "number") throw new DepositError("refused");
     const record = `/api/records/${encodeURIComponent(String(id))}/draft`;
     draftUrl = `${ZENODO}/uploads/${encodeURIComponent(String(id))}`;
@@ -249,6 +356,8 @@ export async function depositDraft(input: DepositInput): Promise<DepositResult> 
       if (status < 200 || status >= 300) throw new DepositError(failureFor(status));
     }
     await call(`${file}/commit`, { method: "POST" });
+    // A new version is already in the community. Zenodo refuses a review for it.
+    if (versionOf !== null) return { ok: true, draftUrl };
 
     begin("review");
     await call(`${record}/review`, {

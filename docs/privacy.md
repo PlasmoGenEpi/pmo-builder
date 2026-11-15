@@ -18,6 +18,8 @@ that you ask for yourself, described below.
   left off.
 - Panels you save to your library.
 - Your theme and your choice about usage counts.
+- A copy of the app itself, so it opens without a connection. It holds none
+  of your data.
 - A saved draft that could not be opened. It is kept aside until you save a
   new draft on a later visit or choose Start over, then deleted.
 
@@ -44,8 +46,9 @@ The panel works in one of two ways, depending on how the copy was set up.
   upload page, which opens in a new tab without telling Zenodo where you came
   from. Your PMO reaches Zenodo only when you upload the file there yourself.
 - **Deposit.** When you choose the deposit button, you sign in to Zenodo in
-  its own window. Your PMO file and the record's title, description and
-  keywords then go from your browser straight to Zenodo, which makes a draft.
+  its own window. Your PMO file and the record's title, description,
+  keywords and the authors you list then go from your browser straight to
+  Zenodo, which makes a draft, or a new version of a record you published.
   Nothing is published until you submit that draft on Zenodo. Nothing goes to
   Zenodo before you choose the button, and nothing passes through a server
   of this project. The sign-in allows making and changing drafts, not

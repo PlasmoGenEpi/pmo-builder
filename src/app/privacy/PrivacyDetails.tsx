@@ -62,9 +62,9 @@ export function PrivacyDetails({
         <Section title="Depositing on Zenodo">
           <p>
             If you choose to deposit on the review step, you sign in to Zenodo in its own window,
-            and your PMO file and the record details go from this browser straight to Zenodo.
-            Nothing goes to Zenodo before you choose that, and nothing passes through a server of
-            ours. The sign-in is forgotten when you close or reload the page.
+            and your PMO file, the record details and the authors you list go from this browser
+            straight to Zenodo. Nothing goes to Zenodo before you choose that, and nothing passes
+            through a server of ours. The sign-in is forgotten when you close or reload the page.
           </p>
         </Section>
       ) : null}

@@ -2,7 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import type { MergeSummary, PublicationSummary } from "@/domain/build";
 
-import { PMO_KEYWORD, suggestRecord, uploadUrl, zenodoCommunity } from "./zenodo";
+import {
+  formatCreators,
+  parseCreator,
+  parseCreators,
+  PMO_KEYWORD,
+  suggestRecord,
+  uploadUrl,
+  zenodoCommunity,
+  zenodoRecordId,
+} from "./zenodo";
 
 const SUMMARY: MergeSummary = {
   specimens: 1200,
@@ -21,7 +30,12 @@ const SUMMARY: MergeSummary = {
 const PUBLICATION: PublicationSummary = {
   personalFields: [],
   projects: [
-    { name: "MOZ2021", description: "Routine surveillance in Maputo", accession: "PRJNA1040019" },
+    {
+      name: "MOZ2021",
+      description: "Routine surveillance in Maputo",
+      accession: "PRJNA1040019",
+      people: ["Grace Okello", "José Silva", "Okello, Grace", "Aoife O'Neil"],
+    },
   ],
   panels: ["Mad4hatter"],
   countries: ["Angola", "Mozambique"],
@@ -94,5 +108,55 @@ describe("suggestRecord", () => {
       "targeted amplicon sequencing",
       "Mad4hatter",
     ]);
+  });
+});
+
+describe("authors", () => {
+  it("suggests the project's people once each, as family and given names", () => {
+    const record = suggestRecord(SUMMARY, PUBLICATION);
+    expect(record.creators).toEqual([
+      { family: "Okello", given: "Grace" },
+      { family: "Silva", given: "José" },
+      { family: "O'Neil", given: "Aoife" },
+    ]);
+    expect(record.accessions).toEqual(["PRJNA1040019"]);
+  });
+
+  it("reads an author written either way", () => {
+    expect(parseCreator("Okello, Grace")).toEqual({ family: "Okello", given: "Grace" });
+    expect(parseCreator("  Grace   Akinyi Okello ")).toEqual({
+      family: "Okello",
+      given: "Grace Akinyi",
+    });
+    expect(parseCreator("Diène")).toEqual({ family: "Diène", given: "" });
+    expect(parseCreator(", Grace")).toEqual({ family: "Grace", given: "" });
+    expect(parseCreator("  ")).toBeNull();
+  });
+
+  it("reads and writes one author to a line", () => {
+    const creators = parseCreators("Okello, Grace\n\nJosé Silva\r\nDiène\n");
+    expect(creators).toEqual([
+      { family: "Okello", given: "Grace" },
+      { family: "Silva", given: "José" },
+      { family: "Diène", given: "" },
+    ]);
+    expect(formatCreators(creators)).toBe("Okello, Grace\nSilva, José\nDiène");
+  });
+});
+
+describe("zenodoRecordId", () => {
+  it("reads a record address, a DOI or a number", () => {
+    expect(zenodoRecordId("https://zenodo.org/records/24237928")).toBe("24237928");
+    expect(zenodoRecordId("zenodo.org/record/24237928")).toBe("24237928");
+    expect(zenodoRecordId("https://zenodo.org/uploads/24237928")).toBe("24237928");
+    expect(zenodoRecordId("https://doi.org/10.5281/zenodo.24237928")).toBe("24237928");
+    expect(zenodoRecordId("10.5281/zenodo.24237928")).toBe("24237928");
+    expect(zenodoRecordId(" 24237928 ")).toBe("24237928");
+  });
+
+  it("is null for anything else", () => {
+    expect(zenodoRecordId("")).toBeNull();
+    expect(zenodoRecordId("https://example.org/records/1")).toBeNull();
+    expect(zenodoRecordId("10.1000/xyz123")).toBeNull();
   });
 });

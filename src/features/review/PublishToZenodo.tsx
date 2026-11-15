@@ -15,6 +15,9 @@ import {
   formatBytes,
   Link,
   ProgressBar,
+  RadioGroup,
+  TextArea,
+  TextField,
 } from "@/ui";
 
 import { CopyValue, useCopy } from "@/features/shared/CopyValue";
@@ -23,7 +26,11 @@ import { count } from "./reviewModel";
 import { usePmoDownload } from "./usePmoDownload";
 import {
   communityUrl,
+  formatCreators,
+  parseCreators,
   PERSONAL_FIELD_LABELS,
+  zenodoRecordId,
+  type Creator,
   suggestRecord,
   uploadUrl,
   type SuggestedRecord,
@@ -213,11 +220,17 @@ type Phase =
       readonly sent: number | null;
       readonly total: number | null;
     }
-  | { readonly kind: "done"; readonly draftUrl: string }
+  | {
+      readonly kind: "done";
+      readonly draftUrl: string;
+      readonly version: boolean;
+      readonly authors: boolean;
+    }
   | { readonly kind: "failed"; readonly message: string; readonly draftUrl: string | null };
 
 const STEP_TEXT: Readonly<Record<DepositStep, string>> = {
   community: "Finding the community on Zenodo",
+  version: "Starting a new version of the record",
   draft: "Creating the draft",
   file: "Uploading the file",
   review: "Asking the community to review it",
@@ -264,6 +277,12 @@ function depositMessage(failure: DepositFailure, step: DepositStep): string {
       return "Zenodo could not be reached. Check your connection and try again.";
     case "refused":
       return "Zenodo did not accept the request. Try again in a few minutes.";
+    case "no-record":
+      return "That Zenodo record could not be found. Check its address or DOI.";
+    case "not-owner":
+      return "Only the account that owns a record can add a version to it. Sign in to Zenodo as its owner.";
+    case "other-community":
+      return "That record is not in the community, so a new version of it cannot be added here.";
     default:
       return unreachable(failure);
   }
@@ -284,9 +303,16 @@ function isBusy(phase: Phase): boolean {
 }
 
 /** A deposit in progress, and how to start or cancel one. */
+/** What the user chose in the dialog. */
+interface DepositChoice {
+  readonly creators: readonly Creator[];
+  /** The record to add a version to, by number, or `null` for a new record. */
+  readonly newVersionOf: string | null;
+}
+
 interface DepositControl {
   readonly phase: Phase;
-  readonly start: () => Promise<void>;
+  readonly start: (choice: DepositChoice) => Promise<void>;
   readonly cancel: () => void;
 }
 
@@ -308,7 +334,7 @@ function useDeposit(
   const waiting = useRef<AbortController | null>(null);
   useEffect(() => () => waiting.current?.abort(), []);
 
-  async function start(): Promise<void> {
+  async function start(choice: DepositChoice): Promise<void> {
     const clientId = zenodo.clientId;
     // The example data is never sent, whatever the screen offers.
     if (clientId === null || blocked) return;
@@ -355,12 +381,19 @@ function useDeposit(
         fileName: file.fileName,
         record,
         date: today(),
+        creators: choice.newVersionOf === null ? choice.creators : [],
+        newVersionOf: choice.newVersionOf,
         onStep: (step) => setPhase({ kind: "depositing", step, sent: null, total: null }),
         onProgress: (sent, total) => setPhase({ kind: "depositing", step: "file", sent, total }),
       });
       if (result.ok) {
         report("draft-ready");
-        setPhase({ kind: "done", draftUrl: result.draftUrl });
+        setPhase({
+          kind: "done",
+          draftUrl: result.draftUrl,
+          version: choice.newVersionOf !== null,
+          authors: choice.creators.length > 0,
+        });
         return;
       }
       report(result.failure);
@@ -395,26 +428,87 @@ function DraftLink({ draftUrl }: { readonly draftUrl: string }) {
 }
 
 /** The button that starts a deposit, and how the deposit is going. */
-function Deposit({ deposit }: { readonly deposit: DepositControl }) {
+function Deposit({
+  deposit,
+  record,
+}: {
+  readonly deposit: DepositControl;
+  readonly record: SuggestedRecord;
+}) {
   const { phase } = deposit;
   const busy = isBusy(phase);
+  const [mode, setMode] = useState<"new" | "version">("new");
+  const [authors, setAuthors] = useState(() => formatCreators(record.creators));
+  const [versionOf, setVersionOf] = useState("");
+  const [versionError, setVersionError] = useState<string | null>(null);
+
+  function begin() {
+    // Nothing may be awaited before the sign-in window opens, so checks here stay synchronous.
+    if (mode === "version") {
+      const id = zenodoRecordId(versionOf);
+      if (id === null) {
+        setVersionError(
+          "Enter the record's Zenodo address, such as https://zenodo.org/records/12345678, or its DOI.",
+        );
+        return;
+      }
+      setVersionError(null);
+      void deposit.start({ creators: [], newVersionOf: id });
+      return;
+    }
+    void deposit.start({ creators: parseCreators(authors), newVersionOf: null });
+  }
 
   return (
     <div className="flex flex-col gap-4">
       <p className="max-w-prose text-base text-text-muted">
         You sign in to Zenodo in a new window. PMO Builder then sends your file from this browser
-        straight to Zenodo and makes a draft, with a title, description and keywords written from
-        your PMO and the CC BY 4.0 licence. Nothing is published until you submit the draft on
-        Zenodo.
+        straight to Zenodo and makes a draft. Nothing is published until you publish it on Zenodo.
       </p>
+      <RadioGroup
+        label="Deposit as"
+        value={mode}
+        onValueChange={setMode}
+        disabled={busy}
+        options={[
+          {
+            value: "new",
+            label: "A new record",
+            description:
+              "With a title, description and keywords written from your PMO, the authors below and the CC BY 4.0 licence. A curator reviews it.",
+          },
+          {
+            value: "version",
+            label: "A new version of a record I published",
+            description:
+              "Replaces the file and keeps the record's details and authors. It gets its own DOI, and the record's overall DOI points to it. It is already in the community, so there is no review.",
+          },
+        ]}
+      />
+      {mode === "new" ? (
+        <TextArea
+          label="Authors"
+          hint="One to a line, as Family name, Given names. Taken from your PMO's project. Leave it empty to add them on Zenodo."
+          value={authors}
+          onChange={(event) => setAuthors(event.target.value)}
+          rows={Math.min(8, Math.max(3, authors.split("\n").length + 1))}
+          disabled={busy}
+        />
+      ) : (
+        <TextField
+          label="The record"
+          hint="Its Zenodo address or DOI, such as https://zenodo.org/records/12345678"
+          value={versionOf}
+          onChange={(event) => {
+            setVersionOf(event.target.value);
+            setVersionError(null);
+          }}
+          error={versionError}
+          disabled={busy}
+        />
+      )}
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          variant="primary"
-          size="lg"
-          icon={CloudUpload}
-          loading={busy}
-          onClick={() => void deposit.start()}
-        >
+        <Button variant="primary" size="lg" icon={CloudUpload} loading={busy} onClick={begin}>
           Sign in to Zenodo and deposit
         </Button>
         {phase.kind === "signing-in" ? (
@@ -449,11 +543,16 @@ function Deposit({ deposit }: { readonly deposit: DepositControl }) {
         {phase.kind === "done" ? (
           <Callout
             tone="success"
-            title="Your draft is ready on Zenodo"
+            title={
+              phase.version
+                ? "Your new version is ready on Zenodo"
+                : "Your draft is ready on Zenodo"
+            }
             action={<DraftLink draftUrl={phase.draftUrl} />}
           >
-            Add the authors, read the draft through and choose Submit for review. It is published
-            once a curator of the community accepts it.
+            {phase.version
+              ? "Read it through and choose Publish. It joins the community straight away, as the record is already in it."
+              : `${phase.authors ? "Check the authors" : "Add the authors"}, read the draft through and choose Submit for review. It is published once a curator of the community accepts it.`}
           </Callout>
         ) : null}
         {phase.kind === "failed" ? (
@@ -522,7 +621,7 @@ function PublishBody({
       ) : (
         <>
           <Part title="Deposit">
-            <Deposit deposit={deposit} />
+            <Deposit deposit={deposit} record={record} />
           </Part>
           <Disclosure title="See what the draft will say">
             <div className="flex flex-col gap-4 pt-3">

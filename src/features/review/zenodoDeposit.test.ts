@@ -14,6 +14,8 @@ const RECORD: SuggestedRecord = {
   title: "MOZ2021: microhaplotype data in PMO format",
   description: "Calls for 50 samples, <5% missing & more.",
   keywords: ["Portable Microhaplotype Object", "PMO"],
+  creators: [],
+  accessions: [],
 };
 
 interface Call {
@@ -67,6 +69,7 @@ function input(send: typeof fetch, extra: Partial<DepositInput> = {}): DepositIn
     fileName: "My PMO.pmo.json.gz",
     record: RECORD,
     date: "2026-11-14",
+    creators: [],
     fetch: send,
     ...extra,
   };
@@ -217,6 +220,105 @@ describe("depositDraft", () => {
       ok: false,
       step: "file",
       failure: "offline",
+    });
+  });
+
+  it("sends the authors and links the BioProjects the data comes from", () => {
+    const body = draftBody(
+      { ...RECORD, accessions: ["PRJNA1040019", "not an accession", "PRJEB12345"] },
+      "2026-11-14",
+      [
+        { family: "Okello", given: "Grace" },
+        { family: "Diène", given: "" },
+      ],
+    );
+    expect(body).toMatchObject({
+      metadata: {
+        creators: [
+          { person_or_org: { type: "personal", family_name: "Okello", given_name: "Grace" } },
+          { person_or_org: { type: "personal", family_name: "Diène" } },
+        ],
+        related_identifiers: [
+          {
+            identifier: "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1040019",
+            scheme: "url",
+            relation_type: { id: "isderivedfrom" },
+          },
+          { identifier: "https://www.ncbi.nlm.nih.gov/bioproject/PRJEB12345" },
+        ],
+      },
+    });
+    expect(JSON.stringify(body)).not.toContain('given_name":""');
+    expect(draftBody(RECORD, "2026-11-14")).not.toHaveProperty("metadata.creators");
+    expect(draftBody(RECORD, "2026-11-14")).not.toHaveProperty("metadata.related_identifiers");
+  });
+});
+
+describe("depositDraft, as a new version", () => {
+  const VERSION = {
+    "GET /api/communities/plasmogenepi": { status: 200, json: { id: "uuid-1" } },
+    "GET /api/records/500/versions/latest": {
+      status: 200,
+      json: { id: "502", parent: { communities: { ids: ["uuid-1"] } } },
+    },
+    "POST /api/records/502/versions": { status: 201, json: { id: "777" } },
+    "POST /api/records/777/draft/files": { status: 201, json: {} },
+    "PUT /api/records/777/draft/files/My%20PMO.pmo.json.gz/content": { status: 200, json: {} },
+    "POST /api/records/777/draft/files/My%20PMO.pmo.json.gz/commit": { status: 200, json: {} },
+  };
+
+  it("starts a version of the latest record, uploads the file and asks for no review", async () => {
+    const { send, calls } = fakeZenodo(VERSION);
+    const steps: DepositStep[] = [];
+    const result = await depositDraft(
+      input(send, { newVersionOf: "500", onStep: (step) => steps.push(step) }),
+    );
+    expect(result).toEqual({ ok: true, draftUrl: "https://zenodo.org/uploads/777" });
+    expect(steps).toEqual(["community", "version", "file"]);
+    expect(calls.map((call) => `${call.method} ${call.path}`)).toEqual(Object.keys(VERSION));
+  });
+
+  it("finds the record from its concept DOI number", async () => {
+    const { send } = fakeZenodo({
+      ...VERSION,
+      "GET /api/records/500/versions/latest": { status: 410 },
+      "GET /api/records?q=parent.id%3A500&size=1": {
+        status: 200,
+        json: { hits: { hits: [{ id: "502", parent: { communities: { ids: ["uuid-1"] } } }] } },
+      },
+    });
+    expect(await depositDraft(input(send, { newVersionOf: "500" }))).toEqual({
+      ok: true,
+      draftUrl: "https://zenodo.org/uploads/777",
+    });
+  });
+
+  it("says when the record cannot be found, is elsewhere, or is someone else's", async () => {
+    const missing = fakeZenodo({
+      ...VERSION,
+      "GET /api/records/500/versions/latest": { status: 404 },
+    });
+    expect(await depositDraft(input(missing.send, { newVersionOf: "500" }))).toMatchObject({
+      ok: false,
+      step: "version",
+      failure: "no-record",
+    });
+    const elsewhere = fakeZenodo({
+      ...VERSION,
+      "GET /api/records/500/versions/latest": {
+        status: 200,
+        json: { id: "502", parent: { communities: { ids: ["another"] } } },
+      },
+    });
+    expect(await depositDraft(input(elsewhere.send, { newVersionOf: "500" }))).toMatchObject({
+      failure: "other-community",
+    });
+    expect(elsewhere.calls.some((call) => call.method === "POST")).toBe(false);
+    const theirs = fakeZenodo({ ...VERSION, "POST /api/records/502/versions": { status: 403 } });
+    expect(await depositDraft(input(theirs.send, { newVersionOf: "500" }))).toMatchObject({
+      step: "version",
+      failure: "not-owner",
+      draftUrl: null,
     });
   });
 });

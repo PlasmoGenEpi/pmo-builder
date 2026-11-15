@@ -134,6 +134,32 @@ function specimenRows(dataset: string, pmo: PortableMicrohaplotypeObject): Speci
   }));
 }
 
+/** The version the record names, or its number when it is not the first. */
+function versionOf(record: unknown): string | null {
+  const named = text(field(record, "metadata", "version"));
+  if (named !== null) return named;
+  const index = field(record, "versions", "index");
+  return typeof index === "number" && index > 1 ? String(index) : null;
+}
+
+/**
+ * The newest version of each record. Zenodo lists only the latest versions,
+ * but a record whose versions both appear must not be shown twice.
+ */
+export function latestVersions(records: readonly unknown[]): unknown[] {
+  const best = new Map<string, { readonly record: unknown; readonly index: number }>();
+  const order: string[] = [];
+  for (const record of records) {
+    const key = text(field(record, "parent", "id")) ?? text(field(record, "id")) ?? "";
+    const raw = field(record, "versions", "index");
+    const index = typeof raw === "number" ? raw : 0;
+    const seen = best.get(key);
+    if (seen === undefined) order.push(key);
+    if (seen === undefined || index > seen.index) best.set(key, { record, index });
+  }
+  return order.map((key) => best.get(key)?.record);
+}
+
 /** The catalogue entry for one record and the PMO read from its file. */
 export function datasetFrom(
   record: unknown,
@@ -151,7 +177,7 @@ export function datasetFrom(
       .map((creator) => text(field(creator, "person_or_org", "name")))
       .filter((name) => name !== null),
     published: text(field(record, "metadata", "publication_date")) ?? "",
-    version: text(field(record, "metadata", "version")),
+    version: versionOf(record),
     licence: licenceOf(record),
     doi: text(field(record, "pids", "doi", "identifier")),
     zenodoUrl: text(field(record, "links", "self_html")) ?? `${ZENODO}/records/${id}`,
@@ -206,7 +232,7 @@ export async function harvest(options: HarvestOptions): Promise<HarvestResult> {
   const datasets: PublishedDataset[] = [];
   const specimens: SpecimenRow[] = [];
   const skipped: SkippedRecord[] = [];
-  for (const record of records) {
+  for (const record of latestVersions(records)) {
     const id = text(field(record, "id")) ?? "unknown";
     const title = text(field(record, "metadata", "title")) ?? "(no title)";
     const skip = (reason: string): void => {

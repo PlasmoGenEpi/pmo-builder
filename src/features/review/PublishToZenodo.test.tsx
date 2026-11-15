@@ -65,7 +65,14 @@ const PUBLICATION: PublicationSummary = {
     { field: "lat_lon", specimens: 49 },
     { field: "host_age", specimens: 1 },
   ],
-  projects: [{ name: "MOZ2021", description: "Routine surveillance", accession: null }],
+  projects: [
+    {
+      name: "MOZ2021",
+      description: "Routine surveillance",
+      accession: null,
+      people: ["Grace Okello", "José Silva"],
+    },
+  ],
   panels: ["Mad4hatter"],
   countries: ["Mozambique"],
   collectionYears: { first: 2021, last: 2021 },
@@ -379,6 +386,78 @@ describe("Deposit on Zenodo", () => {
     act(() => finish?.());
     expect(await within(dialog).findByText("Your draft is ready on Zenodo")).toBeInTheDocument();
     expect(within(dialog).queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+
+  it("fills in the authors from the PMO and sends what the user leaves there", async () => {
+    vi.mocked(signIn).mockResolvedValue({ ok: true, token: "token-1" });
+    vi.mocked(depositDraft).mockResolvedValue({ ok: true, draftUrl: DRAFT_URL });
+    const { store, user } = await renderReview(DIRECT);
+    setOverall(store, { publication: PUBLICATION });
+    const dialog = await openDialog(user, DIRECT);
+    const authors = within(dialog).getByRole("textbox", { name: "Authors" });
+    expect(authors).toHaveValue("Okello, Grace\nSilva, José");
+    await user.type(authors, "\nDiène, Fatoumata");
+    await user.click(depositButton(dialog));
+    expect(depositDraft).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        newVersionOf: null,
+        creators: [
+          { family: "Okello", given: "Grace" },
+          { family: "Silva", given: "José" },
+          { family: "Diène", given: "Fatoumata" },
+        ],
+      }),
+    );
+    expect(
+      await within(dialog).findByText(/Check the authors, read the draft through/),
+    ).toBeInTheDocument();
+  });
+
+  it("adds a new version of a record, after checking the address before signing in", async () => {
+    vi.mocked(signIn).mockResolvedValue({ ok: true, token: "token-1" });
+    vi.mocked(depositDraft).mockResolvedValue({ ok: true, draftUrl: DRAFT_URL });
+    const { user } = await renderReview(DIRECT);
+    const dialog = await openDialog(user, DIRECT);
+    await user.click(
+      within(dialog).getByRole("radio", { name: /A new version of a record I published/ }),
+    );
+    expect(within(dialog).queryByRole("textbox", { name: "Authors" })).not.toBeInTheDocument();
+    const recordField = within(dialog).getByRole("textbox", { name: "The record" });
+    await user.type(recordField, "not a record");
+    await user.click(depositButton(dialog));
+    expect(within(dialog).getByText(/Enter the record's Zenodo address/)).toBeInTheDocument();
+    expect(signIn).not.toHaveBeenCalled();
+
+    await user.clear(recordField);
+    await user.type(recordField, "https://doi.org/10.5281/zenodo.24237928");
+    await user.click(depositButton(dialog));
+    expect(depositDraft).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ newVersionOf: "24237928", creators: [] }),
+    );
+    expect(
+      await within(dialog).findByText("Your new version is ready on Zenodo"),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText(/joins the community straight away/)).toBeInTheDocument();
+  });
+
+  it("explains when the user does not own the record", async () => {
+    vi.mocked(signIn).mockResolvedValue({ ok: true, token: "token-1" });
+    vi.mocked(depositDraft).mockResolvedValue({
+      ok: false,
+      step: "version",
+      failure: "not-owner",
+      draftUrl: null,
+    });
+    const { user } = await renderReview(DIRECT);
+    const dialog = await openDialog(user, DIRECT);
+    await user.click(
+      within(dialog).getByRole("radio", { name: /A new version of a record I published/ }),
+    );
+    await user.type(within(dialog).getByRole("textbox", { name: "The record" }), "24237928");
+    await user.click(depositButton(dialog));
+    expect(
+      await within(dialog).findByText(/Only the account that owns a record can add a version/),
+    ).toBeInTheDocument();
   });
 
   it("keeps the steps for uploading by hand behind a disclosure", async () => {

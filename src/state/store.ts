@@ -184,6 +184,9 @@ export type DepositEnd =
   | "too-large"
   | "offline"
   | "refused"
+  | "no-record"
+  | "not-owner"
+  | "other-community"
   | "failed";
 
 /** What checking a PMO file found, in a word. `failed` when the check could not run. */

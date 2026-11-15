@@ -54,6 +54,9 @@ export const DEPOSIT_OUTCOMES = [
   "too-large",
   "offline",
   "refused",
+  "no-record",
+  "not-owner",
+  "other-community",
   "failed",
 ] as const;
 

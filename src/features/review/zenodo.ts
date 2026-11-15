@@ -82,12 +82,71 @@ export const PERSONAL_FIELD_LABELS: Readonly<Record<PersonalField, string>> = {
   specimen_comments: "Free-text comments",
 };
 
+/** A person who made the data, as Zenodo stores an author. */
+export interface Creator {
+  readonly family: string;
+  /** Empty when only one name is known. */
+  readonly given: string;
+}
+
 /** The details the app suggests for the Zenodo record. */
 export interface SuggestedRecord {
   readonly title: string;
   readonly description: string;
   /** {@link PMO_KEYWORD} first. */
   readonly keywords: readonly string[];
+  /** From the PMO's projects, chief scientist first. The user can change them before depositing. */
+  readonly creators: readonly Creator[];
+  /** BioProject accessions the PMO names, linked from the record as the data it comes from. */
+  readonly accessions: readonly string[];
+}
+
+/**
+ * Reads one author. "Family, Given" is taken as written. Without a comma, the
+ * last word is taken as the family name, as in "Grace Okello".
+ */
+export function parseCreator(text: string): Creator | null {
+  const clean = text.trim().replaceAll(/\s+/g, " ");
+  if (clean === "") return null;
+  const comma = clean.indexOf(",");
+  if (comma !== -1) {
+    const family = clean.slice(0, comma).trim();
+    const given = clean.slice(comma + 1).trim();
+    return family === "" ? (given === "" ? null : { family: given, given: "" }) : { family, given };
+  }
+  const words = clean.split(" ");
+  const family = words.pop() ?? clean;
+  return { family, given: words.join(" ") };
+}
+
+/** Reads authors written one to a line. Blank lines are skipped. */
+export function parseCreators(text: string): Creator[] {
+  return text
+    .split(/\r?\n/)
+    .map(parseCreator)
+    .filter((creator) => creator !== null);
+}
+
+/** Writes authors one to a line, as "Family, Given". */
+export function formatCreators(creators: readonly Creator[]): string {
+  return creators
+    .map((creator) =>
+      creator.given === "" ? creator.family : `${creator.family}, ${creator.given}`,
+    )
+    .join("\n");
+}
+
+/**
+ * The Zenodo record a user means, from a record address, a DOI or a number:
+ * `https://zenodo.org/records/123`, `10.5281/zenodo.123` or `123`.
+ */
+export function zenodoRecordId(text: string): string | null {
+  const clean = text.trim();
+  const match =
+    /^(\d+)$/.exec(clean) ??
+    /zenodo\.org\/(?:records?|uploads|deposit)\/(\d+)/i.exec(clean) ??
+    /10\.5281\/zenodo\.(\d+)/i.exec(clean);
+  return match?.[1] ?? null;
 }
 
 function list(items: readonly string[]): string {
@@ -156,5 +215,28 @@ export function suggestRecord(
       "targeted amplicon sequencing",
       ...publication.panels,
     ],
+    creators: dedupeCreators(
+      publication.projects.flatMap((project) => project.people.map(parseCreator)),
+    ),
+    accessions: [
+      ...new Set(
+        publication.projects
+          .map((project) => project.accession)
+          .filter((accession) => accession !== null),
+      ),
+    ],
   };
+}
+
+function dedupeCreators(creators: readonly (Creator | null)[]): Creator[] {
+  const seen = new Set<string>();
+  const unique: Creator[] = [];
+  for (const creator of creators) {
+    if (creator === null) continue;
+    const key = `${creator.family}\u0000${creator.given}`.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(creator);
+  }
+  return unique;
 }

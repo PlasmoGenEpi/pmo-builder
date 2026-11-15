@@ -41,9 +41,14 @@ and keywords written from the PMO.
 
 Without a Client ID the panel guides the user through uploading by hand, and
 the app sends nothing. With one, a deposit button signs the user in to Zenodo
-in a new window, then creates a draft there with the file, the details and a
-review request to the community. The user submits the draft on Zenodo. The
-build then allows `https://zenodo.org` in the Content Security Policy.
+in a new window, then creates a draft there with the file, the details, the
+authors (filled in from the PMO's project and editable), links to the
+BioProjects the data comes from, and a review request to the community. The
+user submits the draft on Zenodo. A deposit can instead be a new version of a
+record the user published: it replaces the file, keeps the record's details
+and place in the community, gets its own DOI under the record's overall DOI,
+and needs no review. The build then allows
+`https://zenodo.org` in the Content Security Policy.
 
 To register the application, sign in to Zenodo and open Applications, then
 Developer Applications. Set the client type to Public and the redirect URI to
@@ -94,6 +99,16 @@ datasets; no page reads it yet.
 
 Run `pnpm harvest --community plasmogenepi` to try the list locally. The
 output folder, `public/repository/`, is not committed.
+
+## Working offline
+
+Once the app has been opened online, a service worker (`sw.js`, written by
+`vite/serviceWorker.ts` at build time) keeps a copy of its files in the
+browser, about 3 MB, so it opens and builds PMOs without a connection.
+Opening the app tries the network first, so a new deploy arrives as soon as
+the user is online. The list of published PMOs shows the last copy fetched.
+Depositing on Zenodo needs a connection. The dev server does not register
+the worker.
 
 ## Large files
 

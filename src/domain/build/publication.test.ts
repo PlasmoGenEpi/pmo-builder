@@ -12,6 +12,8 @@ function pmo(specimens: PublicationSource["specimen_info"]): PublicationSource {
         project_name: "MOZ2021",
         project_description: "Routine surveillance in Maputo",
         BioProject_accession: " PRJNA1040019 ",
+        project_collector_chief_scientist: "Chief, Scientist; Grace Okello",
+        project_contributors: ["Grace Okello", " José   Silva ", ""],
       },
     ],
   };
@@ -87,6 +89,7 @@ describe("summarisePublication", () => {
         name: "MOZ2021",
         description: "Routine surveillance in Maputo",
         accession: "PRJNA1040019",
+        people: ["Chief, Scientist", "Grace Okello", "José Silva"],
       },
     ]);
   });
