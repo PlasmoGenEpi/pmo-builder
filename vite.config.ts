@@ -8,6 +8,7 @@ import { defineConfig } from "vitest/config";
 import packageJson from "./package.json" with { type: "json" };
 import { BARREL, VENDOR } from "./vite/chunks";
 import { contentSecurityPolicy } from "./vite/csp";
+import { serviceWorker } from "./vite/serviceWorker";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const src = fileURLToPath(new URL("./src", import.meta.url));
@@ -24,7 +25,12 @@ export default defineConfig(({ mode }) => {
   return {
     // Relative asset paths, so the build works from any subpath (GitHub Pages).
     base: "./",
-    plugins: [react(), tailwindcss(), contentSecurityPolicy({ analyticsUrl, zenodo })],
+    plugins: [
+      react(),
+      tailwindcss(),
+      contentSecurityPolicy({ analyticsUrl, zenodo }),
+      serviceWorker(),
+    ],
     resolve: {
       alias: { "@": src },
     },

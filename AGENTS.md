@@ -15,35 +15,35 @@ tests. oxlint (type-aware) and oxfmt for linting and formatting.
 
 ## Layout
 
-| Path                         | What it holds                                                      | May import from                                              |
-| ---------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------ |
-| `src/domain/types.ts`        | Contracts shared by every module                                   | `pmotools-ts` types                                          |
-| `src/domain/import/`         | File to typed table: csv, tsv, txt, gz, xlsx                       | `types`, `pmotools-ts`                                       |
-| `src/domain/fields/`         | Field specs and header aliases for each table                      | `types`                                                      |
-| `src/domain/matching/`       | Column auto-matching and mapping checks                            | `types`                                                      |
-| `src/domain/draft/`          | The draft model, form specs, persistence                           | `domain/*`                                                   |
-| `src/domain/build/`          | Draft to PMO fragments, merge, validate, export                    | `domain/*`, `pmotools-ts`                                    |
-| `src/domain/repository/`     | The catalogue of published PMOs and the harvester that builds it   | `domain/*`, `pmotools-ts`. Node only, except `types.ts`      |
-| `src/worker/`                | The web worker that runs imports and builds, and its client        | `domain/*`                                                   |
-| `src/state/`                 | The app store, its hooks, and usage counts wired to it             | `domain`, `worker`, `analytics`                              |
-| `src/analytics/`             | Usage instrumentation                                              | nothing in `domain`                                          |
-| `src/ui/`                    | Design system primitives. No domain knowledge                      | `styles`                                                     |
-| `src/app/`                   | Shell: layout, navigation, routes, home, `StepLink`                | `ui`, `domain`, `state`, `analytics`                         |
-| `src/features/<step>/`       | One folder per step page                                           | `ui`, `app`, `domain`, `state`, `analytics`, the three below |
-| `src/features/table-import/` | Import a table and match its columns, for every step               | `ui`, `domain`, `state`                                      |
-| `src/features/records/`      | Hand-entered records: forms, lists, suggestions                    | `ui`, `domain`                                               |
-| `src/features/publish-file/` | Checking and depositing a PMO file the user already has            | `ui`, `app`, `domain/build`, `state`, `features/review`      |
-| `src/features/published/`    | The list of published PMOs and each dataset's page                 | `ui`, `app`, `domain/repository/types`, `features/review`    |
-| `src/features/shared/`       | Parts several steps use: result card, name checks, run name        | `ui`, `app`, `domain`, `state`, `table-import`               |
-| `src/test/`                  | Test setup and shared test helpers                                 | anything                                                     |
-| `e2e/`                       | Playwright tests against the built app                             |                                                              |
-| `e2e/fixtures/`              | The privacy fixture: fails a test that contacts another origin     |                                                              |
-| `scripts/`                   | Large-table generator and benchmark, `pmotools-ts` update, harvest |                                                              |
-| `receiver/`                  | The Cloudflare Worker that receives usage counts. Its own project  |                                                              |
-| `vite/`                      | Build plugins and chunk rules, with their tests                    |                                                              |
-| `public/examples/`           | Example tables served with the app                                 |                                                              |
-| `reference/`                 | Material from the old app, for reading only. Not bundled           |                                                              |
-| `vendor/`                    | The `pmotools-ts` tarball. Do not edit                             |                                                              |
+| Path                         | What it holds                                                                          | May import from                                              |
+| ---------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `src/domain/types.ts`        | Contracts shared by every module                                                       | `pmotools-ts` types                                          |
+| `src/domain/import/`         | File to typed table: csv, tsv, txt, gz, xlsx                                           | `types`, `pmotools-ts`                                       |
+| `src/domain/fields/`         | Field specs and header aliases for each table                                          | `types`                                                      |
+| `src/domain/matching/`       | Column auto-matching and mapping checks                                                | `types`                                                      |
+| `src/domain/draft/`          | The draft model, form specs, persistence                                               | `domain/*`                                                   |
+| `src/domain/build/`          | Draft to PMO fragments, merge, validate, export                                        | `domain/*`, `pmotools-ts`                                    |
+| `src/domain/repository/`     | The catalogue of published PMOs and the harvester that builds it                       | `domain/*`, `pmotools-ts`. Node only, except `types.ts`      |
+| `src/worker/`                | The web worker that runs imports and builds, and its client                            | `domain/*`                                                   |
+| `src/state/`                 | The app store, its hooks, and usage counts wired to it                                 | `domain`, `worker`, `analytics`                              |
+| `src/analytics/`             | Usage instrumentation                                                                  | nothing in `domain`                                          |
+| `src/ui/`                    | Design system primitives. No domain knowledge                                          | `styles`                                                     |
+| `src/app/`                   | Shell: layout, navigation, routes, home, `StepLink`                                    | `ui`, `domain`, `state`, `analytics`                         |
+| `src/features/<step>/`       | One folder per step page                                                               | `ui`, `app`, `domain`, `state`, `analytics`, the three below |
+| `src/features/table-import/` | Import a table and match its columns, for every step                                   | `ui`, `domain`, `state`                                      |
+| `src/features/records/`      | Hand-entered records: forms, lists, suggestions                                        | `ui`, `domain`                                               |
+| `src/features/publish-file/` | Checking and depositing a PMO file the user already has                                | `ui`, `app`, `domain/build`, `state`, `features/review`      |
+| `src/features/published/`    | The list of published PMOs and each dataset's page                                     | `ui`, `app`, `domain/repository/types`, `features/review`    |
+| `src/features/shared/`       | Parts several steps use: result card, name checks, run name                            | `ui`, `app`, `domain`, `state`, `table-import`               |
+| `src/test/`                  | Test setup and shared test helpers                                                     | anything                                                     |
+| `e2e/`                       | Playwright tests against the built app                                                 |                                                              |
+| `e2e/fixtures/`              | The privacy fixture: fails a test that contacts another origin                         |                                                              |
+| `scripts/`                   | Large-table generator and benchmark, `pmotools-ts` update, harvest                     |                                                              |
+| `receiver/`                  | The Cloudflare Worker that receives usage counts. Its own project                      |                                                              |
+| `vite/`                      | Build plugins (security policy, chunk rules, offline service worker), with their tests |                                                              |
+| `public/examples/`           | Example tables served with the app                                                     |                                                              |
+| `reference/`                 | Material from the old app, for reading only. Not bundled                               |                                                              |
+| `vendor/`                    | The `pmotools-ts` tarball. Do not edit                                                 |                                                              |
 
 `src/domain` and `src/worker` contain no React and never touch `document` or
 `window`. Import across folders with the `@/` alias (`@/domain/types`).
