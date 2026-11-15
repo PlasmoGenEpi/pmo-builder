@@ -25,7 +25,7 @@ If your browser does not let the app store data, as in some private windows,
 the draft lasts only until you close or reload the page.
 
 To remove your draft, its files and any draft that could not be opened,
-choose Start over in the menu. Saved panels are kept: delete each one on the
+choose Start over, in the step list or the menu. Saved panels are kept: delete each one on the
 Panel step. To remove everything at once, clear this site's data in your
 browser's settings.
 

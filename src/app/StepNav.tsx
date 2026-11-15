@@ -4,6 +4,8 @@ import { Link as RouterLink, useLocation } from "wouter";
 import { zenodoConfig } from "@/features/review/zenodo";
 import { StatusIcon, cn } from "@/ui";
 
+import { useHasSavedDraft } from "./draftHooks";
+import { StartOverButton } from "./StartOver";
 import { stepsByGroup } from "./steps";
 import { useStepStatuses } from "./stepStatus";
 
@@ -23,6 +25,7 @@ export function StepNav({
   const onPublished = location === "/published" || location.startsWith("/published/");
   const statuses = useStepStatuses();
   const groups = stepsByGroup();
+  const hasDraft = useHasSavedDraft();
 
   return (
     <nav aria-label="Steps" className="flex flex-col gap-5">
@@ -90,6 +93,16 @@ export function StepNav({
           </ul>
         </div>
       ))}
+      {hasDraft ? (
+        <div className="border-t border-border pt-4">
+          <StartOverButton
+            variant="ghost"
+            className="w-full justify-start gap-2.5 px-2.5"
+            onDone={onNavigate}
+          />
+          <p className="px-2.5 pt-1 text-xs text-text-subtle">Clears this draft for a new PMO.</p>
+        </div>
+      ) : null}
     </nav>
   );
 }

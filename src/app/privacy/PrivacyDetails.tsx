@@ -52,8 +52,9 @@ export function PrivacyDetails({
           lasts only until you close or reload the page.
         </p>
         <p>
-          To remove your draft and its files, choose Start over in the menu. To remove everything,
-          including saved panels, clear this site&apos;s data in your browser&apos;s settings.
+          To remove your draft and its files, choose Start over, in the step list or the menu. To
+          remove everything, including saved panels, clear this site&apos;s data in your
+          browser&apos;s settings.
         </p>
       </Section>
 

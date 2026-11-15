@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { memoryLocation } from "wouter/memory-location";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -90,5 +90,52 @@ describe("home page actions", () => {
     await waitFor(() => expect(location.history.at(-1)).toBe("/"));
     expect(store.getState().draft.microhaplotypes.table).toBeNull();
     expect(await screen.findByText("Your draft was removed")).toBeInTheDocument();
+  });
+
+  it("offers Start over only when there is a draft, from the home page and the step list", async () => {
+    await renderApp(createTestStore());
+    expect(await screen.findByRole("button", { name: "Start" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Start over" })).not.toBeInTheDocument();
+    cleanup();
+
+    const store = createTestStore();
+    await act(() => store.getState().actions.loadExample());
+    await act(() => store.getState().actions.flush());
+    await renderApp(store);
+    await screen.findByRole("button", { name: /Continue where you left off/ });
+    const home = screen.getByRole("main");
+    const steps = screen.getByRole("navigation", { name: "Steps" });
+    expect(within(home).getByRole("button", { name: "Start over" })).toBeInTheDocument();
+    expect(within(steps).getByRole("button", { name: "Start over" })).toBeInTheDocument();
+  });
+
+  it("starts over from the step list after confirming", async () => {
+    const store = createTestStore();
+    await act(() => store.getState().actions.loadExample());
+    await act(() => store.getState().actions.flush());
+    const { location, user } = await renderApp(store, "/panel");
+    const steps = screen.getByRole("navigation", { name: "Steps" });
+    await user.click(await within(steps).findByRole("button", { name: "Start over" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Start over?" });
+    expect(store.getState().draft.microhaplotypes.table).not.toBeNull();
+    await user.click(within(dialog).getByRole("button", { name: "Start over" }));
+    await waitFor(() => expect(location.history.at(-1)).toBe("/"));
+    expect(store.getState().draft.microhaplotypes.table).toBeNull();
+    expect(await screen.findByText("Your draft was removed")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(within(steps).queryByRole("button", { name: "Start over" })).not.toBeInTheDocument(),
+    );
+  });
+
+  it("starts over from the review step", async () => {
+    const store = createTestStore();
+    await act(() => store.getState().actions.loadExample());
+    await act(() => store.getState().actions.flush());
+    const { location, user } = await renderApp(store, "/review");
+    await user.click(await screen.findByRole("button", { name: "Start over for a new PMO" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Start over?" });
+    await user.click(within(dialog).getByRole("button", { name: "Start over" }));
+    await waitFor(() => expect(location.history.at(-1)).toBe("/"));
+    expect(store.getState().draft.microhaplotypes.table).toBeNull();
   });
 });

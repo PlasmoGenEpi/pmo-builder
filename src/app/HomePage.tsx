@@ -19,6 +19,7 @@ import { Badge, Button, Callout, Card, ConfirmDialog, Link, ProgressBar } from "
 import { useHasSavedDraft, useLoadExampleData } from "./draftHooks";
 import { Logo } from "./Logo";
 import { PageContainer } from "./PageContainer";
+import { StartOverButton } from "./StartOver";
 import { STEPS } from "./steps";
 
 interface Need {
@@ -147,6 +148,9 @@ export function HomePage({
           >
             Try with example data
           </Button>
+          {hasDraft ? (
+            <StartOverButton variant="ghost" size="lg" className="max-sm:w-full" />
+          ) : null}
         </div>
         {showPublished ? (
           <p className="text-base text-text-muted">
