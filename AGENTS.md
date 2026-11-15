@@ -36,12 +36,13 @@ tests. oxlint (type-aware) and oxfmt for linting and formatting.
 | `src/features/records/`      | Hand-entered records: forms, lists, suggestions                                        | `ui`, `domain`                                               |
 | `src/features/publish-file/` | Checking and depositing a PMO file the user already has                                | `ui`, `app`, `domain/build`, `state`, `features/review`      |
 | `src/features/published/`    | The list of published PMOs and each dataset's page                                     | `ui`, `app`, `domain/repository/types`, `features/review`    |
+| `src/features/translate/`    | The translation review page, opened from a private link. In English, not translated    | `ui`, `app`, `i18n`                                          |
 | `src/features/shared/`       | Parts several steps use: result card, name checks, run name                            | `ui`, `app`, `domain`, `state`, `table-import`               |
 | `src/test/`                  | Test setup and shared test helpers                                                     | anything                                                     |
 | `e2e/`                       | Playwright tests against the built app                                                 |                                                              |
 | `e2e/fixtures/`              | The privacy fixture: fails a test that contacts another origin                         |                                                              |
 | `scripts/`                   | Large-table generator and benchmark, `pmotools-ts` update, harvest                     |                                                              |
-| `receiver/`                  | The Cloudflare Worker that receives usage counts. Its own project                      |                                                              |
+| `receiver/`                  | The Cloudflare Worker: usage counts, and translation review. Its own project           |                                                              |
 | `vite/`                      | Build plugins (security policy, chunk rules, offline service worker), with their tests |                                                              |
 | `public/examples/`           | Example tables served with the app                                                     |                                                              |
 | `reference/`                 | Material from the old app, for reading only. Not bundled                               |                                                              |
@@ -112,6 +113,8 @@ the column or row at fault.
 **Translatable text.** Every word a user can see goes through Lingui, so the
 interface can be translated. That includes labels, hints, headings, button
 text, `aria-label`s, placeholders, toasts, error messages and notice messages.
+The translation review page (`src/features/translate/`) is the exception: its
+readers review the English, so it is written in English only.
 
 - Plain text: `` t`Saved ${fileName}` `` from `@lingui/core/macro`. Give an
   interpolated value a clear variable name first, so translators see
@@ -141,7 +144,9 @@ text, `aria-label`s, placeholders, toasts, error messages and notice messages.
 
 **Privacy.** The app makes no network request that carries user data, with
 one exception: a deposit on Zenodo that the user asks for, sent only by
-`src/features/review/zenodoDeposit.ts`. No third-party scripts, fonts or
+`src/features/review/zenodoDeposit.ts`. The translation review page sends a
+reviewer's name and suggestions, never anything from a draft, through
+`src/features/translate/reviewApi.ts` only. No third-party scripts, fonts or
 images. Analytics events go through
 `src/analytics` only, and their payloads are typed so they cannot hold file
 names, column names or cell values.

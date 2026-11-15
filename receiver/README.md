@@ -1,7 +1,8 @@
 # Usage count receiver
 
 A Cloudflare Worker that receives PMO Builder's anonymous usage records and
-keeps daily counts in a D1 database. What the records hold, and why this
+keeps daily counts in a D1 database. It also keeps translation reviewers'
+suggestions, under `/review/`: see [Translation review](#translation-review). What the records hold, and why this
 design, is in [docs/analytics.md](../docs/analytics.md).
 
 It is a separate small project: its dependencies are not the app's, and the
@@ -38,13 +39,18 @@ export CLOUDFLARE_API_TOKEN=...   # and CLOUDFLARE_ACCOUNT_ID if the token sees 
 pnpm exec wrangler deploy
 ```
 
+The tables are made by the files in `migrations/`, which the workflow applies
+before each deploy. By hand:
+
+```bash
+pnpm exec wrangler d1 migrations apply pmo-builder-usage --remote
+```
+
 For a new account, create the database first and put its id in
 `wrangler.jsonc`:
 
 ```bash
 pnpm exec wrangler d1 create pmo-builder-usage
-pnpm exec wrangler d1 execute pmo-builder-usage --remote --command \
-  "CREATE TABLE counts (day TEXT, metric TEXT, value TEXT, n INTEGER NOT NULL, PRIMARY KEY (day, metric, value))"
 ```
 
 Keep `observability` off in `wrangler.jsonc` and do not add Logpush: both
@@ -64,3 +70,21 @@ pnpm counts
 
 or any SQL through `pnpm exec wrangler d1 execute pmo-builder-usage --remote --command "..."`.
 The table is `counts (day, metric, value, n)`.
+
+## Translation review
+
+`src/review.ts` answers `POST /review/session` and `POST /review/suggest` for
+the app's translation review page (`#/translate/<language>/<key>`). Unlike
+the usage counts, it keeps what reviewers type, with the name they give, so
+the maintainers know who suggested what. It still reads no IP address and no
+header but `Origin`.
+
+- Only pages listed in `REVIEW_ORIGINS` (`wrangler.jsonc`) may call it.
+- Each call needs a review link's key. Links are made, listed and revoked
+  with `pnpm translations` in the app's folder; only a hash of each key is
+  stored, in `review_links`.
+- Suggestions are kept in `review_suggestions`, at most 20,000 per link.
+- The app shows the review links only when it is built with
+  `VITE_TRANSLATION_REVIEW_URL` set to this Worker's address.
+
+See [docs/translation.md](../docs/translation.md) for the whole process.

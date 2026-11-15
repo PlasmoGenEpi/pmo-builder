@@ -8,49 +8,11 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { messageShape } from "./messageShape";
+import { translationProblem } from "./messageShape";
+import { messageKey, parsePo, type PoEntry } from "./poFile";
 
-interface Entry {
-  readonly msgid: string;
-  readonly msgstr: string;
-}
-
-/** A quoted `.po` string as text. */
-function unquote(text: string): string {
-  const parsed: unknown = JSON.parse(text);
-  return typeof parsed === "string" ? parsed : "";
-}
-
-/** Reads a `.po` file's entries. Enough for the files `lingui extract` writes. */
-function readCatalog(locale: string): Entry[] {
-  const lines = readFileSync(`src/locales/${locale}.po`, "utf8").split("\n");
-  const entries: Entry[] = [];
-  let msgid: string | null = null;
-  let msgstr: string | null = null;
-  let field: "msgid" | "msgstr" | null = null;
-  const flush = (): void => {
-    if (msgid !== null && msgid !== "") entries.push({ msgid, msgstr: msgstr ?? "" });
-    msgid = null;
-    msgstr = null;
-    field = null;
-  };
-  for (const line of lines) {
-    if (line.startsWith("msgid ")) {
-      msgid = unquote(line.slice(6));
-      field = "msgid";
-    } else if (line.startsWith("msgstr ")) {
-      msgstr = unquote(line.slice(7));
-      field = "msgstr";
-    } else if (line.startsWith('"') && field === "msgid") {
-      msgid = (msgid ?? "") + unquote(line);
-    } else if (line.startsWith('"') && field === "msgstr") {
-      msgstr = (msgstr ?? "") + unquote(line);
-    } else if (line.trim() === "") {
-      flush();
-    }
-  }
-  flush();
-  return entries;
+function readCatalog(locale: string): PoEntry[] {
+  return parsePo(readFileSync(`src/locales/${locale}.po`, "utf8"));
 }
 
 describe.each(["fr", "pt"])("the %s catalog", (locale) => {
@@ -58,26 +20,14 @@ describe.each(["fr", "pt"])("the %s catalog", (locale) => {
   const english = readCatalog("en");
 
   it("has an entry for every English message", () => {
-    expect(entries.map((entry) => entry.msgid).toSorted()).toEqual(
-      english.map((entry) => entry.msgid).toSorted(),
-    );
+    expect(entries.map(messageKey).toSorted()).toEqual(english.map(messageKey).toSorted());
   });
 
   it("keeps the placeholders, plurals, selects and tags of each English message", () => {
-    const broken: string[] = [];
-    for (const entry of entries.filter((item) => item.msgstr !== "")) {
-      let reason: string | null = null;
-      try {
-        const source = messageShape(entry.msgid);
-        const target = messageShape(entry.msgstr);
-        if (source.variables.join() !== target.variables.join()) reason = "placeholders differ";
-        else if (source.tags.join() !== target.tags.join()) reason = "tags differ";
-        else if (source.octothorpe && !target.octothorpe) reason = "# is missing";
-      } catch (error) {
-        reason = `not valid: ${error instanceof Error ? error.message : String(error)}`;
-      }
-      if (reason !== null) broken.push(`${reason}: ${entry.msgid} => ${entry.msgstr}`);
-    }
+    const broken = entries.flatMap((entry) => {
+      const problem = translationProblem(entry.msgid, entry.msgstr);
+      return problem === null ? [] : [`${problem} ${entry.msgid} => ${entry.msgstr}`];
+    });
     expect(broken).toEqual([]);
   });
 });

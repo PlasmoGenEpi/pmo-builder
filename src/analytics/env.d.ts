@@ -12,6 +12,11 @@ interface ImportMetaEnv {
   readonly VITE_ZENODO_CLIENT_ID?: string;
   /** What to call the community on screen. Default: its identifier. */
   readonly VITE_ZENODO_COMMUNITY_NAME?: string;
+  /**
+   * The translation review service (the receiver Worker's address). Unset
+   * turns review links off. Read by `src/features/translate` and `vite.config.ts`.
+   */
+  readonly VITE_TRANSLATION_REVIEW_URL?: string;
   /** The `version` from `package.json`, set by `define` in `vite.config.ts`. */
   readonly PMO_BUILDER_VERSION?: string;
 }

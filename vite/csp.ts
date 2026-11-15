@@ -24,6 +24,8 @@ export interface PolicyOptions {
    * user asks for a deposit.
    */
   readonly zenodo?: boolean;
+  /** The value of `VITE_TRANSLATION_REVIEW_URL`, or `undefined` when it is not set. */
+  readonly reviewUrl?: string | undefined;
   /** `true` for the dev server, which needs an inline script. */
   readonly dev: boolean;
 }
@@ -33,17 +35,20 @@ export interface PolicyOptions {
  * Throws when the URL is not https (http is allowed for localhost), so a
  * typo fails the build instead of shipping a policy that blocks the records.
  */
-export function analyticsOrigin(url: string | undefined): string | null {
+export function analyticsOrigin(
+  url: string | undefined,
+  name = "VITE_ANALYTICS_URL",
+): string | null {
   if (url === undefined || url.trim() === "") return null;
   let parsed: URL;
   try {
     parsed = new URL(url.trim());
   } catch {
-    throw new Error(`VITE_ANALYTICS_URL is not a URL: ${url}`);
+    throw new Error(`${name} is not a URL: ${url}`);
   }
   const local = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
   if (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && local)) {
-    throw new Error(`VITE_ANALYTICS_URL must use https: ${url}`);
+    throw new Error(`${name} must use https: ${url}`);
   }
   return parsed.origin;
 }
@@ -53,16 +58,16 @@ export const ZENODO_ORIGIN = "https://zenodo.org";
 
 /** Builds the policy string. */
 export function buildContentSecurityPolicy(options: PolicyOptions): string {
-  const origin = analyticsOrigin(options.analyticsUrl);
+  const origins = new Set(
+    [
+      analyticsOrigin(options.analyticsUrl),
+      analyticsOrigin(options.reviewUrl, "VITE_TRANSLATION_REVIEW_URL"),
+    ].filter((origin) => origin !== null),
+  );
   const directives: [string, ...string[]][] = [
     ["default-src", "'self'"],
     // 'self' also covers the dev server's websocket on the same host and port.
-    [
-      "connect-src",
-      "'self'",
-      ...(origin === null ? [] : [origin]),
-      ...(options.zenodo === true ? [ZENODO_ORIGIN] : []),
-    ],
+    ["connect-src", "'self'", ...origins, ...(options.zenodo === true ? [ZENODO_ORIGIN] : [])],
     // The dev server needs 'unsafe-inline' for the React Refresh preamble,
     // which @vitejs/plugin-react writes into index.html as an inline module
     // script. The production build has no inline scripts.
@@ -88,11 +93,13 @@ export function buildContentSecurityPolicy(options: PolicyOptions): string {
 /** Adds the policy and `Referrer-Policy: no-referrer` to `index.html`, in dev and in the build. */
 export function contentSecurityPolicy(options: {
   readonly analyticsUrl: string | undefined;
+  readonly reviewUrl?: string | undefined;
   readonly zenodo?: boolean;
 }): Plugin {
   let dev = false;
   // Fail at config time, not halfway through a build.
   analyticsOrigin(options.analyticsUrl);
+  analyticsOrigin(options.reviewUrl, "VITE_TRANSLATION_REVIEW_URL");
   return {
     name: "pmo-builder:content-security-policy",
     configResolved(config) {
@@ -107,6 +114,7 @@ export function contentSecurityPolicy(options: {
             "http-equiv": "Content-Security-Policy",
             content: buildContentSecurityPolicy({
               analyticsUrl: options.analyticsUrl,
+              reviewUrl: options.reviewUrl,
               zenodo: options.zenodo === true,
               dev,
             }),

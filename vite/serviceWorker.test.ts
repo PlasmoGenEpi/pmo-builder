@@ -11,6 +11,7 @@ describe("isPrecached", () => {
     expect(isPrecached("assets/index-abc.js.map")).toBe(false);
     expect(isPrecached("repository/index.json")).toBe(false);
     expect(isPrecached("zenodo-callback.html")).toBe(false);
+    expect(isPrecached("assets/fr-abc.po")).toBe(false);
     expect(isPrecached("sw.js")).toBe(false);
   });
 });

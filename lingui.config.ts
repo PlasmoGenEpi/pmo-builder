@@ -26,6 +26,8 @@ export default defineConfig({
         "**/*.test.*",
         "<rootDir>/src/test/**",
         "<rootDir>/src/app/styleguide/**",
+        // The review page is read by translators, in English. See its header.
+        "<rootDir>/src/features/translate/**",
         "**/testing.ts",
         "**/testing.tsx",
       ],

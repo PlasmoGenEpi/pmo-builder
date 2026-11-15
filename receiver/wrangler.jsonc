@@ -9,11 +9,17 @@
   // Workers Logs would keep the IP address of every request. Keep this off,
   // and do not add Logpush.
   "observability": { "enabled": false },
+  // Pages that may send translation reviews. See src/review.ts.
+  "vars": {
+    "REVIEW_ORIGINS": "https://v2.pmotools.app,http://localhost:5173,http://localhost:4173",
+  },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "pmo-builder-usage",
       "database_id": "b9dd01d0-a48b-438f-a59c-e1223a969a49",
+      // Applied by the Deploy workflow before the Worker is deployed.
+      "migrations_dir": "migrations",
     },
   ],
 }

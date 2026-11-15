@@ -29,6 +29,10 @@ const PublishFile = page(() =>
   import("@/features/publish-file/PublishFilePage").then((module) => module.PublishFilePage),
 );
 
+const TranslateReview = page(() =>
+  import("@/features/translate/TranslateReviewPage").then((module) => module.TranslateReviewRoute),
+);
+
 const Styleguide = page(() =>
   import("./styleguide/StyleguidePage").then((module) => module.StyleguidePage),
 );
@@ -108,6 +112,7 @@ function Routes() {
           <Route path="/published" component={Published.component} />
           <Route path="/published/:id" component={PublishedDataset.component} />
           <Route path="/publish" component={PublishFile.component} />
+          <Route path="/translate/:locale/:key" component={TranslateReview.component} />
           <Route path="/styleguide" component={Styleguide.component} />
           <Route>
             <NotFoundPage />

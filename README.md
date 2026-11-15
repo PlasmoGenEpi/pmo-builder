@@ -192,7 +192,10 @@ Usage counts stay off unless the repository variable `VITE_ANALYTICS_URL` is
 set. Read [docs/analytics.md](docs/analytics.md) before setting it. The
 "Publish to Zenodo" panel stays hidden unless the repository variable
 `VITE_ZENODO_COMMUNITY` is set, and offers a deposit only when
-`VITE_ZENODO_CLIENT_ID` is set too.
+`VITE_ZENODO_CLIENT_ID` is set too. Translation review links
+(`#/translate/<language>/<key>`) work only when `VITE_TRANSLATION_REVIEW_URL`
+holds the receiver Worker's address; see
+[docs/translation.md](docs/translation.md).
 
 Any other static host works too: run `pnpm build` and upload `dist/`.
 

@@ -13,13 +13,18 @@ import { join, relative, sep } from "node:path";
 
 import type { Plugin } from "vite";
 
-/** Files the worker does not keep: maps, data that changes daily, and pages that need a connection. */
+/**
+ * Files the worker does not keep: maps, data that changes daily, pages that
+ * need a connection (the Zenodo sign-in page), and the catalogs as text, which
+ * only translation reviewers read, online.
+ */
 export function isPrecached(path: string): boolean {
   return !(
     path.endsWith(".map") ||
     path === "sw.js" ||
     path.startsWith("repository/") ||
-    path.startsWith("zenodo-callback.")
+    path.startsWith("zenodo-callback.") ||
+    path.endsWith(".po")
   );
 }
 

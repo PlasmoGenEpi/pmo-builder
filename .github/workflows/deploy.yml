@@ -74,6 +74,8 @@ jobs:
           # receiver/pnpm-workspace.yaml makes this its own project and allows
           # the build scripts of Wrangler's esbuild and workerd.
           pnpm install --frozen-lockfile
+          # Tables first (receiver/migrations), so the new code finds them.
+          pnpm exec wrangler d1 migrations apply pmo-builder-usage --remote
           pnpm exec wrangler deploy
 
       - name: Read the published PMOs from Zenodo
@@ -93,6 +95,9 @@ jobs:
           VITE_ZENODO_COMMUNITY: ${{ vars.VITE_ZENODO_COMMUNITY }}
           VITE_ZENODO_COMMUNITY_NAME: ${{ vars.VITE_ZENODO_COMMUNITY_NAME }}
           VITE_ZENODO_CLIENT_ID: ${{ vars.VITE_ZENODO_CLIENT_ID }}
+          # Translation review links (#/translate/<language>/<key>). Unset
+          # turns them off. See docs/translation.md.
+          VITE_TRANSLATION_REVIEW_URL: ${{ vars.VITE_TRANSLATION_REVIEW_URL }}
 
       - uses: actions/upload-pages-artifact@v5
         with:

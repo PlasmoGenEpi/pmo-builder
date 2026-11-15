@@ -10,18 +10,13 @@
 //   CREATE TABLE counts (day TEXT, metric TEXT, value TEXT, n INTEGER NOT NULL,
 //     PRIMARY KEY (day, metric, value));
 //
+// It also takes translation reviewers' suggestions, under /review/. See
+// review.ts: those are kept as sent, with the reviewer's name.
+//
 // Keep Workers Logs and Logpush off for this Worker: they would keep IP addresses.
 import allowed from "./allowed-facts.json";
 import { createFactFilter } from "./facts";
-
-/** The parts of a D1 database the Worker uses. */
-interface Statement {
-  bind(...values: readonly (string | number)[]): Statement;
-}
-interface Database {
-  prepare(query: string): Statement;
-  batch(statements: readonly Statement[]): Promise<unknown>;
-}
+import { handleReview, isReviewRequest, type ReviewEnv } from "./review";
 
 const sortFacts = createFactFilter(allowed);
 const MAX_BODY = 8192;
@@ -40,7 +35,8 @@ function parse(text: string): unknown {
 
 // oxlint-disable-next-line import/no-default-export -- Workers need a default export.
 export default {
-  async fetch(request: Request, env: { readonly DB: Database }): Promise<Response> {
+  async fetch(request: Request, env: ReviewEnv): Promise<Response> {
+    if (isReviewRequest(request)) return handleReview(request, env);
     if (request.method !== "POST") return new Response(null, { status: 405 });
     const sorted = sortFacts(parse(await request.text()));
     if (sorted === null) return new Response(null, { status: 400 });
