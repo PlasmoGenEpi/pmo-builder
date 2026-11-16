@@ -53,6 +53,11 @@ const WORKING_PMO_VALUES: {
   close: (value): value is null => value === null,
   summary: (value): value is WorkingPmoValues["summary"] =>
     isRecord(value) && Array.isArray(value["samples"]) && Array.isArray(value["targets"]),
+  groupFields: (value): value is WorkingPmoValues["groupFields"] =>
+    Array.isArray(value) &&
+    value.every((field) => isRecord(field) && typeof field["key"] === "string"),
+  groups: (value): value is WorkingPmoValues["groups"] =>
+    isRecord(value) && Array.isArray(value["groups"]) && Array.isArray(value["targets"]),
 };
 
 /** Whether `value` is an answer to a working PMO request of kind `kind`. */

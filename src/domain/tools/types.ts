@@ -282,8 +282,6 @@ export interface PmoSummary {
   readonly stages: readonly string[];
   /** The panels' reactions, in order. */
   readonly reactions: readonly ReactionGroup[];
-  /** Fields the Compare tab can group by: those with at least one value. */
-  readonly groupFields: readonly GroupField[];
   readonly headline: {
     readonly samplesWithData: number;
     readonly targetsWithData: number;
@@ -348,6 +346,14 @@ export interface WorkingPmoRequests {
   readonly close: object;
   /** The summary of the original or the subset, counting microhaplotypes with at least `minReads` reads. */
   readonly summary: { readonly source: WorkingSource; readonly minReads: number };
+  /** The fields the specimens of the original or the subset can be compared by. */
+  readonly groupFields: { readonly source: WorkingSource };
+  /** The specimens of the original or the subset grouped by `key`, counting microhaplotypes with at least `minReads` reads. */
+  readonly groups: {
+    readonly source: WorkingSource;
+    readonly key: GroupKey;
+    readonly minReads: number;
+  };
 }
 
 /** One kind of request about the working PMO. */
@@ -370,6 +376,8 @@ export interface WorkingPmoValues {
   readonly open: OpenOutcome;
   readonly close: null;
   readonly summary: PmoSummary;
+  readonly groupFields: readonly GroupField[];
+  readonly groups: GroupComparison;
 }
 
 /** A request, with the generation of the working PMO it is meant for. */

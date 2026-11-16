@@ -17,7 +17,6 @@ import { alleleLabels } from "./alleleLabels";
 import {
   controlKind,
   densityOf,
-  groupFieldsOf,
   plateWell,
   reactionsOf,
   stageReadsOf,
@@ -178,7 +177,6 @@ export function summaryOf(pmo: Pmo, minReads: number): PmoSummary {
     grid: { columns: targetNames.length, reads },
     stages,
     reactions: reactionsOf(pmo),
-    groupFields: groupFieldsOf(pmo),
     headline: {
       samplesWithData: withData.length,
       targetsWithData: targets.filter((target) => target.samples > 0).length,

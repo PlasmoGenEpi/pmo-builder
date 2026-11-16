@@ -3010,6 +3010,10 @@ msgstr "Localizações que terminam antes de começar"
 msgid "Look into your PMO"
 msgstr "Explorar o seu PMO"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Make one on the Subset tab, or compare the whole file."
+msgstr "Crie um no separador Subconjunto, ou compare o ficheiro inteiro."
+
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Make one on the Subset tab, or sum up the whole file."
 msgstr "Crie um no separador Subconjunto, ou resuma o ficheiro inteiro."
@@ -3293,6 +3297,7 @@ msgstr "Negativo"
 msgid "Next"
 msgstr "Seguinte"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "No file is open"
 msgstr "Nenhum ficheiro está aberto"
@@ -3386,6 +3391,7 @@ msgstr "Ainda não há nenhuma coluna associada ao nome do espécime."
 msgid "No steps yet"
 msgstr "Ainda não há etapas"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "No subset has been made yet"
 msgstr "Ainda não foi criado nenhum subconjunto"
@@ -3691,6 +3697,10 @@ msgstr "Só o nome do espécime é necessário. Muitos laboratórios mantêm os 
 #: src/app/HomePage.tsx
 msgid "Open a PMO file"
 msgstr "Abrir um ficheiro PMO"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Open a PMO file to compare groups of its specimens."
+msgstr "Abra um ficheiro PMO para comparar grupos dos seus espécimes."
 
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables as CSV or TSV, make a smaller PMO with only some specimens, targets or reads, or publish it. The file stays in this browser."

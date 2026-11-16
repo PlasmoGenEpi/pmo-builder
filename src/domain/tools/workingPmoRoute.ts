@@ -12,6 +12,7 @@
  */
 import type { PortableMicrohaplotypeObject } from "pmotools-ts";
 
+import { comparableFields, compareGroups } from "./groups";
 import { summaryOf } from "./summary";
 import type { WorkingPmoAnswer, WorkingPmoCall, WorkingPmoKind, WorkingSource } from "./types";
 import { openPmo } from "./workingPmo";
@@ -125,6 +126,33 @@ const HANDLERS: Handlers = {
       work: guarded(() => ({
         kind: "answer",
         result: { kind: "ok", value: summaryOf(found.pmo, minReads) },
+      })),
+    };
+  },
+
+  groupFields(held, call) {
+    if (call.generation < held.generation) return answered(held, { kind: "stale" });
+    const found = pmoFor(held, call.request.source);
+    if (found.kind !== "found") return answered(held, found);
+    return {
+      held,
+      work: guarded(() => ({
+        kind: "answer",
+        result: { kind: "ok", value: comparableFields(found.pmo) },
+      })),
+    };
+  },
+
+  groups(held, call) {
+    if (call.generation < held.generation) return answered(held, { kind: "stale" });
+    const found = pmoFor(held, call.request.source);
+    if (found.kind !== "found") return answered(held, found);
+    const { key, minReads } = call.request;
+    return {
+      held,
+      work: guarded(() => ({
+        kind: "answer",
+        result: { kind: "ok", value: compareGroups(found.pmo, key, minReads) },
       })),
     };
   },

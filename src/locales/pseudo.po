@@ -3016,6 +3016,10 @@ msgstr ""
 msgid "Look into your PMO"
 msgstr ""
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Make one on the Subset tab, or compare the whole file."
+msgstr ""
+
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Make one on the Subset tab, or sum up the whole file."
 msgstr ""
@@ -3299,6 +3303,7 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "No file is open"
 msgstr ""
@@ -3392,6 +3397,7 @@ msgstr ""
 msgid "No steps yet"
 msgstr ""
 
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "No subset has been made yet"
 msgstr ""
@@ -3696,6 +3702,10 @@ msgstr ""
 
 #: src/app/HomePage.tsx
 msgid "Open a PMO file"
+msgstr ""
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Open a PMO file to compare groups of its specimens."
 msgstr ""
 
 #: src/features/pmo-file/PmoFilePage.tsx

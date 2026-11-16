@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { buildExamplePmo } from "@/domain/build/testing";
+import { richPmo } from "@/domain/tools/testing";
 import { createDraftStorage, createMemoryBackend } from "@/domain/draft";
 import type { WorkingPmoRequest } from "@/domain/tools/types";
 import type { Engine } from "@/worker";
@@ -258,5 +259,103 @@ describe("working PMO session: freeing memory", () => {
       kind: "ok",
       value: { librarySamples: 3 },
     });
+  });
+});
+
+describe("working PMO session: comparing groups", () => {
+  it("lists the fields specimens can be compared by, with how many have each", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(richPmo(), "rich.json")));
+    expect(await session.query({ kind: "groupFields", source: "original" })).toEqual({
+      kind: "ok",
+      value: [
+        { key: "collection_country", present: 2, total: 3, distinct: 1 },
+        { key: "geo_admin1", present: 2, total: 3, distinct: 2 },
+        { key: "collection_year", present: 3, total: 3, distinct: 2 },
+        { key: "collection_month", present: 2, total: 3, distinct: 2 },
+        { key: "project", present: 2, total: 3, distinct: 1 },
+      ],
+    });
+  });
+
+  it("leaves out a field that does not split the specimens into groups", async () => {
+    const { session } = makeSession();
+    const rich = richPmo();
+    const oneCountry = {
+      ...rich,
+      specimen_info: rich.specimen_info.map((specimen) =>
+        Object.assign({}, specimen, { collection_country: "Mozambique" }),
+      ),
+    };
+    await session.open(chosen(pmoFile(oneCountry, "rich.json")));
+    const fields = await session.query({ kind: "groupFields", source: "original" });
+    expect(fields.kind === "ok" && fields.value.map((field) => field.key)).not.toContain(
+      "collection_country",
+    );
+  });
+
+  it("compares the groups of a field, counting only reads over the minimum", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(richPmo(), "rich.json")));
+    const all = await session.query({
+      kind: "groups",
+      source: "original",
+      key: "geo_admin1",
+      minReads: 0,
+    });
+    expect(all).toMatchObject({
+      kind: "ok",
+      value: {
+        key: "geo_admin1",
+        groups: [
+          { name: "Gaza", specimens: 1 },
+          { name: "Maputo", specimens: 1 },
+          { name: null, specimens: 1 },
+        ],
+      },
+    });
+    const none = await session.query({
+      kind: "groups",
+      source: "original",
+      key: "geo_admin1",
+      minReads: 1_000_000,
+    });
+    expect(none.kind === "ok" && none.value.groups.map((group) => group.withData)).toEqual([
+      0, 0, 0,
+    ]);
+  });
+
+  it("says when no file is open, or no subset has been made", async () => {
+    const { session } = makeSession();
+    expect(await session.query({ kind: "groupFields", source: "original" })).toEqual({
+      kind: "not-open",
+    });
+    expect(
+      await session.query({ kind: "groups", source: "original", key: "project", minReads: 0 }),
+    ).toEqual({ kind: "not-open" });
+    await session.open(chosen(pmoFile(richPmo(), "rich.json")));
+    expect(await session.query({ kind: "groupFields", source: "subset" })).toEqual({
+      kind: "no-subset",
+    });
+    expect(
+      await session.query({ kind: "groups", source: "subset", key: "project", minReads: 0 }),
+    ).toEqual({ kind: "no-subset" });
+  });
+
+  it("answers a comparison for a file since replaced as stale", async () => {
+    const engine = createInThreadEngine();
+    const { session } = makeSession({ engine });
+    await session.open(chosen(pmoFile(richPmo(), "first.json")));
+    const { generation } = session.state.getState();
+    await session.open(chosen(pmoFile(richPmo(), "second.json")));
+    expect(
+      await engine.workingPmo({ generation, request: { kind: "groupFields", source: "original" } }),
+    ).toEqual({ kind: "stale" });
+    expect(
+      await engine.workingPmo({
+        generation,
+        request: { kind: "groups", source: "original", key: "project", minReads: 0 },
+      }),
+    ).toEqual({ kind: "stale" });
   });
 });
