@@ -1,11 +1,18 @@
 import { plural, t } from "@lingui/core/macro";
+import { Trans } from "@lingui/react/macro";
 import { Download, FileArchive } from "lucide-react";
 import { useState } from "react";
 
-import type { TableFormat, TableId, TableInfo, WorkingSource } from "@/domain/tools/types";
+import type {
+  TableFormat,
+  TableId,
+  TableInfo,
+  WorkingPmoResult,
+  WorkingSource,
+} from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
-import { useActions } from "@/state";
-import { Button, SegmentedControl } from "@/ui";
+import { useWorkingPmoSession } from "@/state";
+import { Button, Callout, SegmentedControl } from "@/ui";
 
 /** What each table is called and holds. */
 function describe(id: TableId): { readonly title: string; readonly body: string } {
@@ -48,6 +55,36 @@ function describe(id: TableId): { readonly title: string; readonly body: string 
   }
 }
 
+/** Why the last download gave no file. */
+type Problem =
+  | { readonly kind: "not-open" }
+  | { readonly kind: "no-subset" }
+  /** Making the file failed: one table's, or the zip of all of them. */
+  | { readonly kind: "failed"; readonly target: TableId | "all" };
+
+/** Why there is no file, for the problems that concern the whole tab. */
+function NoTables({ problem }: { readonly problem: Problem | null }) {
+  switch (problem?.kind) {
+    case "not-open":
+      return (
+        <Callout tone="info" live title={t`No file is open`}>
+          <Trans>Open a PMO file to download its tables.</Trans>
+        </Callout>
+      );
+    case "no-subset":
+      return (
+        <Callout tone="info" live title={t`No subset has been made yet`}>
+          <Trans>Make one on the Subset tab, or download the tables of the whole file.</Trans>
+        </Callout>
+      );
+    case "failed":
+    case undefined:
+      return null;
+    default:
+      return null;
+  }
+}
+
 /** Props for {@link TablesPanel}. */
 export interface TablesPanelProps {
   readonly tables: readonly TableInfo[];
@@ -59,32 +96,53 @@ export interface TablesPanelProps {
 
 /** The tables in a PMO, each to download as CSV or TSV. */
 export function TablesPanel({ tables, subsetTables, source, onSourceChange }: TablesPanelProps) {
-  const actions = useActions();
+  const session = useWorkingPmoSession();
   const [format, setFormat] = useState<TableFormat>("csv");
   const [saving, setSaving] = useState<TableId | "all" | null>(null);
-  const [failed, setFailed] = useState<TableId | "all" | null>(null);
+  const [problem, setProblem] = useState<Problem | null>(null);
   const shown = source === "subset" && subsetTables !== null ? subsetTables : tables;
+  const failed = problem?.kind === "failed" ? problem.target : null;
+
+  /** Saves what `answer` holds, or records why it holds nothing. A stale answer is ignored. */
+  function settle<T>(
+    target: TableId | "all",
+    answer: WorkingPmoResult<T>,
+    save: (value: T) => void,
+  ): void {
+    setSaving(null);
+    switch (answer.kind) {
+      case "ok":
+        save(answer.value);
+        return;
+      case "failed":
+        setProblem({ kind: "failed", target });
+        return;
+      case "not-open":
+      case "no-subset":
+        setProblem({ kind: answer.kind });
+        return;
+      case "stale":
+        return;
+      default:
+        return;
+    }
+  }
 
   async function download(id: TableId): Promise<void> {
     setSaving(id);
-    setFailed(null);
-    const file = await actions.workingPmoTable({ source, id, format });
-    setSaving(null);
-    if (file === null) {
-      setFailed(id);
-      return;
-    }
-    const type = format === "csv" ? "text/csv" : "text/tab-separated-values";
-    saveFile(new Blob([file.text], { type: `${type};charset=utf-8` }), file.fileName);
+    setProblem(null);
+    const answer = await session.query({ kind: "table", source, id, format });
+    settle(id, answer, (file) => {
+      const type = format === "csv" ? "text/csv" : "text/tab-separated-values";
+      saveFile(new Blob([file.text], { type: `${type};charset=utf-8` }), file.fileName);
+    });
   }
 
   async function downloadAll(): Promise<void> {
     setSaving("all");
-    setFailed(null);
-    const archive = await actions.workingPmoTables({ source, format });
-    setSaving(null);
-    if (archive === null) setFailed("all");
-    else saveFile(archive.blob, archive.fileName);
+    setProblem(null);
+    const answer = await session.query({ kind: "tables", source, format });
+    settle("all", answer, (archive) => saveFile(archive.blob, archive.fileName));
   }
 
   return (
@@ -120,6 +178,7 @@ export function TablesPanel({ tables, subsetTables, source, onSourceChange }: Ta
           {t`Download all tables (.zip)`}
         </Button>
       </div>
+      <NoTables problem={problem} />
       {failed === "all" ? (
         <p role="alert" className="text-sm text-danger-text">
           {t`The tables could not be made. Open the file again.`}

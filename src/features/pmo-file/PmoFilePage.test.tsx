@@ -12,9 +12,11 @@ import type { ZenodoConfig } from "@/features/review/zenodo";
 import { signIn } from "@/features/review/zenodoAuth";
 import { depositDraft } from "@/features/review/zenodoDeposit";
 import { createTestStore, renderWithStore } from "@/features/shared/testing";
+import { workingPmoSessionOf } from "@/state";
 import { installBlobStream } from "@/test/blobStream";
 
 import { OPEN_BUILT_PATH, PmoFilePage, PmoFileRoute, PMO_TABS, type PmoTab } from "./PmoFilePage";
+import { TablesPanel } from "./TablesPanel";
 import { resetWorkspace } from "./workspace";
 
 vi.mock("@/features/review/saveFile", () => ({ saveFile: vi.fn<typeof saveFile>() }));
@@ -201,6 +203,34 @@ describe("PmoFilePage: tables", () => {
     expect(files).toHaveLength(
       screen.getAllByRole("button", { name: /^Download .* as csv$/ }).length,
     );
+  });
+
+  it("says no subset has been made yet when asked for the subset's tables first", async () => {
+    const store = createTestStore();
+    const file = pmoFile(EXAMPLE);
+    await workingPmoSessionOf(store).open({
+      kind: "file",
+      file,
+      name: file.name,
+      origin: { kind: "chosen" },
+    });
+    const user = userEvent.setup();
+    const listed = [{ id: "alleles", rows: 1 }] as const;
+    await renderWithStore(
+      <TablesPanel
+        tables={listed}
+        subsetTables={listed}
+        source="subset"
+        onSourceChange={() => undefined}
+      />,
+      { store },
+    );
+    await user.click(screen.getByRole("button", { name: "Download Allele table as csv" }));
+    expect(await screen.findByText("No subset has been made yet")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Download all tables (.zip)" }));
+    expect(await screen.findByText("No subset has been made yet")).toBeInTheDocument();
+    expect(screen.queryByText(/could not be made/)).not.toBeInTheDocument();
+    expect(saveFile).not.toHaveBeenCalled();
   });
 });
 

@@ -3016,6 +3016,10 @@ msgstr "Locations that end before they start"
 msgid "Look into your PMO"
 msgstr "Look into your PMO"
 
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Make one on the Subset tab, or download the tables of the whole file."
+msgstr "Make one on the Subset tab, or download the tables of the whole file."
+
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Make one on the Subset tab, or sum up the whole file."
 msgstr "Make one on the Subset tab, or sum up the whole file."
@@ -3300,6 +3304,7 @@ msgid "Next"
 msgstr "Next"
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "No file is open"
 msgstr "No file is open"
 
@@ -3393,6 +3398,7 @@ msgid "No steps yet"
 msgstr "No steps yet"
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "No subset has been made yet"
 msgstr "No subset has been made yet"
 
@@ -3697,6 +3703,10 @@ msgstr "Only the specimen name is needed. Many labs keep specimens and library s
 #: src/app/HomePage.tsx
 msgid "Open a PMO file"
 msgstr "Open a PMO file"
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Open a PMO file to download its tables."
+msgstr "Open a PMO file to download its tables."
 
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables as CSV or TSV, make a smaller PMO with only some specimens, targets or reads, or publish it. The file stays in this browser."
