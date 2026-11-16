@@ -1,26 +1,17 @@
 import { plural, t } from "@lingui/core/macro";
-import { Trans } from "@lingui/react/macro";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import type {
   ControlKind,
   PmoSummary,
   SampleSummary,
   TargetSummary,
+  WorkingPmoRequest,
   WorkingSource,
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
-import { useActions } from "@/state";
-import {
-  Callout,
-  Card,
-  SectionHeading,
-  SegmentedControl,
-  Skeleton,
-  Stat,
-  Switch,
-  formatCount,
-} from "@/ui";
+import { useWorkingPmoQuery } from "@/state";
+import { Card, SectionHeading, Skeleton, Stat, Switch, formatCount } from "@/ui";
 
 import { AlleleBars } from "./AlleleBars";
 import {
@@ -34,14 +25,10 @@ import {
 } from "./QualityViews";
 import { ReadsGrid } from "./ReadsGrid";
 import { SortableTable, type SortableColumn } from "./SortableTable";
+import { NoAnswer } from "../NoAnswer";
 import { useSettled } from "../useSettled";
 
 import { MinReadsField, SectionJumps, ViewToolbar, type Jump } from "./ViewToolbar";
-
-type Loaded =
-  | { readonly kind: "loading" }
-  | { readonly kind: "ready"; readonly summary: PmoSummary }
-  | { readonly kind: "failed" };
 
 function sampleColumns(summary: PmoSummary): SortableColumn<SampleSummary>[] {
   return [
@@ -241,10 +228,8 @@ function Headline({ summary }: { readonly summary: PmoSummary }) {
 
 /** Props for {@link SummaryPanel}. */
 export interface SummaryPanelProps {
-  /** Whether a subset has been made, so it can be summed up instead. */
-  readonly hasSubset: boolean;
+  /** Which PMO to sum up. */
   readonly source: WorkingSource;
-  readonly onSourceChange: (source: WorkingSource) => void;
   /** The minimum reads for a microhaplotype to count; `null` counts them all. */
   readonly minReads: number | null;
   readonly onMinReadsChange: (value: number | null) => void;
@@ -256,34 +241,21 @@ export interface SummaryPanelProps {
  * threshold applies throughout. Counted in the worker.
  */
 export function SummaryPanel({
-  hasSubset,
   source,
-  onSourceChange,
   minReads: minReadsInput,
   onMinReadsChange,
 }: SummaryPanelProps) {
-  const actions = useActions();
   const minReads = useSettled(Math.max(0, minReadsInput ?? 0), 400);
-  const [loaded, setLoaded] = useState<Loaded>({ kind: "loading" });
   const [allTargets, setAllTargets] = useState(false);
   const [grouped, setGrouped] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
-  const shownSource = hasSubset ? source : "original";
+  const request = useMemo(
+    (): WorkingPmoRequest<"summary"> => ({ kind: "summary", source, minReads }),
+    [source, minReads],
+  );
+  const loaded = useWorkingPmoQuery(request);
 
-  useEffect(() => {
-    let live = true;
-    async function load(): Promise<void> {
-      const summary = await actions.workingPmoSummary({ source: shownSource, minReads });
-      if (!live) return;
-      setLoaded(summary === null ? { kind: "failed" } : { kind: "ready", summary });
-    }
-    void load();
-    return () => {
-      live = false;
-    };
-  }, [actions, shownSource, minReads]);
-
-  const summary = loaded.kind === "ready" ? loaded.summary : null;
+  const summary = loaded.kind === "ok" ? loaded.value : null;
   const columns = useMemo(
     () =>
       summary === null
@@ -316,25 +288,17 @@ export function SummaryPanel({
     <div className="flex flex-col gap-8">
       <ViewToolbar>
         <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
-        {hasSubset ? (
-          <SegmentedControl<WorkingSource>
-            label={t`Sum up`}
-            value={source}
-            onValueChange={onSourceChange}
-            segments={[
-              { value: "original", label: t`The whole file` },
-              { value: "subset", label: t`The subset` },
-            ]}
-          />
-        ) : null}
         {summary === null ? null : <SectionJumps jumps={jumpsOf(summary)} />}
       </ViewToolbar>
 
-      {loaded.kind === "failed" ? (
-        <Callout tone="error" live title={t`The summary could not be made`}>
-          <Trans>Open the file again.</Trans>
-        </Callout>
-      ) : null}
+      {loaded.kind === "ok" || loaded.kind === "loading" ? null : (
+        <NoAnswer
+          reason={loaded.kind}
+          notOpen={t`Open a PMO file to see its summary.`}
+          noSubset={t`Make one on the Subset tab. Until then, only the original can be summed up.`}
+          failed={{ title: t`The summary could not be made`, body: t`Open the file again.` }}
+        />
+      )}
 
       {summary === null ? (
         loaded.kind === "loading" ? (

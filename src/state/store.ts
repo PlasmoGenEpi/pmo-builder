@@ -8,21 +8,7 @@
 import { t } from "@lingui/core/macro";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
-import type { PmoFile, PmoFileCheck, Suggestions } from "@/domain/build";
-import type {
-  GroupComparison,
-  GroupKey,
-  OpenOutcome,
-  PmoSummary,
-  SubsetOutcome,
-  SubsetPreview,
-  SubsetRequest,
-  TableFile,
-  TableFormat,
-  TableId,
-  TablesArchive,
-  WorkingSource,
-} from "@/domain/tools/types";
+import type { PmoFile, Suggestions } from "@/domain/build";
 // Not the `@/domain/build` or `@/domain/import` barrels: they would bring
 // pmotools-ts onto the main thread.
 import { NO_SUGGESTIONS } from "@/domain/build/suggestions";
@@ -42,7 +28,6 @@ import {
   setSlotTable,
   slotExists,
   slotKey,
-  unreachable,
   updateListItem,
   type Draft,
   type DraftStorage,
@@ -79,6 +64,11 @@ import {
 
 import { createSoleEditorLock, type EditorLock } from "./editorLock";
 import { EXAMPLE_FILES, type ExampleFile } from "./example";
+import {
+  createWorkingPmoSession,
+  type WorkingPmoEvent,
+  type WorkingPmoSession,
+} from "./workingPmoSession";
 
 /** Where saving to the browser stands. */
 export type PersistenceState =
@@ -178,9 +168,8 @@ export type AppEvent =
   /** The saved draft could not be read and was set aside. */
   | { readonly kind: "draft-set-aside" }
   | { readonly kind: "save-failed" }
-  | { readonly kind: "engine-stopped" }
-  /** A PMO file was checked on the publish page. */
-  | { readonly kind: "pmo-file-checked"; readonly result: PmoFileCheckResult }
+  /** The engine's worker stopped; also the working PMO session reports this. */
+  | WorkingPmoEvent
   | PublishingEvent;
 
 /** Where the PMO being published came from. */
@@ -204,41 +193,26 @@ export type DepositEnd =
   | "other-community"
   | "failed";
 
-/** What checking a PMO file found, in a word. `failed` when the check could not run. */
-export type PmoFileCheckResult =
-  | "ready"
-  | "example"
-  | "too-large"
-  | "unreadable"
-  | "not-pmo"
-  | "wrong-version"
-  | "invalid"
-  | "failed";
-
 /** Publishing steps the publish panel reports, for usage counts. */
 export type PublishingEvent =
   | { readonly kind: "publish-opened"; readonly source: PublishingSource }
   | { readonly kind: "deposit-started"; readonly source: PublishingSource }
   | { readonly kind: "deposit-finished"; readonly outcome: DepositEnd };
 
-/** The word for what a file check found. */
-export function fileCheckResult(check: PmoFileCheck | null): PmoFileCheckResult {
-  if (check === null) return "failed";
-  switch (check.kind) {
-    case "ready":
-      return check.publication.exampleData ? "example" : "ready";
-    case "unreadable":
-      return check.reason === "not-pmo" ? "not-pmo" : "unreadable";
-    case "too-large":
-    case "wrong-version":
-    case "invalid":
-      return check.kind;
-    default:
-      return unreachable(check);
-  }
-}
-
 const eventListeners = new WeakMap<AppStore, Set<(event: AppEvent) => void>>();
+
+/** Each store's working PMO session, made beside it on the same engine. */
+const sessions = new WeakMap<AppStore, WorkingPmoSession>();
+
+/**
+ * The working PMO session made beside `store`, on its engine, building its
+ * draft before opening the built PMO and reporting to its usage counts.
+ */
+export function workingPmoSessionOf(store: AppStore): WorkingPmoSession {
+  const session = sessions.get(store);
+  if (session === undefined) throw new Error("This store was not made by createAppStore.");
+  return session;
+}
 
 /** Calls `listener` with every {@link AppEvent} of a store. Returns a function that stops. */
 export function subscribeAppEvents(
@@ -341,49 +315,6 @@ export interface AppActions {
   }): Promise<{ readonly fileName: string; readonly size: number } | null>;
   /** Builds now if needed, then gives the PMO's text for a preview. */
   previewPmo(options?: { readonly maxLength?: number }): Promise<PmoTextPreview | null>;
-  /**
-   * Checks a PMO file the user already has, for publishing. The draft is not
-   * touched. `null` when the engine failed.
-   */
-  checkPmoFile(file: Blob): Promise<PmoFileCheck | null>;
-  /**
-   * Opens a PMO file the user already has, to subset it or export its
-   * tables. The draft is not touched. `null` when the engine failed.
-   */
-  openPmo(file: Blob, fileName: string): Promise<OpenOutcome | null>;
-  /**
-   * Builds now if needed, then opens the built PMO as the working file.
-   * `null` when nothing could be built or the engine failed.
-   */
-  openBuiltPmo(): Promise<{ readonly outcome: OpenOutcome; readonly file: PmoFile } | null>;
-  /** Makes a subset of the opened PMO. `null` when the engine failed. */
-  subsetPmo(request: SubsetRequest): Promise<SubsetOutcome | null>;
-  /** What a subset would keep. `null` when no PMO is open or the engine failed. */
-  previewSubset(request: SubsetRequest): Promise<SubsetPreview | null>;
-  /** Every table of the opened PMO or its subset in one zip. `null` when there is none or the engine failed. */
-  workingPmoTables(request: {
-    readonly source: WorkingSource;
-    readonly format: TableFormat;
-  }): Promise<TablesArchive | null>;
-  /** One table of the opened PMO or its subset. `null` when there is none or the engine failed. */
-  workingPmoTable(request: {
-    readonly source: WorkingSource;
-    readonly id: TableId;
-    readonly format: TableFormat;
-  }): Promise<TableFile | null>;
-  /** A summary of the opened PMO or its subset. `null` when there is none or the engine failed. */
-  workingPmoSummary(request: {
-    readonly source: WorkingSource;
-    readonly minReads: number;
-  }): Promise<PmoSummary | null>;
-  /** The opened PMO or its subset grouped by a specimen field. `null` when there is none or the engine failed. */
-  workingPmoGroups(request: {
-    readonly source: WorkingSource;
-    readonly minReads: number;
-    readonly key: GroupKey;
-  }): Promise<GroupComparison | null>;
-  /** The subset as a file. `null` when there is none or the engine failed. */
-  workingPmoFile(request: { readonly gzip: boolean }): Promise<PmoFile | null>;
   /** Reports a publishing step, for usage counts. Changes nothing. */
   notePublishing(event: PublishingEvent): void;
   /** Runs any scheduled build and save now, the save without waiting for the build. */
@@ -1057,99 +988,6 @@ export function createAppStore(options: AppStoreOptions): AppStore {
         }
       },
 
-      async checkPmoFile(file) {
-        let check: PmoFileCheck | null = null;
-        try {
-          check = await engine.checkPmoFile(file);
-        } catch (error) {
-          engineFailed(error);
-        }
-        emit({ kind: "pmo-file-checked", result: fileCheckResult(check) });
-        return check;
-      },
-
-      async openPmo(file, fileName) {
-        try {
-          return await engine.openPmo(file, fileName);
-        } catch (error) {
-          engineFailed(error);
-          return null;
-        }
-      },
-
-      async openBuiltPmo() {
-        try {
-          await actions.flush();
-          return await engine.openBuiltPmo();
-        } catch (error) {
-          engineFailed(error);
-          return null;
-        }
-      },
-
-      async subsetPmo(request) {
-        try {
-          return await engine.subsetPmo(request);
-        } catch (error) {
-          engineFailed(error);
-          return null;
-        }
-      },
-
-      async previewSubset(request) {
-        try {
-          return await engine.previewSubset(request);
-        } catch (error) {
-          engineFailed(error);
-          return null;
-        }
-      },
-
-      async workingPmoTables(request) {
-        try {
-          return await engine.workingPmoTables(request);
-        } catch (error) {
-          engineFailed(error);
-          return null;
-        }
-      },
-
-      async workingPmoTable(request) {
-        try {
-          return await engine.workingPmoTable(request);
-        } catch (error) {
-          engineFailed(error);
-          return null;
-        }
-      },
-
-      async workingPmoSummary(request) {
-        try {
-          return await engine.workingPmoSummary(request);
-        } catch (error) {
-          engineFailed(error);
-          return null;
-        }
-      },
-
-      async workingPmoGroups(request) {
-        try {
-          return await engine.workingPmoGroups(request);
-        } catch (error) {
-          engineFailed(error);
-          return null;
-        }
-      },
-
-      async workingPmoFile(request) {
-        try {
-          return await engine.workingPmoFile(request);
-        } catch (error) {
-          engineFailed(error);
-          return null;
-        }
-      },
-
       notePublishing(event) {
         emit(event);
       },
@@ -1307,6 +1145,10 @@ export function createAppStore(options: AppStoreOptions): AppStore {
     scheduleSave();
   });
 
+  sessions.set(
+    store,
+    createWorkingPmoSession({ engine, flush: () => store.getState().actions.flush(), emit }),
+  );
   return store;
 }
 

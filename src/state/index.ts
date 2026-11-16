@@ -7,3 +7,5 @@ export * from "./example";
 export * from "./hooks";
 export * from "./instrumentation";
 export * from "./store";
+export * from "./workingPmoHooks";
+export * from "./workingPmoSession";

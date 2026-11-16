@@ -4,8 +4,11 @@ import { useState } from "react";
 
 import type { TableFormat, TableId, TableInfo, WorkingSource } from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
-import { useActions } from "@/state";
+import { useWorkingPmoSession } from "@/state";
 import { Button, SegmentedControl } from "@/ui";
+
+import { NoAnswer, type NoAnswerReason } from "./NoAnswer";
+import { settleAnswer } from "./settleAnswer";
 
 /** What each table is called and holds. */
 function describe(id: TableId): { readonly title: string; readonly body: string } {
@@ -48,59 +51,58 @@ function describe(id: TableId): { readonly title: string; readonly body: string 
   }
 }
 
+/** Why the last download gave no file, and which it was: one table, or the zip of all of them. */
+interface Problem {
+  readonly reason: NoAnswerReason;
+  readonly target: TableId | "all";
+}
+
 /** Props for {@link TablesPanel}. */
 export interface TablesPanelProps {
   readonly tables: readonly TableInfo[];
   /** The tables of the subset, when one has been made. */
   readonly subsetTables: readonly TableInfo[] | null;
+  /** Which PMO's tables to list and download. */
   readonly source: WorkingSource;
-  readonly onSourceChange: (source: WorkingSource) => void;
 }
 
 /** The tables in a PMO, each to download as CSV or TSV. */
-export function TablesPanel({ tables, subsetTables, source, onSourceChange }: TablesPanelProps) {
-  const actions = useActions();
+export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) {
+  const session = useWorkingPmoSession();
   const [format, setFormat] = useState<TableFormat>("csv");
   const [saving, setSaving] = useState<TableId | "all" | null>(null);
-  const [failed, setFailed] = useState<TableId | "all" | null>(null);
+  const [problem, setProblem] = useState<Problem | null>(null);
   const shown = source === "subset" && subsetTables !== null ? subsetTables : tables;
+  const failed = problem?.reason === "failed" ? problem.target : null;
 
   async function download(id: TableId): Promise<void> {
     setSaving(id);
-    setFailed(null);
-    const file = await actions.workingPmoTable({ source, id, format });
+    setProblem(null);
+    const answer = await session.query({ kind: "table", source, id, format });
     setSaving(null);
-    if (file === null) {
-      setFailed(id);
-      return;
-    }
-    const type = format === "csv" ? "text/csv" : "text/tab-separated-values";
-    saveFile(new Blob([file.text], { type: `${type};charset=utf-8` }), file.fileName);
+    settleAnswer(answer, {
+      ok: (file) => {
+        const type = format === "csv" ? "text/csv" : "text/tab-separated-values";
+        saveFile(new Blob([file.text], { type: `${type};charset=utf-8` }), file.fileName);
+      },
+      none: (reason) => setProblem({ reason, target: id }),
+    });
   }
 
   async function downloadAll(): Promise<void> {
     setSaving("all");
-    setFailed(null);
-    const archive = await actions.workingPmoTables({ source, format });
+    setProblem(null);
+    const answer = await session.query({ kind: "tables", source, format });
     setSaving(null);
-    if (archive === null) setFailed("all");
-    else saveFile(archive.blob, archive.fileName);
+    settleAnswer(answer, {
+      ok: (archive) => saveFile(archive.blob, archive.fileName),
+      none: (reason) => setProblem({ reason, target: "all" }),
+    });
   }
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
-        {subsetTables === null ? null : (
-          <SegmentedControl<WorkingSource>
-            label={t`Tables from`}
-            value={source}
-            onValueChange={onSourceChange}
-            segments={[
-              { value: "original", label: t`The whole file` },
-              { value: "subset", label: t`The subset` },
-            ]}
-          />
-        )}
         <SegmentedControl<TableFormat>
           label={t`File type`}
           value={format}
@@ -120,6 +122,15 @@ export function TablesPanel({ tables, subsetTables, source, onSourceChange }: Ta
           {t`Download all tables (.zip)`}
         </Button>
       </div>
+      {problem === null ? null : (
+        <NoAnswer
+          reason={problem.reason}
+          notOpen={t`Open a PMO file to download its tables.`}
+          noSubset={t`Make one on the Subset tab. Until then, only the original's tables can be downloaded.`}
+          // A failure is shown beside the table it concerns.
+          failed={null}
+        />
+      )}
       {failed === "all" ? (
         <p role="alert" className="text-sm text-danger-text">
           {t`The tables could not be made. Open the file again.`}

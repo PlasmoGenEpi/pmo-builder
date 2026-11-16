@@ -18,6 +18,7 @@ tests. oxlint (type-aware) and oxfmt for linting and formatting.
 | Path                         | What it holds                                                                          | May import from                                                                     |
 | ---------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `src/domain/types.ts`        | Contracts shared by every module                                                       | `pmotools-ts` types                                                                 |
+| `src/domain/errors.ts`       | Error helpers every module may use, such as `describeError`                            | nothing                                                                             |
 | `src/domain/import/`         | File to typed table: csv, tsv, txt, gz, xlsx                                           | `types`, `pmotools-ts`                                                              |
 | `src/domain/fields/`         | Field specs and header aliases for each table                                          | `types`                                                                             |
 | `src/domain/matching/`       | Column auto-matching and mapping checks                                                | `types`                                                                             |
@@ -26,7 +27,7 @@ tests. oxlint (type-aware) and oxfmt for linting and formatting.
 | `src/domain/tools/`          | Working with a PMO the user has: choices, subsets, tables. Calls `pmotools-ts`         | `domain/*`, `pmotools-ts`                                                           |
 | `src/domain/repository/`     | The catalogue of published PMOs and the harvester that builds it                       | `domain/*`, `pmotools-ts`. Node only, except `types.ts`                             |
 | `src/worker/`                | The web worker that runs imports and builds, and its client                            | `domain/*`                                                                          |
-| `src/state/`                 | The app store, its hooks, and usage counts wired to it                                 | `domain`, `worker`, `analytics`                                                     |
+| `src/state/`                 | The app store, the working PMO session, their hooks, and usage counts wired to them    | `domain`, `worker`, `analytics`                                                     |
 | `src/i18n/`                  | The interface language: choosing it and loading its catalog                            | `locales`                                                                           |
 | `src/locales/`               | The translation catalogs (`.po`). Written by `pnpm i18n:extract`                       |                                                                                     |
 | `src/analytics/`             | Usage instrumentation                                                                  | nothing in `domain`                                                                 |

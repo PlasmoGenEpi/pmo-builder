@@ -19,6 +19,8 @@
 import { t } from "@lingui/core/macro";
 import { createStore, del, get, keys, promisifyRequest } from "idb-keyval";
 
+import { describeError } from "@/domain/errors";
+
 import { checkDraft } from "./guard";
 import { isBlob, isJsonValue, newId, type Draft, type JsonValue } from "./model";
 import { panelContentKey } from "./panels";
@@ -169,10 +171,6 @@ function idbBackendFactory(prefix: string): BackendFactory {
       keys: async () => (await keys<IDBValidKey>(open())).filter((key) => typeof key === "string"),
     };
   };
-}
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {

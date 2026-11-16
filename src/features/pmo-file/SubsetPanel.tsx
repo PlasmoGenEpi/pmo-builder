@@ -1,12 +1,18 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { ChartColumn, CloudUpload, Download, Plus, Scissors, Table, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { MergeSummary } from "@/domain/build/merge";
-import type { PmoChoices, SubsetOutcome, SubsetPreview, SubsetRequest } from "@/domain/tools/types";
+import type {
+  PmoChoices,
+  SubsetDetails,
+  SubsetPreview,
+  SubsetRequest,
+  WorkingPmoQuery,
+} from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
-import { useActions } from "@/state";
+import { useWorkingPmo, useWorkingPmoQuery, useWorkingPmoSession } from "@/state";
 import {
   Button,
   Callout,
@@ -22,6 +28,8 @@ import {
 } from "@/ui";
 
 import { NameChecklist } from "./NameChecklist";
+import { NoAnswer, type NoAnswerReason } from "./NoAnswer";
+import { settleAnswer } from "./settleAnswer";
 import {
   formProblem,
   initialForm,
@@ -41,7 +49,7 @@ function problemText(problem: ReturnType<typeof formProblem>): string | null {
     case "no-targets":
       return t`No target is ticked yet.`;
     case "nothing-changed":
-      return t`Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the whole file.`;
+      return t`Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the same as the original.`;
     case null:
     default:
       return null;
@@ -160,182 +168,209 @@ function subsetSummary(
     ? t({
         message: `It keeps ${specimens} of ${allSpecimens} specimens and ${librarySamples} of ${allLibrarySamples} library samples, with alleles at ${targets} of ${allTargets} targets.`,
         comment:
-          "Each pair of numbers is what the subset keeps and what the whole file has. Targets are counted only when some allele was found at them.",
+          "Each pair of numbers is what the subset keeps and what the original has. Targets are counted only when some allele was found at them.",
       })
     : t({
         message: `The subset will keep ${specimens} of ${allSpecimens} specimens and ${librarySamples} of ${allLibrarySamples} library samples, with alleles at ${targets} of ${allTargets} targets.`,
         comment:
-          "Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the whole file has. Targets are counted only when some allele was found at them.",
+          "Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the original has. Targets are counted only when some allele was found at them.",
       });
 }
 
+/** The subset made: what it keeps, and what to do with it. */
 function SubsetResult({
-  outcome,
+  made,
   original,
   onShowSummary,
   onShowTables,
   onPublish,
 }: {
-  readonly outcome: SubsetOutcome;
+  readonly made: SubsetDetails;
   readonly original: MergeSummary;
   readonly onShowSummary: () => void;
   readonly onShowTables: () => void;
   readonly onPublish: (() => void) | null;
 }) {
-  const actions = useActions();
+  const session = useWorkingPmoSession();
   const [saving, setSaving] = useState<"gzip" | "json" | null>(null);
-  const [failed, setFailed] = useState(false);
+  /** Why the last download gave no file. */
+  const [unsaved, setUnsaved] = useState<NoAnswerReason | null>(null);
 
   async function download(gzip: boolean): Promise<void> {
     setSaving(gzip ? "gzip" : "json");
-    setFailed(false);
-    const file = await actions.workingPmoFile({ gzip });
+    setUnsaved(null);
+    const answer = await session.query({ kind: "file", gzip });
     setSaving(null);
-    if (file === null) setFailed(true);
-    else saveFile(file.blob, file.fileName);
+    settleAnswer(answer, {
+      ok: (file) => saveFile(file.blob, file.fileName),
+      none: setUnsaved,
+    });
   }
 
-  switch (outcome.kind) {
-    case "made":
-      return (
-        <div className="flex flex-col gap-4">
-          {outcome.problems.length === 0 ? (
-            <Callout tone="success" live title={t`The subset is ready`}>
-              {subsetSummary(outcome.summary, original, "made")}
-            </Callout>
-          ) : (
-            <Callout tone="warning" live title={t`The subset does not pass every check`}>
-              <ul className="list-disc pl-5">
-                {outcome.problems.map((problem) => (
-                  <li key={problem} className="break-words">
-                    {problem}
-                  </li>
-                ))}
-              </ul>
-            </Callout>
-          )}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="primary"
-              icon={Download}
-              loading={saving === "gzip"}
-              onClick={() => void download(true)}
-            >
-              {t`Download the subset (.json.gz)`}
-            </Button>
-            <Button
-              variant="secondary"
-              loading={saving === "json"}
-              onClick={() => void download(false)}
-            >
-              {t`Download as .json`}
-            </Button>
-          </div>
-          {/* Pulled out by the ghost buttons' padding, so their text lines up with the rest. */}
-          <div className="-mx-3 flex flex-wrap gap-1">
-            <Button variant="ghost" icon={ChartColumn} onClick={onShowSummary}>
-              {t`See its summary`}
-            </Button>
-            <Button variant="ghost" icon={Table} onClick={onShowTables}>
-              {t`Download its tables`}
-            </Button>
-            {onPublish === null ? null : (
-              <Button variant="ghost" icon={CloudUpload} onClick={onPublish}>
-                {t`Publish the subset`}
-              </Button>
-            )}
-          </div>
-          {failed ? (
-            <p role="alert" className="text-sm text-danger-text">
-              {t`The file could not be made. Make the subset again.`}
-            </p>
-          ) : null}
-        </div>
-      );
-    case "empty":
-      return (
-        <Callout tone="warning" live title={t`Nothing is left`}>
-          <Trans>
-            No library sample has any microhaplotypes left with these choices. Choose more specimens
-            or targets, or fewer reads.
-          </Trans>
+  return (
+    <div className="flex flex-col gap-4">
+      {made.problems.length === 0 ? (
+        <Callout tone="success" live title={t`The subset is ready`}>
+          {subsetSummary(made.summary, original, "made")}
         </Callout>
-      );
-    case "failed":
-      return (
-        <Callout tone="error" live title={t`The subset could not be made`}>
-          {outcome.message}
+      ) : (
+        <Callout tone="warning" live title={t`The subset does not pass every check`}>
+          <ul className="list-disc pl-5">
+            {made.problems.map((problem) => (
+              <li key={problem} className="break-words">
+                {problem}
+              </li>
+            ))}
+          </ul>
         </Callout>
-      );
-    case "not-open":
-      return (
-        <Callout tone="error" live title={t`The file is no longer open`}>
-          <Trans>Choose the file again.</Trans>
-        </Callout>
-      );
-    default:
-      return null;
-  }
+      )}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="primary"
+          icon={Download}
+          loading={saving === "gzip"}
+          onClick={() => void download(true)}
+        >
+          {t`Download the subset (.json.gz)`}
+        </Button>
+        <Button
+          variant="secondary"
+          loading={saving === "json"}
+          onClick={() => void download(false)}
+        >
+          {t`Download as .json`}
+        </Button>
+      </div>
+      {/* Pulled out by the ghost buttons' padding, so their text lines up with the rest. */}
+      <div className="-mx-3 flex flex-wrap gap-1">
+        <Button variant="ghost" icon={ChartColumn} onClick={onShowSummary}>
+          {t`See its summary`}
+        </Button>
+        <Button variant="ghost" icon={Table} onClick={onShowTables}>
+          {t`Download its tables`}
+        </Button>
+        {onPublish === null ? null : (
+          <Button variant="ghost" icon={CloudUpload} onClick={onPublish}>
+            {t`Publish the subset`}
+          </Button>
+        )}
+      </div>
+      {unsaved === null ? null : (
+        <NoAnswer
+          reason={unsaved}
+          notOpen={t`Choose the file again, then make the subset again.`}
+          noSubset={t`Make the subset again.`}
+          failed={{ title: t`The file could not be made`, body: t`Make the subset again.` }}
+        />
+      )}
+    </div>
+  );
 }
+
+/** What the last try to make a subset gave, when it made none. */
+type Tried = "empty" | NoAnswerReason;
+
+/** Why the last try made no subset, and what to do. */
+function NotMade({ tried }: { readonly tried: Tried }) {
+  if (tried === "empty") {
+    return (
+      <Callout tone="warning" live title={t`Nothing is left`}>
+        <Trans>
+          No library sample has any microhaplotypes left with these choices. Choose more specimens
+          or targets, or fewer reads.
+        </Trans>
+      </Callout>
+    );
+  }
+  return (
+    <NoAnswer
+      reason={tried}
+      notOpen={t`Choose the file again.`}
+      noSubset={t`Make the subset again.`}
+      failed={{
+        title: t`The subset could not be made`,
+        body: t`Make the subset again. If it fails again, open the file again.`,
+      }}
+    />
+  );
+}
+
+/** What the preview of a subset shows. */
+type PreviewState =
+  /** What the subset would keep. `stale` while newer choices are being counted. */
+  | { readonly kind: "counts"; readonly counts: SubsetPreview; readonly stale: boolean }
+  /** Why it could not be counted. */
+  | { readonly kind: "unanswered"; readonly reason: NoAnswerReason }
+  /** Nothing: before the first count, and while the choices are not complete. */
+  | { readonly kind: "none" };
+
+const NO_PREVIEW: PreviewState = { kind: "none" };
 
 /**
  * What `request` would keep, counted in the worker once the form has settled.
  * While newer choices are being counted, the last counts are given as stale.
- * `null` before the first count, and while `enabled` is false.
+ * Nothing while `enabled` is false.
  */
-function useSubsetPreview(
-  request: SubsetRequest,
-  enabled: boolean,
-): { readonly counts: SubsetPreview; readonly stale: boolean } | null {
-  const actions = useActions();
+function useSubsetPreview(request: SubsetRequest, enabled: boolean): PreviewState {
   const settled = useSettled(request, 300);
-  const [latest, setLatest] = useState<{
-    readonly request: SubsetRequest;
-    readonly counts: SubsetPreview;
-  } | null>(null);
-  useEffect(() => {
-    if (!enabled) return undefined;
-    let live = true;
-    async function count(): Promise<void> {
-      const counts = await actions.previewSubset(settled);
-      if (live) setLatest(counts === null ? null : { request: settled, counts });
-    }
-    void count();
-    return () => {
-      live = false;
-    };
-  }, [actions, settled, enabled]);
-  if (!enabled || latest === null) return null;
-  return { counts: latest.counts, stale: latest.request !== request };
+  const query = useMemo(
+    (): WorkingPmoQuery<"preview"> => ({ kind: "preview", ...settled }),
+    [settled],
+  );
+  const answer = useWorkingPmoQuery(query);
+  // The last counts, shown greyed out while newer choices are counted.
+  const [last, setLast] = useState<SubsetPreview | null>(null);
+  if (answer.kind === "ok" && answer.value !== last) setLast(answer.value);
+  if (!enabled) return NO_PREVIEW;
+  if (answer.kind === "ok") {
+    return { kind: "counts", counts: answer.value, stale: settled !== request };
+  }
+  if (answer.kind === "loading") {
+    return last === null ? NO_PREVIEW : { kind: "counts", counts: last, stale: true };
+  }
+  return { kind: "unanswered", reason: answer.kind };
 }
+
+/** What the panel shows under the form. */
+type Shown =
+  /** The session's subset, if one is made. */
+  | { readonly kind: "subset" }
+  /** The last try, which made no subset. */
+  | { readonly kind: "tried"; readonly tried: Tried }
+  /** Nothing: the choices have changed since. */
+  | { readonly kind: "nothing" };
+
+const SHOW_SUBSET: Shown = { kind: "subset" };
 
 /** Props for {@link SubsetPanel}. */
 export interface SubsetPanelProps {
   readonly choices: PmoChoices;
-  /** What the whole file holds, to compare the subset with. */
+  /** What the original holds, to compare the subset with. */
   readonly original: MergeSummary;
-  /** The latest subset made, kept by the page so it survives switching tabs. */
-  readonly outcome: SubsetOutcome | null;
-  readonly onMade: (outcome: SubsetOutcome | null) => void;
   readonly onShowSummary: () => void;
   readonly onShowTables: () => void;
   /** Opens publishing for the subset, or `null` when this copy cannot publish. */
   readonly onPublish: (() => void) | null;
 }
 
-/** Choosing specimens, targets and a read threshold, and making the subset. */
+/**
+ * Choosing specimens, targets and a read threshold, and making the subset.
+ * Always from the original. The subset made is the session's, so it outlives
+ * the panel.
+ */
 export function SubsetPanel({
   choices,
   original,
-  outcome,
-  onMade,
   onShowSummary,
   onShowTables,
   onPublish,
 }: SubsetPanelProps) {
-  const actions = useActions();
+  const session = useWorkingPmoSession();
+  const subset = useWorkingPmo((state) => state.subset);
   const [form, setForm] = useState<SubsetForm>(() => initialForm(choices));
   const [making, setMaking] = useState(false);
+  const [shown, setShown] = useState<Shown>(SHOW_SUBSET);
+  const made = shown.kind === "subset" && subset.kind === "made" ? subset.made : null;
   const kept = keptSpecimens(choices, form).length;
   const problem = formProblem(choices, form);
   const withData = choices.specimens.filter((specimen) => specimen.librarySamples > 0);
@@ -347,23 +382,23 @@ export function SubsetPanel({
   const targetsWithoutData = choices.targetsWithoutData;
   const request = useMemo(() => requestOf(form), [form]);
   const preview = useSubsetPreview(request, problem === null);
-  const nothingLeft = preview?.counts.librarySamplesWithData === 0 && !preview.stale;
+  const nothingLeft =
+    preview.kind === "counts" && preview.counts.librarySamplesWithData === 0 && !preview.stale;
 
   function change(next: Partial<SubsetForm>): void {
     setForm((before) => ({ ...before, ...next }));
-    onMade(null);
+    setShown({ kind: "nothing" });
   }
 
   async function make(): Promise<void> {
     setMaking(true);
-    const result = await actions.subsetPmo(request);
+    const answer = await session.subset(request);
     setMaking(false);
-    onMade(
-      result ?? {
-        kind: "failed",
-        message: t`Something went wrong. Reload the page and try again.`,
-      },
-    );
+    settleAnswer(answer, {
+      ok: (value) =>
+        setShown(value.kind === "made" ? SHOW_SUBSET : { kind: "tried", tried: "empty" }),
+      none: (reason) => setShown({ kind: "tried", tried: reason }),
+    });
   }
 
   return (
@@ -471,7 +506,19 @@ export function SubsetPanel({
       </section>
 
       <div className="flex flex-col gap-3 border-t border-border pt-6">
-        {preview === null || outcome?.kind === "made" ? null : (
+        {made === null && preview.kind === "unanswered" ? (
+          <NoAnswer
+            reason={preview.reason}
+            notOpen={t`Choose the file again.`}
+            // A preview counts what the original would give, so it never needs a subset.
+            noSubset={t`Make the subset again.`}
+            failed={{
+              title: t`The subset could not be counted`,
+              body: t`You can still make it. If that fails too, open the file again.`,
+            }}
+          />
+        ) : null}
+        {preview.kind !== "counts" || made !== null ? null : (
           <p
             aria-live="polite"
             aria-busy={preview.stale}
@@ -504,9 +551,10 @@ export function SubsetPanel({
         )}
       </div>
 
-      {outcome === null ? null : (
+      {shown.kind === "tried" ? <NotMade tried={shown.tried} /> : null}
+      {made === null ? null : (
         <SubsetResult
-          outcome={outcome}
+          made={made}
           original={original}
           onShowSummary={onShowSummary}
           onShowTables={onShowTables}

@@ -10,6 +10,13 @@ import { t } from "@lingui/core/macro";
 
 import { currentLocale } from "@/i18n/languages";
 import { isBlob, isJsonValue, type Draft } from "@/domain/draft";
+import type {
+  SubsetPreview,
+  WorkingPmoAnswer,
+  WorkingPmoKind,
+  WorkingPmoResult,
+  WorkingPmoValues,
+} from "@/domain/tools/types";
 import { SECTION_IDS, type SectionId } from "@/domain/types";
 
 import {
@@ -39,6 +46,71 @@ function isImportOutcome(value: unknown): boolean {
   return value["kind"] === "imported"
     ? isRecord(value["table"]) && typeof value["table"]["id"] === "string"
     : isRecord(value["notice"]) && typeof value["notice"]["message"] === "string";
+}
+
+function isSubsetPreview(value: unknown): value is SubsetPreview {
+  return (
+    isRecord(value) &&
+    typeof value["specimens"] === "number" &&
+    typeof value["librarySamplesWithData"] === "number" &&
+    typeof value["targetsWithCalls"] === "number"
+  );
+}
+
+/** The kinds of answer to a request about the working PMO: every one, and only those. */
+const WORKING_PMO_RESULTS = Object.keys({
+  ok: true,
+  "not-open": true,
+  "no-subset": true,
+  stale: true,
+  failed: true,
+} satisfies Record<WorkingPmoResult<unknown>["kind"], true>);
+
+/** Whether `value` has the shape of an answer about the working PMO, its value aside. */
+function isWorkingPmoEnvelope(value: unknown): value is Readonly<Record<string, unknown>> {
+  return (
+    hasKind(value, WORKING_PMO_RESULTS) &&
+    (value["kind"] !== "failed" || typeof value["message"] === "string")
+  );
+}
+
+/** Whether `value` is a file made in the worker: its bytes and its name. */
+function isMadeFile(value: unknown): value is { readonly blob: Blob; readonly fileName: string } {
+  return isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string";
+}
+
+/** Shape checks for the value of each kind of working PMO request that succeeded. */
+const WORKING_PMO_VALUES: {
+  readonly [K in WorkingPmoKind]: (value: unknown) => value is WorkingPmoValues[K];
+} = {
+  open: (value): value is WorkingPmoValues["open"] => hasKind(value, ["opened", "refused"]),
+  close: (value): value is null => value === null,
+  summary: (value): value is WorkingPmoValues["summary"] =>
+    isRecord(value) && Array.isArray(value["samples"]) && Array.isArray(value["targets"]),
+  subset: (value): value is WorkingPmoValues["subset"] =>
+    hasKind(value, ["made", "empty"]) &&
+    (value["kind"] === "empty" || typeof value["fileName"] === "string"),
+  preview: (value): value is WorkingPmoValues["preview"] => isSubsetPreview(value),
+  table: (value): value is WorkingPmoValues["table"] =>
+    isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string",
+  tables: (value): value is WorkingPmoValues["tables"] => isMadeFile(value),
+  file: (value): value is WorkingPmoValues["file"] => isMadeFile(value),
+  groupFields: (value): value is WorkingPmoValues["groupFields"] =>
+    Array.isArray(value) &&
+    value.every((field) => isRecord(field) && typeof field["key"] === "string"),
+  groups: (value): value is WorkingPmoValues["groups"] =>
+    isRecord(value) && Array.isArray(value["groups"]) && Array.isArray(value["targets"]),
+};
+
+/** Whether `value` is an answer to a working PMO request of kind `kind`. */
+function isWorkingPmoAnswer<K extends WorkingPmoKind>(
+  kind: K,
+  value: unknown,
+): value is WorkingPmoAnswer<K> {
+  if (!isWorkingPmoEnvelope(value)) return false;
+  if (value["kind"] !== "ok") return true;
+  const guard: (candidate: unknown) => candidate is WorkingPmoValues[K] = WORKING_PMO_VALUES[kind];
+  return guard(value["value"]);
 }
 
 /**
@@ -74,35 +146,7 @@ const RESULT_GUARDS: {
     value === null ||
     (isRecord(value) && typeof value["text"] === "string" && typeof value["length"] === "number"),
   getPanelFragment: (value): value is EngineResult<"getPanelFragment"> => isJsonValue(value),
-  checkPmoFile: (value): value is EngineResult<"checkPmoFile"> =>
-    hasKind(value, ["ready", "too-large", "unreadable", "wrong-version", "invalid"]),
-  openPmo: (value): value is EngineResult<"openPmo"> => hasKind(value, ["opened", "refused"]),
-  openBuiltPmo: (value): value is EngineResult<"openBuiltPmo"> =>
-    value === null ||
-    (isRecord(value) && hasKind(value["outcome"], ["opened"]) && isRecord(value["file"])),
-  subsetPmo: (value): value is EngineResult<"subsetPmo"> =>
-    hasKind(value, ["made", "empty", "not-open", "failed"]),
-  previewSubset: (value): value is EngineResult<"previewSubset"> =>
-    value === null ||
-    (isRecord(value) &&
-      typeof value["specimens"] === "number" &&
-      typeof value["librarySamplesWithData"] === "number" &&
-      typeof value["targetsWithCalls"] === "number"),
-  workingPmoTables: (value): value is EngineResult<"workingPmoTables"> =>
-    value === null ||
-    (isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string"),
-  workingPmoTable: (value): value is EngineResult<"workingPmoTable"> =>
-    value === null ||
-    (isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string"),
-  workingPmoSummary: (value): value is EngineResult<"workingPmoSummary"> =>
-    value === null ||
-    (isRecord(value) && Array.isArray(value["samples"]) && Array.isArray(value["targets"])),
-  workingPmoGroups: (value): value is EngineResult<"workingPmoGroups"> =>
-    value === null ||
-    (isRecord(value) && Array.isArray(value["groups"]) && Array.isArray(value["targets"])),
-  workingPmoFile: (value): value is EngineResult<"workingPmoFile"> =>
-    value === null ||
-    (isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string"),
+  workingPmo: (value): value is EngineResult<"workingPmo"> => isWorkingPmoEnvelope(value),
 };
 
 /**
@@ -224,16 +268,13 @@ export function createEngineClient(
     getPmoFileSize: (...args) => call("getPmoFileSize", args),
     getPmoText: (...args) => call("getPmoText", args),
     getPanelFragment: (...args) => call("getPanelFragment", args),
-    checkPmoFile: (...args) => call("checkPmoFile", args),
-    openPmo: (...args) => call("openPmo", args),
-    openBuiltPmo: (...args) => call("openBuiltPmo", args),
-    subsetPmo: (...args) => call("subsetPmo", args),
-    previewSubset: (...args) => call("previewSubset", args),
-    workingPmoTables: (...args) => call("workingPmoTables", args),
-    workingPmoTable: (...args) => call("workingPmoTable", args),
-    workingPmoSummary: (...args) => call("workingPmoSummary", args),
-    workingPmoGroups: (...args) => call("workingPmoGroups", args),
-    workingPmoFile: (...args) => call("workingPmoFile", args),
+    async workingPmo(workingCall) {
+      const answer: unknown = await call("workingPmo", [workingCall]);
+      if (!isWorkingPmoAnswer(workingCall.request.kind, answer)) {
+        throw new Error(`The engine gave an unexpected answer to ${workingCall.request.kind}.`);
+      }
+      return answer;
+    },
     async dispose(...args) {
       try {
         await call("dispose", args);
@@ -330,16 +371,7 @@ export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
     getPmoFileSize: async (...args) => engine().getPmoFileSize(...args),
     getPmoText: async (...args) => engine().getPmoText(...args),
     getPanelFragment: async (...args) => engine().getPanelFragment(...args),
-    checkPmoFile: async (...args) => engine().checkPmoFile(...args),
-    openPmo: async (...args) => engine().openPmo(...args),
-    openBuiltPmo: async (...args) => engine().openBuiltPmo(...args),
-    subsetPmo: async (...args) => engine().subsetPmo(...args),
-    previewSubset: async (...args) => engine().previewSubset(...args),
-    workingPmoTables: async (...args) => engine().workingPmoTables(...args),
-    workingPmoTable: async (...args) => engine().workingPmoTable(...args),
-    workingPmoSummary: async (...args) => engine().workingPmoSummary(...args),
-    workingPmoGroups: async (...args) => engine().workingPmoGroups(...args),
-    workingPmoFile: async (...args) => engine().workingPmoFile(...args),
+    workingPmo: async (workingCall) => engine().workingPmo(workingCall),
     async dispose() {
       files.clear();
       const client = current;
@@ -422,16 +454,7 @@ export function createLazyEngine(make: () => Promise<Engine>): Engine {
     getPmoFileSize: async (...args) => (await load()).getPmoFileSize(...args),
     getPmoText: async (...args) => (await load()).getPmoText(...args),
     getPanelFragment: async (...args) => (await load()).getPanelFragment(...args),
-    checkPmoFile: async (...args) => (await load()).checkPmoFile(...args),
-    openPmo: async (...args) => (await load()).openPmo(...args),
-    openBuiltPmo: async (...args) => (await load()).openBuiltPmo(...args),
-    subsetPmo: async (...args) => (await load()).subsetPmo(...args),
-    previewSubset: async (...args) => (await load()).previewSubset(...args),
-    workingPmoTables: async (...args) => (await load()).workingPmoTables(...args),
-    workingPmoTable: async (...args) => (await load()).workingPmoTable(...args),
-    workingPmoSummary: async (...args) => (await load()).workingPmoSummary(...args),
-    workingPmoGroups: async (...args) => (await load()).workingPmoGroups(...args),
-    workingPmoFile: async (...args) => (await load()).workingPmoFile(...args),
+    workingPmo: async (workingCall) => (await load()).workingPmo(workingCall),
     // Nothing to release if the engine was never loaded.
     dispose: async (...args) => (loading === null ? undefined : (await load()).dispose(...args)),
   };

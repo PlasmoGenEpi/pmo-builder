@@ -1644,7 +1644,7 @@ msgid "Choose another saved panel"
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
-msgid "Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the whole file."
+msgid "Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the same as the original."
 msgstr ""
 
 #: src/features/review/PublishToZenodo.tsx
@@ -1663,6 +1663,10 @@ msgstr ""
 
 #: src/domain/build/bioinformatics.ts
 msgid "Choose the column of the runs table that names each run's method."
+msgstr ""
+
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "Choose the file again, then make the subset again."
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
@@ -1794,7 +1798,6 @@ msgid "Comments"
 msgstr ""
 
 #: src/features/pmo-file/PmoFilePage.tsx
-#: src/features/pmo-file/summary/CompareTab.tsx
 msgid "Compare"
 msgstr ""
 
@@ -2720,7 +2723,7 @@ msgstr ""
 msgid "It is the file of the Zenodo record <0>{recordTitle}</0>. To publish part of it as a new record, make a subset first."
 msgstr ""
 
-#. Each pair of numbers is what the subset keeps and what the whole file has. Targets are counted only when some allele was found at them.
+#. Each pair of numbers is what the subset keeps and what the original has. Targets are counted only when some allele was found at them.
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "It keeps {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
 msgstr ""
@@ -3016,12 +3019,36 @@ msgstr ""
 msgid "Look into your PMO"
 msgstr ""
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Make one on the Subset tab. Until then, only the original can be compared."
+msgstr ""
+
+#: src/features/pmo-file/PublishPanel.tsx
+msgid "Make one on the Subset tab. Until then, only the original can be published."
+msgstr ""
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Make one on the Subset tab. Until then, only the original can be summed up."
+msgstr ""
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Make one on the Subset tab. Until then, only the original's tables can be downloaded."
+msgstr ""
+
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Make the subset"
 msgstr ""
 
 #: src/features/pmo-file/PublishPanel.tsx
 msgid "Make the subset again on the Subset tab."
+msgstr ""
+
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "Make the subset again."
+msgstr ""
+
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "Make the subset again. If it fails again, open the file again."
 msgstr ""
 
 #: src/app/HomePage.tsx
@@ -3295,6 +3322,10 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
+#: src/features/pmo-file/NoAnswer.tsx
+msgid "No file is open"
+msgstr ""
+
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "No library sample has any microhaplotypes left with these choices. Choose more specimens or targets, or fewer reads."
 msgstr ""
@@ -3382,6 +3413,10 @@ msgstr ""
 
 #: src/features/bioinformatics/MethodsPart.tsx
 msgid "No steps yet"
+msgstr ""
+
+#: src/features/pmo-file/NoAnswer.tsx
+msgid "No subset has been made yet"
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
@@ -3686,12 +3721,28 @@ msgstr ""
 msgid "Open a PMO file"
 msgstr ""
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Open a PMO file to compare groups of its specimens."
+msgstr ""
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Open a PMO file to download its tables."
+msgstr ""
+
+#: src/features/pmo-file/PublishPanel.tsx
+msgid "Open a PMO file to publish it."
+msgstr ""
+
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables as CSV or TSV, make a smaller PMO with only some specimens, targets or reads, or publish it. The file stays in this browser."
 msgstr ""
 
 #: src/app/HomePage.tsx
 msgid "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables, make a subset, or publish it."
+msgstr ""
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Open a PMO file to see its summary."
 msgstr ""
 
 #: src/app/SaveStatus.tsx
@@ -3776,6 +3827,11 @@ msgstr ""
 
 #: src/features/bioinformatics/BioinformaticsStep.tsx
 msgid "Optional. This tells readers of the PMO which programs and versions turned the reads into alleles, and links each run in the allele table to its pipeline."
+msgstr ""
+
+#. The PMO file as it was opened
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Original"
 msgstr ""
 
 #. A control that is neither negative nor positive
@@ -4959,6 +5015,10 @@ msgstr ""
 msgid "Something went wrong"
 msgstr ""
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Something went wrong in this browser while opening it. Try again."
+msgstr ""
+
 #: src/app/ErrorBoundary.tsx
 msgid "Something went wrong on this page"
 msgstr ""
@@ -4974,10 +5034,6 @@ msgstr ""
 
 #: src/state/store.ts
 msgid "Something went wrong while working out the PMO: {message}"
-msgstr ""
-
-#: src/features/pmo-file/SubsetPanel.tsx
-msgid "Something went wrong. Reload the page and try again."
 msgstr ""
 
 #: src/features/pmo-file/summary/SortableTable.tsx
@@ -5196,6 +5252,7 @@ msgstr ""
 msgid "Subject names or codes"
 msgstr ""
 
+#. A smaller PMO made from the original
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Subset"
 msgstr ""
@@ -5204,12 +5261,16 @@ msgstr ""
 msgid "Such as the country or year of collection."
 msgstr ""
 
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "Sum up"
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Summary"
 msgstr ""
 
 #: src/features/pmo-file/PmoFilePage.tsx
-msgid "Summary"
+msgid "Summary, Compare and Tables use the PMO chosen here."
+msgstr ""
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Summary, Compare, Tables and Publish use the PMO chosen here."
 msgstr ""
 
 #: src/app/ThemeToggle.tsx
@@ -5234,10 +5295,6 @@ msgstr ""
 
 #: src/app/HomePage.tsx
 msgid "Tables can be CSV, TSV, plain text or Excel files."
-msgstr ""
-
-#: src/features/pmo-file/TablesPanel.tsx
-msgid "Tables from"
 msgstr ""
 
 #. A record type in the PMO, starting a place in the file, such as 'Target "t1"'.
@@ -5465,6 +5522,10 @@ msgstr ""
 msgid "The app stopped while reading the file, probably because it needed more memory than the browser allows. Try a smaller file, or close other tabs and try again."
 msgstr ""
 
+#: src/state/workingPmoSession.ts
+msgid "The background worker lost the file and could not open it again."
+msgstr ""
+
 #: src/worker/client.ts
 msgid "The background worker stopped, probably because it ran out of memory. It starts again on the next change; if a table is very large, try a smaller one."
 msgstr ""
@@ -5608,12 +5669,16 @@ msgstr ""
 msgid "The file and your column choices for it are removed from this draft. You can add the file again later."
 msgstr ""
 
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "The file as it was opened"
+msgstr ""
+
 #: src/features/pmo-file/OpenPublished.tsx
 msgid "The file could not be downloaded from Zenodo"
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
-msgid "The file could not be made. Make the subset again."
+msgid "The file could not be made"
 msgstr ""
 
 #: src/features/pmo-file/PmoFilePage.tsx
@@ -5632,8 +5697,8 @@ msgstr ""
 msgid "The file is no longer loaded. Import it again."
 msgstr ""
 
-#: src/features/pmo-file/SubsetPanel.tsx
-msgid "The file is no longer open"
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "The file was closed, probably because the browser ran out of memory. Open the file again."
 msgstr ""
 
 #: src/app/privacy/PrivacyDetails.tsx
@@ -6000,6 +6065,10 @@ msgstr ""
 msgid "The specimen this library was made from, as named in the specimen table."
 msgstr ""
 
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "The specimens and targets you kept"
+msgstr ""
+
 #: src/domain/fields/samples.ts
 msgid "The SRA or ENA experiment accession, if the data was submitted."
 msgstr ""
@@ -6028,11 +6097,8 @@ msgstr ""
 msgid "The strand the target lies on, + or -."
 msgstr ""
 
-#: src/features/pmo-file/PublishPanel.tsx
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-#: src/features/pmo-file/TablesPanel.tsx
-msgid "The subset"
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "The subset could not be counted"
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
@@ -6051,7 +6117,7 @@ msgstr ""
 msgid "The subset is ready"
 msgstr ""
 
-#. Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the whole file has. Targets are counted only when some allele was found at them.
+#. Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the original has. Targets are counted only when some allele was found at them.
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "The subset will keep {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
 msgstr ""
@@ -6099,13 +6165,6 @@ msgstr ""
 
 #: src/domain/fields/samples.ts
 msgid "The well of the specimen on its storage plate, such as A01, instead of row and column."
-msgstr ""
-
-#: src/features/pmo-file/PublishPanel.tsx
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-#: src/features/pmo-file/TablesPanel.tsx
-msgid "The whole file"
 msgstr ""
 
 #: src/domain/fields/samples.ts
@@ -6657,10 +6716,6 @@ msgstr ""
 msgid "What to do with the file"
 msgstr ""
 
-#: src/features/pmo-file/PublishPanel.tsx
-msgid "What to publish"
-msgstr ""
-
 #: src/features/records/RecordList.tsx
 msgid "What you typed for it will be gone. This cannot be undone."
 msgstr ""
@@ -6831,6 +6886,10 @@ msgstr ""
 msgid "Without a specimen table, each library sample becomes its own specimen, so the specimen names in the library sample table are not used. Add a specimen table to keep them."
 msgstr ""
 
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Work with"
+msgstr ""
+
 #: src/app/HomePage.tsx
 msgid "Work with a PMO file"
 msgstr ""
@@ -6863,6 +6922,10 @@ msgstr ""
 msgid "Written from what is in your PMO. You can change them on Zenodo before you submit."
 msgstr ""
 
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "You can still make it. If that fails too, open the file again."
+msgstr ""
+
 #: src/features/review/PublishToZenodo.tsx
 msgid "You sign in to Zenodo in a new window. PMO Builder then sends your file from this browser straight to Zenodo and makes a draft. Nothing is published until you publish it on Zenodo."
 msgstr ""
@@ -6887,7 +6950,7 @@ msgstr ""
 msgid "Your browser stopped the Zenodo sign-in window. Allow pop-ups for this site and try again."
 msgstr ""
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/state/workingPmoSession.ts
 msgid "Your built PMO"
 msgstr ""
 

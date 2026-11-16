@@ -12,7 +12,6 @@
 import type { PortableMicrohaplotypeObject, Table } from "pmotools-ts";
 
 import {
-  checkPmoFile,
   DEFAULT_BUILD_DEPS,
   NO_SUGGESTIONS,
   buildSection,
@@ -38,6 +37,7 @@ import {
   type Draft,
   type TableRef,
 } from "@/domain/draft";
+import { describeError } from "@/domain/errors";
 import {
   importFailureMessage,
   isImportError,
@@ -45,16 +45,11 @@ import {
   type ImportFailure,
 } from "@/domain/import";
 import {
-  baseNameOf,
-  makeSubset,
-  openBuiltPmo as describeBuiltPmo,
-  openPmo as openWorkingPmo,
-  previewSubset,
-  tableFile,
-  tablesArchive,
-} from "@/domain/tools/workingPmo";
-import { compareGroups } from "@/domain/tools/groups";
-import { summaryOf } from "@/domain/tools/summary";
+  answerWorkingPmo,
+  NOTHING_HELD,
+  settleWorkingPmo,
+  type WorkingPmoHeld,
+} from "@/domain/tools/workingPmoHandlers";
 import type { Notice, ParsedFile, RawTable, SectionId } from "@/domain/types";
 import { SECTION_IDS } from "@/domain/types";
 
@@ -156,10 +151,6 @@ function today(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 function toRef(entry: TableEntry, parsed: ParsedFile): TableRef {
   return {
     id: entry.id,
@@ -239,12 +230,8 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
   let latestRequest = 0;
   let buildRevision = 0;
   let latestPmo: PortableMicrohaplotypeObject | null = null;
-  /** A PMO file opened to subset or export, apart from the draft. */
-  let working: {
-    readonly fileName: string;
-    readonly original: PortableMicrohaplotypeObject;
-    subset: PortableMicrohaplotypeObject | null;
-  } | null = null;
+  /** The working PMO: a PMO file opened to look over, subset or export, apart from the draft. */
+  let held: WorkingPmoHeld = NOTHING_HELD;
   /** The latest PMO's files, made when first asked for, by format (gzipped or not). */
   let fileMemo: {
     readonly pmo: PortableMicrohaplotypeObject;
@@ -514,72 +501,13 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       return Promise.resolve(previewMemo.preview);
     },
 
-    checkPmoFile(file) {
-      return checkPmoFile(file);
-    },
-
-    async openPmo(file, fileName) {
-      const { outcome, pmo } = await openWorkingPmo(file, fileName);
-      working = pmo === null ? null : { fileName, original: pmo, subset: null };
-      return outcome;
-    },
-
-    async openBuiltPmo() {
-      const pmo = latestPmo;
-      if (pmo === null) return null;
-      const file = await exportPmo(pmo, { gzip: true });
-      working = { fileName: file.fileName, original: pmo, subset: null };
-      return { outcome: describeBuiltPmo(pmo, file.fileName), file };
-    },
-
-    subsetPmo(request) {
-      if (working === null) return Promise.resolve({ kind: "not-open" as const });
-      const { outcome, subset } = makeSubset(working.original, request, working.fileName);
-      working.subset = subset;
-      return Promise.resolve(outcome);
-    },
-
-    previewSubset(request) {
-      return Promise.resolve(working === null ? null : previewSubset(working.original, request));
-    },
-
-    async workingPmoTables(request) {
-      if (working === null) return null;
-      const pmo = request.source === "subset" ? working.subset : working.original;
-      if (pmo === null) return null;
-      const baseName =
-        baseNameOf(working.fileName) + (request.source === "subset" ? "-subset" : "");
-      return tablesArchive(pmo, { format: request.format, baseName });
-    },
-
-    workingPmoTable(request) {
-      if (working === null) return Promise.resolve(null);
-      const pmo = request.source === "subset" ? working.subset : working.original;
-      if (pmo === null) return Promise.resolve(null);
-      const baseName =
-        baseNameOf(working.fileName) + (request.source === "subset" ? "-subset" : "");
-      return Promise.resolve(tableFile(pmo, { id: request.id, format: request.format, baseName }));
-    },
-
-    workingPmoSummary(request) {
-      if (working === null) return Promise.resolve(null);
-      const pmo = request.source === "subset" ? working.subset : working.original;
-      return Promise.resolve(pmo === null ? null : summaryOf(pmo, request.minReads));
-    },
-
-    workingPmoGroups(request) {
-      if (working === null) return Promise.resolve(null);
-      const pmo = request.source === "subset" ? working.subset : working.original;
-      return Promise.resolve(
-        pmo === null ? null : compareGroups(pmo, request.key, request.minReads),
-      );
-    },
-
-    async workingPmoFile(request) {
-      if (working?.subset === null || working === null) return null;
-      const file = await exportPmo(working.subset, { gzip: request.gzip });
-      const fileName = `${baseNameOf(working.fileName)}-subset.json${request.gzip ? ".gz" : ""}`;
-      return { blob: file.blob, fileName };
+    async workingPmo(call) {
+      const step = answerWorkingPmo(held, call);
+      held = step.held;
+      const work = await step.work;
+      const settled = settleWorkingPmo({ held, call, work });
+      held = settled.held;
+      return settled.result;
     },
 
     getPanelFragment(panelId) {
@@ -596,6 +524,7 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       latestPmo = null;
       previewMemo = null;
       suggestionsMemo = null;
+      held = NOTHING_HELD;
       return Promise.resolve();
     },
   };

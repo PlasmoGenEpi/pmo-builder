@@ -3,6 +3,7 @@
  * use the types without loading pmotools-ts onto the main thread.
  */
 import type { PmoFileCheck } from "@/domain/build/checkFileResult";
+import type { PmoFile } from "@/domain/build/export";
 import type { MergeSummary } from "@/domain/build/merge";
 import type { PublicationSummary } from "@/domain/build/publication";
 
@@ -139,6 +140,12 @@ export type SubsetOutcome =
   /** No PMO is open. */
   | { readonly kind: "not-open" }
   | { readonly kind: "failed"; readonly message: string };
+
+/** What a subset request gives when it could be carried out: the subset, or that nothing was left. */
+export type SubsetMade = Extract<SubsetOutcome, { readonly kind: "made" | "empty" }>;
+
+/** A subset that was made: its file's name, what it holds and what checking it found. */
+export type SubsetDetails = Extract<SubsetOutcome, { readonly kind: "made" }>;
 
 /** Which PMO a download comes from. */
 export type WorkingSource = "original" | "subset";
@@ -282,8 +289,6 @@ export interface PmoSummary {
   readonly stages: readonly string[];
   /** The panels' reactions, in order. */
   readonly reactions: readonly ReactionGroup[];
-  /** Fields the Compare tab can group by: those with at least one value. */
-  readonly groupFields: readonly GroupField[];
   readonly headline: {
     readonly samplesWithData: number;
     readonly targetsWithData: number;
@@ -335,3 +340,90 @@ export interface GroupComparison {
   /** Specimens whose date gives the period, of all specimens. */
   readonly dated: number;
 }
+
+/**
+ * What each kind of request about the working PMO carries, besides its kind.
+ * A new operation is a new kind here, its answer in {@link WorkingPmoValues},
+ * and its handler in `workingPmoHandlers.ts`.
+ */
+export interface WorkingPmoRequests {
+  /** Reads and checks a PMO file, and holds it in place of the PMO held before. */
+  readonly open: { readonly file: Blob; readonly fileName: string };
+  /** Lets go of the PMO held, and its subset. */
+  readonly close: object;
+  /** The summary of the original or the subset, counting microhaplotypes with at least `minReads` reads. */
+  readonly summary: { readonly source: WorkingSource; readonly minReads: number };
+  /** Makes a subset of the original, in place of any subset held before. */
+  readonly subset: SubsetRequest;
+  /** What a subset of the original would keep, counted without making it. */
+  readonly preview: SubsetRequest;
+  /** One table of the original or the subset, as a CSV or TSV file. */
+  readonly table: {
+    readonly source: WorkingSource;
+    readonly id: TableId;
+    readonly format: TableFormat;
+  };
+  /** Every table of the original or the subset, as files in one zip. */
+  readonly tables: { readonly source: WorkingSource; readonly format: TableFormat };
+  /** The subset as a PMO file, gzipped or not, named after the opened file with "-subset". */
+  readonly file: { readonly gzip: boolean };
+  /** The fields the specimens of the original or the subset can be compared by. */
+  readonly groupFields: { readonly source: WorkingSource };
+  /** The specimens of the original or the subset grouped by `key`, counting microhaplotypes with at least `minReads` reads. */
+  readonly groups: {
+    readonly source: WorkingSource;
+    readonly key: GroupKey;
+    readonly minReads: number;
+  };
+}
+
+/** One kind of request about the working PMO. */
+export type WorkingPmoKind = keyof WorkingPmoRequests;
+
+/** A request about the working PMO, of kind `K` (any kind by default), sent to the worker. */
+export type WorkingPmoRequest<K extends WorkingPmoKind = WorkingPmoKind> = {
+  readonly [P in K]: { readonly kind: P } & WorkingPmoRequests[P];
+}[K];
+
+/** The kinds of request that read the working PMO without opening, closing or subsetting it. */
+export type WorkingPmoQueryKind = Exclude<WorkingPmoKind, "open" | "close" | "subset">;
+
+/** A request that reads the working PMO without opening, closing or subsetting it. */
+export type WorkingPmoQuery<K extends WorkingPmoQueryKind = WorkingPmoQueryKind> =
+  WorkingPmoRequest<K>;
+
+/** What each kind of request gives when it succeeds. */
+export interface WorkingPmoValues {
+  readonly open: OpenOutcome;
+  readonly close: null;
+  readonly summary: PmoSummary;
+  readonly subset: SubsetMade;
+  readonly preview: SubsetPreview;
+  readonly table: TableFile;
+  readonly tables: TablesArchive;
+  readonly file: PmoFile;
+  readonly groupFields: readonly GroupField[];
+  readonly groups: GroupComparison;
+}
+
+/** A request, with the generation of the working PMO it is meant for. */
+export interface WorkingPmoCall<K extends WorkingPmoKind = WorkingPmoKind> {
+  /** Goes up with every open or close. A request for an older generation is answered as stale. */
+  readonly generation: number;
+  readonly request: WorkingPmoRequest<K>;
+}
+
+/** What a request about the working PMO gives. */
+export type WorkingPmoResult<T> =
+  | { readonly kind: "ok"; readonly value: T }
+  /** No PMO is open. */
+  | { readonly kind: "not-open" }
+  /** The request is for the subset, and none has been made. */
+  | { readonly kind: "no-subset" }
+  /** The request was for a PMO that has since been closed or replaced. Callers ignore it. */
+  | { readonly kind: "stale" }
+  /** `message` is the error's own text, for debugging. Not for the screen: it is not translated. */
+  | { readonly kind: "failed"; readonly message: string };
+
+/** What a request of kind `K` gives. */
+export type WorkingPmoAnswer<K extends WorkingPmoKind> = WorkingPmoResult<WorkingPmoValues[K]>;
