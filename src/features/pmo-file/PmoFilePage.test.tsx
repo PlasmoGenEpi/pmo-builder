@@ -80,6 +80,18 @@ async function open(file: File, zenodo: ZenodoConfig | null = ZENODO) {
   return rendered;
 }
 
+/** A promise that resolves when told to. */
+class Gate {
+  #resolve: () => void = () => undefined;
+  readonly promise = new Promise<void>((resolve) => {
+    this.#resolve = resolve;
+  });
+
+  open(): void {
+    this.#resolve();
+  }
+}
+
 async function savedText(): Promise<{ readonly name: string; readonly text: string }> {
   const call = vi.mocked(saveFile).mock.calls.at(-1);
   if (call === undefined) throw new Error("nothing saved");
@@ -260,6 +272,12 @@ describe("PmoFilePage: tables", () => {
     expect(await screen.findByText("No subset has been made yet")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Download all tables (.zip)" }));
     expect(await screen.findByText("No subset has been made yet")).toBeInTheDocument();
+    // The switch is hidden while no subset exists, so it is not what to use.
+    expect(
+      screen.getByText(
+        "Make one on the Subset tab. Until then, only the original's tables can be downloaded.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/could not be made/)).not.toBeInTheDocument();
     expect(saveFile).not.toHaveBeenCalled();
   });
@@ -468,6 +486,30 @@ describe("PmoFilePage: original or subset", () => {
     expect(screen.getByRole("radio", { name: "Subset" })).toBeChecked();
   });
 
+  it("keeps the switch on the subset while a new one is being made", async () => {
+    const engine = createInThreadEngine();
+    const held = new Gate();
+    let holding = false;
+    const { user } = await openWithEngine(pmoFile(ownPmo()), {
+      ...engine,
+      workingPmo: async (call) => {
+        if (call.request.kind === "subset" && holding) await held.promise;
+        return engine.workingPmo(call);
+      },
+    });
+    await makeSubset(user, 3);
+    holding = true;
+    const boxes = within(screen.getByRole("group", { name: "Specimens" })).getAllByRole("checkbox");
+    // oxlint-disable-next-line no-await-in-loop
+    for (const box of boxes.slice(3, 4)) await user.click(box);
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    const choice = screen.getByRole("radiogroup", SWITCH);
+    expect(within(choice).getByRole("radio", { name: "Subset" })).toBeChecked();
+    await act(async () => held.open());
+    expect(await screen.findByText(/^It keeps 4 of \d+ specimens/)).toBeInTheDocument();
+    expect(within(choice).getByRole("radio", { name: "Subset" })).toBeChecked();
+  });
+
   it("changes from the keyboard", async () => {
     const { user } = await open(pmoFile(ownPmo()));
     await makeSubset(user, 3);
@@ -481,12 +523,13 @@ describe("PmoFilePage: original or subset", () => {
     expect(original).toHaveFocus();
   });
 
-  it("hides the switch and goes back to the whole file when another file is opened", async () => {
+  it("hides the switch and goes back to the whole file when another file is opened over it", async () => {
     const { user } = await open(pmoFile(ownPmo()));
     await makeSubset(user, 3);
     expect(screen.getByRole("radiogroup", SWITCH)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Remove pmo file" }));
+    // Straight over the first, without closing it.
     await user.upload(screen.getByLabelText("Choose pmo file"), pmoFile(ownPmo(), "other.json"));
+    await screen.findByText("other.json");
     await screen.findByRole("tab", { name: "Tables" });
     expect(screen.queryByRole("radiogroup", SWITCH)).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "Tables" }));

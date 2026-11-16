@@ -287,7 +287,7 @@ function NoComparison({ reason }: { readonly reason: NoAnswerReason }) {
     <NoAnswer
       reason={reason}
       notOpen={t`Open a PMO file to compare groups of its specimens.`}
-      noSubset={t`Make one on the Subset tab, or compare the whole file.`}
+      noSubset={t`Make one on the Subset tab. Until then, only the original can be compared.`}
       failed={{ title: t`The comparison could not be made`, body: t`Open the file again.` }}
     />
   );

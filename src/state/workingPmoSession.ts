@@ -182,8 +182,10 @@ export interface WorkingPmoSession {
   /** Asks the worker about the working PMO, as it is now. */
   query<K extends WorkingPmoQueryKind>(request: WorkingPmoQuery<K>): Promise<WorkingPmoAnswer<K>>;
   /**
-   * Makes a subset of the original in place of the one made before, which
-   * is let go of first. The subset made last wins: an older one still being
+   * Makes a subset of the original in place of the one made before. The
+   * subset made before stays, and stays chosen, until this one is answered:
+   * then it is replaced, or, when none is made, dropped with the choice back
+   * on the original. The subset asked for last wins: an older one still being
    * made is answered as stale.
    */
   subset(request: SubsetRequest): Promise<WorkingPmoAnswer<"subset">>;
@@ -344,14 +346,17 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
     if (!(await restore(generation))) {
       // The open state says what happened, for the page to show.
       return isCurrent(generation)
-        ? { kind: "failed", message: "The worker lost the file and could not open it again." }
+        ? {
+            kind: "failed",
+            message: t`The background worker lost the file and could not open it again.`,
+          }
         : { kind: "stale" };
     }
     return answerOf(await post(generation, request));
   };
 
   /** Counts subset requests, so only the latest one's subset is kept. */
-  let subsets = 0;
+  let subsetRequests = 0;
 
   /** The bytes to open: the file given, or the built PMO exported. */
   const bytesOf = async (
@@ -430,15 +435,17 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
 
     async subset(request) {
       const { generation } = store.getState();
-      subsets += 1;
-      const run = subsets;
-      // The worker lets go of the previous subset before making this one.
-      store.setState({ subset: NO_SUBSET, source: "original" });
+      subsetRequests += 1;
+      const run = subsetRequests;
+      // The subset made before stays, and stays chosen, until this one is answered.
       const answer = await send(generation, { kind: "subset", ...request });
-      if (!isCurrent(generation) || run !== subsets) return { kind: "stale" };
-      if (answer.kind === "ok" && answer.value.kind === "made") {
-        store.setState({ subset: { kind: "made", request, made: answer.value }, source: "subset" });
-      }
+      if (!isCurrent(generation) || run !== subsetRequests) return { kind: "stale" };
+      store.setState(
+        answer.kind === "ok" && answer.value.kind === "made"
+          ? { subset: { kind: "made", request, made: answer.value }, source: "subset" }
+          : // The worker let go of the subset before it made this one.
+            { subset: NO_SUBSET, source: "original" },
+      );
       return answer;
     },
 

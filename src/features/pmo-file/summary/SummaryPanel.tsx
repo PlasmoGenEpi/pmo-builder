@@ -295,7 +295,7 @@ export function SummaryPanel({
         <NoAnswer
           reason={loaded.kind}
           notOpen={t`Open a PMO file to see its summary.`}
-          noSubset={t`Make one on the Subset tab, or sum up the whole file.`}
+          noSubset={t`Make one on the Subset tab. Until then, only the original can be summed up.`}
           failed={{ title: t`The summary could not be made`, body: t`Open the file again.` }}
         />
       )}

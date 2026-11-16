@@ -1638,8 +1638,8 @@ msgid "Choose another saved panel"
 msgstr "Escolher outro painel guardado"
 
 #: src/features/pmo-file/SubsetPanel.tsx
-msgid "Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the whole file."
-msgstr "Escolha alguns espécimes ou alvos, ou um número mínimo de leituras. Tal como está, o subconjunto seria o ficheiro inteiro."
+msgid "Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the same as the original."
+msgstr "Escolha alguns espécimes ou alvos, ou um número mínimo de leituras. Tal como está, o subconjunto seria igual ao original."
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "Choose Submit for review. The record is published once a curator accepts it."
@@ -2713,7 +2713,7 @@ msgstr "É removido deste navegador e não voltará a ser proposto. Os rascunhos
 msgid "It is the file of the Zenodo record <0>{recordTitle}</0>. To publish part of it as a new record, make a subset first."
 msgstr "É o ficheiro do registo Zenodo <0>{recordTitle}</0>. Para publicar parte dele como um novo registo, crie primeiro um subconjunto."
 
-#. Each pair of numbers is what the subset keeps and what the whole file has. Targets are counted only when some allele was found at them.
+#. Each pair of numbers is what the subset keeps and what the original has. Targets are counted only when some allele was found at them.
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "It keeps {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
 msgstr "Mantém {specimens} de {allSpecimens} espécimes e {librarySamples} de {allLibrarySamples} amostras de biblioteca, com alelos em {targets} de {allTargets} alvos."
@@ -3010,20 +3010,20 @@ msgid "Look into your PMO"
 msgstr "Explorar o seu PMO"
 
 #: src/features/pmo-file/summary/CompareTab.tsx
-msgid "Make one on the Subset tab, or compare the whole file."
-msgstr "Crie um no separador Subconjunto, ou compare o ficheiro inteiro."
-
-#: src/features/pmo-file/TablesPanel.tsx
-msgid "Make one on the Subset tab, or download the tables of the whole file."
-msgstr "Crie um no separador Subconjunto, ou transfira as tabelas do ficheiro inteiro."
+msgid "Make one on the Subset tab. Until then, only the original can be compared."
+msgstr "Crie um no separador Subconjunto. Até lá, só o original pode ser comparado."
 
 #: src/features/pmo-file/PublishPanel.tsx
-msgid "Make one on the Subset tab, or publish the whole file."
-msgstr "Crie um no separador Subconjunto, ou publique o ficheiro inteiro."
+msgid "Make one on the Subset tab. Until then, only the original can be published."
+msgstr "Crie um no separador Subconjunto. Até lá, só o original pode ser publicado."
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "Make one on the Subset tab, or sum up the whole file."
-msgstr "Crie um no separador Subconjunto, ou resuma o ficheiro inteiro."
+msgid "Make one on the Subset tab. Until then, only the original can be summed up."
+msgstr "Crie um no separador Subconjunto. Até lá, só o original pode ser resumido."
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Make one on the Subset tab. Until then, only the original's tables can be downloaded."
+msgstr "Crie um no separador Subconjunto. Até lá, só as tabelas do original podem ser transferidas."
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Make the subset"
@@ -5005,6 +5005,10 @@ msgstr "Surgiu algo a verificar ao juntar as etapas num único PMO. O PMO foi cr
 msgid "Something went wrong"
 msgstr "Ocorreu um erro"
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Something went wrong in this browser while opening it. Try again."
+msgstr "Ocorreu um erro neste navegador ao abri-lo. Tente novamente."
+
 #: src/app/ErrorBoundary.tsx
 msgid "Something went wrong on this page"
 msgstr "Ocorreu um erro nesta página"
@@ -5507,6 +5511,10 @@ msgstr "A aplicação parou ao ler o ficheiro «{file}», provavelmente porque p
 #: src/domain/import/messages.ts
 msgid "The app stopped while reading the file, probably because it needed more memory than the browser allows. Try a smaller file, or close other tabs and try again."
 msgstr "A aplicação parou ao ler o ficheiro, provavelmente porque precisava de mais memória do que o navegador permite. Experimente um ficheiro mais pequeno ou feche outros separadores e tente novamente."
+
+#: src/state/workingPmoSession.ts
+msgid "The background worker lost the file and could not open it again."
+msgstr "O processo em segundo plano perdeu o ficheiro e não conseguiu abri-lo novamente."
 
 #: src/worker/client.ts
 msgid "The background worker stopped, probably because it ran out of memory. It starts again on the next change; if a table is very large, try a smaller one."
@@ -6095,7 +6103,7 @@ msgstr "O subconjunto não passa em todas as verificações"
 msgid "The subset is ready"
 msgstr "O subconjunto está pronto"
 
-#. Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the whole file has. Targets are counted only when some allele was found at them.
+#. Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the original has. Targets are counted only when some allele was found at them.
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "The subset will keep {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
 msgstr "O subconjunto vai manter {specimens} de {allSpecimens} espécimes e {librarySamples} de {allLibrarySamples} amostras de biblioteca, com alelos em {targets} de {allTargets} alvos."

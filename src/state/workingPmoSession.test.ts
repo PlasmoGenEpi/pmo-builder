@@ -697,7 +697,7 @@ describe("working PMO session: worker restarts", () => {
     });
   });
 
-  it("tries a stopped open only once", async () => {
+  it("reads a file once more when the worker stops while reading it, then fails", async () => {
     const reads: number[] = [];
     const workers = stoppableWorkers((index) => {
       const engine = createInThreadEngine();
@@ -883,6 +883,57 @@ describe("working PMO session: original or subset", () => {
     session.setSource("original");
     await session.subset(keepFirst(2));
     expect(session.state.getState().source).toBe("subset");
+  });
+
+  it("keeps the subset and the choice while a new subset is being made", async () => {
+    const engine = createInThreadEngine();
+    const finish = gate();
+    let holding = false;
+    const { session } = makeSession({
+      engine: {
+        ...engine,
+        workingPmo: async (call) => {
+          if (call.request.kind === "subset" && holding) await finish.promise;
+          return engine.workingPmo(call);
+        },
+      },
+    });
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(3));
+    holding = true;
+    const making = session.subset(keepFirst(2));
+    expect(session.state.getState()).toMatchObject({
+      source: "subset",
+      subset: { kind: "made", request: keepFirst(3) },
+    });
+    finish.open();
+    await making;
+    expect(session.state.getState()).toMatchObject({
+      source: "subset",
+      subset: { kind: "made", request: keepFirst(2) },
+    });
+  });
+
+  it("goes back to the original when a new subset fails", async () => {
+    const engine = createInThreadEngine();
+    let failing = false;
+    const { session } = makeSession({
+      engine: {
+        ...engine,
+        workingPmo: (call) =>
+          call.request.kind === "subset" && failing
+            ? Promise.reject(new Error("out of memory"))
+            : engine.workingPmo(call),
+      },
+    });
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(3));
+    failing = true;
+    expect((await session.subset(keepFirst(2))).kind).toBe("failed");
+    expect(session.state.getState()).toMatchObject({
+      source: "original",
+      subset: { kind: "none" },
+    });
   });
 
   it("goes back to the original when a new subset would keep nothing", async () => {

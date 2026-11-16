@@ -52,7 +52,7 @@ function problemText(problem: ReturnType<typeof formProblem>): string | null {
     case "no-targets":
       return t`No target is ticked yet.`;
     case "nothing-changed":
-      return t`Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the whole file.`;
+      return t`Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the same as the original.`;
     case null:
     default:
       return null;
@@ -171,12 +171,12 @@ function subsetSummary(
     ? t({
         message: `It keeps ${specimens} of ${allSpecimens} specimens and ${librarySamples} of ${allLibrarySamples} library samples, with alleles at ${targets} of ${allTargets} targets.`,
         comment:
-          "Each pair of numbers is what the subset keeps and what the whole file has. Targets are counted only when some allele was found at them.",
+          "Each pair of numbers is what the subset keeps and what the original has. Targets are counted only when some allele was found at them.",
       })
     : t({
         message: `The subset will keep ${specimens} of ${allSpecimens} specimens and ${librarySamples} of ${allLibrarySamples} library samples, with alleles at ${targets} of ${allTargets} targets.`,
         comment:
-          "Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the whole file has. Targets are counted only when some allele was found at them.",
+          "Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the original has. Targets are counted only when some allele was found at them.",
       });
 }
 
@@ -347,7 +347,7 @@ function shownAfter(answer: WorkingPmoAnswer<"subset">): Shown | null {
 /** Props for {@link SubsetPanel}. */
 export interface SubsetPanelProps {
   readonly choices: PmoChoices;
-  /** What the whole file holds, to compare the subset with. */
+  /** What the original holds, to compare the subset with. */
   readonly original: MergeSummary;
   readonly onShowSummary: () => void;
   readonly onShowTables: () => void;

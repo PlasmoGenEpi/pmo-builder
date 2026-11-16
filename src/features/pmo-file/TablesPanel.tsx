@@ -161,7 +161,7 @@ export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) 
         <NoAnswer
           reason={problem.kind}
           notOpen={t`Open a PMO file to download its tables.`}
-          noSubset={t`Make one on the Subset tab, or download the tables of the whole file.`}
+          noSubset={t`Make one on the Subset tab. Until then, only the original's tables can be downloaded.`}
           // A failure is shown beside the table it concerns.
           failed={null}
         />

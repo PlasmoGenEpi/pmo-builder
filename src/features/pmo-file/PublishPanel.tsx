@@ -38,7 +38,7 @@ function SubsetDeposit({
       <NoAnswer
         reason={file.kind}
         notOpen={t`Open a PMO file to publish it.`}
-        noSubset={t`Make one on the Subset tab, or publish the whole file.`}
+        noSubset={t`Make one on the Subset tab. Until then, only the original can be published.`}
         failed={{
           title: t`The subset could not be prepared`,
           body: t`Make the subset again on the Subset tab.`,
