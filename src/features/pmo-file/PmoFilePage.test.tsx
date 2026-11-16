@@ -238,6 +238,43 @@ describe("PmoFilePage: subset", () => {
     expect(subset).toMatchObject({ specimen_info: [{}, {}, {}] });
   });
 
+  it("replaces the first subset with the second", async () => {
+    const { user } = await open(pmoFile(EXAMPLE, "study.json.gz"));
+    await user.click(await screen.findByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: "Specimens I tick" }));
+    const boxes = within(screen.getByRole("group", { name: "Specimens" })).getAllByRole("checkbox");
+    // oxlint-disable-next-line no-await-in-loop
+    for (const box of boxes.slice(0, 3)) await user.click(box);
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    await screen.findByText(/^It keeps 3 of \d+ specimens/);
+    // oxlint-disable-next-line no-await-in-loop
+    for (const box of boxes.slice(3, 4)) await user.click(box);
+    expect(screen.queryByText("The subset is ready")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    expect(await screen.findByText(/^It keeps 4 of \d+ specimens/)).toBeInTheDocument();
+
+    // The page goes on offering the subset after leaving the tab and coming back.
+    await user.click(screen.getByRole("tab", { name: "Overview" }));
+    await user.click(screen.getByRole("tab", { name: "Subset" }));
+    expect(await screen.findByText(/^It keeps 4 of \d+ specimens/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Download as .json" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    const subset: unknown = JSON.parse((await savedText()).text);
+    expect(subset).toMatchObject({ specimen_info: [{}, {}, {}, {}] });
+  });
+
+  it("keeps the subset made while new choices are being made", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Subset" }));
+    await user.type(screen.getByLabelText(/Minimum reads per microhaplotype/), "100");
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    await screen.findByText("The subset is ready");
+    await user.type(screen.getByLabelText(/Minimum reads per microhaplotype/), "0");
+    expect(screen.queryByText("The subset is ready")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "Tables" }));
+    expect(await screen.findByRole("radio", { name: "The subset" })).toBeInTheDocument();
+  });
+
   it("says before making it when nothing would be left", async () => {
     const { user } = await open(pmoFile(EXAMPLE));
     await user.click(await screen.findByRole("tab", { name: "Subset" }));

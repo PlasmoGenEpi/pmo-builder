@@ -267,7 +267,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
   const file = useWorkingPmo((state) => state.open);
   const generation = useWorkingPmo((state) => state.generation);
   const minReads = useWorkingPmo((state) => state.minReads);
-  const subset = useWorkspace((state) => state.subset);
+  const subset = useWorkingPmo((state) => state.subset);
   const tableSource = useWorkspace((state) => state.tableSource);
   const summarySource = useWorkspace((state) => state.summarySource);
   const updateWorkspace = useUpdateWorkspace();
@@ -284,7 +284,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
     });
   }
 
-  const made = subset?.kind === "made" ? subset : null;
+  const made = subset.kind === "made" ? subset.made : null;
   const shownFile = file.kind === "none" ? null : { name: file.name, size: file.size };
 
   return (
@@ -400,8 +400,6 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                       key={generation}
                       choices={file.opened.choices}
                       original={file.opened.summary}
-                      outcome={subset}
-                      onMade={(outcome) => updateWorkspace({ subset: outcome })}
                       onShowSummary={() => {
                         updateWorkspace({ summarySource: "subset" });
                         navigate("/pmo/summary");

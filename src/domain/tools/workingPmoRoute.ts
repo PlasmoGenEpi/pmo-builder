@@ -6,15 +6,24 @@
  *
  * A request is carried out in two steps. {@link answerWorkingPmo} says at
  * once what to hold while the work runs (an open lets go of the previous PMO
- * here, before reading the new one) and starts the work. Once the work is
+ * here, before reading the new one, and a subset lets go of the previous
+ * subset) and starts the work. Once the work is
  * done, {@link settleWorkingPmo} checks it against what is held by then, so
  * a slow open overtaken by a newer one is answered as stale and not kept.
  */
 import type { PortableMicrohaplotypeObject } from "pmotools-ts";
 
+import { unreachable } from "@/domain/draft";
+
 import { summaryOf } from "./summary";
-import type { WorkingPmoAnswer, WorkingPmoCall, WorkingPmoKind, WorkingSource } from "./types";
-import { openPmo } from "./workingPmo";
+import type {
+  SubsetOutcome,
+  WorkingPmoAnswer,
+  WorkingPmoCall,
+  WorkingPmoKind,
+  WorkingSource,
+} from "./types";
+import { makeSubset, openPmo, previewSubset } from "./workingPmo";
 
 type Pmo = PortableMicrohaplotypeObject;
 
@@ -74,6 +83,21 @@ function pmoFor(
   return held.pmo.subset === null ? { kind: "no-subset" } : { kind: "found", pmo: held.pmo.subset };
 }
 
+/** What making a subset gave, as an answer. */
+function subsetAnswer(outcome: SubsetOutcome): WorkingPmoAnswer<"subset"> {
+  switch (outcome.kind) {
+    case "made":
+    case "empty":
+      return { kind: "ok", value: outcome };
+    case "not-open":
+      return { kind: "not-open" };
+    case "failed":
+      return { kind: "failed", message: outcome.message };
+    default:
+      return unreachable(outcome);
+  }
+}
+
 /** Runs `work`, answering an error it throws as failed. */
 async function guarded<K extends WorkingPmoKind>(
   work: () => Promise<WorkingPmoWork<K>> | WorkingPmoWork<K>,
@@ -125,6 +149,39 @@ const HANDLERS: Handlers = {
       work: guarded(() => ({
         kind: "answer",
         result: { kind: "ok", value: summaryOf(found.pmo, minReads) },
+      })),
+    };
+  },
+
+  subset(held, call) {
+    if (call.generation < held.generation) return answered(held, { kind: "stale" });
+    const working = held.pmo;
+    if (working === null) return answered(held, { kind: "not-open" });
+    // Let go of the previous subset before making the next, so two are never held.
+    const original: HeldPmo = { ...working, subset: null };
+    return {
+      held: { ...held, pmo: original },
+      work: guarded(() => {
+        const { outcome, subset } = makeSubset(original.original, call.request, original.fileName);
+        return {
+          kind: "hold",
+          pmo: { ...original, subset },
+          result: subsetAnswer(outcome),
+        };
+      }),
+    };
+  },
+
+  preview(held, call) {
+    if (call.generation < held.generation) return answered(held, { kind: "stale" });
+    const found = pmoFor(held, "original");
+    if (found.kind !== "found") return answered(held, found);
+    const { request } = call;
+    return {
+      held,
+      work: guarded(() => ({
+        kind: "answer",
+        result: { kind: "ok", value: previewSubset(found.pmo, request) },
       })),
     };
   },

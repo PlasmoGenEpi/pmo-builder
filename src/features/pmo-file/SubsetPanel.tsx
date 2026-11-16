@@ -1,12 +1,20 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { ChartColumn, CloudUpload, Download, Plus, Scissors, Table, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { MergeSummary } from "@/domain/build/merge";
-import type { PmoChoices, SubsetOutcome, SubsetPreview, SubsetRequest } from "@/domain/tools/types";
+import { unreachable } from "@/domain/draft";
+import type {
+  PmoChoices,
+  SubsetOutcome,
+  SubsetPreview,
+  SubsetRequest,
+  WorkingPmoAnswer,
+  WorkingPmoQuery,
+} from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
-import { useActions } from "@/state";
+import { useActions, useWorkingPmo, useWorkingPmoQuery, useWorkingPmoSession } from "@/state";
 import {
   Button,
   Callout,
@@ -281,32 +289,62 @@ function SubsetResult({
 /**
  * What `request` would keep, counted in the worker once the form has settled.
  * While newer choices are being counted, the last counts are given as stale.
- * `null` before the first count, and while `enabled` is false.
+ * `null` before the first count, when it could not be counted, and while
+ * `enabled` is false.
  */
 function useSubsetPreview(
   request: SubsetRequest,
   enabled: boolean,
 ): { readonly counts: SubsetPreview; readonly stale: boolean } | null {
-  const actions = useActions();
   const settled = useSettled(request, 300);
-  const [latest, setLatest] = useState<{
-    readonly request: SubsetRequest;
-    readonly counts: SubsetPreview;
-  } | null>(null);
-  useEffect(() => {
-    if (!enabled) return undefined;
-    let live = true;
-    async function count(): Promise<void> {
-      const counts = await actions.previewSubset(settled);
-      if (live) setLatest(counts === null ? null : { request: settled, counts });
-    }
-    void count();
-    return () => {
-      live = false;
-    };
-  }, [actions, settled, enabled]);
-  if (!enabled || latest === null) return null;
-  return { counts: latest.counts, stale: latest.request !== request };
+  const query = useMemo(
+    (): WorkingPmoQuery<"preview"> => ({ kind: "preview", ...settled }),
+    [settled],
+  );
+  const answer = useWorkingPmoQuery(query);
+  // The last counts, shown greyed out while newer choices are counted.
+  const [last, setLast] = useState<SubsetPreview | null>(null);
+  if (answer.kind === "ok" && answer.value !== last) setLast(answer.value);
+  if (!enabled) return null;
+  if (answer.kind === "ok") return { counts: answer.value, stale: settled !== request };
+  return answer.kind === "loading" && last !== null ? { counts: last, stale: true } : null;
+}
+
+/** What the panel shows under the form. */
+type Shown =
+  /** The session's subset, if one is made. */
+  | { readonly kind: "subset" }
+  /** The last try, which made no subset. */
+  | { readonly kind: "tried"; readonly outcome: Exclude<SubsetOutcome, { kind: "made" }> }
+  /** Nothing: the choices have changed since. */
+  | { readonly kind: "nothing" };
+
+const SHOW_SUBSET: Shown = { kind: "subset" };
+
+/** What to show after trying to make a subset. `null` for a stale answer, which is ignored. */
+function shownAfter(answer: WorkingPmoAnswer<"subset">): Shown | null {
+  switch (answer.kind) {
+    case "ok":
+      return answer.value.kind === "made"
+        ? SHOW_SUBSET
+        : { kind: "tried", outcome: { kind: "empty" } };
+    case "not-open":
+      return { kind: "tried", outcome: { kind: "not-open" } };
+    case "failed":
+      return { kind: "tried", outcome: { kind: "failed", message: answer.message } };
+    case "no-subset":
+      return {
+        kind: "tried",
+        outcome: {
+          kind: "failed",
+          message: t`Something went wrong. Reload the page and try again.`,
+        },
+      };
+    case "stale":
+      return null;
+    default:
+      return unreachable(answer);
+  }
 }
 
 /** Props for {@link SubsetPanel}. */
@@ -314,28 +352,35 @@ export interface SubsetPanelProps {
   readonly choices: PmoChoices;
   /** What the whole file holds, to compare the subset with. */
   readonly original: MergeSummary;
-  /** The latest subset made, kept by the page so it survives switching tabs. */
-  readonly outcome: SubsetOutcome | null;
-  readonly onMade: (outcome: SubsetOutcome | null) => void;
   readonly onShowSummary: () => void;
   readonly onShowTables: () => void;
   /** Opens publishing for the subset, or `null` when this copy cannot publish. */
   readonly onPublish: (() => void) | null;
 }
 
-/** Choosing specimens, targets and a read threshold, and making the subset. */
+/**
+ * Choosing specimens, targets and a read threshold, and making the subset.
+ * Always from the original. The subset made is the session's, so it outlives
+ * the panel.
+ */
 export function SubsetPanel({
   choices,
   original,
-  outcome,
-  onMade,
   onShowSummary,
   onShowTables,
   onPublish,
 }: SubsetPanelProps) {
-  const actions = useActions();
+  const session = useWorkingPmoSession();
+  const subset = useWorkingPmo((state) => state.subset);
   const [form, setForm] = useState<SubsetForm>(() => initialForm(choices));
   const [making, setMaking] = useState(false);
+  const [shown, setShown] = useState<Shown>(SHOW_SUBSET);
+  const outcome: SubsetOutcome | null =
+    shown.kind === "tried"
+      ? shown.outcome
+      : shown.kind === "subset" && subset.kind === "made"
+        ? subset.made
+        : null;
   const kept = keptSpecimens(choices, form).length;
   const problem = formProblem(choices, form);
   const withData = choices.specimens.filter((specimen) => specimen.librarySamples > 0);
@@ -351,19 +396,14 @@ export function SubsetPanel({
 
   function change(next: Partial<SubsetForm>): void {
     setForm((before) => ({ ...before, ...next }));
-    onMade(null);
+    setShown({ kind: "nothing" });
   }
 
   async function make(): Promise<void> {
     setMaking(true);
-    const result = await actions.subsetPmo(request);
+    const next = shownAfter(await session.subset(request));
     setMaking(false);
-    onMade(
-      result ?? {
-        kind: "failed",
-        message: t`Something went wrong. Reload the page and try again.`,
-      },
-    );
+    if (next !== null) setShown(next);
   }
 
   return (
