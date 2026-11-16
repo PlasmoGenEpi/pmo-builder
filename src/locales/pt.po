@@ -5666,6 +5666,11 @@ msgstr "O ficheiro já não está carregado. Importe-o novamente."
 msgid "The file is no longer open"
 msgstr "O ficheiro já não está aberto"
 
+#: src/features/pmo-file/PmoFilePage.tsx
+#: src/state/workingPmoSession.ts
+msgid "The file was closed, probably because the browser ran out of memory. Open the file again."
+msgstr "O ficheiro foi fechado, provavelmente porque o navegador ficou sem memória. Abra o ficheiro novamente."
+
 #: src/app/privacy/PrivacyDetails.tsx
 msgid "The files you open and everything in them."
 msgstr "Os ficheiros que abrir e tudo o que contêm."

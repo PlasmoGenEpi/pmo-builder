@@ -9,6 +9,11 @@
  * Every request to the worker carries the generation, so an answer for a PMO
  * that has since been replaced comes back stale and is ignored.
  *
+ * When the background worker stops, it loses the PMO it held. The next
+ * request that finds it gone opens the kept bytes again in the new worker,
+ * makes the subset again from the request it was made from, and is sent once
+ * more. If that fails too, the open state becomes failed.
+ *
  * Pages read the state through the hooks in `workingPmoHooks.ts` and change
  * it only through the session's methods.
  */
@@ -67,7 +72,17 @@ export type OpenState =
       readonly size: number;
       readonly check: Exclude<PmoFileCheck, { kind: "ready" }>;
     }
-  | { readonly kind: "failed"; readonly name: string; readonly size: number };
+  | {
+      readonly kind: "failed";
+      readonly name: string;
+      readonly size: number;
+      /**
+       * `open`: the file could not be opened. `lost`: it was open, the
+       * background worker stopped, and opening it again in the new worker
+       * failed too.
+       */
+      readonly cause: "open" | "lost";
+    };
 
 /** Everything the session holds that pages read. */
 export interface WorkingPmoState {
@@ -201,6 +216,19 @@ const INITIAL: WorkingPmoState = {
   tableSource: "original",
 };
 
+/** A request the worker stopped before answering. */
+interface Stopped {
+  readonly kind: "stopped";
+  readonly message: string;
+}
+
+/** What a request sent once answered, with a stopped worker answered as failed. */
+function answerOf<K extends WorkingPmoKind>(
+  answer: WorkingPmoAnswer<K> | Stopped,
+): WorkingPmoAnswer<K> {
+  return answer.kind === "stopped" ? { kind: "failed", message: answer.message } : answer;
+}
+
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -217,16 +245,20 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
   const { engine, flush, emit } = options;
   const store = createStore<WorkingPmoState>(() => INITIAL);
 
-  /** Sends a request for `generation`, answering an engine that throws as failed. */
-  const send = async <K extends WorkingPmoKind>(
+  /**
+   * Sends a request for `generation` once. An engine that throws answers
+   * failed, or `stopped` when its worker stopped.
+   */
+  const post = async <K extends WorkingPmoKind>(
     generation: number,
     request: WorkingPmoRequest<K>,
-  ): Promise<WorkingPmoAnswer<K>> => {
+  ): Promise<WorkingPmoAnswer<K> | Stopped> => {
     try {
       return await engine.workingPmo({ generation, request });
     } catch (error) {
-      if (isEngineStoppedError(error)) emit({ kind: "engine-stopped" });
-      return { kind: "failed", message: describeError(error) };
+      if (!isEngineStoppedError(error)) return { kind: "failed", message: describeError(error) };
+      emit({ kind: "engine-stopped" });
+      return { kind: "stopped", message: describeError(error) };
     }
   };
 
@@ -244,6 +276,84 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
   };
 
   const isCurrent = (generation: number): boolean => store.getState().generation === generation;
+
+  /**
+   * Whether the worker lost the working PMO of `generation`: it stopped
+   * while answering, or it answers that nothing is open while a file is.
+   * Only a worker started again after stopping can do that.
+   */
+  const isLost = (generation: number, answer: { readonly kind: string }): boolean =>
+    answer.kind === "stopped" ||
+    (answer.kind === "not-open" &&
+      isCurrent(generation) &&
+      store.getState().open.kind === "opened");
+
+  /** The restore under way, shared by every request that finds the PMO lost meanwhile. */
+  let restoring: { readonly generation: number; readonly done: Promise<boolean> } | null = null;
+
+  /**
+   * Opens the kept bytes of `generation` again in the worker, and makes the
+   * subset again. Tried once: if it fails, the open state becomes failed.
+   * Resolves whether the worker holds the working PMO again.
+   */
+  const reopen = async (generation: number): Promise<boolean> => {
+    const { open } = store.getState();
+    if (!isCurrent(generation) || open.kind !== "opened") return false;
+    const fail = (): false => {
+      if (isCurrent(generation)) {
+        store.setState({
+          open: { kind: "failed", name: open.name, size: open.size, cause: "lost" },
+          subset: NO_SUBSET,
+        });
+      }
+      return false;
+    };
+    const opened = await post(generation, {
+      kind: "open",
+      file: open.file,
+      fileName: open.name,
+    });
+    if (!isCurrent(generation)) return false;
+    if (opened.kind !== "ok" || opened.value.kind !== "opened") return fail();
+    // Read after opening, so a subset made meanwhile is the one made again.
+    const { subset } = store.getState();
+    if (subset.kind === "none") return true;
+    const remade = await post(generation, { kind: "subset", ...subset.request });
+    if (!isCurrent(generation)) return false;
+    return remade.kind === "ok" && remade.value.kind === "made" ? true : fail();
+  };
+
+  /** Restores the working PMO of `generation`, joining a restore of it already under way. */
+  const restore = (generation: number): Promise<boolean> => {
+    if (restoring?.generation === generation) return restoring.done;
+    const done = reopen(generation).finally(() => {
+      if (restoring?.done === done) restoring = null;
+    });
+    restoring = { generation, done };
+    return done;
+  };
+
+  /**
+   * Sends a request for `generation`. If the worker lost the working PMO,
+   * restores it and sends the request once more.
+   */
+  const send = async <K extends WorkingPmoKind>(
+    generation: number,
+    request: WorkingPmoRequest<K>,
+  ): Promise<WorkingPmoAnswer<K>> => {
+    const first = await post(generation, request);
+    if (!isLost(generation, first)) return answerOf(first);
+    if (!isCurrent(generation)) return { kind: "stale" };
+    if (!(await restore(generation))) {
+      return isCurrent(generation)
+        ? {
+            kind: "failed",
+            message: t`The file was closed, probably because the browser ran out of memory. Open the file again.`,
+          }
+        : { kind: "stale" };
+    }
+    return answerOf(await post(generation, request));
+  };
 
   /** Counts subset requests, so only the latest one's subset is kept. */
   let subsets = 0;
@@ -285,13 +395,19 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
         return bytes.kind === "none" ? { kind: "no-built-pmo" } : { kind: "failed" };
       }
       const { file, name } = bytes;
-      const answer = await send(generation, { kind: "open", file, fileName: name });
+      const request: WorkingPmoRequest<"open"> = { kind: "open", file, fileName: name };
+      const first = await post(generation, request);
+      // A worker that stopped while reading is started again: read the file once more.
+      const answer: WorkingPmoAnswer<"open"> =
+        first.kind === "stopped" && isCurrent(generation)
+          ? answerOf<"open">(await post(generation, request))
+          : answerOf<"open">(first);
       if (answer.kind === "stale" || !isCurrent(generation)) return { kind: "superseded" };
       const outcome = answer.kind === "ok" ? answer.value : null;
       emit({ kind: "pmo-file-checked", result: checkResultOf(outcome) });
       const size = file.size;
       if (outcome === null) {
-        store.setState({ open: { kind: "failed", name, size } });
+        store.setState({ open: { kind: "failed", name, size, cause: "open" } });
         return { kind: "failed" };
       }
       if (outcome.kind === "refused") {
@@ -305,7 +421,7 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
 
     async close() {
       const generation = nextGeneration({ kind: "none" });
-      await send(generation, { kind: "close" });
+      await post(generation, { kind: "close" });
     },
 
     query(request) {

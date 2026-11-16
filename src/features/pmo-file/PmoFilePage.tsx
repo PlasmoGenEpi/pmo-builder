@@ -58,7 +58,9 @@ function isTab(value: string | undefined): value is PmoTab {
 function refusal(file: OpenState): string | null {
   const version = PUBLISHABLE_PMO_VERSION;
   if (file.kind === "failed")
-    return t`The file could not be opened. Reload the page and try again.`;
+    return file.cause === "lost"
+      ? t`The file was closed, probably because the browser ran out of memory. Open the file again.`
+      : t`The file could not be opened. Reload the page and try again.`;
   if (file.kind !== "refused") return null;
   const { check } = file;
   switch (check.kind) {

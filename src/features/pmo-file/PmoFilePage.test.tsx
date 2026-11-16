@@ -14,7 +14,7 @@ import { depositDraft } from "@/features/review/zenodoDeposit";
 import { createTestStore, renderWithStore } from "@/features/shared/testing";
 import { workingPmoSessionOf } from "@/state";
 import { installBlobStream } from "@/test/blobStream";
-import type { Engine } from "@/worker";
+import { EngineStoppedError, type Engine } from "@/worker";
 import { createInThreadEngine } from "@/worker/engine";
 
 import { OPEN_BUILT_PATH, PmoFilePage, PmoFileRoute, PMO_TABS, type PmoTab } from "./PmoFilePage";
@@ -653,5 +653,29 @@ describe("PmoFilePage: compare", () => {
       />,
     );
     expect(await screen.findByText("No file is open")).toBeInTheDocument();
+  });
+});
+
+describe("PmoFilePage: worker restarts", () => {
+  it("asks to open the file again when it cannot be opened in the new worker", async () => {
+    const engine = createInThreadEngine();
+    let stopped = false;
+    const stopping: Engine = {
+      ...engine,
+      workingPmo: (call) =>
+        stopped
+          ? Promise.reject(new EngineStoppedError("The background worker stopped."))
+          : engine.workingPmo(call),
+    };
+    const { user } = await openWithEngine(pmoFile(richPmo()), stopping);
+    const summaryTab = await screen.findByRole("tab", { name: "Summary" });
+    stopped = true;
+    await user.click(summaryTab);
+    expect(
+      await screen.findByText(
+        "The file was closed, probably because the browser ran out of memory. Open the file again.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Summary" })).not.toBeInTheDocument();
   });
 });

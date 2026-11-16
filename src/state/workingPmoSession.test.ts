@@ -17,6 +17,7 @@ import type { SubsetRequest, WorkingPmoRequest } from "@/domain/tools/types";
 import type { Engine } from "@/worker";
 import { readZip } from "@/domain/tools/zipTesting";
 import { createInThreadEngine } from "@/worker/engine";
+import { stoppableWorkers } from "@/worker/testing";
 
 import { createAppStore } from "./store";
 import {
@@ -572,5 +573,172 @@ describe("working PMO session: previews", () => {
     expect(
       await engine.workingPmo({ generation, request: { kind: "preview", ...keepFirst(3) } }),
     ).toEqual({ kind: "stale" });
+  });
+});
+
+describe("working PMO session: worker restarts", () => {
+  it("sums up the original and the subset after the worker stops", async () => {
+    const workers = stoppableWorkers(() => createInThreadEngine());
+    const { session } = makeSession({ engine: workers.engine });
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(3));
+    workers.stop();
+
+    expect(await session.query(SUMMARY)).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: EXAMPLE.library_sample_info.length },
+    });
+    expect(await session.query({ ...SUMMARY, source: "subset" })).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 3 },
+    });
+    expect(session.state.getState().open).toMatchObject({ kind: "opened", name: "study.json" });
+    expect(workers.started()).toBe(2);
+  });
+
+  it("answers a request the worker stopped while working on, and counts the stop", async () => {
+    const workers = stoppableWorkers(() => createInThreadEngine());
+    const { session, events } = makeSession({ engine: workers.engine });
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    const pending = session.query(SUMMARY);
+    workers.stop();
+    expect(await pending).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: EXAMPLE.library_sample_info.length },
+    });
+    expect(events).toContainEqual({ kind: "engine-stopped" });
+  });
+
+  it("makes the subset asked for when the worker stops while making it", async () => {
+    const workers = stoppableWorkers(() => createInThreadEngine());
+    const { session } = makeSession({ engine: workers.engine });
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(3));
+    const pending = session.subset(keepFirst(5));
+    workers.stop();
+    expect(await pending).toMatchObject({ kind: "ok", value: { summary: { specimens: 5 } } });
+    expect(await session.query({ ...SUMMARY, source: "subset" })).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 5 },
+    });
+  });
+
+  it("ends with the file opened last when the worker stops while it is being read", async () => {
+    const started = gate();
+    const finish = gate();
+    const workers = stoppableWorkers((index) => {
+      const engine = createInThreadEngine();
+      if (index > 0) return engine;
+      // The first worker is still reading latest.json when it stops.
+      return {
+        ...engine,
+        workingPmo: async (call) => {
+          if ("fileName" in call.request && call.request.fileName === "latest.json") {
+            started.open();
+            await finish.promise;
+          }
+          return engine.workingPmo(call);
+        },
+      };
+    });
+    const { session } = makeSession({ engine: workers.engine });
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    const latestSpecimens = 4;
+    const opening = session.open(chosen(pmoFile(smallerPmo(latestSpecimens), "latest.json")));
+    await started.promise;
+    workers.stop();
+    finish.open();
+
+    expect(await opening).toEqual({ kind: "opened" });
+    expect(session.state.getState().open).toMatchObject({ kind: "opened", name: "latest.json" });
+    expect(await session.query(SUMMARY)).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: latestSpecimens },
+    });
+  });
+
+  it("answers as stale a request for a file replaced while the worker restarts", async () => {
+    const workers = stoppableWorkers(() => createInThreadEngine());
+    const { session } = makeSession({ engine: workers.engine });
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    const pending = session.query(SUMMARY);
+    workers.stop();
+    const latestSpecimens = 4;
+    await session.open(chosen(pmoFile(smallerPmo(latestSpecimens), "latest.json")));
+    expect(await pending).toEqual({ kind: "stale" });
+    expect(await session.query(SUMMARY)).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: latestSpecimens },
+    });
+  });
+
+  it("tries a stopped open only once", async () => {
+    const reads: number[] = [];
+    const workers = stoppableWorkers((index) => {
+      const engine = createInThreadEngine();
+      // Every worker stops while reading, as with a file too large for memory.
+      return {
+        ...engine,
+        workingPmo: async (call) => {
+          if (call.request.kind === "open") {
+            reads.push(index);
+            workers.stop();
+            return new Promise<never>(() => undefined);
+          }
+          return engine.workingPmo(call);
+        },
+      };
+    });
+    const { session } = makeSession({ engine: workers.engine });
+    expect(await session.open(chosen(pmoFile(EXAMPLE, "huge.json")))).toEqual({ kind: "failed" });
+    expect(session.state.getState().open).toMatchObject({ kind: "failed", cause: "open" });
+    expect(reads).toEqual([0, 1]);
+  });
+
+  it("fails the open state when the file cannot be opened again", async () => {
+    const workers = stoppableWorkers((index) => {
+      const engine = createInThreadEngine();
+      if (index === 0) return engine;
+      return {
+        ...engine,
+        workingPmo: (call) =>
+          call.request.kind === "open"
+            ? Promise.reject(new Error("out of memory"))
+            : engine.workingPmo(call),
+      };
+    });
+    const { session } = makeSession({ engine: workers.engine });
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(3));
+    workers.stop();
+
+    expect((await session.query(SUMMARY)).kind).toBe("failed");
+    expect(session.state.getState()).toMatchObject({
+      open: { kind: "failed", name: "study.json", cause: "lost" },
+      subset: { kind: "none" },
+    });
+  });
+
+  it("opens the file again once for requests that find it lost together", async () => {
+    const opens: number[] = [];
+    const workers = stoppableWorkers((index) => {
+      const engine = createInThreadEngine();
+      return {
+        ...engine,
+        workingPmo: (call) => {
+          if (call.request.kind === "open") opens.push(index);
+          return engine.workingPmo(call);
+        },
+      };
+    });
+    const { session } = makeSession({ engine: workers.engine });
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    workers.stop();
+    const answers = await Promise.all([
+      session.query(SUMMARY),
+      session.query({ kind: "groupFields", source: "original" }),
+    ]);
+    expect(answers.map((answer) => answer.kind)).toEqual(["ok", "ok"]);
+    expect(opens).toEqual([0, 1]);
   });
 });
