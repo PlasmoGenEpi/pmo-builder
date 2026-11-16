@@ -28,6 +28,7 @@ import {
   baseNameOf,
   makeSubset,
   openPmo,
+  pmoFile,
   previewSubset,
   tableFile,
   tablesArchive,
@@ -227,6 +228,21 @@ const HANDLERS: Handlers = {
       work: guarded(async () => ({
         kind: "answer",
         result: { kind: "ok", value: await tablesArchive(pmo, { format, baseName }) },
+      })),
+    };
+  },
+
+  file(held, call) {
+    if (call.generation < held.generation) return answered(held, { kind: "stale" });
+    const found = pmoFor(held, "subset");
+    if (found.kind !== "found") return answered(held, found);
+    const { gzip } = call.request;
+    const { pmo, baseName } = found;
+    return {
+      held,
+      work: guarded(async () => ({
+        kind: "answer",
+        result: { kind: "ok", value: await pmoFile(pmo, { gzip, baseName }) },
       })),
     };
   },

@@ -83,6 +83,8 @@ export interface WorkingPmoState {
   readonly subset: SubsetState;
   /** Which PMO the Tables tab writes tables of. Reset to the original on each open. */
   readonly tableSource: WorkingSource;
+  /** Which PMO the Publish tab deposits. Reset to the original on each open. */
+  readonly publishSource: WorkingSource;
 }
 
 /** The subset of the working PMO. */
@@ -189,6 +191,8 @@ export interface WorkingPmoSession {
   setMinReads(value: number | null): void;
   /** Sets which PMO the Tables tab writes tables of. */
   setTableSource(source: WorkingSource): void;
+  /** Sets which PMO the Publish tab deposits. */
+  setPublishSource(source: WorkingSource): void;
 }
 
 const NO_SUBSET: SubsetState = { kind: "none" };
@@ -199,6 +203,7 @@ const INITIAL: WorkingPmoState = {
   minReads: null,
   subset: NO_SUBSET,
   tableSource: "original",
+  publishSource: "original",
 };
 
 function describeError(error: unknown): string {
@@ -239,6 +244,7 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
       minReads: null,
       subset: NO_SUBSET,
       tableSource: "original",
+      publishSource: "original",
     });
     return generation;
   };
@@ -332,6 +338,10 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
 
     setTableSource(source) {
       store.setState({ tableSource: source });
+    },
+
+    setPublishSource(source) {
+      store.setState({ publishSource: source });
     },
   };
 }

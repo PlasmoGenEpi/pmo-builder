@@ -33,6 +33,7 @@ import {
 
 import { readPmoFile } from "@/domain/build/checkFile";
 import { PUBLISHABLE_PMO_VERSION } from "@/domain/build/checkFileResult";
+import { exportPmo, type PmoFile } from "@/domain/build/export";
 import { summarisePmo } from "@/domain/build/merge";
 import { summarisePublication } from "@/domain/build/publication";
 
@@ -434,4 +435,13 @@ export async function tablesArchive(
     fileName: `${options.baseName}-tables-${options.format}.zip`,
     blob: await zipFiles(entries),
   };
+}
+
+/** `pmo` as a PMO file, gzipped or not, named `baseName.json` or `baseName.json.gz`. */
+export async function pmoFile(
+  pmo: Pmo,
+  options: { readonly gzip: boolean; readonly baseName: string },
+): Promise<PmoFile> {
+  const { blob } = await exportPmo(pmo, { gzip: options.gzip });
+  return { blob, fileName: `${options.baseName}.json${options.gzip ? ".gz" : ""}` };
 }
