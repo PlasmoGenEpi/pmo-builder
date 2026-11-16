@@ -341,7 +341,7 @@ export interface GroupComparison {
 /**
  * What each kind of request about the working PMO carries, besides its kind.
  * A new operation is a new kind here, its answer in {@link WorkingPmoValues},
- * and its handler in `answerWorkingPmo`.
+ * and its handler in `workingPmoHandlers.ts`.
  */
 export interface WorkingPmoRequests {
   /** Reads and checks a PMO file, and holds it in place of the PMO held before. */
@@ -419,6 +419,7 @@ export type WorkingPmoResult<T> =
   | { readonly kind: "no-subset" }
   /** The request was for a PMO that has since been closed or replaced. Callers ignore it. */
   | { readonly kind: "stale" }
+  /** `message` is the error's own text, for debugging. Not for the screen: it is not translated. */
   | { readonly kind: "failed"; readonly message: string };
 
 /** What a request of kind `K` gives. */
