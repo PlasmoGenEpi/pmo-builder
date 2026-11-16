@@ -23,7 +23,14 @@ import type {
   WorkingPmoKind,
   WorkingSource,
 } from "./types";
-import { makeSubset, openPmo, previewSubset } from "./workingPmo";
+import {
+  baseNameOf,
+  makeSubset,
+  openPmo,
+  previewSubset,
+  tableFile,
+  tablesArchive,
+} from "./workingPmo";
 
 type Pmo = PortableMicrohaplotypeObject;
 
@@ -70,17 +77,24 @@ function answered<K extends WorkingPmoKind>(
   return { held, work: Promise.resolve({ kind: "answer", result }) };
 }
 
-/** Which PMO `source` means, or why there is none. */
+/**
+ * Which PMO `source` means, or why there is none. `baseName` is what files
+ * made from it are named after: the opened file's name, with "-subset" for
+ * the subset.
+ */
 function pmoFor(
   held: WorkingPmoHeld,
   source: WorkingSource,
 ):
-  | { readonly kind: "found"; readonly pmo: Pmo }
+  | { readonly kind: "found"; readonly pmo: Pmo; readonly baseName: string }
   | { readonly kind: "not-open" }
   | { readonly kind: "no-subset" } {
   if (held.pmo === null) return { kind: "not-open" };
-  if (source === "original") return { kind: "found", pmo: held.pmo.original };
-  return held.pmo.subset === null ? { kind: "no-subset" } : { kind: "found", pmo: held.pmo.subset };
+  const baseName = baseNameOf(held.pmo.fileName);
+  if (source === "original") return { kind: "found", pmo: held.pmo.original, baseName };
+  return held.pmo.subset === null
+    ? { kind: "no-subset" }
+    : { kind: "found", pmo: held.pmo.subset, baseName: `${baseName}-subset` };
 }
 
 /** What making a subset gave, as an answer. */
@@ -182,6 +196,36 @@ const HANDLERS: Handlers = {
       work: guarded(() => ({
         kind: "answer",
         result: { kind: "ok", value: previewSubset(found.pmo, request) },
+      })),
+    };
+  },
+
+  table(held, call) {
+    if (call.generation < held.generation) return answered(held, { kind: "stale" });
+    const found = pmoFor(held, call.request.source);
+    if (found.kind !== "found") return answered(held, found);
+    const { id, format } = call.request;
+    const { pmo, baseName } = found;
+    return {
+      held,
+      work: guarded(() => ({
+        kind: "answer",
+        result: { kind: "ok", value: tableFile(pmo, { id, format, baseName }) },
+      })),
+    };
+  },
+
+  tables(held, call) {
+    if (call.generation < held.generation) return answered(held, { kind: "stale" });
+    const found = pmoFor(held, call.request.source);
+    if (found.kind !== "found") return answered(held, found);
+    const { format } = call.request;
+    const { pmo, baseName } = found;
+    return {
+      held,
+      work: guarded(async () => ({
+        kind: "answer",
+        result: { kind: "ok", value: await tablesArchive(pmo, { format, baseName }) },
       })),
     };
   },

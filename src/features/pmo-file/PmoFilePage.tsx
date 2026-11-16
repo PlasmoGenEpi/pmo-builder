@@ -268,7 +268,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
   const generation = useWorkingPmo((state) => state.generation);
   const minReads = useWorkingPmo((state) => state.minReads);
   const subset = useWorkingPmo((state) => state.subset);
-  const tableSource = useWorkspace((state) => state.tableSource);
+  const tableSource = useWorkingPmo((state) => state.tableSource);
   const summarySource = useWorkspace((state) => state.summarySource);
   const updateWorkspace = useUpdateWorkspace();
   const build = useBuildState();
@@ -386,7 +386,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                       tables={file.opened.tables}
                       subsetTables={made?.tables ?? null}
                       source={made === null ? "original" : tableSource}
-                      onSourceChange={(source) => updateWorkspace({ tableSource: source })}
+                      onSourceChange={(source) => session.setTableSource(source)}
                     />
                   </Reading>
                 ),
@@ -405,7 +405,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                         navigate("/pmo/summary");
                       }}
                       onShowTables={() => {
-                        updateWorkspace({ tableSource: "subset" });
+                        session.setTableSource("subset");
                         navigate("/pmo/tables");
                       }}
                       onPublish={

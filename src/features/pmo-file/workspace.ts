@@ -1,7 +1,7 @@
 /**
- * What the Tables, Summary and Publish tabs keep about the working PMO until
- * they move to the working PMO session: each tab's choice of original or
- * subset. The file and its subset are the session's.
+ * What the Summary and Publish tabs keep about the working PMO until they
+ * move to the working PMO session: each tab's choice of original or subset.
+ * The file, its subset and the Tables tab's choice are the session's.
  *
  * Everything here belongs to one generation of the session, so opening or
  * closing a file starts again from nothing.
@@ -15,8 +15,6 @@ import { useWorkingPmo } from "@/state";
 
 /** What the tabs keep about the working PMO. */
 export interface WorkspaceState {
-  /** Which PMO the Tables tab lists. */
-  readonly tableSource: WorkingSource;
   /** Which PMO the Publish tab deposits. */
   readonly publishSource: WorkingSource;
   /** Which PMO the Summary and Compare tabs sum up. */
@@ -24,7 +22,6 @@ export interface WorkspaceState {
 }
 
 const EMPTY: WorkspaceState = {
-  tableSource: "original",
   publishSource: "original",
   summarySource: "original",
 };

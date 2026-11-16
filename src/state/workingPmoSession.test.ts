@@ -14,6 +14,7 @@ import { buildExamplePmo } from "@/domain/build/testing";
 import { createDraftStorage, createMemoryBackend } from "@/domain/draft";
 import type { SubsetRequest, WorkingPmoRequest } from "@/domain/tools/types";
 import type { Engine } from "@/worker";
+import { readZip } from "@/domain/tools/zipTesting";
 import { createInThreadEngine } from "@/worker/engine";
 
 import { createAppStore } from "./store";
@@ -229,6 +230,85 @@ describe("working PMO session: queries", () => {
     expect(session.state.getState().minReads).toBe(50);
     await session.open(chosen(pmoFile(EXAMPLE, "second.json")));
     expect(session.state.getState().minReads).toBeNull();
+  });
+});
+
+describe("working PMO session: tables", () => {
+  it("writes one table of the original, named after the file", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json.gz")));
+    const answer = await session.query({
+      kind: "table",
+      source: "original",
+      id: "alleles",
+      format: "csv",
+    });
+    expect(answer).toMatchObject({ kind: "ok", value: { fileName: "study-alleles.csv" } });
+    expect(answer.kind === "ok" && answer.value.text.split("\n")[0]).toBe(
+      "library_sample_name,target_name,seq,bioinformatics_run_name,reads",
+    );
+  });
+
+  it("zips every table of the subset, named with -subset", async () => {
+    const engine = createInThreadEngine();
+    const { session } = makeSession({ engine });
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    // Made through the engine until the subset request moves to the session.
+    const names = EXAMPLE.specimen_info.slice(0, 2).map((specimen) => specimen.specimen_name);
+    await engine.subsetPmo({
+      specimens: { kind: "names", names },
+      targets: { kind: "all" },
+      minReads: 0,
+    });
+    const answer = await session.query({ kind: "tables", source: "subset", format: "tsv" });
+    if (answer.kind !== "ok") throw new Error(`expected tables, got ${answer.kind}`);
+    expect(answer.value.fileName).toBe("study-subset-tables-tsv.zip");
+    const files = await readZip(answer.value.blob);
+    expect(files.map((file) => file.name)).toContain("study-subset-specimens.tsv");
+    const specimens = files.find((file) => file.name === "study-subset-specimens.tsv");
+    // A header row and one row per specimen kept.
+    expect(specimens?.text.trim().split("\n")).toHaveLength(names.length + 1);
+  });
+
+  const TABLE: WorkingPmoRequest<"table"> = {
+    kind: "table",
+    source: "original",
+    id: "specimens",
+    format: "csv",
+  };
+  const TABLES: WorkingPmoRequest<"tables"> = { kind: "tables", source: "original", format: "csv" };
+
+  it("says no file is open, for one table or all of them", async () => {
+    const { session } = makeSession();
+    expect(await session.query(TABLE)).toEqual({ kind: "not-open" });
+    expect(await session.query(TABLES)).toEqual({ kind: "not-open" });
+  });
+
+  it("says no subset has been made, for one table or all of them", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    expect(await session.query({ ...TABLE, source: "subset" })).toEqual({ kind: "no-subset" });
+    expect(await session.query({ ...TABLES, source: "subset" })).toEqual({ kind: "no-subset" });
+  });
+
+  it("answers a table request for a file since replaced as stale", async () => {
+    const engine = createInThreadEngine();
+    const { session } = makeSession({ engine });
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    const { generation } = session.state.getState();
+    await session.open(chosen(pmoFile(smallerPmo(3), "second.json")));
+    expect(await engine.workingPmo({ generation, request: TABLE })).toEqual({ kind: "stale" });
+    expect(await engine.workingPmo({ generation, request: TABLES })).toEqual({ kind: "stale" });
+  });
+
+  it("keeps the Tables tab's choice of original or subset until the next open", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    expect(session.state.getState().tableSource).toBe("original");
+    session.setTableSource("subset");
+    expect(session.state.getState().tableSource).toBe("subset");
+    await session.open(chosen(pmoFile(EXAMPLE, "second.json")));
+    expect(session.state.getState().tableSource).toBe("original");
   });
 });
 

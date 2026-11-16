@@ -26,6 +26,7 @@ import type {
   WorkingPmoQuery,
   WorkingPmoQueryKind,
   WorkingPmoRequest,
+  WorkingSource,
 } from "@/domain/tools/types";
 import { isEngineStoppedError, type Engine } from "@/worker";
 
@@ -80,6 +81,8 @@ export interface WorkingPmoState {
   readonly minReads: number | null;
   /** The subset made of the original, if any. Reset on each open. */
   readonly subset: SubsetState;
+  /** Which PMO the Tables tab writes tables of. Reset to the original on each open. */
+  readonly tableSource: WorkingSource;
 }
 
 /** The subset of the working PMO. */
@@ -184,6 +187,8 @@ export interface WorkingPmoSession {
   subset(request: SubsetRequest): Promise<WorkingPmoAnswer<"subset">>;
   /** Sets the minimum reads for Summary and Compare. */
   setMinReads(value: number | null): void;
+  /** Sets which PMO the Tables tab writes tables of. */
+  setTableSource(source: WorkingSource): void;
 }
 
 const NO_SUBSET: SubsetState = { kind: "none" };
@@ -193,6 +198,7 @@ const INITIAL: WorkingPmoState = {
   open: { kind: "none" },
   minReads: null,
   subset: NO_SUBSET,
+  tableSource: "original",
 };
 
 function describeError(error: unknown): string {
@@ -227,7 +233,13 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
   /** Starts a new generation, showing `open` and resetting what belongs to the last file. */
   const nextGeneration = (open: OpenState): number => {
     const generation = store.getState().generation + 1;
-    store.setState({ generation, open, minReads: null, subset: NO_SUBSET });
+    store.setState({
+      generation,
+      open,
+      minReads: null,
+      subset: NO_SUBSET,
+      tableSource: "original",
+    });
     return generation;
   };
 
@@ -316,6 +328,10 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
 
     setMinReads(value) {
       store.setState({ minReads: value });
+    },
+
+    setTableSource(source) {
+      store.setState({ tableSource: source });
     },
   };
 }

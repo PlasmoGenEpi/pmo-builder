@@ -71,6 +71,10 @@ const WORKING_PMO_VALUES: {
     hasKind(value, ["made", "empty"]) &&
     (value["kind"] === "empty" || typeof value["fileName"] === "string"),
   preview: (value): value is WorkingPmoValues["preview"] => isSubsetPreview(value),
+  table: (value): value is WorkingPmoValues["table"] =>
+    isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string",
+  tables: (value): value is WorkingPmoValues["tables"] =>
+    isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string",
 };
 
 /** Whether `value` is an answer to a working PMO request of kind `kind`. */

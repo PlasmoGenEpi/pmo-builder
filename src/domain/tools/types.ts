@@ -355,6 +355,14 @@ export interface WorkingPmoRequests {
   readonly subset: SubsetRequest;
   /** What a subset of the original would keep, counted without making it. */
   readonly preview: SubsetRequest;
+  /** One table of the original or the subset, as a CSV or TSV file. */
+  readonly table: {
+    readonly source: WorkingSource;
+    readonly id: TableId;
+    readonly format: TableFormat;
+  };
+  /** Every table of the original or the subset, as files in one zip. */
+  readonly tables: { readonly source: WorkingSource; readonly format: TableFormat };
 }
 
 /** One kind of request about the working PMO. */
@@ -379,6 +387,8 @@ export interface WorkingPmoValues {
   readonly summary: PmoSummary;
   readonly subset: SubsetMade;
   readonly preview: SubsetPreview;
+  readonly table: TableFile;
+  readonly tables: TablesArchive;
 }
 
 /** A request, with the generation of the working PMO it is meant for. */
