@@ -12,16 +12,7 @@ import type {
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
 import { useWorkingPmoQuery, type WorkingPmoQueryState } from "@/state";
-import {
-  Callout,
-  Card,
-  SectionHeading,
-  SegmentedControl,
-  Skeleton,
-  Stat,
-  Switch,
-  formatCount,
-} from "@/ui";
+import { Callout, Card, SectionHeading, Skeleton, Stat, Switch, formatCount } from "@/ui";
 
 import { AlleleBars } from "./AlleleBars";
 import {
@@ -266,10 +257,8 @@ function NoSummary({ loaded }: { readonly loaded: WorkingPmoQueryState<"summary"
 
 /** Props for {@link SummaryPanel}. */
 export interface SummaryPanelProps {
-  /** Whether a subset has been made, so it can be summed up instead. */
-  readonly hasSubset: boolean;
+  /** Which PMO to sum up. */
   readonly source: WorkingSource;
-  readonly onSourceChange: (source: WorkingSource) => void;
   /** The minimum reads for a microhaplotype to count; `null` counts them all. */
   readonly minReads: number | null;
   readonly onMinReadsChange: (value: number | null) => void;
@@ -281,9 +270,7 @@ export interface SummaryPanelProps {
  * threshold applies throughout. Counted in the worker.
  */
 export function SummaryPanel({
-  hasSubset,
   source,
-  onSourceChange,
   minReads: minReadsInput,
   onMinReadsChange,
 }: SummaryPanelProps) {
@@ -291,10 +278,9 @@ export function SummaryPanel({
   const [allTargets, setAllTargets] = useState(false);
   const [grouped, setGrouped] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
-  const shownSource = hasSubset ? source : "original";
   const request = useMemo(
-    (): WorkingPmoRequest<"summary"> => ({ kind: "summary", source: shownSource, minReads }),
-    [shownSource, minReads],
+    (): WorkingPmoRequest<"summary"> => ({ kind: "summary", source, minReads }),
+    [source, minReads],
   );
   const loaded = useWorkingPmoQuery(request);
 
@@ -331,17 +317,6 @@ export function SummaryPanel({
     <div className="flex flex-col gap-8">
       <ViewToolbar>
         <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
-        {hasSubset ? (
-          <SegmentedControl<WorkingSource>
-            label={t`Sum up`}
-            value={source}
-            onValueChange={onSourceChange}
-            segments={[
-              { value: "original", label: t`The whole file` },
-              { value: "subset", label: t`The subset` },
-            ]}
-          />
-        ) : null}
         {summary === null ? null : <SectionJumps jumps={jumpsOf(summary)} />}
       </ViewToolbar>
 

@@ -1794,7 +1794,6 @@ msgid "Comments"
 msgstr ""
 
 #: src/features/pmo-file/PmoFilePage.tsx
-#: src/features/pmo-file/summary/CompareTab.tsx
 msgid "Compare"
 msgstr ""
 
@@ -5240,12 +5239,16 @@ msgstr ""
 msgid "Such as the country or year of collection."
 msgstr ""
 
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "Sum up"
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Summary"
 msgstr ""
 
 #: src/features/pmo-file/PmoFilePage.tsx
-msgid "Summary"
+msgid "Summary, Compare and Tables use the PMO chosen here."
+msgstr ""
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Summary, Compare, Tables and Publish use the PMO chosen here."
 msgstr ""
 
 #: src/app/ThemeToggle.tsx
@@ -5270,10 +5273,6 @@ msgstr ""
 
 #: src/app/HomePage.tsx
 msgid "Tables can be CSV, TSV, plain text or Excel files."
-msgstr ""
-
-#: src/features/pmo-file/TablesPanel.tsx
-msgid "Tables from"
 msgstr ""
 
 #. A record type in the PMO, starting a place in the file, such as 'Target "t1"'.
@@ -6069,10 +6068,7 @@ msgstr ""
 msgid "The strand the target lies on, + or -."
 msgstr ""
 
-#: src/features/pmo-file/PublishPanel.tsx
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-#: src/features/pmo-file/TablesPanel.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "The subset"
 msgstr ""
 
@@ -6142,10 +6138,7 @@ msgstr ""
 msgid "The well of the specimen on its storage plate, such as A01, instead of row and column."
 msgstr ""
 
-#: src/features/pmo-file/PublishPanel.tsx
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-#: src/features/pmo-file/TablesPanel.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "The whole file"
 msgstr ""
 
@@ -6698,10 +6691,6 @@ msgstr ""
 msgid "What to do with the file"
 msgstr ""
 
-#: src/features/pmo-file/PublishPanel.tsx
-msgid "What to publish"
-msgstr ""
-
 #: src/features/records/RecordList.tsx
 msgid "What you typed for it will be gone. This cannot be undone."
 msgstr ""
@@ -6870,6 +6859,10 @@ msgstr ""
 
 #: src/domain/build/merge.ts
 msgid "Without a specimen table, each library sample becomes its own specimen, so the specimen names in the library sample table are not used. Add a specimen table to keep them."
+msgstr ""
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Work with"
 msgstr ""
 
 #: src/app/HomePage.tsx

@@ -25,7 +25,6 @@ import {
   Combobox,
   Field,
   SectionHeading,
-  SegmentedControl,
   Select,
   SERIES,
   Skeleton,
@@ -412,27 +411,19 @@ function Comparison({
 
 /** Props for {@link CompareTab}. */
 export interface CompareTabProps {
-  readonly hasSubset: boolean;
+  /** Which PMO to compare the groups of. */
   readonly source: WorkingSource;
-  readonly onSourceChange: (source: WorkingSource) => void;
   /** The minimum reads for a microhaplotype to count; `null` counts them all. */
   readonly minReads: number | null;
   readonly onMinReadsChange: (value: number | null) => void;
 }
 
 /** Specimens grouped by a field the file has, compared side by side. */
-export function CompareTab({
-  hasSubset,
-  source,
-  onSourceChange,
-  minReads: minReadsInput,
-  onMinReadsChange,
-}: CompareTabProps) {
-  const shownSource = hasSubset ? source : "original";
+export function CompareTab({ source, minReads: minReadsInput, onMinReadsChange }: CompareTabProps) {
   const minReads = useSettled(Math.max(0, minReadsInput ?? 0), 400);
   const fieldsRequest = useMemo(
-    (): WorkingPmoRequest<"groupFields"> => ({ kind: "groupFields", source: shownSource }),
-    [shownSource],
+    (): WorkingPmoRequest<"groupFields"> => ({ kind: "groupFields", source }),
+    [source],
   );
   const fields = useWorkingPmoQuery(fieldsRequest);
   const [key, setKey] = useState<GroupKey | null>(null);
@@ -480,17 +471,6 @@ export function CompareTab({
           )}
         </Field>
         <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
-        {hasSubset ? (
-          <SegmentedControl<WorkingSource>
-            label={t`Compare`}
-            value={source}
-            onValueChange={onSourceChange}
-            segments={[
-              { value: "original", label: t`The whole file` },
-              { value: "subset", label: t`The subset` },
-            ]}
-          />
-        ) : null}
       </ViewToolbar>
 
       {chosen.present < chosen.total ? (
@@ -499,7 +479,7 @@ export function CompareTab({
         </p>
       ) : null}
 
-      <Comparison source={shownSource} field={chosen} minReads={minReads} />
+      <Comparison source={source} field={chosen} minReads={minReads} />
     </div>
   );
 }

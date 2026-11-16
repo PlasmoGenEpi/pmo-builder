@@ -300,29 +300,6 @@ describe("working PMO session: tables", () => {
     expect(await engine.workingPmo({ generation, request: TABLE })).toEqual({ kind: "stale" });
     expect(await engine.workingPmo({ generation, request: TABLES })).toEqual({ kind: "stale" });
   });
-
-  it("keeps the Tables tab's choice of original or subset until the next open", async () => {
-    const { session } = makeSession();
-    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
-    expect(session.state.getState().tableSource).toBe("original");
-    session.setTableSource("subset");
-    expect(session.state.getState().tableSource).toBe("subset");
-    await session.open(chosen(pmoFile(EXAMPLE, "second.json")));
-    expect(session.state.getState().tableSource).toBe("original");
-  });
-});
-
-describe("working PMO session: Summary and Compare", () => {
-  it("keeps Summary and Compare's choice of original or subset until the next open", async () => {
-    const { session } = makeSession();
-    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
-    expect(session.state.getState().summarySource).toBe("original");
-    session.setSummarySource("subset");
-    expect(session.state.getState().summarySource).toBe("subset");
-    expect(session.state.getState().tableSource).toBe("original");
-    await session.open(chosen(pmoFile(EXAMPLE, "second.json")));
-    expect(session.state.getState().summarySource).toBe("original");
-  });
 });
 
 describe("working PMO session: freeing memory", () => {
@@ -808,15 +785,65 @@ describe("working PMO session: subset files", () => {
   });
 });
 
-describe("working PMO session: publishing", () => {
-  it("keeps Publish's choice of original or subset until the next open", async () => {
+describe("working PMO session: original or subset", () => {
+  it("works on the original until a subset is made", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    expect(session.state.getState().source).toBe("original");
+    session.setSource("subset");
+    expect(session.state.getState().source).toBe("original");
+  });
+
+  it("switches to the subset when one is made, and can switch back", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(3));
+    expect(session.state.getState().source).toBe("subset");
+    session.setSource("original");
+    expect(session.state.getState().source).toBe("original");
+    session.setSource("subset");
+    expect(session.state.getState().source).toBe("subset");
+  });
+
+  it("stays on the subset when a new subset replaces it", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(3));
+    await session.subset(keepFirst(2));
+    expect(session.state.getState().source).toBe("subset");
+  });
+
+  it("switches to the subset made last, even from the original", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(3));
+    session.setSource("original");
+    await session.subset(keepFirst(2));
+    expect(session.state.getState().source).toBe("subset");
+  });
+
+  it("goes back to the original when a new subset would keep nothing", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(3));
+    await session.subset({ ...keepFirst(3), minReads: 1e9 });
+    expect(session.state.getState().source).toBe("original");
+  });
+
+  it("resets the choice to the original when another file is opened", async () => {
     const { session } = makeSession();
     await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
-    expect(session.state.getState().publishSource).toBe("original");
-    session.setPublishSource("subset");
-    expect(session.state.getState().publishSource).toBe("subset");
-    expect(session.state.getState().tableSource).toBe("original");
+    await session.subset(keepFirst(3));
+    expect(session.state.getState().source).toBe("subset");
     await session.open(chosen(pmoFile(EXAMPLE, "second.json")));
-    expect(session.state.getState().publishSource).toBe("original");
+    expect(session.state.getState().source).toBe("original");
+  });
+
+  it("resets the choice to the original when the file is closed", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(3));
+    await session.close();
+    expect(session.state.getState().source).toBe("original");
   });
 });

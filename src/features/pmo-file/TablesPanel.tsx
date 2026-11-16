@@ -90,12 +90,12 @@ export interface TablesPanelProps {
   readonly tables: readonly TableInfo[];
   /** The tables of the subset, when one has been made. */
   readonly subsetTables: readonly TableInfo[] | null;
+  /** Which PMO's tables to list and download. */
   readonly source: WorkingSource;
-  readonly onSourceChange: (source: WorkingSource) => void;
 }
 
 /** The tables in a PMO, each to download as CSV or TSV. */
-export function TablesPanel({ tables, subsetTables, source, onSourceChange }: TablesPanelProps) {
+export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) {
   const session = useWorkingPmoSession();
   const [format, setFormat] = useState<TableFormat>("csv");
   const [saving, setSaving] = useState<TableId | "all" | null>(null);
@@ -148,17 +148,6 @@ export function TablesPanel({ tables, subsetTables, source, onSourceChange }: Ta
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
-        {subsetTables === null ? null : (
-          <SegmentedControl<WorkingSource>
-            label={t`Tables from`}
-            value={source}
-            onValueChange={onSourceChange}
-            segments={[
-              { value: "original", label: t`The whole file` },
-              { value: "subset", label: t`The subset` },
-            ]}
-          />
-        )}
         <SegmentedControl<TableFormat>
           label={t`File type`}
           value={format}

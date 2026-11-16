@@ -4,8 +4,8 @@ import { Trans } from "@lingui/react/macro";
 import type { SubsetOutcome, WorkingPmoQuery, WorkingSource } from "@/domain/tools/types";
 import { PublishToZenodo } from "@/features/review/PublishToZenodo";
 import type { ZenodoConfig } from "@/features/review/zenodo";
-import { useWorkingPmo, useWorkingPmoQuery, useWorkingPmoSession, type OpenState } from "@/state";
-import { Callout, Link, SegmentedControl, Spinner } from "@/ui";
+import { useWorkingPmoQuery, type OpenState } from "@/state";
+import { Callout, Link, Spinner } from "@/ui";
 
 type Made = Extract<SubsetOutcome, { kind: "made" }>;
 
@@ -55,28 +55,16 @@ export interface PublishPanelProps {
   readonly file: Extract<OpenState, { kind: "opened" }>;
   /** The subset, when one has been made. */
   readonly subset: Made | null;
+  /** Which PMO to deposit. */
+  readonly source: WorkingSource;
 }
 
 /** Depositing the open file, or its subset, in the Zenodo community. */
-export function PublishPanel({ zenodo, file, subset }: PublishPanelProps) {
-  const session = useWorkingPmoSession();
-  const chosen = useWorkingPmo((state) => state.publishSource);
-  const source: WorkingSource = subset === null ? "original" : chosen;
+export function PublishPanel({ zenodo, file, subset, source }: PublishPanelProps) {
   const recordTitle = file.origin.kind === "published" ? file.origin.title : "";
 
   return (
     <div className="flex flex-col gap-6">
-      {subset === null ? null : (
-        <SegmentedControl<WorkingSource>
-          label={t`What to publish`}
-          value={source}
-          onValueChange={(value) => session.setPublishSource(value)}
-          segments={[
-            { value: "original", label: t`The whole file` },
-            { value: "subset", label: t`The subset` },
-          ]}
-        />
-      )}
       {source === "subset" && subset !== null ? (
         <SubsetDeposit key={subset.fileName} zenodo={zenodo} subset={subset} />
       ) : file.origin.kind === "published" ? (
