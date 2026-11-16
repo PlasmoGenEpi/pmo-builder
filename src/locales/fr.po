@@ -3010,6 +3010,10 @@ msgstr "Positions qui se terminent avant de commencer"
 msgid "Look into your PMO"
 msgstr "Explorer votre PMO"
 
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Make one on the Subset tab, or sum up the whole file."
+msgstr "Créez-en un dans l’onglet Sous-ensemble, ou résumez le fichier entier."
+
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Make the subset"
 msgstr "Créer le sous-ensemble"
@@ -3289,6 +3293,10 @@ msgstr "Négatif"
 msgid "Next"
 msgstr "Suivant"
 
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "No file is open"
+msgstr "Aucun fichier n’est ouvert"
+
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "No library sample has any microhaplotypes left with these choices. Choose more specimens or targets, or fewer reads."
 msgstr "Avec ces choix, il ne reste aucun microhaplotype dans aucun échantillon de bibliothèque. Choisissez plus de spécimens ou de cibles, ou moins de lectures."
@@ -3377,6 +3385,10 @@ msgstr "Aucune colonne de nom de spécimen n’est encore associée."
 #: src/features/bioinformatics/MethodsPart.tsx
 msgid "No steps yet"
 msgstr "Aucune étape pour l’instant"
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "No subset has been made yet"
+msgstr "Aucun sous-ensemble n’a encore été créé"
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "No target is ticked yet."
@@ -3687,6 +3699,10 @@ msgstr "Ouvrez un fichier PMO pour voir un résumé de ses échantillons et de s
 #: src/app/HomePage.tsx
 msgid "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables, make a subset, or publish it."
 msgstr "Ouvrez un fichier PMO pour voir un résumé de ses échantillons et de ses cibles, comparer des groupes de spécimens, télécharger ses tableaux, créer un sous-ensemble ou le publier."
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Open a PMO file to see its summary."
+msgstr "Ouvrez un fichier PMO pour voir son résumé."
 
 #: src/app/SaveStatus.tsx
 msgid "Open in another tab"
@@ -6881,7 +6897,7 @@ msgstr "Le réglage de votre navigateur empêche leur envoi, quelle que soit la 
 msgid "Your browser stopped the Zenodo sign-in window. Allow pop-ups for this site and try again."
 msgstr "Votre navigateur a bloqué la fenêtre de connexion à Zenodo. Autorisez les fenêtres pop-up pour ce site et réessayez."
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/state/workingPmoSession.ts
 msgid "Your built PMO"
 msgstr "Votre PMO créé"
 

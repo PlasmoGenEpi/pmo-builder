@@ -10,11 +10,10 @@ import {
   useCatalogue,
   type CatalogueLoader,
 } from "@/features/published/useCatalogue";
-import { useActions } from "@/state";
+import { useWorkingPmoSession, type WorkingPmoSession } from "@/state";
 import { Button, ButtonLink, Callout, Spinner, buttonClassName, formatBytes } from "@/ui";
 
 import { PMO_TABS, type PmoTab } from "./PmoFilePage";
-import { finishOpening, startOpening, workspaceState } from "./workspace";
 
 /** The largest published file this opens: as much as the browser can check. */
 const MAX_BYTES = 300 * 1024 * 1024;
@@ -35,12 +34,16 @@ type Opening =
   | { readonly kind: "download-failed" }
   | { readonly kind: "refused" };
 
-function isAlreadyOpen(id: string): boolean {
-  const { file } = workspaceState();
-  return file.kind === "opened" && file.origin.kind === "published" && file.origin.id === id;
+function isAlreadyOpen(session: WorkingPmoSession, id: string): boolean {
+  const { open } = session.state.getState();
+  return open.kind === "opened" && open.origin.kind === "published" && open.origin.id === id;
 }
 
-/** Downloads one dataset's file and opens it, then shows the overview. */
+/**
+ * Downloads one dataset's file and hands it to the working PMO session to
+ * open, then shows the overview. Leaving the page during the download drops
+ * it; once the file is handed over, the session finishes opening it.
+ */
 function OpenDataset({
   dataset,
   fetcher,
@@ -54,7 +57,7 @@ function OpenDataset({
   /** Starts again from the download. */
   readonly onRetry: () => void;
 }) {
-  const actions = useActions();
+  const session = useWorkingPmoSession();
   const [, navigate] = useLocation();
   const [opening, setOpening] = useState<Opening>(() =>
     dataset.file.size > MAX_BYTES ? { kind: "too-large" } : { kind: "downloading" },
@@ -64,40 +67,24 @@ function OpenDataset({
 
   useEffect(() => {
     if (dataset.file.size > MAX_BYTES) return undefined;
-    if (isAlreadyOpen(dataset.id)) {
+    if (isAlreadyOpen(session, dataset.id)) {
       navigate(`/pmo/${tab}`, { replace: true });
       return undefined;
     }
     let live = true;
     async function open(): Promise<void> {
-      const generation = startOpening(dataset.file.name, dataset.file.size);
       let blob: Blob;
       try {
         blob = await fetcher(dataset.file.url);
       } catch {
-        if (!live) return;
-        finishOpening(generation, { kind: "none" });
-        setOpening({ kind: "download-failed" });
+        if (live) setOpening({ kind: "download-failed" });
         return;
       }
-      const outcome = await actions.openPmo(blob, dataset.file.name);
       if (!live) return;
-      const base = { name: dataset.file.name, size: blob.size };
-      if (outcome?.kind !== "opened") {
-        finishOpening(
-          generation,
-          outcome === null
-            ? { kind: "failed", ...base }
-            : { kind: "refused", ...base, check: outcome.check },
-        );
-        setOpening({ kind: "refused" });
-        return;
-      }
-      finishOpening(generation, {
-        kind: "opened",
+      const result = await session.open({
+        kind: "file",
         file: blob,
-        ...base,
-        opened: outcome,
+        name: dataset.file.name,
         origin: {
           kind: "published",
           id: dataset.id,
@@ -105,13 +92,15 @@ function OpenDataset({
           recordUrl: dataset.zenodoUrl,
         },
       });
-      navigate(`/pmo/${tab}`, { replace: true });
+      if (!live || result.kind === "superseded") return;
+      if (result.kind === "opened") navigate(`/pmo/${tab}`, { replace: true });
+      else setOpening({ kind: "refused" });
     }
     void open();
     return () => {
       live = false;
     };
-  }, [actions, dataset, fetcher, navigate, tab]);
+  }, [session, dataset, fetcher, navigate, tab]);
 
   const download = (
     <ButtonLink href={dataset.file.url} size="sm" target="_blank" rel="noreferrer noopener">

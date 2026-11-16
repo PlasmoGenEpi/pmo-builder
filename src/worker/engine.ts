@@ -47,12 +47,16 @@ import {
 import {
   baseNameOf,
   makeSubset,
-  openBuiltPmo as describeBuiltPmo,
-  openPmo as openWorkingPmo,
   previewSubset,
   tableFile,
   tablesArchive,
 } from "@/domain/tools/workingPmo";
+import {
+  answerWorkingPmo,
+  NOTHING_HELD,
+  settleWorkingPmo,
+  type WorkingPmoHeld,
+} from "@/domain/tools/workingPmoRoute";
 import { compareGroups } from "@/domain/tools/groups";
 import { summaryOf } from "@/domain/tools/summary";
 import type { Notice, ParsedFile, RawTable, SectionId } from "@/domain/types";
@@ -239,12 +243,8 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
   let latestRequest = 0;
   let buildRevision = 0;
   let latestPmo: PortableMicrohaplotypeObject | null = null;
-  /** A PMO file opened to subset or export, apart from the draft. */
-  let working: {
-    readonly fileName: string;
-    readonly original: PortableMicrohaplotypeObject;
-    subset: PortableMicrohaplotypeObject | null;
-  } | null = null;
+  /** The working PMO: a PMO file opened to look over, subset or export, apart from the draft. */
+  let held: WorkingPmoHeld = NOTHING_HELD;
   /** The latest PMO's files, made when first asked for, by format (gzipped or not). */
   let fileMemo: {
     readonly pmo: PortableMicrohaplotypeObject;
@@ -518,32 +518,33 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       return checkPmoFile(file);
     },
 
-    async openPmo(file, fileName) {
-      const { outcome, pmo } = await openWorkingPmo(file, fileName);
-      working = pmo === null ? null : { fileName, original: pmo, subset: null };
-      return outcome;
+    async workingPmo(call) {
+      const step = answerWorkingPmo(held, call);
+      held = step.held;
+      const work = await step.work;
+      const settled = settleWorkingPmo(held, call, work);
+      held = settled.held;
+      return settled.result;
     },
 
-    async openBuiltPmo() {
-      const pmo = latestPmo;
-      if (pmo === null) return null;
-      const file = await exportPmo(pmo, { gzip: true });
-      working = { fileName: file.fileName, original: pmo, subset: null };
-      return { outcome: describeBuiltPmo(pmo, file.fileName), file };
-    },
+    // What follows is the old route to the working PMO, kept until each tab
+    // moves to `workingPmo`. It works on the same PMO the session opened.
 
     subsetPmo(request) {
+      const working = held.pmo;
       if (working === null) return Promise.resolve({ kind: "not-open" as const });
       const { outcome, subset } = makeSubset(working.original, request, working.fileName);
-      working.subset = subset;
+      held = { ...held, pmo: { ...working, subset } };
       return Promise.resolve(outcome);
     },
 
     previewSubset(request) {
+      const working = held.pmo;
       return Promise.resolve(working === null ? null : previewSubset(working.original, request));
     },
 
     async workingPmoTables(request) {
+      const working = held.pmo;
       if (working === null) return null;
       const pmo = request.source === "subset" ? working.subset : working.original;
       if (pmo === null) return null;
@@ -553,6 +554,7 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     },
 
     workingPmoTable(request) {
+      const working = held.pmo;
       if (working === null) return Promise.resolve(null);
       const pmo = request.source === "subset" ? working.subset : working.original;
       if (pmo === null) return Promise.resolve(null);
@@ -562,12 +564,14 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     },
 
     workingPmoSummary(request) {
+      const working = held.pmo;
       if (working === null) return Promise.resolve(null);
       const pmo = request.source === "subset" ? working.subset : working.original;
       return Promise.resolve(pmo === null ? null : summaryOf(pmo, request.minReads));
     },
 
     workingPmoGroups(request) {
+      const working = held.pmo;
       if (working === null) return Promise.resolve(null);
       const pmo = request.source === "subset" ? working.subset : working.original;
       return Promise.resolve(
@@ -576,6 +580,7 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     },
 
     async workingPmoFile(request) {
+      const working = held.pmo;
       if (working?.subset === null || working === null) return null;
       const file = await exportPmo(working.subset, { gzip: request.gzip });
       const fileName = `${baseNameOf(working.fileName)}-subset.json${request.gzip ? ".gz" : ""}`;
@@ -596,6 +601,7 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       latestPmo = null;
       previewMemo = null;
       suggestionsMemo = null;
+      held = NOTHING_HELD;
       return Promise.resolve();
     },
   };

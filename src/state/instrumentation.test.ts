@@ -21,7 +21,7 @@ import {
   instrumentAppStore,
   type UsageRecorder,
 } from "./instrumentation";
-import { createAppStore, type AppStore } from "./store";
+import { createAppStore, workingPmoSessionOf, type AppStore } from "./store";
 
 const EXAMPLES = join(process.cwd(), "public/examples/");
 
@@ -174,7 +174,7 @@ describe("usage counts from the store", () => {
     expect(calls).toContain("build:built");
   });
 
-  it("counts publishing steps and file checks by their fixed names", async () => {
+  it("counts publishing steps and opened files' checks by their fixed names", async () => {
     const calls: string[] = [];
     const recorder: UsageRecorder = {
       ...ANALYTICS_RECORDER,
@@ -193,8 +193,20 @@ describe("usage counts from the store", () => {
     actions.notePublishing({ kind: "publish-opened", source: "file" });
     actions.notePublishing({ kind: "deposit-started", source: "file" });
     actions.notePublishing({ kind: "deposit-finished", outcome: "pop-up-blocked" });
-    await actions.checkPmoFile(new File(["sample,reads"], "Kisumu_patient_042.json"));
-    await actions.checkPmoFile(new File(['{"pmo_header": {"pmo_version": "1.0.0"}}'], "old.json"));
+    const session = workingPmoSessionOf(store);
+    const chosen: { readonly kind: "chosen" } = { kind: "chosen" };
+    await session.open({
+      kind: "file",
+      file: new File(["sample,reads"], "Kisumu_patient_042.json"),
+      name: "Kisumu_patient_042.json",
+      origin: chosen,
+    });
+    await session.open({
+      kind: "file",
+      file: new File(['{"pmo_header": {"pmo_version": "1.0.0"}}'], "old.json"),
+      name: "old.json",
+      origin: chosen,
+    });
     expect(calls).toEqual([
       "opened:file",
       "started:file",
