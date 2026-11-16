@@ -1,15 +1,13 @@
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 
-import type { SubsetOutcome, WorkingPmoQuery, WorkingSource } from "@/domain/tools/types";
+import type { SubsetDetails, WorkingPmoQuery, WorkingSource } from "@/domain/tools/types";
 import { PublishToZenodo } from "@/features/review/PublishToZenodo";
 import type { ZenodoConfig } from "@/features/review/zenodo";
 import { useWorkingPmoQuery, type OpenState } from "@/state";
 import { Callout, Link, Spinner } from "@/ui";
 
 import { NoAnswer } from "./NoAnswer";
-
-type Made = Extract<SubsetOutcome, { kind: "made" }>;
 
 /** The subset's file, gzipped as published PMOs are. */
 const SUBSET_FILE: WorkingPmoQuery<"file"> = { kind: "file", gzip: true };
@@ -19,7 +17,7 @@ function SubsetDeposit({
   subset,
 }: {
   readonly zenodo: ZenodoConfig;
-  readonly subset: Made;
+  readonly subset: SubsetDetails;
 }) {
   // The panel is mounted afresh each time the Publish tab opens, so a newer
   // subset is always the one exported.
@@ -38,7 +36,7 @@ function SubsetDeposit({
       <NoAnswer
         reason={file.kind}
         notOpen={t`Open a PMO file to publish it.`}
-        noSubset={t`Make one on the Subset tab, or publish the whole file.`}
+        noSubset={t`Make one on the Subset tab. Until then, only the original can be published.`}
         failed={{
           title: t`The subset could not be prepared`,
           body: t`Make the subset again on the Subset tab.`,
@@ -62,7 +60,7 @@ export interface PublishPanelProps {
   readonly zenodo: ZenodoConfig;
   readonly file: Extract<OpenState, { kind: "opened" }>;
   /** The subset, when one has been made. */
-  readonly subset: Made | null;
+  readonly subset: SubsetDetails | null;
   /** Which PMO to deposit. */
   readonly source: WorkingSource;
 }

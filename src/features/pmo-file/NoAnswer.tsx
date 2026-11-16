@@ -1,10 +1,10 @@
 import { t } from "@lingui/core/macro";
 
-import { unreachable } from "@/domain/draft";
+import type { WorkingPmoResult } from "@/domain/tools/types";
 import { Callout } from "@/ui";
 
-/** Why a tab got nothing from the working PMO. */
-export type NoAnswerReason = "not-open" | "no-subset" | "failed";
+/** Why a request about the working PMO gave nothing: any answer but a value or a stale one. */
+export type NoAnswerReason = Exclude<WorkingPmoResult<unknown>["kind"], "ok" | "stale">;
 
 /** Props for {@link NoAnswer}. */
 export interface NoAnswerProps {
@@ -37,12 +37,11 @@ export function NoAnswer({ reason, notOpen, noSubset, failed }: NoAnswerProps) {
         </Callout>
       );
     case "failed":
-      return failed === null ? null : (
-        <Callout tone="error" live title={failed.title}>
-          {failed.body}
-        </Callout>
-      );
-    default:
-      return unreachable(reason);
+      break;
   }
+  return failed === null ? null : (
+    <Callout tone="error" live title={failed.title}>
+      {failed.body}
+    </Callout>
+  );
 }

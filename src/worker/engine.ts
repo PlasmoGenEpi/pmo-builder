@@ -30,7 +30,6 @@ import {
   type TableLookupResult,
 } from "@/domain/build";
 import {
-  describeError,
   newId,
   referencedTableIds,
   sectionTableIds,
@@ -38,6 +37,7 @@ import {
   type Draft,
   type TableRef,
 } from "@/domain/draft";
+import { describeError } from "@/domain/errors";
 import {
   importFailureMessage,
   isImportError,

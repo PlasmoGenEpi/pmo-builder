@@ -4,13 +4,11 @@ import { ChartColumn, CloudUpload, Download, Plus, Scissors, Table, X } from "lu
 import { useMemo, useState } from "react";
 
 import type { MergeSummary } from "@/domain/build/merge";
-import { unreachable } from "@/domain/draft";
 import type {
   PmoChoices,
-  SubsetOutcome,
+  SubsetDetails,
   SubsetPreview,
   SubsetRequest,
-  WorkingPmoAnswer,
   WorkingPmoQuery,
 } from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
@@ -31,6 +29,7 @@ import {
 
 import { NameChecklist } from "./NameChecklist";
 import { NoAnswer, type NoAnswerReason } from "./NoAnswer";
+import { settleAnswer } from "./settleAnswer";
 import {
   formProblem,
   initialForm,
@@ -43,8 +42,6 @@ import {
 } from "./subsetModel";
 import { useSettled } from "./useSettled";
 
-type Made = Extract<SubsetOutcome, { readonly kind: "made" }>;
-
 function problemText(problem: ReturnType<typeof formProblem>): string | null {
   switch (problem) {
     case "no-specimens":
@@ -52,7 +49,7 @@ function problemText(problem: ReturnType<typeof formProblem>): string | null {
     case "no-targets":
       return t`No target is ticked yet.`;
     case "nothing-changed":
-      return t`Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the whole file.`;
+      return t`Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the same as the original.`;
     case null:
     default:
       return null;
@@ -171,12 +168,12 @@ function subsetSummary(
     ? t({
         message: `It keeps ${specimens} of ${allSpecimens} specimens and ${librarySamples} of ${allLibrarySamples} library samples, with alleles at ${targets} of ${allTargets} targets.`,
         comment:
-          "Each pair of numbers is what the subset keeps and what the whole file has. Targets are counted only when some allele was found at them.",
+          "Each pair of numbers is what the subset keeps and what the original has. Targets are counted only when some allele was found at them.",
       })
     : t({
         message: `The subset will keep ${specimens} of ${allSpecimens} specimens and ${librarySamples} of ${allLibrarySamples} library samples, with alleles at ${targets} of ${allTargets} targets.`,
         comment:
-          "Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the whole file has. Targets are counted only when some allele was found at them.",
+          "Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the original has. Targets are counted only when some allele was found at them.",
       });
 }
 
@@ -188,7 +185,7 @@ function SubsetResult({
   onShowTables,
   onPublish,
 }: {
-  readonly made: Made;
+  readonly made: SubsetDetails;
   readonly original: MergeSummary;
   readonly onShowSummary: () => void;
   readonly onShowTables: () => void;
@@ -196,16 +193,18 @@ function SubsetResult({
 }) {
   const session = useWorkingPmoSession();
   const [saving, setSaving] = useState<"gzip" | "json" | null>(null);
-  const [failed, setFailed] = useState(false);
+  /** Why the last download gave no file. */
+  const [unsaved, setUnsaved] = useState<NoAnswerReason | null>(null);
 
   async function download(gzip: boolean): Promise<void> {
     setSaving(gzip ? "gzip" : "json");
-    setFailed(false);
-    const file = await session.query({ kind: "file", gzip });
+    setUnsaved(null);
+    const answer = await session.query({ kind: "file", gzip });
     setSaving(null);
-    // A stale answer is for a file since replaced: there is nothing to save.
-    if (file.kind === "ok") saveFile(file.value.blob, file.value.fileName);
-    else if (file.kind !== "stale") setFailed(true);
+    settleAnswer(answer, {
+      ok: (file) => saveFile(file.blob, file.fileName),
+      none: setUnsaved,
+    });
   }
 
   return (
@@ -256,11 +255,14 @@ function SubsetResult({
           </Button>
         )}
       </div>
-      {failed ? (
-        <p role="alert" className="text-sm text-danger-text">
-          {t`The file could not be made. Make the subset again.`}
-        </p>
-      ) : null}
+      {unsaved === null ? null : (
+        <NoAnswer
+          reason={unsaved}
+          notOpen={t`Choose the file again, then make the subset again.`}
+          noSubset={t`Make the subset again.`}
+          failed={{ title: t`The file could not be made`, body: t`Make the subset again.` }}
+        />
+      )}
     </div>
   );
 }
@@ -293,16 +295,23 @@ function NotMade({ tried }: { readonly tried: Tried }) {
   );
 }
 
+/** What the preview of a subset shows. */
+type PreviewState =
+  /** What the subset would keep. `stale` while newer choices are being counted. */
+  | { readonly kind: "counts"; readonly counts: SubsetPreview; readonly stale: boolean }
+  /** Why it could not be counted. */
+  | { readonly kind: "unanswered"; readonly reason: NoAnswerReason }
+  /** Nothing: before the first count, and while the choices are not complete. */
+  | { readonly kind: "none" };
+
+const NO_PREVIEW: PreviewState = { kind: "none" };
+
 /**
  * What `request` would keep, counted in the worker once the form has settled.
  * While newer choices are being counted, the last counts are given as stale.
- * `null` before the first count, when it could not be counted, and while
- * `enabled` is false.
+ * Nothing while `enabled` is false.
  */
-function useSubsetPreview(
-  request: SubsetRequest,
-  enabled: boolean,
-): { readonly counts: SubsetPreview; readonly stale: boolean } | null {
+function useSubsetPreview(request: SubsetRequest, enabled: boolean): PreviewState {
   const settled = useSettled(request, 300);
   const query = useMemo(
     (): WorkingPmoQuery<"preview"> => ({ kind: "preview", ...settled }),
@@ -312,9 +321,14 @@ function useSubsetPreview(
   // The last counts, shown greyed out while newer choices are counted.
   const [last, setLast] = useState<SubsetPreview | null>(null);
   if (answer.kind === "ok" && answer.value !== last) setLast(answer.value);
-  if (!enabled) return null;
-  if (answer.kind === "ok") return { counts: answer.value, stale: settled !== request };
-  return answer.kind === "loading" && last !== null ? { counts: last, stale: true } : null;
+  if (!enabled) return NO_PREVIEW;
+  if (answer.kind === "ok") {
+    return { kind: "counts", counts: answer.value, stale: settled !== request };
+  }
+  if (answer.kind === "loading") {
+    return last === null ? NO_PREVIEW : { kind: "counts", counts: last, stale: true };
+  }
+  return { kind: "unanswered", reason: answer.kind };
 }
 
 /** What the panel shows under the form. */
@@ -328,26 +342,10 @@ type Shown =
 
 const SHOW_SUBSET: Shown = { kind: "subset" };
 
-/** What to show after trying to make a subset. `null` for a stale answer, which is ignored. */
-function shownAfter(answer: WorkingPmoAnswer<"subset">): Shown | null {
-  switch (answer.kind) {
-    case "ok":
-      return answer.value.kind === "made" ? SHOW_SUBSET : { kind: "tried", tried: "empty" };
-    case "not-open":
-    case "no-subset":
-    case "failed":
-      return { kind: "tried", tried: answer.kind };
-    case "stale":
-      return null;
-    default:
-      return unreachable(answer);
-  }
-}
-
 /** Props for {@link SubsetPanel}. */
 export interface SubsetPanelProps {
   readonly choices: PmoChoices;
-  /** What the whole file holds, to compare the subset with. */
+  /** What the original holds, to compare the subset with. */
   readonly original: MergeSummary;
   readonly onShowSummary: () => void;
   readonly onShowTables: () => void;
@@ -384,7 +382,8 @@ export function SubsetPanel({
   const targetsWithoutData = choices.targetsWithoutData;
   const request = useMemo(() => requestOf(form), [form]);
   const preview = useSubsetPreview(request, problem === null);
-  const nothingLeft = preview?.counts.librarySamplesWithData === 0 && !preview.stale;
+  const nothingLeft =
+    preview.kind === "counts" && preview.counts.librarySamplesWithData === 0 && !preview.stale;
 
   function change(next: Partial<SubsetForm>): void {
     setForm((before) => ({ ...before, ...next }));
@@ -393,9 +392,13 @@ export function SubsetPanel({
 
   async function make(): Promise<void> {
     setMaking(true);
-    const next = shownAfter(await session.subset(request));
+    const answer = await session.subset(request);
     setMaking(false);
-    if (next !== null) setShown(next);
+    settleAnswer(answer, {
+      ok: (value) =>
+        setShown(value.kind === "made" ? SHOW_SUBSET : { kind: "tried", tried: "empty" }),
+      none: (reason) => setShown({ kind: "tried", tried: reason }),
+    });
   }
 
   return (
@@ -503,7 +506,19 @@ export function SubsetPanel({
       </section>
 
       <div className="flex flex-col gap-3 border-t border-border pt-6">
-        {preview === null || made !== null ? null : (
+        {made === null && preview.kind === "unanswered" ? (
+          <NoAnswer
+            reason={preview.reason}
+            notOpen={t`Choose the file again.`}
+            // A preview counts what the original would give, so it never needs a subset.
+            noSubset={t`Make the subset again.`}
+            failed={{
+              title: t`The subset could not be counted`,
+              body: t`You can still make it. If that fails too, open the file again.`,
+            }}
+          />
+        ) : null}
+        {preview.kind !== "counts" || made !== null ? null : (
           <p
             aria-live="polite"
             aria-busy={preview.stale}

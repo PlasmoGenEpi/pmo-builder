@@ -39,7 +39,7 @@ export function useWorkingPmoQuery<K extends WorkingPmoQueryKind>(
 ): WorkingPmoQueryState<K> {
   const session = useWorkingPmoSession();
   const generation = useWorkingPmo((state) => state.generation);
-  const [answered, setAnswered] = useState<{
+  const [lastAnswer, setLastAnswer] = useState<{
     readonly generation: number;
     readonly request: WorkingPmoQuery<K>;
     readonly answer: Exclude<WorkingPmoAnswer<K>, { readonly kind: "stale" }>;
@@ -50,7 +50,7 @@ export function useWorkingPmoQuery<K extends WorkingPmoQueryKind>(
     async function run(): Promise<void> {
       const answer = await session.query(request);
       if (!live || answer.kind === "stale") return;
-      setAnswered({ generation, request, answer });
+      setLastAnswer({ generation, request, answer });
     }
     void run();
     return () => {
@@ -58,7 +58,9 @@ export function useWorkingPmoQuery<K extends WorkingPmoQueryKind>(
     };
   }, [session, generation, request]);
 
-  return answered !== null && answered.generation === generation && answered.request === request
-    ? answered.answer
+  return lastAnswer !== null &&
+    lastAnswer.generation === generation &&
+    lastAnswer.request === request
+    ? lastAnswer.answer
     : LOADING;
 }

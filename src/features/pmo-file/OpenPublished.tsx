@@ -10,7 +10,7 @@ import {
   useCatalogue,
   type CatalogueLoader,
 } from "@/features/published/useCatalogue";
-import { useWorkingPmoSession, type WorkingPmoSession } from "@/state";
+import { useWorkingPmoSession } from "@/state";
 import { Button, ButtonLink, Callout, Spinner, buttonClassName, formatBytes } from "@/ui";
 
 import { PMO_TABS, type PmoTab } from "./PmoFilePage";
@@ -32,12 +32,9 @@ type Opening =
   | { readonly kind: "downloading" }
   | { readonly kind: "too-large" }
   | { readonly kind: "download-failed" }
-  | { readonly kind: "refused" };
-
-function isAlreadyOpen(session: WorkingPmoSession, id: string): boolean {
-  const { open } = session.state.getState();
-  return open.kind === "opened" && open.origin.kind === "published" && open.origin.id === id;
-}
+  | { readonly kind: "refused" }
+  /** The file was downloaded, but opening it in this browser failed. */
+  | { readonly kind: "failed" };
 
 /**
  * Downloads one dataset's file and hands it to the working PMO session to
@@ -67,7 +64,7 @@ function OpenDataset({
 
   useEffect(() => {
     if (dataset.file.size > MAX_BYTES) return undefined;
-    if (isAlreadyOpen(session, dataset.id)) {
+    if (session.isPublishedOpen(dataset.id)) {
       navigate(`/pmo/${tab}`, { replace: true });
       return undefined;
     }
@@ -93,8 +90,20 @@ function OpenDataset({
         },
       });
       if (!live || result.kind === "superseded") return;
-      if (result.kind === "opened") navigate(`/pmo/${tab}`, { replace: true });
-      else setOpening({ kind: "refused" });
+      switch (result.kind) {
+        case "opened":
+          navigate(`/pmo/${tab}`, { replace: true });
+          return;
+        case "refused":
+          setOpening({ kind: "refused" });
+          return;
+        case "failed":
+        case "no-built-pmo":
+          setOpening({ kind: "failed" });
+          return;
+        default:
+          return;
+      }
     }
     void open();
     return () => {
@@ -162,6 +171,24 @@ function OpenDataset({
           }
         >
           <Trans>It may be in another PMO version. My PMO file says what is wrong with it.</Trans>
+        </Callout>
+      );
+    case "failed":
+      return (
+        <Callout
+          tone="error"
+          live
+          title={t`The published file could not be opened`}
+          action={
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={onRetry}>
+                {t`Try again`}
+              </Button>
+              {download}
+            </div>
+          }
+        >
+          <Trans>Something went wrong in this browser while opening it. Try again.</Trans>
         </Callout>
       );
     default:

@@ -8,6 +8,7 @@ import { buildExamplePmo } from "@/domain/build/testing";
 import { catalogue } from "@/features/published/testing";
 import type { ZenodoConfig } from "@/features/review/zenodo";
 import { createTestStore, renderWithStore } from "@/features/shared/testing";
+import { createInThreadEngine } from "@/worker/engine";
 
 import { OpenPublished, type FileFetcher } from "./OpenPublished";
 import { PmoFilePage, PMO_TABS, type PmoTab } from "./PmoFilePage";
@@ -106,6 +107,29 @@ describe("OpenPublished", () => {
     await user.click(within(alert).getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("This is a published PMO")).toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it("says the file could not be opened when opening it fails, not that it was refused", async () => {
+    const engine = createInThreadEngine();
+    let failing = true;
+    const store = createTestStore({
+      engine: {
+        ...engine,
+        workingPmo: (call) =>
+          failing && call.request.kind === "open"
+            ? Promise.reject(new Error("out of memory"))
+            : engine.workingPmo(call),
+      },
+    });
+    const fetcher = vi.fn<FileFetcher>().mockResolvedValue(FILE);
+    const { user } = await openRecord("303", fetcher, store);
+    const alert = await screen.findByRole("alert");
+    expect(within(alert).getByText("The published file could not be opened")).toBeInTheDocument();
+    expect(within(alert).queryByText(/another PMO version/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/out of memory/)).not.toBeInTheDocument();
+    failing = false;
+    await user.click(within(alert).getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("This is a published PMO")).toBeInTheDocument();
   });
 
   it("says so when the record is not in the list", async () => {

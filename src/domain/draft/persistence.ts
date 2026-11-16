@@ -19,8 +19,10 @@
 import { t } from "@lingui/core/macro";
 import { createStore, del, get, keys, promisifyRequest } from "idb-keyval";
 
+import { describeError } from "@/domain/errors";
+
 import { checkDraft } from "./guard";
-import { describeError, isBlob, isJsonValue, newId, type Draft, type JsonValue } from "./model";
+import { isBlob, isJsonValue, newId, type Draft, type JsonValue } from "./model";
 import { panelContentKey } from "./panels";
 
 /** A minimal key-value store. Both IndexedDB and memory implement it. */

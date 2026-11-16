@@ -21,7 +21,7 @@ import {
   useWorkingPmo,
   useWorkingPmoSession,
   type OpenState,
-  type OpenedFile,
+  type WorkingPmoDetails,
   type WorkingPmoOrigin,
 } from "@/state";
 import {
@@ -144,7 +144,7 @@ function Overview({
   origin,
   onDownload,
 }: {
-  readonly opened: OpenedFile;
+  readonly opened: WorkingPmoDetails;
   readonly origin: WorkingPmoOrigin;
   /** Saves the file, offered for the built PMO, which has no copy on disk yet. */
   readonly onDownload: () => void;

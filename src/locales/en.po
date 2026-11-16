@@ -1644,8 +1644,8 @@ msgid "Choose another saved panel"
 msgstr "Choose another saved panel"
 
 #: src/features/pmo-file/SubsetPanel.tsx
-msgid "Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the whole file."
-msgstr "Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the whole file."
+msgid "Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the same as the original."
+msgstr "Choose some specimens or targets, or a minimum number of reads. As it stands the subset would be the same as the original."
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "Choose Submit for review. The record is published once a curator accepts it."
@@ -1664,6 +1664,10 @@ msgstr "Choose the column of the {table} that holds the run name."
 #: src/domain/build/bioinformatics.ts
 msgid "Choose the column of the runs table that names each run's method."
 msgstr "Choose the column of the runs table that names each run's method."
+
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "Choose the file again, then make the subset again."
+msgstr "Choose the file again, then make the subset again."
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Choose the file again."
@@ -2719,7 +2723,7 @@ msgstr "It is removed from this browser and will not be offered again. Drafts th
 msgid "It is the file of the Zenodo record <0>{recordTitle}</0>. To publish part of it as a new record, make a subset first."
 msgstr "It is the file of the Zenodo record <0>{recordTitle}</0>. To publish part of it as a new record, make a subset first."
 
-#. Each pair of numbers is what the subset keeps and what the whole file has. Targets are counted only when some allele was found at them.
+#. Each pair of numbers is what the subset keeps and what the original has. Targets are counted only when some allele was found at them.
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "It keeps {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
 msgstr "It keeps {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
@@ -3016,20 +3020,20 @@ msgid "Look into your PMO"
 msgstr "Look into your PMO"
 
 #: src/features/pmo-file/summary/CompareTab.tsx
-msgid "Make one on the Subset tab, or compare the whole file."
-msgstr "Make one on the Subset tab, or compare the whole file."
-
-#: src/features/pmo-file/TablesPanel.tsx
-msgid "Make one on the Subset tab, or download the tables of the whole file."
-msgstr "Make one on the Subset tab, or download the tables of the whole file."
+msgid "Make one on the Subset tab. Until then, only the original can be compared."
+msgstr "Make one on the Subset tab. Until then, only the original can be compared."
 
 #: src/features/pmo-file/PublishPanel.tsx
-msgid "Make one on the Subset tab, or publish the whole file."
-msgstr "Make one on the Subset tab, or publish the whole file."
+msgid "Make one on the Subset tab. Until then, only the original can be published."
+msgstr "Make one on the Subset tab. Until then, only the original can be published."
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "Make one on the Subset tab, or sum up the whole file."
-msgstr "Make one on the Subset tab, or sum up the whole file."
+msgid "Make one on the Subset tab. Until then, only the original can be summed up."
+msgstr "Make one on the Subset tab. Until then, only the original can be summed up."
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Make one on the Subset tab. Until then, only the original's tables can be downloaded."
+msgstr "Make one on the Subset tab. Until then, only the original's tables can be downloaded."
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Make the subset"
@@ -5011,6 +5015,10 @@ msgstr "Something to check came up while putting the steps together into one PMO
 msgid "Something went wrong"
 msgstr "Something went wrong"
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Something went wrong in this browser while opening it. Try again."
+msgstr "Something went wrong in this browser while opening it. Try again."
+
 #: src/app/ErrorBoundary.tsx
 msgid "Something went wrong on this page"
 msgstr "Something went wrong on this page"
@@ -5514,6 +5522,10 @@ msgstr "The app stopped while reading \"{file}\", probably because it needed mor
 msgid "The app stopped while reading the file, probably because it needed more memory than the browser allows. Try a smaller file, or close other tabs and try again."
 msgstr "The app stopped while reading the file, probably because it needed more memory than the browser allows. Try a smaller file, or close other tabs and try again."
 
+#: src/state/workingPmoSession.ts
+msgid "The background worker lost the file and could not open it again."
+msgstr "The background worker lost the file and could not open it again."
+
 #: src/worker/client.ts
 msgid "The background worker stopped, probably because it ran out of memory. It starts again on the next change; if a table is very large, try a smaller one."
 msgstr "The background worker stopped, probably because it ran out of memory. It starts again on the next change; if a table is very large, try a smaller one."
@@ -5666,8 +5678,8 @@ msgid "The file could not be downloaded from Zenodo"
 msgstr "The file could not be downloaded from Zenodo"
 
 #: src/features/pmo-file/SubsetPanel.tsx
-msgid "The file could not be made. Make the subset again."
-msgstr "The file could not be made. Make the subset again."
+msgid "The file could not be made"
+msgstr "The file could not be made"
 
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "The file could not be opened. Reload the page and try again."
@@ -6086,6 +6098,10 @@ msgid "The strand the target lies on, + or -."
 msgstr "The strand the target lies on, + or -."
 
 #: src/features/pmo-file/SubsetPanel.tsx
+msgid "The subset could not be counted"
+msgstr "The subset could not be counted"
+
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "The subset could not be made"
 msgstr "The subset could not be made"
 
@@ -6101,7 +6117,7 @@ msgstr "The subset does not pass every check"
 msgid "The subset is ready"
 msgstr "The subset is ready"
 
-#. Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the whole file has. Targets are counted only when some allele was found at them.
+#. Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the original has. Targets are counted only when some allele was found at them.
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "The subset will keep {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
 msgstr "The subset will keep {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
@@ -6905,6 +6921,10 @@ msgstr "Written from what is in your PMO. Change them on Zenodo as you see fit."
 #: src/features/review/PublishToZenodo.tsx
 msgid "Written from what is in your PMO. You can change them on Zenodo before you submit."
 msgstr "Written from what is in your PMO. You can change them on Zenodo before you submit."
+
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "You can still make it. If that fails too, open the file again."
+msgstr "You can still make it. If that fails too, open the file again."
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "You sign in to Zenodo in a new window. PMO Builder then sends your file from this browser straight to Zenodo and makes a draft. Nothing is published until you publish it on Zenodo."

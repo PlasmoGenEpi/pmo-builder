@@ -13,7 +13,8 @@
  */
 import type { PortableMicrohaplotypeObject } from "pmotools-ts";
 
-import { describeError, unreachable } from "@/domain/draft";
+import { unreachable } from "@/domain/draft";
+import { describeError } from "@/domain/errors";
 
 import { comparableFields, compareGroups } from "./groups";
 import { summaryOf } from "./summary";
@@ -70,7 +71,8 @@ export interface WorkingPmoStep<K extends WorkingPmoKind> {
   readonly work: Promise<WorkingPmoWork<K>>;
 }
 
-function answered<K extends WorkingPmoKind>(
+/** A step with no work: it holds `held` and gives `result` straight away. */
+function answerAtOnce<K extends WorkingPmoKind>(
   held: WorkingPmoHeld,
   result: WorkingPmoAnswer<K>,
 ): WorkingPmoStep<K> {
@@ -150,7 +152,7 @@ function reading<K extends WorkingPmoKind>(options: {
   const { sourceOf, read } = options;
   return (held, { request }) => {
     const found = pmoFor(held, sourceOf(request));
-    if (found.kind !== "found") return answered(held, found);
+    if (found.kind !== "found") return answerAtOnce(held, found);
     return {
       held,
       work: guarded(async () => ({
@@ -179,12 +181,12 @@ const HANDLERS: { readonly [K in WorkingPmoKind]: Handler<K> } = {
   },
 
   close(_held, { generation }) {
-    return answered({ generation, pmo: null }, { kind: "ok", value: null });
+    return answerAtOnce({ generation, pmo: null }, { kind: "ok", value: null });
   },
 
   subset(held, { request }) {
     const working = held.pmo;
-    if (working === null) return answered(held, { kind: "not-open" });
+    if (working === null) return answerAtOnce(held, { kind: "not-open" });
     // Let go of the previous subset before making the next, so two are never held.
     const original: HeldPmo = { ...working, subset: null };
     return {
@@ -248,7 +250,7 @@ export function answerWorkingPmo<K extends WorkingPmoKind>(
   held: WorkingPmoHeld,
   call: WorkingPmoCall<K>,
 ): WorkingPmoStep<K> {
-  if (call.generation < held.generation) return answered(held, { kind: "stale" });
+  if (call.generation < held.generation) return answerAtOnce(held, { kind: "stale" });
   const handler: Handler<K> = HANDLERS[call.request.kind];
   return handler(held, call);
 }
