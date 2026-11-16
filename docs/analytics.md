@@ -57,7 +57,7 @@ alone does not count.
 | `publish.opened.built/file`    | count bucket: times the publish dialog was opened         |
 | `publish.deposits.built/file`  | count bucket: deposits started                            |
 | `publish.outcomes.<outcome>`   | count bucket per way a deposit ended                      |
-| `publish.fileChecks.<result>`  | count bucket per result of checking a file                |
+| `publish.fileChecks.<result>`  | count bucket per result of opening a PMO in My PMO file   |
 | `issues[]`                     | `{ code, severity, count }`, at most 32, sorted by code   |
 | `draftRestored`                | whether a saved draft was restored on load                |
 | `duration`                     | `0-1m`, `1-5m`, `5-15m`, `15-60m`, `60m+`                 |
@@ -67,9 +67,10 @@ alone does not count.
 draft or chosen as a file on the publish page. A deposit `<outcome>` is one of
 `draft-ready`, `cancelled`, `pop-up-blocked`, `sign-in-refused`,
 `sign-in-timed-out`, `signed-out`, `not-allowed`, `no-community`, `too-large`,
-`offline`, `refused` or `failed`. A file-check `<result>` is one of `ready`,
-`example`, `too-large`, `unreadable`, `not-pmo`, `wrong-version`, `invalid` or
-`failed`. A dataset page is counted as `dataset`, never by which dataset. An issue `code` is a pmotools-ts code such as
+`offline`, `refused` or `failed`. A file check is counted each time a PMO is
+opened in My PMO file, however it was opened: a file the user chose, the
+built PMO, or a published PMO. Its `<result>` is one of `ready`, `example`,
+`too-large`, `unreadable`, `not-pmo`, `wrong-version`, `invalid` or `failed`. A dataset page is counted as `dataset`, never by which dataset. An issue `code` is a pmotools-ts code such as
 `panel/duplicate-target-names`, an app code from the list in
 `src/analytics/codes.ts`, `<module>/other` for an unlisted code from a known
 module, or `other`.
@@ -214,9 +215,9 @@ Pages do not record anything. The recording is wired in two places:
 - `src/state/instrumentation.ts` watches the app store's state and events and
   calls every other `record*` function: imports and failed imports, mapping
   edits, section statuses, builds, validation, downloads, error and warning
-  codes, a restored draft, a failed save, a stopped worker, file checks on
-  the publish page, and the publishing steps the publish panel reports with
-  `notePublishing`. The default store is instrumented when it is created
+  codes, a restored draft, a failed save, a stopped worker, the check of each
+  PMO opened in My PMO file, and the publishing steps the publish panel
+  reports with `notePublishing`. The default store is instrumented when it is created
   (`src/state/hooks.tsx`).
 
 So a new page gets its counts by going through the store's actions. If a new

@@ -18,6 +18,7 @@ tests. oxlint (type-aware) and oxfmt for linting and formatting.
 | Path                         | What it holds                                                                          | May import from                                                                     |
 | ---------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `src/domain/types.ts`        | Contracts shared by every module                                                       | `pmotools-ts` types                                                                 |
+| `src/domain/errors.ts`       | Error helpers every module may use, such as `describeError`                            | nothing                                                                             |
 | `src/domain/import/`         | File to typed table: csv, tsv, txt, gz, xlsx                                           | `types`, `pmotools-ts`                                                              |
 | `src/domain/fields/`         | Field specs and header aliases for each table                                          | `types`                                                                             |
 | `src/domain/matching/`       | Column auto-matching and mapping checks                                                | `types`                                                                             |
