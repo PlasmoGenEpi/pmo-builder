@@ -82,6 +82,15 @@ const RESULT_GUARDS: {
     (isRecord(value) && hasKind(value["outcome"], ["opened"]) && isRecord(value["file"])),
   subsetPmo: (value): value is EngineResult<"subsetPmo"> =>
     hasKind(value, ["made", "empty", "not-open", "failed"]),
+  previewSubset: (value): value is EngineResult<"previewSubset"> =>
+    value === null ||
+    (isRecord(value) &&
+      typeof value["specimens"] === "number" &&
+      typeof value["librarySamplesWithData"] === "number" &&
+      typeof value["targetsWithCalls"] === "number"),
+  workingPmoTables: (value): value is EngineResult<"workingPmoTables"> =>
+    value === null ||
+    (isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string"),
   workingPmoTable: (value): value is EngineResult<"workingPmoTable"> =>
     value === null ||
     (isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string"),
@@ -219,6 +228,8 @@ export function createEngineClient(
     openPmo: (...args) => call("openPmo", args),
     openBuiltPmo: (...args) => call("openBuiltPmo", args),
     subsetPmo: (...args) => call("subsetPmo", args),
+    previewSubset: (...args) => call("previewSubset", args),
+    workingPmoTables: (...args) => call("workingPmoTables", args),
     workingPmoTable: (...args) => call("workingPmoTable", args),
     workingPmoSummary: (...args) => call("workingPmoSummary", args),
     workingPmoGroups: (...args) => call("workingPmoGroups", args),
@@ -323,6 +334,8 @@ export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
     openPmo: async (...args) => engine().openPmo(...args),
     openBuiltPmo: async (...args) => engine().openBuiltPmo(...args),
     subsetPmo: async (...args) => engine().subsetPmo(...args),
+    previewSubset: async (...args) => engine().previewSubset(...args),
+    workingPmoTables: async (...args) => engine().workingPmoTables(...args),
     workingPmoTable: async (...args) => engine().workingPmoTable(...args),
     workingPmoSummary: async (...args) => engine().workingPmoSummary(...args),
     workingPmoGroups: async (...args) => engine().workingPmoGroups(...args),
@@ -413,6 +426,8 @@ export function createLazyEngine(make: () => Promise<Engine>): Engine {
     openPmo: async (...args) => (await load()).openPmo(...args),
     openBuiltPmo: async (...args) => (await load()).openBuiltPmo(...args),
     subsetPmo: async (...args) => (await load()).subsetPmo(...args),
+    previewSubset: async (...args) => (await load()).previewSubset(...args),
+    workingPmoTables: async (...args) => (await load()).workingPmoTables(...args),
     workingPmoTable: async (...args) => (await load()).workingPmoTable(...args),
     workingPmoSummary: async (...args) => (await load()).workingPmoSummary(...args),
     workingPmoGroups: async (...args) => (await load()).workingPmoGroups(...args),

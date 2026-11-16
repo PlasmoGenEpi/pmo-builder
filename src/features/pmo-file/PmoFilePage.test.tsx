@@ -6,6 +6,7 @@ import { Route, Switch } from "wouter";
 
 import { buildExamplePmo } from "@/domain/build/testing";
 import { richPmo } from "@/domain/tools/testing";
+import { readZip } from "@/domain/tools/zipTesting";
 import { saveFile } from "@/features/review/saveFile";
 import type { ZenodoConfig } from "@/features/review/zenodo";
 import { signIn } from "@/features/review/zenodoAuth";
@@ -157,6 +158,22 @@ describe("PmoFilePage: tables", () => {
     expect(name).toBe("study-specimens.tsv");
     expect(text.split("\n")[0]).toContain("\t");
   });
+
+  it("downloads every table in one zip", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+    await user.click(screen.getByRole("button", { name: "Download all tables (.zip)" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    const [blob, name] = vi.mocked(saveFile).mock.calls.at(-1) ?? [];
+    expect(name).toBe("study-tables-csv.zip");
+    if (blob === undefined) throw new Error("nothing saved");
+    const files = await readZip(blob);
+    expect(files.map((file) => file.name)).toContain("study-alleles.csv");
+    // One file per table listed, each with its own Download button.
+    expect(files).toHaveLength(
+      screen.getAllByRole("button", { name: /^Download .* as csv$/ }).length,
+    );
+  });
 });
 
 describe("PmoFilePage: subset", () => {
@@ -172,6 +189,11 @@ describe("PmoFilePage: subset", () => {
     // oxlint-disable-next-line no-await-in-loop
     for (const box of boxes.slice(0, 3)) await user.click(box);
     expect(screen.getByText(/^3 of \d+ specimens kept\.$/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /^The subset will keep 3 of \d+ specimens and 3 of \d+ library samples, with alleles at \d+ of \d+ targets\.$/,
+      ),
+    ).toBeInTheDocument();
     await user.click(make);
     expect(await screen.findByText("The subset is ready")).toBeInTheDocument();
     expect(
@@ -186,6 +208,18 @@ describe("PmoFilePage: subset", () => {
     expect(name).toBe("study-subset.json");
     const subset: unknown = JSON.parse(text);
     expect(subset).toMatchObject({ specimen_info: [{}, {}, {}] });
+  });
+
+  it("says before making it when nothing would be left", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Subset" }));
+    await user.type(screen.getByLabelText(/Minimum reads per microhaplotype/), "100000000");
+    expect(
+      await screen.findByText(
+        /^No library sample has any microhaplotypes left with these choices\./,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Make the subset" })).toBeDisabled();
   });
 
   it("shows the subset's tables once it is made", async () => {
@@ -289,6 +323,19 @@ describe("PmoFilePage: summary", () => {
     expect(
       screen.getByText(new RegExp(`^Microhaplotypes at ${name}, seen in \\d+ samples?$`)),
     ).toBeInTheDocument();
+  });
+
+  it("jumps to a section, listing only the sections the file has", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    const jumps = await screen.findByRole("navigation", { name: "Sections" });
+    expect(
+      within(jumps)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["Reads grid", "Samples", "Targets and alleles"]);
+    await user.click(within(jumps).getByRole("button", { name: "Targets and alleles" }));
+    expect(screen.getByRole("heading", { name: "Targets" })).toHaveFocus();
   });
 
   it("recounts with a read threshold, kept when switching tabs", async () => {

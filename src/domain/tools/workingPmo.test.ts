@@ -3,7 +3,18 @@ import { describe, expect, it } from "vitest";
 
 import { buildExamplePmo } from "@/domain/build/testing";
 
-import { baseNameOf, choicesOf, makeSubset, openPmo, tableFile, tablesOf } from "./workingPmo";
+import type { SubsetRequest } from "./types";
+import {
+  baseNameOf,
+  choicesOf,
+  makeSubset,
+  openPmo,
+  previewSubset,
+  tableFile,
+  tablesArchive,
+  tablesOf,
+} from "./workingPmo";
+import { readZip } from "./zipTesting";
 
 const EXAMPLE: PortableMicrohaplotypeObject = buildExamplePmo();
 
@@ -132,6 +143,69 @@ describe("makeSubset", () => {
       "study.json",
     );
     expect(outcome.kind).toBe("failed");
+  });
+});
+
+describe("previewSubset", () => {
+  const choices = choicesOf(EXAMPLE);
+  const [field] = choices.metadata;
+  const requests: readonly SubsetRequest[] = [
+    { specimens: { kind: "all" }, targets: { kind: "all" }, minReads: 0 },
+    {
+      specimens: { kind: "names", names: choices.specimens.slice(0, 5).map((s) => s.name) },
+      targets: { kind: "all" },
+      minReads: 0,
+    },
+    {
+      specimens: { kind: "all" },
+      targets: { kind: "names", names: choices.targets.slice(0, 10) },
+      minReads: 50,
+    },
+    {
+      specimens: {
+        kind: "metadata",
+        criteria: field === undefined ? {} : { [field.field]: [field.values[0]?.value ?? ""] },
+      },
+      targets: { kind: "names", names: choices.targets.slice(3, 20) },
+      minReads: 200,
+    },
+  ];
+
+  it.each(requests)("counts what making the subset gives", (request) => {
+    const { outcome } = makeSubset(EXAMPLE, request, "study.json");
+    if (outcome.kind !== "made") throw new Error(outcome.kind);
+    const preview = previewSubset(EXAMPLE, request);
+    expect(preview).toEqual({
+      specimens: outcome.summary.specimens,
+      librarySamples: outcome.summary.librarySamples,
+      librarySamplesWithData: outcome.summary.librarySamplesWithDetections,
+      targetsWithCalls: outcome.summary.targetsWithCalls,
+    });
+  });
+
+  it("finds nothing left where making the subset would", () => {
+    const request: SubsetRequest = {
+      specimens: { kind: "all" },
+      targets: { kind: "all" },
+      minReads: 10_000_000,
+    };
+    expect(makeSubset(EXAMPLE, request, "study.json").outcome.kind).toBe("empty");
+    expect(previewSubset(EXAMPLE, request)).toMatchObject({
+      librarySamplesWithData: 0,
+      targetsWithCalls: 0,
+    });
+  });
+});
+
+describe("tablesArchive", () => {
+  it("zips every table as tableFile writes it", async () => {
+    const archive = await tablesArchive(EXAMPLE, { format: "tsv", baseName: "study" });
+    expect(archive.fileName).toBe("study-tables-tsv.zip");
+    const files = await readZip(archive.blob);
+    const expected = tablesOf(EXAMPLE).map(({ id }) =>
+      tableFile(EXAMPLE, { id, format: "tsv", baseName: "study" }),
+    );
+    expect(files).toEqual(expected.map((file) => ({ name: file.fileName, text: file.text })));
   });
 });
 

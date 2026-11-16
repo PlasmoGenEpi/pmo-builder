@@ -3,8 +3,6 @@ import { Link as RouterLink, useLocation } from "wouter";
 
 import { StatusIcon, cn } from "@/ui";
 
-import { useHasSavedDraft } from "./draftHooks";
-import { StartOverButton } from "./StartOver";
 import { STEP_GROUP_LABELS, STEPS, stepsByGroup } from "./steps";
 import { useStepStatuses } from "./stepStatus";
 
@@ -16,7 +14,6 @@ export function StepNav({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
   const statuses = useStepStatuses();
   const groups = stepsByGroup();
-  const hasDraft = useHasSavedDraft();
   const required = STEPS.filter((step) => step.required);
   const readyCount = required.filter((step) => statuses[step.id] === "ready").length;
   const requiredCount = required.length;
@@ -65,18 +62,6 @@ export function StepNav({ onNavigate }: { onNavigate?: () => void }) {
           </ul>
         </div>
       ))}
-      {hasDraft ? (
-        <div className="border-t border-border pt-4">
-          <StartOverButton
-            variant="ghost"
-            className="w-full justify-start gap-2.5 px-2.5"
-            onDone={onNavigate}
-          />
-          <p className="px-2.5 pt-1 text-xs text-text-subtle">
-            {t`Clears this draft for a new PMO.`}
-          </p>
-        </div>
-      ) : null}
     </nav>
   );
 }

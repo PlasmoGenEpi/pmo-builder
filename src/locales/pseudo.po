@@ -1689,10 +1689,6 @@ msgstr ""
 msgid "Clear the filters"
 msgstr ""
 
-#: src/app/StepNav.tsx
-msgid "Clears this draft for a new PMO."
-msgstr ""
-
 #: src/ui/Dialog.tsx
 msgid "Close"
 msgstr ""
@@ -2028,6 +2024,10 @@ msgstr ""
 
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Download {title} as {format}"
+msgstr ""
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Download all tables (.zip)"
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
@@ -2752,6 +2752,11 @@ msgstr ""
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "Its Zenodo address or DOI, such as https://zenodo.org/records/12345678"
+msgstr ""
+
+#. Followed by links to the sections of the page
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Jump to"
 msgstr ""
 
 #: src/features/table-import/FieldRow.tsx
@@ -3891,7 +3896,9 @@ msgstr ""
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
+#. Short name of the section 'Parasite density and targets with data'
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Parasite density"
 msgstr ""
 
@@ -3943,6 +3950,11 @@ msgstr ""
 msgid "Picking one replaces the target table below for this panel. The table is kept in case you switch back."
 msgstr ""
 
+#. Short name of the section 'Reads at each pipeline stage'
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Pipeline stages"
+msgstr ""
+
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
@@ -3969,6 +3981,7 @@ msgid "Plate well"
 msgstr ""
 
 #: src/features/pmo-file/summary/QualityViews.tsx
+#: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Plates"
 msgstr ""
 
@@ -4269,6 +4282,11 @@ msgstr ""
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Reads by sample and target"
+msgstr ""
+
+#. Short name of the section 'Reads by sample and target'
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Reads grid"
 msgstr ""
 
 #: src/domain/fields/readCounts.ts
@@ -4681,6 +4699,7 @@ msgid "Search to see the others."
 msgstr ""
 
 #: src/app/TopBar.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Sections"
 msgstr ""
 
@@ -5290,6 +5309,11 @@ msgstr ""
 #: src/features/pmo-file/TablesPanel.tsx
 #: src/features/review/PmoContents.tsx
 msgid "Targets"
+msgstr ""
+
+#. Short name of the Targets section
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Targets and alleles"
 msgstr ""
 
 #: src/features/review/noticeKinds.ts
@@ -6027,6 +6051,11 @@ msgstr ""
 msgid "The subset is ready"
 msgstr ""
 
+#. Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the whole file has. Targets are counted only when some allele was found at them.
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "The subset will keep {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
+msgstr ""
+
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "The summary could not be made"
 msgstr ""
@@ -6037,6 +6066,10 @@ msgstr ""
 
 #: src/features/microhaplotypes/MicrohaplotypesStep.tsx
 msgid "The table holds several runs, with the run name in one column."
+msgstr ""
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "The tables could not be made. Open the file again."
 msgstr ""
 
 #: src/features/review/noticeKinds.ts
@@ -6390,7 +6423,7 @@ msgid "Title"
 msgstr ""
 
 #: src/app/privacy/PrivacyDetails.tsx
-msgid "To remove your draft and its files, choose Start over, in the step list or the menu. To remove everything, including saved panels, clear this site's data in your browser's settings."
+msgid "To remove your draft and its files, choose Start over on the home page or in the menu. To remove everything, including saved panels, clear this site's data in your browser's settings."
 msgstr ""
 
 #: src/domain/fields/readCounts.ts

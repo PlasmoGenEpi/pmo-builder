@@ -1,10 +1,10 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { ChartColumn, CloudUpload, Download, Plus, Scissors, Table, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { MergeSummary } from "@/domain/build/merge";
-import type { PmoChoices, SubsetOutcome } from "@/domain/tools/types";
+import type { PmoChoices, SubsetOutcome, SubsetPreview, SubsetRequest } from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
 import { useActions } from "@/state";
 import {
@@ -32,6 +32,7 @@ import {
   type SubsetForm,
   type TargetMode,
 } from "./subsetModel";
+import { useSettled } from "./useSettled";
 
 function problemText(problem: ReturnType<typeof formProblem>): string | null {
   switch (problem) {
@@ -140,19 +141,32 @@ function Conditions({
   );
 }
 
-/** What the subset keeps of the original, as a sentence. */
-function subsetSummary(summary: MergeSummary, original: MergeSummary): string {
+/** The counts a subset is described by. */
+type SubsetCounts = Pick<MergeSummary, "specimens" | "librarySamples" | "targetsWithCalls">;
+
+/** What the subset keeps of the original, as a sentence: once made, or before. */
+function subsetSummary(
+  summary: SubsetCounts,
+  original: MergeSummary,
+  when: "made" | "planned",
+): string {
   const specimens = formatCount(summary.specimens);
   const allSpecimens = formatCount(original.specimens);
   const librarySamples = formatCount(summary.librarySamples);
   const allLibrarySamples = formatCount(original.librarySamples);
   const targets = formatCount(summary.targetsWithCalls);
   const allTargets = formatCount(original.targetsWithCalls);
-  return t({
-    message: `It keeps ${specimens} of ${allSpecimens} specimens and ${librarySamples} of ${allLibrarySamples} library samples, with alleles at ${targets} of ${allTargets} targets.`,
-    comment:
-      "Each pair of numbers is what the subset keeps and what the whole file has. Targets are counted only when some allele was found at them.",
-  });
+  return when === "made"
+    ? t({
+        message: `It keeps ${specimens} of ${allSpecimens} specimens and ${librarySamples} of ${allLibrarySamples} library samples, with alleles at ${targets} of ${allTargets} targets.`,
+        comment:
+          "Each pair of numbers is what the subset keeps and what the whole file has. Targets are counted only when some allele was found at them.",
+      })
+    : t({
+        message: `The subset will keep ${specimens} of ${allSpecimens} specimens and ${librarySamples} of ${allLibrarySamples} library samples, with alleles at ${targets} of ${allTargets} targets.`,
+        comment:
+          "Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the whole file has. Targets are counted only when some allele was found at them.",
+      });
 }
 
 function SubsetResult({
@@ -187,7 +201,7 @@ function SubsetResult({
         <div className="flex flex-col gap-4">
           {outcome.problems.length === 0 ? (
             <Callout tone="success" live title={t`The subset is ready`}>
-              {subsetSummary(outcome.summary, original)}
+              {subsetSummary(outcome.summary, original, "made")}
             </Callout>
           ) : (
             <Callout tone="warning" live title={t`The subset does not pass every check`}>
@@ -264,6 +278,37 @@ function SubsetResult({
   }
 }
 
+/**
+ * What `request` would keep, counted in the worker once the form has settled.
+ * While newer choices are being counted, the last counts are given as stale.
+ * `null` before the first count, and while `enabled` is false.
+ */
+function useSubsetPreview(
+  request: SubsetRequest,
+  enabled: boolean,
+): { readonly counts: SubsetPreview; readonly stale: boolean } | null {
+  const actions = useActions();
+  const settled = useSettled(request, 300);
+  const [latest, setLatest] = useState<{
+    readonly request: SubsetRequest;
+    readonly counts: SubsetPreview;
+  } | null>(null);
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let live = true;
+    async function count(): Promise<void> {
+      const counts = await actions.previewSubset(settled);
+      if (live) setLatest(counts === null ? null : { request: settled, counts });
+    }
+    void count();
+    return () => {
+      live = false;
+    };
+  }, [actions, settled, enabled]);
+  if (!enabled || latest === null) return null;
+  return { counts: latest.counts, stale: latest.request !== request };
+}
+
 /** Props for {@link SubsetPanel}. */
 export interface SubsetPanelProps {
   readonly choices: PmoChoices;
@@ -300,6 +345,9 @@ export function SubsetPanel({
   const targetCount = formatCount(choices.targets.length);
   const maxReads = formatCount(choices.maxReads);
   const targetsWithoutData = choices.targetsWithoutData;
+  const request = useMemo(() => requestOf(form), [form]);
+  const preview = useSubsetPreview(request, problem === null);
+  const nothingLeft = preview?.counts.librarySamplesWithData === 0 && !preview.stale;
 
   function change(next: Partial<SubsetForm>): void {
     setForm((before) => ({ ...before, ...next }));
@@ -308,7 +356,7 @@ export function SubsetPanel({
 
   async function make(): Promise<void> {
     setMaking(true);
-    const result = await actions.subsetPmo(requestOf(form));
+    const result = await actions.subsetPmo(request);
     setMaking(false);
     onMade(
       result ?? {
@@ -423,12 +471,29 @@ export function SubsetPanel({
       </section>
 
       <div className="flex flex-col gap-3 border-t border-border pt-6">
+        {preview === null || outcome?.kind === "made" ? null : (
+          <p
+            aria-live="polite"
+            aria-busy={preview.stale}
+            className={
+              nothingLeft
+                ? "text-base text-warning-text"
+                : preview.stale
+                  ? "text-base text-text-subtle"
+                  : "text-base text-text"
+            }
+          >
+            {preview.counts.librarySamplesWithData === 0
+              ? t`No library sample has any microhaplotypes left with these choices. Choose more specimens or targets, or fewer reads.`
+              : subsetSummary(preview.counts, original, "planned")}
+          </p>
+        )}
         <Button
           variant="primary"
           size="lg"
           icon={Scissors}
           className="self-start"
-          disabled={problem !== null}
+          disabled={problem !== null || nothingLeft}
           loading={making}
           onClick={() => void make()}
         >

@@ -15,10 +15,12 @@ import type {
   OpenOutcome,
   PmoSummary,
   SubsetOutcome,
+  SubsetPreview,
   SubsetRequest,
   TableFile,
   TableFormat,
   TableId,
+  TablesArchive,
   WorkingSource,
 } from "@/domain/tools/types";
 // Not the `@/domain/build` or `@/domain/import` barrels: they would bring
@@ -356,6 +358,13 @@ export interface AppActions {
   openBuiltPmo(): Promise<{ readonly outcome: OpenOutcome; readonly file: PmoFile } | null>;
   /** Makes a subset of the opened PMO. `null` when the engine failed. */
   subsetPmo(request: SubsetRequest): Promise<SubsetOutcome | null>;
+  /** What a subset would keep. `null` when no PMO is open or the engine failed. */
+  previewSubset(request: SubsetRequest): Promise<SubsetPreview | null>;
+  /** Every table of the opened PMO or its subset in one zip. `null` when there is none or the engine failed. */
+  workingPmoTables(request: {
+    readonly source: WorkingSource;
+    readonly format: TableFormat;
+  }): Promise<TablesArchive | null>;
   /** One table of the opened PMO or its subset. `null` when there is none or the engine failed. */
   workingPmoTable(request: {
     readonly source: WorkingSource;
@@ -1081,6 +1090,24 @@ export function createAppStore(options: AppStoreOptions): AppStore {
       async subsetPmo(request) {
         try {
           return await engine.subsetPmo(request);
+        } catch (error) {
+          engineFailed(error);
+          return null;
+        }
+      },
+
+      async previewSubset(request) {
+        try {
+          return await engine.previewSubset(request);
+        } catch (error) {
+          engineFailed(error);
+          return null;
+        }
+      },
+
+      async workingPmoTables(request) {
+        try {
+          return await engine.workingPmoTables(request);
         } catch (error) {
           engineFailed(error);
           return null;

@@ -80,8 +80,40 @@ export function ControlsCheck({ summary }: { readonly summary: PmoSummary }) {
 
 const ROW_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+/** Props for the optional views of the Summary. */
+export interface QualityViewProps {
+  readonly summary: PmoSummary;
+  /** The id of the view's heading, to jump to. */
+  readonly headingId?: string;
+}
+
+/** Whether {@link PlateView} shows: some library sample has a plate position. */
+export function showsPlates(summary: PmoSummary): boolean {
+  return summary.samples.some((sample) => sample.plate !== null);
+}
+
+/** Whether {@link DensityView} shows: at least three samples with a density. */
+export function showsDensity(summary: PmoSummary): boolean {
+  return densityPoints(summary).length >= 3;
+}
+
+/** Whether {@link StagesView} shows: some library sample has read counts by stage. */
+export function showsStages(summary: PmoSummary): boolean {
+  return stageCounted(summary).length > 0;
+}
+
+function densityPoints(summary: PmoSummary): SampleSummary[] {
+  return summary.samples.filter((sample) => sample.density !== null && sample.density.value > 0);
+}
+
+function stageCounted(summary: PmoSummary): SampleSummary[] {
+  return summary.samples.filter(
+    (sample) => sample.rawReads !== null || sample.stageReads.some((value) => value !== null),
+  );
+}
+
 /** Each plate as a grid of wells, coloured by how many targets have data. */
-export function PlateView({ summary }: { readonly summary: PmoSummary }) {
+export function PlateView({ summary, headingId }: QualityViewProps) {
   const { resolved } = useTheme();
   const [hover, setHover] = useState<{
     readonly sample: SampleSummary;
@@ -89,7 +121,7 @@ export function PlateView({ summary }: { readonly summary: PmoSummary }) {
     readonly y: number;
   } | null>(null);
   const placed = summary.samples.filter((sample) => sample.plate !== null);
-  if (placed.length === 0) return null;
+  if (!showsPlates(summary)) return null;
   const plates = [...new Set(placed.map((sample) => sample.plate?.plate ?? ""))];
   const maxTargets = Math.max(1, ...placed.map((sample) => sample.targets));
   const ramp = SEQUENTIAL[resolved];
@@ -103,6 +135,7 @@ export function PlateView({ summary }: { readonly summary: PmoSummary }) {
   return (
     <section className="flex flex-col gap-4">
       <SectionHeading
+        id={headingId}
         title={t`Plates`}
         description={t`Each well is a library sample, coloured by how many targets have data; a cross marks a sample with none. Patterns along a row, a column or the edge point to a problem with the plate rather than the samples.`}
       />
@@ -221,12 +254,10 @@ export function PlateView({ summary }: { readonly summary: PmoSummary }) {
 }
 
 /** Parasite density against targets with data: low-density samples tend to lose targets. */
-export function DensityView({ summary }: { readonly summary: PmoSummary }) {
+export function DensityView({ summary, headingId }: QualityViewProps) {
   const { resolved } = useTheme();
   const [hover, setHover] = useState<SampleSummary | null>(null);
-  const points = summary.samples.filter(
-    (sample) => sample.density !== null && sample.density.value > 0,
-  );
+  const points = densityPoints(summary);
   if (points.length < 3) return null;
   const width = 560;
   const height = 260;
@@ -257,6 +288,7 @@ export function DensityView({ summary }: { readonly summary: PmoSummary }) {
   return (
     <section className="flex flex-col gap-4">
       <SectionHeading
+        id={headingId}
         title={t`Parasite density and targets with data`}
         description={t`Samples with few parasites often lose targets. Each dot is a library sample; the density is its own qPCR measurement when it has one, else its specimen's.`}
       />
@@ -345,10 +377,8 @@ export function DensityView({ summary }: { readonly summary: PmoSummary }) {
 }
 
 /** Reads at each pipeline stage: where reads are lost between demultiplexing and the final calls. */
-export function StagesView({ summary }: { readonly summary: PmoSummary }) {
-  const counted = summary.samples.filter(
-    (sample) => sample.rawReads !== null || sample.stageReads.some((value) => value !== null),
-  );
+export function StagesView({ summary, headingId }: QualityViewProps) {
+  const counted = stageCounted(summary);
   if (counted.length === 0) return null;
   const percent = new Intl.NumberFormat(intlLocale(), {
     style: "percent",
@@ -391,6 +421,7 @@ export function StagesView({ summary }: { readonly summary: PmoSummary }) {
   return (
     <section className="flex flex-col gap-4">
       <SectionHeading
+        id={headingId}
         title={t`Reads at each pipeline stage`}
         description={t`Where reads are lost on the way to the final calls. Stage names are the pipeline's own; reads at a stage are summed over targets. Kept of raw is the last stage given, as a share of the raw reads.`}
       />

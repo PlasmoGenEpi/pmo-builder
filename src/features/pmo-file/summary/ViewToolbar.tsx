@@ -1,7 +1,7 @@
 import { t } from "@lingui/core/macro";
 import type { ReactNode } from "react";
 
-import { NumberField } from "@/ui";
+import { Button, NumberField, jumpToHeading } from "@/ui";
 
 /** The row of controls above the Summary and Compare views. */
 export function ViewToolbar({ children }: { readonly children: ReactNode }) {
@@ -30,5 +30,30 @@ export function MinReadsField({ value, onValueChange }: MinReadsFieldProps) {
       onValueChange={onValueChange}
       className="w-64"
     />
+  );
+}
+
+/** A section to jump to: the id of its heading and a short name. */
+export interface Jump {
+  readonly id: string;
+  readonly label: string;
+}
+
+/** Links to the sections of a long view, each scrolling to its heading. */
+export function SectionJumps({ jumps }: { readonly jumps: readonly Jump[] }) {
+  return (
+    <nav
+      aria-label={t`Sections`}
+      className="flex basis-full flex-wrap items-center gap-x-1 gap-y-1"
+    >
+      <span className="pr-2 text-sm text-text-subtle">
+        {t({ message: "Jump to", comment: "Followed by links to the sections of the page" })}
+      </span>
+      {jumps.map((jump) => (
+        <Button key={jump.id} variant="ghost" size="sm" onClick={() => jumpToHeading(jump.id)}>
+          {jump.label}
+        </Button>
+      ))}
+    </nav>
   );
 }

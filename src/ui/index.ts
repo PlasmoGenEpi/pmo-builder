@@ -49,7 +49,7 @@ export { NumberField, type NumberFieldProps } from "./NumberField";
 export { Popover, type PopoverProps } from "./Popover";
 export { ProgressBar, type ProgressBarProps } from "./ProgressBar";
 export { RadioGroup, type RadioGroupProps, type RadioOption } from "./RadioGroup";
-export { SectionHeading, type SectionHeadingProps } from "./SectionHeading";
+export { SectionHeading, jumpToHeading, type SectionHeadingProps } from "./SectionHeading";
 export { SegmentedControl, type Segment, type SegmentedControlProps } from "./SegmentedControl";
 export { Select, type SelectOption, type SelectProps } from "./Select";
 export { Skeleton, type SkeletonProps } from "./Skeleton";

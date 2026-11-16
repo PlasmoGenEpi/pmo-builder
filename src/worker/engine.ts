@@ -49,7 +49,9 @@ import {
   makeSubset,
   openBuiltPmo as describeBuiltPmo,
   openPmo as openWorkingPmo,
+  previewSubset,
   tableFile,
+  tablesArchive,
 } from "@/domain/tools/workingPmo";
 import { compareGroups } from "@/domain/tools/groups";
 import { summaryOf } from "@/domain/tools/summary";
@@ -535,6 +537,19 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       const { outcome, subset } = makeSubset(working.original, request, working.fileName);
       working.subset = subset;
       return Promise.resolve(outcome);
+    },
+
+    previewSubset(request) {
+      return Promise.resolve(working === null ? null : previewSubset(working.original, request));
+    },
+
+    async workingPmoTables(request) {
+      if (working === null) return null;
+      const pmo = request.source === "subset" ? working.subset : working.original;
+      if (pmo === null) return null;
+      const baseName =
+        baseNameOf(working.fileName) + (request.source === "subset" ? "-subset" : "");
+      return tablesArchive(pmo, { format: request.format, baseName });
     },
 
     workingPmoTable(request) {

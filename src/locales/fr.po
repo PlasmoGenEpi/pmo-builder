@@ -1683,10 +1683,6 @@ msgstr "Chromosomes"
 msgid "Clear the filters"
 msgstr "Effacer les filtres"
 
-#: src/app/StepNav.tsx
-msgid "Clears this draft for a new PMO."
-msgstr "Efface ce brouillon pour un nouveau PMO."
-
 #: src/ui/Dialog.tsx
 msgid "Close"
 msgstr "Fermer"
@@ -2023,6 +2019,10 @@ msgstr "Télécharger"
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Download {title} as {format}"
 msgstr "Télécharger {title} au format {format}"
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Download all tables (.zip)"
+msgstr "Télécharger tous les tableaux (.zip)"
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Download as .json"
@@ -2747,6 +2747,11 @@ msgstr "Son tableau des cibles, son génome et ses choix de colonnes sont suppri
 #: src/features/review/PublishToZenodo.tsx
 msgid "Its Zenodo address or DOI, such as https://zenodo.org/records/12345678"
 msgstr "Son adresse Zenodo ou son DOI, par exemple https://zenodo.org/records/12345678"
+
+#. Followed by links to the sections of the page
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Jump to"
+msgstr "Aller à"
 
 #: src/features/table-import/FieldRow.tsx
 msgid "Keep it"
@@ -3885,7 +3890,9 @@ msgstr "Panels indiqués dans ce tableau"
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
+#. Short name of the section 'Parasite density and targets with data'
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Parasite density"
 msgstr "Densité parasitaire"
 
@@ -3937,6 +3944,11 @@ msgstr "Choisissez-en un pour passer les étapes ci-dessous, ou ajoutez le table
 msgid "Picking one replaces the target table below for this panel. The table is kept in case you switch back."
 msgstr "Choisir un panel enregistré remplace le tableau des cibles ci-dessous pour ce panel. Le tableau est conservé au cas où vous reviendriez en arrière."
 
+#. Short name of the section 'Reads at each pipeline stage'
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Pipeline stages"
+msgstr "Étapes du pipeline"
+
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
@@ -3963,6 +3975,7 @@ msgid "Plate well"
 msgstr "Puits"
 
 #: src/features/pmo-file/summary/QualityViews.tsx
+#: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Plates"
 msgstr "Plaques"
 
@@ -4264,6 +4277,11 @@ msgstr "Lectures à chaque étape"
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Reads by sample and target"
 msgstr "Lectures par échantillon et par cible"
+
+#. Short name of the section 'Reads by sample and target'
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Reads grid"
+msgstr "Grille des lectures"
 
 #: src/domain/fields/readCounts.ts
 msgid "Reads per stage"
@@ -4675,6 +4693,7 @@ msgid "Search to see the others."
 msgstr "Faites une recherche pour voir les autres."
 
 #: src/app/TopBar.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Sections"
 msgstr "Sections"
 
@@ -5285,6 +5304,11 @@ msgstr "Type de cible"
 #: src/features/review/PmoContents.tsx
 msgid "Targets"
 msgstr "Cibles"
+
+#. Short name of the Targets section
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Targets and alleles"
+msgstr "Cibles et allèles"
 
 #: src/features/review/noticeKinds.ts
 msgid "Targets counted twice for one sample"
@@ -6021,6 +6045,11 @@ msgstr "Le sous-ensemble ne passe pas toutes les vérifications"
 msgid "The subset is ready"
 msgstr "Le sous-ensemble est prêt"
 
+#. Shown while choosing, before the subset is made. Each pair of numbers is what the subset would keep and what the whole file has. Targets are counted only when some allele was found at them.
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "The subset will keep {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
+msgstr "Le sous-ensemble gardera {specimens} spécimens sur {allSpecimens} et {librarySamples} échantillons de bibliothèque sur {allLibrarySamples}, avec des allèles à {targets} cibles sur {allTargets}."
+
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "The summary could not be made"
 msgstr "Le résumé n’a pas pu être créé"
@@ -6032,6 +6061,10 @@ msgstr "Le tableau n’a pas pu être créé. Ouvrez de nouveau le fichier."
 #: src/features/microhaplotypes/MicrohaplotypesStep.tsx
 msgid "The table holds several runs, with the run name in one column."
 msgstr "Le tableau contient plusieurs runs, avec le nom du run dans une colonne."
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "The tables could not be made. Open the file again."
+msgstr "Les tableaux n’ont pas pu être créés. Ouvrez de nouveau le fichier."
 
 #: src/features/review/noticeKinds.ts
 msgid "The tables could not be put together"
@@ -6384,8 +6417,8 @@ msgid "Title"
 msgstr "Titre"
 
 #: src/app/privacy/PrivacyDetails.tsx
-msgid "To remove your draft and its files, choose Start over, in the step list or the menu. To remove everything, including saved panels, clear this site's data in your browser's settings."
-msgstr "Pour supprimer votre brouillon et ses fichiers, choisissez Recommencer, dans la liste des étapes ou dans le menu. Pour tout supprimer, y compris les panels enregistrés, effacez les données de ce site dans les paramètres de votre navigateur."
+msgid "To remove your draft and its files, choose Start over on the home page or in the menu. To remove everything, including saved panels, clear this site's data in your browser's settings."
+msgstr "Pour supprimer votre brouillon et ses fichiers, choisissez Recommencer sur la page d’accueil ou dans le menu. Pour tout supprimer, y compris les panels enregistrés, effacez les données de ce site dans les paramètres de votre navigateur."
 
 #: src/domain/fields/readCounts.ts
 msgid "Total raw reads"

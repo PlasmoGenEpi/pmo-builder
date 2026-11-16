@@ -109,6 +109,19 @@ export interface SubsetRequest {
   readonly minReads: number;
 }
 
+/**
+ * What a subset would keep, counted without making it. The counts are those
+ * the made subset's summary gives.
+ */
+export interface SubsetPreview {
+  readonly specimens: number;
+  readonly librarySamples: number;
+  /** Library samples with at least one microhaplotype left. None means nothing is left. */
+  readonly librarySamplesWithData: number;
+  /** Targets with at least one microhaplotype left. */
+  readonly targetsWithCalls: number;
+}
+
 /** What making a subset gave. */
 export type SubsetOutcome =
   | {
@@ -134,6 +147,12 @@ export type WorkingSource = "original" | "subset";
 export interface TableFile {
   readonly fileName: string;
   readonly text: string;
+}
+
+/** Every table of a PMO, as files in one zip. */
+export interface TablesArchive {
+  readonly fileName: string;
+  readonly blob: Blob;
 }
 
 /** The delimited formats a table can be written in. */

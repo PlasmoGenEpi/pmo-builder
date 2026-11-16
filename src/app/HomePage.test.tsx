@@ -106,13 +106,17 @@ describe("home page actions", () => {
     expect(home).toHaveTextContent("of 2 required steps ready");
   });
 
-  it("starts over from the step list after confirming", async () => {
+  it("starts over from the home page after confirming", async () => {
     const store = createTestStore();
     await act(() => store.getState().actions.loadExample());
     await act(() => store.getState().actions.flush());
     const { location, user } = await renderApp(store, "/build/panel");
+    // The step list no longer has its own Start over; the menu and home page do.
     const steps = screen.getByRole("navigation", { name: "Steps" });
-    await user.click(await within(steps).findByRole("button", { name: "Start over" }));
+    expect(within(steps).queryByRole("button", { name: "Start over" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: /PMO Builder/ }));
+    const home = await screen.findByRole("main");
+    await user.click(await within(home).findByRole("button", { name: "Start over" }));
     const dialog = await screen.findByRole("alertdialog", { name: "Start over?" });
     expect(store.getState().draft.microhaplotypes.table).not.toBeNull();
     await user.click(within(dialog).getByRole("button", { name: "Start over" }));
@@ -120,7 +124,7 @@ describe("home page actions", () => {
     expect(store.getState().draft.microhaplotypes.table).toBeNull();
     expect(await screen.findByText("Your draft was removed")).toBeInTheDocument();
     await waitFor(() =>
-      expect(within(steps).queryByRole("button", { name: "Start over" })).not.toBeInTheDocument(),
+      expect(within(home).queryByRole("button", { name: "Start over" })).not.toBeInTheDocument(),
     );
   });
 

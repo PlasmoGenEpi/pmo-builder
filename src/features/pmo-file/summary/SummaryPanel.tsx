@@ -23,25 +23,25 @@ import {
 } from "@/ui";
 
 import { AlleleBars } from "./AlleleBars";
-import { ControlsCheck, DensityView, PlateView, StagesView } from "./QualityViews";
+import {
+  ControlsCheck,
+  DensityView,
+  PlateView,
+  StagesView,
+  showsDensity,
+  showsPlates,
+  showsStages,
+} from "./QualityViews";
 import { ReadsGrid } from "./ReadsGrid";
 import { SortableTable, type SortableColumn } from "./SortableTable";
-import { MinReadsField, ViewToolbar } from "./ViewToolbar";
+import { useSettled } from "../useSettled";
+
+import { MinReadsField, SectionJumps, ViewToolbar, type Jump } from "./ViewToolbar";
 
 type Loaded =
   | { readonly kind: "loading" }
   | { readonly kind: "ready"; readonly summary: PmoSummary }
   | { readonly kind: "failed" };
-
-/** Waits until a value has stopped changing for `delay` ms, so typing does not recount on every key. */
-function useSettled<T>(value: T, delay: number): T {
-  const [settled, setSettled] = useState(value);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setSettled(value), delay);
-    return () => window.clearTimeout(timer);
-  }, [value, delay]);
-  return settled;
-}
 
 function sampleColumns(summary: PmoSummary): SortableColumn<SampleSummary>[] {
   return [
@@ -93,6 +93,57 @@ function sampleColumns(summary: PmoSummary): SortableColumn<SampleSummary>[] {
             render: (row: SampleSummary) =>
               row.density === null ? "–" : formatCount(Math.round(row.density.value)),
             numeric: true,
+          },
+        ]
+      : []),
+  ];
+}
+
+/** The ids of the Summary's section headings. */
+const HEADING = {
+  reads: "summary-reads",
+  samples: "summary-samples",
+  targets: "summary-targets",
+  plates: "summary-plates",
+  density: "summary-density",
+  stages: "summary-stages",
+} as const;
+
+/** The sections this summary shows, to jump to. */
+function jumpsOf(summary: PmoSummary): Jump[] {
+  return [
+    {
+      id: HEADING.reads,
+      label: t({
+        message: "Reads grid",
+        comment: "Short name of the section 'Reads by sample and target'",
+      }),
+    },
+    { id: HEADING.samples, label: t`Samples` },
+    {
+      id: HEADING.targets,
+      label: t({ message: "Targets and alleles", comment: "Short name of the Targets section" }),
+    },
+    ...(showsPlates(summary) ? [{ id: HEADING.plates, label: t`Plates` }] : []),
+    ...(showsDensity(summary)
+      ? [
+          {
+            id: HEADING.density,
+            label: t({
+              message: "Parasite density",
+              comment: "Short name of the section 'Parasite density and targets with data'",
+            }),
+          },
+        ]
+      : []),
+    ...(showsStages(summary)
+      ? [
+          {
+            id: HEADING.stages,
+            label: t({
+              message: "Pipeline stages",
+              comment: "Short name of the section 'Reads at each pipeline stage'",
+            }),
           },
         ]
       : []),
@@ -276,6 +327,7 @@ export function SummaryPanel({
             ]}
           />
         ) : null}
+        {summary === null ? null : <SectionJumps jumps={jumpsOf(summary)} />}
       </ViewToolbar>
 
       {loaded.kind === "failed" ? (
@@ -298,6 +350,7 @@ export function SummaryPanel({
 
           <section className="flex flex-col gap-4">
             <SectionHeading
+              id={HEADING.reads}
               title={t`Reads by sample and target`}
               description={t`Each row is a library sample and each column a target. The colour shows the reads, as in the legend below the grid. Hover over a cell to see its numbers.`}
               actions={
@@ -326,6 +379,7 @@ export function SummaryPanel({
 
           <section className="flex flex-col gap-4">
             <SectionHeading
+              id={HEADING.samples}
               title={t`Samples`}
               description={t`The most alleles a sample has at one target is a simple estimate of how many clones it carries.`}
             />
@@ -340,6 +394,7 @@ export function SummaryPanel({
 
           <section className="flex flex-col gap-4">
             <SectionHeading
+              id={HEADING.targets}
               title={t`Targets`}
               description={plural(targetsWithData, {
                 one: "Choose a target to see its alleles. # target has data. Heterozygosity is 1 minus the sum of squared allele frequencies.",
@@ -363,9 +418,9 @@ export function SummaryPanel({
             </div>
           </section>
 
-          <PlateView summary={summary} />
-          <DensityView summary={summary} />
-          <StagesView summary={summary} />
+          <PlateView summary={summary} headingId={HEADING.plates} />
+          <DensityView summary={summary} headingId={HEADING.density} />
+          <StagesView summary={summary} headingId={HEADING.stages} />
         </>
       )}
     </div>

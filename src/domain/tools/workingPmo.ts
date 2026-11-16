@@ -43,12 +43,15 @@ import {
   type OpenOutcome,
   type PmoChoices,
   type SubsetOutcome,
+  type SubsetPreview,
   type SubsetRequest,
   type TableFile,
   type TableFormat,
   type TableId,
   type TableInfo,
+  type TablesArchive,
 } from "./types";
+import { zipFiles } from "./zip";
 
 type Pmo = PortableMicrohaplotypeObject;
 
@@ -259,6 +262,69 @@ export function subsetOf(pmo: Pmo, request: SubsetRequest): Pmo {
   return out;
 }
 
+/** The indexes of the specimens `choice` names or matches, or `null` for all. */
+function chosenSpecimens(pmo: Pmo, choice: SubsetRequest["specimens"]): Set<number> | null {
+  if (choice.kind === "all") return null;
+  const chosen = new Set<number>();
+  if (choice.kind === "names") {
+    const names = new Set(choice.names);
+    pmo.specimen_info.forEach((specimen, index) => {
+      if (names.has(specimen.specimen_name)) chosen.add(index);
+    });
+    return chosen;
+  }
+  const criteria = Object.entries(choice.criteria);
+  pmo.specimen_info.forEach((specimen, index) => {
+    const record: Readonly<Record<string, unknown>> = specimen;
+    const matches = criteria.every(
+      ([field, values]) => field in record && values.includes(asText(record[field])),
+    );
+    if (matches) chosen.add(index);
+  });
+  return chosen;
+}
+
+/**
+ * What {@link subsetOf} would keep, counted in one pass without copying
+ * anything, for a preview while the user chooses.
+ */
+export function previewSubset(pmo: Pmo, request: SubsetRequest): SubsetPreview {
+  const chosen = chosenSpecimens(pmo, request.specimens);
+  const libraries = new Set<number>();
+  const specimens = new Set<number>();
+  pmo.library_sample_info.forEach((library, index) => {
+    if (chosen !== null && !chosen.has(library.specimen_id)) return;
+    libraries.add(index);
+    specimens.add(library.specimen_id);
+  });
+  const targetNames = request.targets.kind === "names" ? new Set(request.targets.names) : null;
+  const representative = pmo.representative_microhaplotypes.targets;
+  const withData = new Set<number>();
+  const called = new Set<number>();
+  for (const run of pmo.detected_microhaplotypes) {
+    for (const sample of run.library_samples) {
+      if (!libraries.has(sample.library_sample_id)) continue;
+      for (const result of sample.target_results) {
+        const target = representative[result.mhaps_target_id];
+        if (target === undefined) continue;
+        const name = pmo.target_info[target.target_id]?.target_name;
+        if (targetNames !== null && (name === undefined || !targetNames.has(name))) continue;
+        if (request.minReads > 0 && !result.mhaps.some((mhap) => mhap.reads >= request.minReads))
+          continue;
+        withData.add(sample.library_sample_id);
+        called.add(target.target_id);
+      }
+    }
+  }
+  return {
+    // Choosing no specimens keeps every one, those without library samples too.
+    specimens: chosen === null ? pmo.specimen_info.length : specimens.size,
+    librarySamples: libraries.size,
+    librarySamplesWithData: withData.size,
+    targetsWithCalls: called.size,
+  };
+}
+
 /** Checks a subset: the PMO schema, and that its tables link up. Returns the problems found. */
 function problemsOf(pmo: Pmo): string[] {
   const validation = validatePmo(pmo, { schemaVersion: PUBLISHABLE_PMO_VERSION });
@@ -364,4 +430,20 @@ export function tableFile(
     delimiter: options.format === "tsv" ? "\t" : ",",
   });
   return { fileName: `${options.baseName}-${FILE_PARTS[options.id]}.${options.format}`, text };
+}
+
+/** Every table of `pmo`, as {@link tableFile} writes them, in one zip named after `baseName`. */
+export async function tablesArchive(
+  pmo: Pmo,
+  options: { readonly format: TableFormat; readonly baseName: string },
+): Promise<TablesArchive> {
+  const encoder = new TextEncoder();
+  const entries = tablesOf(pmo).map(({ id }) => {
+    const file = tableFile(pmo, { id, format: options.format, baseName: options.baseName });
+    return { name: file.fileName, data: encoder.encode(file.text) };
+  });
+  return {
+    fileName: `${options.baseName}-tables-${options.format}.zip`,
+    blob: await zipFiles(entries),
+  };
 }

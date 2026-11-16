@@ -47,7 +47,7 @@ export function PrivacyDetails({
           {t`If your browser does not let the app store data, as in some private windows, the draft lasts only until you close or reload the page.`}
         </p>
         <p>
-          {t`To remove your draft and its files, choose Start over, in the step list or the menu. To remove everything, including saved panels, clear this site's data in your browser's settings.`}
+          {t`To remove your draft and its files, choose Start over on the home page or in the menu. To remove everything, including saved panels, clear this site's data in your browser's settings.`}
         </p>
       </Section>
 

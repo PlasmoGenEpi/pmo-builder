@@ -11,6 +11,7 @@ export interface SectionHeadingProps {
   actions?: ReactNode;
   /** Heading level. Page titles are h1 and belong to `StepPage`; sections are h2 or h3. */
   level?: 2 | 3;
+  /** Also lets {@link jumpToHeading} scroll to the heading and focus it. */
   id?: string;
   className?: string;
 }
@@ -30,8 +31,9 @@ export function SectionHeading({
       <div className="flex min-w-0 flex-col gap-1">
         <Heading
           id={id}
+          tabIndex={id === undefined ? undefined : -1}
           className={cn(
-            "font-semibold text-text",
+            "scroll-mt-[calc(var(--spacing-topbar)+1rem)] font-semibold text-text",
             level === 2 ? "text-lg tracking-tight" : "text-md",
           )}
         >
@@ -44,4 +46,16 @@ export function SectionHeading({
       {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </div>
   );
+}
+
+/**
+ * Scrolls to the section heading with this `id`, clear of the top bar, and
+ * moves focus to it so keyboard and screen reader users land there too.
+ */
+export function jumpToHeading(id: string): void {
+  const heading = document.getElementById(id);
+  if (heading === null) return;
+  // jsdom has no scrollIntoView.
+  if (typeof heading.scrollIntoView === "function") heading.scrollIntoView({ block: "start" });
+  heading.focus({ preventScroll: true });
 }

@@ -1,5 +1,5 @@
 import { plural, t } from "@lingui/core/macro";
-import { Download } from "lucide-react";
+import { Download, FileArchive } from "lucide-react";
 import { useState } from "react";
 
 import type { TableFormat, TableId, TableInfo, WorkingSource } from "@/domain/tools/types";
@@ -61,8 +61,8 @@ export interface TablesPanelProps {
 export function TablesPanel({ tables, subsetTables, source, onSourceChange }: TablesPanelProps) {
   const actions = useActions();
   const [format, setFormat] = useState<TableFormat>("csv");
-  const [saving, setSaving] = useState<TableId | null>(null);
-  const [failed, setFailed] = useState<TableId | null>(null);
+  const [saving, setSaving] = useState<TableId | "all" | null>(null);
+  const [failed, setFailed] = useState<TableId | "all" | null>(null);
   const shown = source === "subset" && subsetTables !== null ? subsetTables : tables;
 
   async function download(id: TableId): Promise<void> {
@@ -78,9 +78,18 @@ export function TablesPanel({ tables, subsetTables, source, onSourceChange }: Ta
     saveFile(new Blob([file.text], { type: `${type};charset=utf-8` }), file.fileName);
   }
 
+  async function downloadAll(): Promise<void> {
+    setSaving("all");
+    setFailed(null);
+    const archive = await actions.workingPmoTables({ source, format });
+    setSaving(null);
+    if (archive === null) setFailed("all");
+    else saveFile(archive.blob, archive.fileName);
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
         {subsetTables === null ? null : (
           <SegmentedControl<WorkingSource>
             label={t`Tables from`}
@@ -101,7 +110,21 @@ export function TablesPanel({ tables, subsetTables, source, onSourceChange }: Ta
             { value: "tsv", label: t`TSV` },
           ]}
         />
+        <Button
+          variant="primary"
+          icon={FileArchive}
+          className="sm:ml-auto"
+          loading={saving === "all"}
+          onClick={() => void downloadAll()}
+        >
+          {t`Download all tables (.zip)`}
+        </Button>
       </div>
+      {failed === "all" ? (
+        <p role="alert" className="text-sm text-danger-text">
+          {t`The tables could not be made. Open the file again.`}
+        </p>
+      ) : null}
       <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
         {shown.map((table) => {
           const { title, body } = describe(table.id);
