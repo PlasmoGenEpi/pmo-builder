@@ -412,7 +412,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                         zenodo === null
                           ? null
                           : () => {
-                              updateWorkspace({ publishSource: "subset" });
+                              session.setPublishSource("subset");
                               navigate("/pmo/publish");
                             }
                       }

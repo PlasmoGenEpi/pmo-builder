@@ -3,6 +3,7 @@
  * use the types without loading pmotools-ts onto the main thread.
  */
 import type { PmoFileCheck } from "@/domain/build/checkFileResult";
+import type { PmoFile } from "@/domain/build/export";
 import type { MergeSummary } from "@/domain/build/merge";
 import type { PublicationSummary } from "@/domain/build/publication";
 
@@ -361,6 +362,8 @@ export interface WorkingPmoRequests {
   };
   /** Every table of the original or the subset, as files in one zip. */
   readonly tables: { readonly source: WorkingSource; readonly format: TableFormat };
+  /** The subset as a PMO file, gzipped or not, named after the opened file with "-subset". */
+  readonly file: { readonly gzip: boolean };
   /** The fields the specimens of the original or the subset can be compared by. */
   readonly groupFields: { readonly source: WorkingSource };
   /** The specimens of the original or the subset grouped by `key`, counting microhaplotypes with at least `minReads` reads. */
@@ -395,6 +398,7 @@ export interface WorkingPmoValues {
   readonly preview: SubsetPreview;
   readonly table: TableFile;
   readonly tables: TablesArchive;
+  readonly file: PmoFile;
   readonly groupFields: readonly GroupField[];
   readonly groups: GroupComparison;
 }

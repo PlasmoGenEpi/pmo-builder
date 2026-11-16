@@ -75,6 +75,8 @@ const WORKING_PMO_VALUES: {
     isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string",
   tables: (value): value is WorkingPmoValues["tables"] =>
     isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string",
+  file: (value): value is WorkingPmoValues["file"] =>
+    isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string",
   groupFields: (value): value is WorkingPmoValues["groupFields"] =>
     Array.isArray(value) &&
     value.every((field) => isRecord(field) && typeof field["key"] === "string"),

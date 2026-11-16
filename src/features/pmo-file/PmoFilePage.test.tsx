@@ -4,6 +4,7 @@ import { stringifyPmo, type PortableMicrohaplotypeObject } from "pmotools-ts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Route, Switch } from "wouter";
 
+import { readPmoFile } from "@/domain/build/checkFile";
 import { buildExamplePmo } from "@/domain/build/testing";
 import { richPmo } from "@/domain/tools/testing";
 import { readZip } from "@/domain/tools/zipTesting";
@@ -363,24 +364,38 @@ describe("PmoFilePage: publishing", () => {
     );
   });
 
-  it("offers to publish the subset instead, once one is made", async () => {
-    const { user, store } = await open(pmoFile(ownPmo()));
-    // The test DOM's Blob cannot stream, which gzip needs; browsers can.
-    const workingPmoFile = vi.spyOn(store.getState().actions, "workingPmoFile").mockResolvedValue({
-      blob: new Blob(["{}"]),
-      fileName: "study-subset.json.gz",
+  it("offers to publish the subset instead, once one is made, and deposits its file", async () => {
+    installBlobStream();
+    vi.mocked(signIn).mockResolvedValue({ ok: true, token: "token-1" });
+    vi.mocked(depositDraft).mockResolvedValue({
+      ok: true,
+      draftUrl: "https://zenodo.org/uploads/1",
     });
+    const { user } = await open(pmoFile(ownPmo()));
     await user.click(await screen.findByRole("tab", { name: "Subset" }));
-    await user.type(screen.getByLabelText(/Minimum reads per microhaplotype/), "50");
+    await user.click(screen.getByRole("radio", { name: "Specimens I tick" }));
+    const specimens = screen.getByRole("group", { name: "Specimens" });
+    const boxes = within(specimens).getAllByRole("checkbox");
+    // One click after another, as a person would tick them.
+    // oxlint-disable-next-line no-await-in-loop
+    for (const box of boxes.slice(0, 2)) await user.click(box);
     await user.click(screen.getByRole("button", { name: "Make the subset" }));
     await screen.findByText("The subset is ready");
     await user.click(screen.getByRole("button", { name: "Publish the subset" }));
     expect(await screen.findByRole("radio", { name: "The subset" })).toBeChecked();
     const publish = await screen.findByRole("region", { name: "Publish to Zenodo" });
-    expect(
-      within(publish).getByRole("button", { name: "Deposit in the PlasmoGenEpi community" }),
-    ).toBeEnabled();
-    expect(workingPmoFile).toHaveBeenCalledWith({ gzip: true });
+    await user.click(
+      await within(publish).findByRole("button", { name: "Deposit in the PlasmoGenEpi community" }),
+    );
+    const dialog = await screen.findByRole("dialog", { name: "Publish to Zenodo" });
+    await user.click(within(dialog).getByRole("button", { name: "Sign in to Zenodo and deposit" }));
+    expect(await within(dialog).findByText("Your draft is ready on Zenodo")).toBeInTheDocument();
+
+    const deposited = vi.mocked(depositDraft).mock.calls.at(-1)?.[0];
+    if (deposited === undefined) throw new Error("nothing deposited");
+    expect(deposited.fileName).toBe("study-subset.json.gz");
+    const { pmo } = await readPmoFile(deposited.file);
+    expect(pmo?.specimen_info).toHaveLength(2);
   });
 
   it("does not offer to publish the example data", async () => {
