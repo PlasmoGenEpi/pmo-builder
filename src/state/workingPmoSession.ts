@@ -96,12 +96,12 @@ export interface WorkingPmoState {
   readonly minReads: number | null;
   /** The subset made of the original, if any. Reset on each open. */
   readonly subset: SubsetState;
-  /** Which PMO the Summary and Compare tabs sum up. Reset to the original on each open. */
-  readonly summarySource: WorkingSource;
-  /** Which PMO the Tables tab writes tables of. Reset to the original on each open. */
-  readonly tableSource: WorkingSource;
-  /** Which PMO the Publish tab deposits. Reset to the original on each open. */
-  readonly publishSource: WorkingSource;
+  /**
+   * Which PMO Summary, Compare, Tables and Publish work on. The subset only
+   * while one is made: making one switches to it, and losing it switches
+   * back. Reset to the original on each open.
+   */
+  readonly source: WorkingSource;
 }
 
 /** The subset of the working PMO. */
@@ -206,12 +206,11 @@ export interface WorkingPmoSession {
   subset(request: SubsetRequest): Promise<WorkingPmoAnswer<"subset">>;
   /** Sets the minimum reads for Summary and Compare. */
   setMinReads(value: number | null): void;
-  /** Sets which PMO the Summary and Compare tabs sum up. */
-  setSummarySource(source: WorkingSource): void;
-  /** Sets which PMO the Tables tab writes tables of. */
-  setTableSource(source: WorkingSource): void;
-  /** Sets which PMO the Publish tab deposits. */
-  setPublishSource(source: WorkingSource): void;
+  /**
+   * Sets which PMO Summary, Compare, Tables and Publish work on. The subset
+   * can be chosen only once one is made.
+   */
+  setSource(source: WorkingSource): void;
 }
 
 const NO_SUBSET: SubsetState = { kind: "none" };
@@ -221,9 +220,7 @@ const INITIAL: WorkingPmoState = {
   open: { kind: "none" },
   minReads: null,
   subset: NO_SUBSET,
-  summarySource: "original",
-  tableSource: "original",
-  publishSource: "original",
+  source: "original",
 };
 
 /** A request the worker stopped before answering. */
@@ -280,9 +277,7 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
       open,
       minReads: null,
       subset: NO_SUBSET,
-      summarySource: "original",
-      tableSource: "original",
-      publishSource: "original",
+      source: "original",
     });
     return generation;
   };
@@ -316,6 +311,7 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
         store.setState({
           open: { kind: "failed", name: open.name, size: open.size, cause: "lost" },
           subset: NO_SUBSET,
+          source: "original",
         });
       }
       return false;
@@ -445,11 +441,11 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
       subsets += 1;
       const run = subsets;
       // The worker lets go of the previous subset before making this one.
-      store.setState({ subset: NO_SUBSET });
+      store.setState({ subset: NO_SUBSET, source: "original" });
       const answer = await send(generation, { kind: "subset", ...request });
       if (!isCurrent(generation) || run !== subsets) return { kind: "stale" };
       if (answer.kind === "ok" && answer.value.kind === "made") {
-        store.setState({ subset: { kind: "made", request, made: answer.value } });
+        store.setState({ subset: { kind: "made", request, made: answer.value }, source: "subset" });
       }
       return answer;
     },
@@ -458,16 +454,9 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
       store.setState({ minReads: value });
     },
 
-    setSummarySource(source) {
-      store.setState({ summarySource: source });
-    },
-
-    setTableSource(source) {
-      store.setState({ tableSource: source });
-    },
-
-    setPublishSource(source) {
-      store.setState({ publishSource: source });
+    setSource(source) {
+      if (source === "subset" && store.getState().subset.kind !== "made") return;
+      store.setState({ source });
     },
   };
 }

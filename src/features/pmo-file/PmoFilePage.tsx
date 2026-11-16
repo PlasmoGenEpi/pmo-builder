@@ -12,6 +12,7 @@ import {
   PUBLISHABLE_PMO_VERSION,
   type PmoFileCheck,
 } from "@/domain/build/checkFileResult";
+import type { WorkingSource } from "@/domain/tools/types";
 import { PmoContents } from "@/features/review/PmoContents";
 import { saveFile } from "@/features/review/saveFile";
 import { zenodoConfig, type ZenodoConfig } from "@/features/review/zenodo";
@@ -28,6 +29,7 @@ import {
   Callout,
   FileDropzone,
   Link,
+  RadioGroup,
   Spinner,
   Tabs,
   buttonClassName,
@@ -269,8 +271,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
   const generation = useWorkingPmo((state) => state.generation);
   const minReads = useWorkingPmo((state) => state.minReads);
   const subset = useWorkingPmo((state) => state.subset);
-  const tableSource = useWorkingPmo((state) => state.tableSource);
-  const summarySource = useWorkingPmo((state) => state.summarySource);
+  const source = useWorkingPmo((state) => state.source);
   const build = useBuildState();
   const canOpenBuilt = build.view?.overall.pmo === "valid";
   const version = PUBLISHABLE_PMO_VERSION;
@@ -296,6 +297,23 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
           <h1 className="text-2xl font-semibold tracking-tight text-text">
             <Trans>My PMO file</Trans>
           </h1>
+          {file.kind === "opened" && made !== null ? (
+            <RadioGroup<WorkingSource>
+              label={t`Work with`}
+              hint={
+                zenodo === null
+                  ? t`Summary, Compare and Tables use the PMO chosen here.`
+                  : t`Summary, Compare, Tables and Publish use the PMO chosen here.`
+              }
+              orientation="horizontal"
+              value={source}
+              onValueChange={(next) => session.setSource(next)}
+              options={[
+                { value: "original", label: t`The whole file` },
+                { value: "subset", label: t`The subset` },
+              ]}
+            />
+          ) : null}
           {file.kind === "opened" ? null : (
             <p className="max-w-prose text-md text-text-muted">
               <Trans>
@@ -355,9 +373,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                 content: (
                   <SummaryPanel
                     key={generation}
-                    hasSubset={made !== null}
-                    source={summarySource}
-                    onSourceChange={(next) => session.setSummarySource(next)}
+                    source={source}
                     minReads={minReads}
                     onMinReadsChange={(next) => session.setMinReads(next)}
                   />
@@ -369,9 +385,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                 content: (
                   <CompareTab
                     key={generation}
-                    hasSubset={made !== null}
-                    source={summarySource}
-                    onSourceChange={(next) => session.setSummarySource(next)}
+                    source={source}
                     minReads={minReads}
                     onMinReadsChange={(next) => session.setMinReads(next)}
                   />
@@ -385,8 +399,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                     <TablesPanel
                       tables={file.opened.tables}
                       subsetTables={made?.tables ?? null}
-                      source={made === null ? "original" : tableSource}
-                      onSourceChange={(source) => session.setTableSource(source)}
+                      source={source}
                     />
                   </Reading>
                 ),
@@ -401,18 +414,18 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                       choices={file.opened.choices}
                       original={file.opened.summary}
                       onShowSummary={() => {
-                        session.setSummarySource("subset");
+                        session.setSource("subset");
                         navigate("/pmo/summary");
                       }}
                       onShowTables={() => {
-                        session.setTableSource("subset");
+                        session.setSource("subset");
                         navigate("/pmo/tables");
                       }}
                       onPublish={
                         zenodo === null
                           ? null
                           : () => {
-                              session.setPublishSource("subset");
+                              session.setSource("subset");
                               navigate("/pmo/publish");
                             }
                       }
@@ -428,7 +441,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                       label: t`Publish to Zenodo`,
                       content: (
                         <Reading>
-                          <PublishPanel zenodo={zenodo} file={file} subset={made} />
+                          <PublishPanel zenodo={zenodo} file={file} subset={made} source={source} />
                         </Reading>
                       ),
                     },

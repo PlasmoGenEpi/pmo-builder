@@ -1788,7 +1788,6 @@ msgid "Comments"
 msgstr "Comentários"
 
 #: src/features/pmo-file/PmoFilePage.tsx
-#: src/features/pmo-file/summary/CompareTab.tsx
 msgid "Compare"
 msgstr "Comparar"
 
@@ -5234,13 +5233,17 @@ msgstr "Subconjunto"
 msgid "Such as the country or year of collection."
 msgstr "Por exemplo, o país ou o ano de colheita."
 
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "Sum up"
-msgstr "Resumir"
-
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Summary"
 msgstr "Resumo"
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Summary, Compare and Tables use the PMO chosen here."
+msgstr "Os separadores Resumo, Comparar e Tabelas usam o PMO escolhido aqui."
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Summary, Compare, Tables and Publish use the PMO chosen here."
+msgstr "Os separadores Resumo, Comparar, Tabelas e Publicar usam o PMO escolhido aqui."
 
 #: src/app/ThemeToggle.tsx
 msgid "Switch to dark theme"
@@ -5265,10 +5268,6 @@ msgstr "Tabelas e detalhes"
 #: src/app/HomePage.tsx
 msgid "Tables can be CSV, TSV, plain text or Excel files."
 msgstr "As tabelas podem ser ficheiros CSV, TSV, de texto simples ou Excel."
-
-#: src/features/pmo-file/TablesPanel.tsx
-msgid "Tables from"
-msgstr "Tabelas de"
 
 #. A record type in the PMO, starting a place in the file, such as 'Target "t1"'.
 #: src/domain/build/merge.ts
@@ -6063,10 +6062,7 @@ msgstr "A cadeia do segmento de referência a que o pseudo-CIGAR se refere."
 msgid "The strand the target lies on, + or -."
 msgstr "A cadeia em que o alvo se encontra, + ou -."
 
-#: src/features/pmo-file/PublishPanel.tsx
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-#: src/features/pmo-file/TablesPanel.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "The subset"
 msgstr "O subconjunto"
 
@@ -6136,10 +6132,7 @@ msgstr "O poço da biblioteca na respetiva placa, por exemplo A01, em vez da lin
 msgid "The well of the specimen on its storage plate, such as A01, instead of row and column."
 msgstr "O poço do espécime na placa de armazenamento, por exemplo A01, em vez da linha e da coluna."
 
-#: src/features/pmo-file/PublishPanel.tsx
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-#: src/features/pmo-file/TablesPanel.tsx
+#: src/features/pmo-file/PmoFilePage.tsx
 msgid "The whole file"
 msgstr "O ficheiro inteiro"
 
@@ -6692,10 +6685,6 @@ msgstr "A que se refere esta tabela"
 msgid "What to do with the file"
 msgstr "O que fazer com o ficheiro"
 
-#: src/features/pmo-file/PublishPanel.tsx
-msgid "What to publish"
-msgstr "O que publicar"
-
 #: src/features/records/RecordList.tsx
 msgid "What you typed for it will be gone. This cannot be undone."
 msgstr "O que escreveu para este registo será apagado. Esta ação não pode ser anulada."
@@ -6865,6 +6854,10 @@ msgstr "Com número de leituras"
 #: src/domain/build/merge.ts
 msgid "Without a specimen table, each library sample becomes its own specimen, so the specimen names in the library sample table are not used. Add a specimen table to keep them."
 msgstr "Sem uma tabela de espécimes, cada amostra de biblioteca torna-se o seu próprio espécime, por isso os nomes de espécimes da tabela de amostras de biblioteca não são usados. Adicione uma tabela de espécimes para os manter."
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Work with"
+msgstr "Trabalhar com"
 
 #: src/app/HomePage.tsx
 msgid "Work with a PMO file"
