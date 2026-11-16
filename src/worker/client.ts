@@ -57,6 +57,11 @@ const WORKING_PMO_VALUES: {
     isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string",
   tables: (value): value is WorkingPmoValues["tables"] =>
     isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string",
+  groupFields: (value): value is WorkingPmoValues["groupFields"] =>
+    Array.isArray(value) &&
+    value.every((field) => isRecord(field) && typeof field["key"] === "string"),
+  groups: (value): value is WorkingPmoValues["groups"] =>
+    isRecord(value) && Array.isArray(value["groups"]) && Array.isArray(value["targets"]),
 };
 
 /** Whether `value` is an answer to a working PMO request of kind `kind`. */

@@ -14,9 +14,12 @@ import { depositDraft } from "@/features/review/zenodoDeposit";
 import { createTestStore, renderWithStore } from "@/features/shared/testing";
 import { workingPmoSessionOf } from "@/state";
 import { installBlobStream } from "@/test/blobStream";
+import type { Engine } from "@/worker";
+import { createInThreadEngine } from "@/worker/engine";
 
 import { OPEN_BUILT_PATH, PmoFilePage, PmoFileRoute, PMO_TABS, type PmoTab } from "./PmoFilePage";
 import { TablesPanel } from "./TablesPanel";
+import { CompareTab } from "./summary/CompareTab";
 import { resetWorkspace } from "./workspace";
 
 vi.mock("@/features/review/saveFile", () => ({ saveFile: vi.fn<typeof saveFile>() }));
@@ -511,5 +514,107 @@ describe("PmoFilePage: optional details", () => {
     expect(
       await screen.findByText("There is nothing to group the specimens by"),
     ).toBeInTheDocument();
+  });
+});
+
+/**
+ * An in-thread engine that notes the kind of each working PMO request, and
+ * fails comparisons when asked to.
+ */
+function watchedEngine(options: { readonly failGroups?: boolean } = {}): {
+  readonly engine: Engine;
+  readonly kinds: string[];
+} {
+  const engine = createInThreadEngine();
+  const kinds: string[] = [];
+  return {
+    kinds,
+    engine: {
+      ...engine,
+      workingPmo: (call) => {
+        kinds.push(call.request.kind);
+        return options.failGroups === true && call.request.kind === "groups"
+          ? Promise.reject(new Error("out of memory"))
+          : engine.workingPmo(call);
+      },
+    },
+  };
+}
+
+async function openWithEngine(file: File, engine: Engine) {
+  const rendered = await renderPage(ZENODO, createTestStore({ engine }));
+  await rendered.user.upload(screen.getByLabelText("Choose pmo file"), file);
+  return rendered;
+}
+
+/** Whether a column of figures is all zero. */
+function allZero(figures: readonly string[]): boolean {
+  return figures.length > 0 && figures.every((figure) => figure === "0");
+}
+
+/** The figures in a table's column, by its header. */
+function columnOf(table: HTMLElement, header: RegExp): string[] {
+  const headers = within(table).getAllByRole("columnheader");
+  const index = headers.findIndex((cell) => header.test(cell.textContent ?? ""));
+  return within(table)
+    .getAllByRole("row")
+    .slice(1)
+    .map((row) => within(row).getAllByRole("cell")[index]?.textContent ?? "");
+}
+
+describe("PmoFilePage: compare", () => {
+  it("lists the fields to compare by without summing up the whole file", async () => {
+    const { engine, kinds } = watchedEngine();
+    const { user } = await openWithEngine(pmoFile(richPmo()), engine);
+    await user.click(await screen.findByRole("tab", { name: "Compare" }));
+    await screen.findByRole("table", { name: "Groups" });
+    expect(kinds).toContain("groupFields");
+    expect(kinds).not.toContain("summary");
+  });
+
+  it("uses the minimum reads set on Summary, and Summary uses the one set here", async () => {
+    const { user } = await open(pmoFile(richPmo()));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await user.type(await screen.findByLabelText("Minimum reads per microhaplotype"), "1000000");
+    await user.click(screen.getByRole("tab", { name: "Compare" }));
+    expect(await screen.findByLabelText("Minimum reads per microhaplotype")).toHaveValue("1000000");
+    await vi.waitFor(
+      () =>
+        expect(
+          allZero(columnOf(screen.getByRole("table", { name: "Groups" }), /Samples with data/)),
+        ).toBe(true),
+      { timeout: 3000 },
+    );
+
+    await user.clear(screen.getByLabelText("Minimum reads per microhaplotype"));
+    await vi.waitFor(
+      () =>
+        expect(
+          allZero(columnOf(screen.getByRole("table", { name: "Groups" }), /Samples with data/)),
+        ).toBe(false),
+      { timeout: 3000 },
+    );
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+    expect(await screen.findByLabelText("Minimum reads per microhaplotype")).toHaveValue("");
+  });
+
+  it("says when the comparison could not be made", async () => {
+    const { engine } = watchedEngine({ failGroups: true });
+    const { user } = await openWithEngine(pmoFile(richPmo()), engine);
+    await user.click(await screen.findByRole("tab", { name: "Compare" }));
+    expect(await screen.findByText("The comparison could not be made")).toBeInTheDocument();
+  });
+
+  it("says when no file is open", async () => {
+    await renderWithStore(
+      <CompareTab
+        hasSubset={false}
+        source="original"
+        onSourceChange={() => undefined}
+        minReads={null}
+        onMinReadsChange={() => undefined}
+      />,
+    );
+    expect(await screen.findByText("No file is open")).toBeInTheDocument();
   });
 });

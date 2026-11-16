@@ -3016,6 +3016,10 @@ msgstr "Locations that end before they start"
 msgid "Look into your PMO"
 msgstr "Look into your PMO"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Make one on the Subset tab, or compare the whole file."
+msgstr "Make one on the Subset tab, or compare the whole file."
+
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Make one on the Subset tab, or download the tables of the whole file."
 msgstr "Make one on the Subset tab, or download the tables of the whole file."
@@ -3303,6 +3307,7 @@ msgstr "Negative"
 msgid "Next"
 msgstr "Next"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "No file is open"
@@ -3397,6 +3402,7 @@ msgstr "No specimen name column is matched yet."
 msgid "No steps yet"
 msgstr "No steps yet"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "No subset has been made yet"
@@ -3703,6 +3709,10 @@ msgstr "Only the specimen name is needed. Many labs keep specimens and library s
 #: src/app/HomePage.tsx
 msgid "Open a PMO file"
 msgstr "Open a PMO file"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Open a PMO file to compare groups of its specimens."
+msgstr "Open a PMO file to compare groups of its specimens."
 
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Open a PMO file to download its tables."

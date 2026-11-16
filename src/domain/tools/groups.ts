@@ -12,8 +12,8 @@ import {
 } from "pmotools-ts";
 
 import { alleleLabels } from "./alleleLabels";
-import { groupValue } from "./sampleDetails";
-import type { GroupComparison, GroupKey, GroupRow, TargetAcrossGroups } from "./types";
+import { groupFieldsOf, groupValue } from "./sampleDetails";
+import type { GroupComparison, GroupField, GroupKey, GroupRow, TargetAcrossGroups } from "./types";
 
 type Pmo = PortableMicrohaplotypeObject;
 
@@ -84,6 +84,15 @@ function fillPeriods(
     }
   }
   return periods.map((period) => ({ period, specimens: counts.get(period) ?? 0 }));
+}
+
+/**
+ * The fields the specimens of `pmo` can be compared by: those that split
+ * them into at least two groups, counting specimens without a value as a
+ * group of their own.
+ */
+export function comparableFields(pmo: Pmo): GroupField[] {
+  return groupFieldsOf(pmo).filter((field) => field.distinct > 1 || field.present < field.total);
 }
 
 /** The specimens of `pmo` grouped by `key`, compared, counting microhaplotypes with at least `minReads` reads. */

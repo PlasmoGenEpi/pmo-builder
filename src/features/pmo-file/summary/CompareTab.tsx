@@ -6,19 +6,20 @@
  */
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useTheme } from "@/app/theme";
 import type {
   GroupComparison,
+  GroupField,
   GroupKey,
   GroupRow,
-  PmoSummary,
   TargetAcrossGroups,
+  WorkingPmoRequest,
   WorkingSource,
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
-import { useActions } from "@/state";
+import { useWorkingPmoQuery, type WorkingPmoQueryState } from "@/state";
 import {
   Callout,
   Combobox,
@@ -30,6 +31,8 @@ import {
   Skeleton,
   formatCount,
 } from "@/ui";
+
+import { useSettled } from "../useSettled";
 
 import { SortableTable, type SortableColumn } from "./SortableTable";
 import { MinReadsField, ViewToolbar } from "./ViewToolbar";
@@ -278,10 +281,134 @@ function Timeline({
   );
 }
 
-type Loaded =
-  | { readonly kind: "loading" }
-  | { readonly kind: "ready"; readonly comparison: GroupComparison }
-  | { readonly kind: "failed" };
+/** Why there is nothing to compare, when there is a reason to give. */
+function NoComparison({
+  reason,
+}: {
+  readonly reason: Exclude<WorkingPmoQueryState<"groups">["kind"], "loading" | "ok">;
+}) {
+  switch (reason) {
+    case "not-open":
+      return (
+        <Callout tone="info" live title={t`No file is open`}>
+          <Trans>Open a PMO file to compare groups of its specimens.</Trans>
+        </Callout>
+      );
+    case "no-subset":
+      return (
+        <Callout tone="info" live title={t`No subset has been made yet`}>
+          <Trans>Make one on the Subset tab, or compare the whole file.</Trans>
+        </Callout>
+      );
+    case "failed":
+    default:
+      return (
+        <Callout tone="error" live title={t`The comparison could not be made`}>
+          <Trans>Open the file again.</Trans>
+        </Callout>
+      );
+  }
+}
+
+/** The groups of one field, side by side, counted in the worker. */
+function Comparison({
+  source,
+  field,
+  minReads,
+}: {
+  readonly source: WorkingSource;
+  readonly field: GroupField;
+  readonly minReads: number;
+}) {
+  const [target, setTarget] = useState<string | null>(null);
+  const request = useMemo(
+    (): WorkingPmoRequest<"groups"> => ({ kind: "groups", source, key: field.key, minReads }),
+    [source, field.key, minReads],
+  );
+  const loaded = useWorkingPmoQuery(request);
+  const comparison = loaded.kind === "ok" ? loaded.value : null;
+  const shownTarget = useMemo(
+    () =>
+      comparison?.targets.find((item) => item.name === target) ??
+      comparison?.targets.toSorted((a, b) => b.alleles.length - a.alleles.length)[0] ??
+      null,
+    [comparison, target],
+  );
+  const decimal = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 2 });
+
+  if (loaded.kind === "loading") return <Skeleton className="h-64 w-full" />;
+  if (loaded.kind !== "ok") return <NoComparison reason={loaded.kind} />;
+  const shown = loaded.value;
+  return (
+    <>
+      <section className="flex flex-col gap-4">
+        <SectionHeading
+          title={t`Groups`}
+          description={t`More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group.`}
+        />
+        <SortableTable
+          label={t`Groups`}
+          columns={groupColumns()}
+          rows={shown.groups}
+          rowKey={(row) => row.name ?? "\u0000"}
+        />
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <SectionHeading
+          title={t`Heterozygosity by target`}
+          description={t`Expected heterozygosity of each target in each group: 1 minus the sum of squared allele frequencies.`}
+        />
+        <SortableTable
+          label={t`Heterozygosity by target`}
+          columns={[
+            { key: "target", label: t`Target`, value: (row: TargetAcrossGroups) => row.name },
+            ...shown.groups.map((group, index): SortableColumn<TargetAcrossGroups> => ({
+              key: `g${index}`,
+              label: groupName(group),
+              value: (row) => row.heterozygosity[index] ?? null,
+              render: (row) => {
+                const value = row.heterozygosity[index];
+                return value === null || value === undefined ? "–" : decimal.format(value);
+              },
+              numeric: true,
+            })),
+          ]}
+          rows={shown.targets}
+          rowKey={(row) => row.name}
+          onRowSelect={(row) => setTarget(row.name)}
+          selectedKey={shownTarget?.name ?? null}
+        />
+      </section>
+
+      {shownTarget === null ? null : (
+        <section className="flex flex-col gap-4">
+          <SectionHeading
+            title={t`Microhaplotypes by group`}
+            description={t`How often each microhaplotype of the chosen target is seen in each group. Choose a target in the table above, or here.`}
+          />
+          <Field label={t`Target`} className="max-w-md">
+            {(control) => (
+              <Combobox
+                {...control}
+                options={shown.targets.map((item) => ({
+                  value: item.name,
+                  label: item.name,
+                }))}
+                value={shownTarget.name}
+                onChange={(value) => setTarget(value)}
+                noneLabel={false}
+              />
+            )}
+          </Field>
+          <AllelesByGroup target={shownTarget} groups={shown.groups} />
+        </section>
+      )}
+
+      <Timeline comparison={shown} total={field.total} />
+    </>
+  );
+}
 
 /** Props for {@link CompareTab}. */
 export interface CompareTabProps {
@@ -301,62 +428,19 @@ export function CompareTab({
   minReads: minReadsInput,
   onMinReadsChange,
 }: CompareTabProps) {
-  const actions = useActions();
-  const [summary, setSummary] = useState<PmoSummary | null>(null);
-  const fields = summary?.groupFields ?? [];
-  const usable = fields.filter((field) => field.distinct > 1 || field.present < field.total);
-  const [key, setKey] = useState<GroupKey | null>(null);
-  const chosen = usable.find((field) => field.key === key) ?? usable[0] ?? null;
-  const minReads = Math.max(0, minReadsInput ?? 0);
-  const [loaded, setLoaded] = useState<Loaded>({ kind: "loading" });
-  const [target, setTarget] = useState<string | null>(null);
   const shownSource = hasSubset ? source : "original";
-  const chosenKey = chosen?.key ?? null;
-
-  // Which fields there are to group by comes from the summary of the file.
-  useEffect(() => {
-    let live = true;
-    void (async () => {
-      const result = await actions.workingPmoSummary({ source: shownSource, minReads: 0 });
-      if (live) setSummary(result);
-    })();
-    return () => {
-      live = false;
-    };
-  }, [actions, shownSource]);
-
-  useEffect(() => {
-    if (chosenKey === null) return undefined;
-    let live = true;
-    const timer = window.setTimeout(() => {
-      void (async () => {
-        const comparison = await actions.workingPmoGroups({
-          source: shownSource,
-          minReads,
-          key: chosenKey,
-        });
-        if (live)
-          setLoaded(comparison === null ? { kind: "failed" } : { kind: "ready", comparison });
-      })();
-    }, 300);
-    return () => {
-      live = false;
-      window.clearTimeout(timer);
-    };
-  }, [actions, shownSource, minReads, chosenKey]);
-
-  const comparison = loaded.kind === "ready" ? loaded.comparison : null;
-  const shownTarget = useMemo(
-    () =>
-      comparison?.targets.find((item) => item.name === target) ??
-      comparison?.targets.toSorted((a, b) => b.alleles.length - a.alleles.length)[0] ??
-      null,
-    [comparison, target],
+  const minReads = useSettled(Math.max(0, minReadsInput ?? 0), 400);
+  const fieldsRequest = useMemo(
+    (): WorkingPmoRequest<"groupFields"> => ({ kind: "groupFields", source: shownSource }),
+    [shownSource],
   );
+  const fields = useWorkingPmoQuery(fieldsRequest);
+  const [key, setKey] = useState<GroupKey | null>(null);
 
-  if (summary === null) {
-    return <Skeleton className="h-40 w-full" />;
-  }
+  if (fields.kind === "loading") return <Skeleton className="h-40 w-full" />;
+  if (fields.kind !== "ok") return <NoComparison reason={fields.kind} />;
+  const usable = fields.value;
+  const chosen = usable.find((field) => field.key === key) ?? usable[0] ?? null;
   if (chosen === null) {
     return (
       <Callout tone="info" title={t`There is nothing to group the specimens by`}>
@@ -371,7 +455,6 @@ export function CompareTab({
   const present = formatCount(chosen.present);
   const total = formatCount(chosen.total);
   const name = fieldName(chosen.key);
-  const decimal = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 2 });
 
   return (
     <div className="flex flex-col gap-8">
@@ -416,85 +499,7 @@ export function CompareTab({
         </p>
       ) : null}
 
-      {loaded.kind === "failed" ? (
-        <Callout tone="error" live title={t`The comparison could not be made`}>
-          <Trans>Open the file again.</Trans>
-        </Callout>
-      ) : null}
-
-      {comparison === null ? (
-        loaded.kind === "loading" ? (
-          <Skeleton className="h-64 w-full" />
-        ) : null
-      ) : (
-        <>
-          <section className="flex flex-col gap-4">
-            <SectionHeading
-              title={t`Groups`}
-              description={t`More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group.`}
-            />
-            <SortableTable
-              label={t`Groups`}
-              columns={groupColumns()}
-              rows={comparison.groups}
-              rowKey={(row) => row.name ?? "\u0000"}
-            />
-          </section>
-
-          <section className="flex flex-col gap-4">
-            <SectionHeading
-              title={t`Heterozygosity by target`}
-              description={t`Expected heterozygosity of each target in each group: 1 minus the sum of squared allele frequencies.`}
-            />
-            <SortableTable
-              label={t`Heterozygosity by target`}
-              columns={[
-                { key: "target", label: t`Target`, value: (row: TargetAcrossGroups) => row.name },
-                ...comparison.groups.map((group, index): SortableColumn<TargetAcrossGroups> => ({
-                  key: `g${index}`,
-                  label: groupName(group),
-                  value: (row) => row.heterozygosity[index] ?? null,
-                  render: (row) => {
-                    const value = row.heterozygosity[index];
-                    return value === null || value === undefined ? "–" : decimal.format(value);
-                  },
-                  numeric: true,
-                })),
-              ]}
-              rows={comparison.targets}
-              rowKey={(row) => row.name}
-              onRowSelect={(row) => setTarget(row.name)}
-              selectedKey={shownTarget?.name ?? null}
-            />
-          </section>
-
-          {shownTarget === null ? null : (
-            <section className="flex flex-col gap-4">
-              <SectionHeading
-                title={t`Microhaplotypes by group`}
-                description={t`How often each microhaplotype of the chosen target is seen in each group. Choose a target in the table above, or here.`}
-              />
-              <Field label={t`Target`} className="max-w-md">
-                {(control) => (
-                  <Combobox
-                    {...control}
-                    options={comparison.targets.map((item) => ({
-                      value: item.name,
-                      label: item.name,
-                    }))}
-                    value={shownTarget.name}
-                    onChange={(value) => setTarget(value)}
-                    noneLabel={false}
-                  />
-                )}
-              </Field>
-              <AllelesByGroup target={shownTarget} groups={comparison.groups} />
-            </section>
-          )}
-
-          <Timeline comparison={comparison} total={chosen.total} />
-        </>
-      )}
+      <Comparison source={shownSource} field={chosen} minReads={minReads} />
     </div>
   );
 }
