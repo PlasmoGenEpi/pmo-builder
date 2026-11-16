@@ -53,6 +53,10 @@ const WORKING_PMO_VALUES: {
   close: (value): value is null => value === null,
   summary: (value): value is WorkingPmoValues["summary"] =>
     isRecord(value) && Array.isArray(value["samples"]) && Array.isArray(value["targets"]),
+  table: (value): value is WorkingPmoValues["table"] =>
+    isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string",
+  tables: (value): value is WorkingPmoValues["tables"] =>
+    isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string",
 };
 
 /** Whether `value` is an answer to a working PMO request of kind `kind`. */

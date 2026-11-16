@@ -348,6 +348,14 @@ export interface WorkingPmoRequests {
   readonly close: object;
   /** The summary of the original or the subset, counting microhaplotypes with at least `minReads` reads. */
   readonly summary: { readonly source: WorkingSource; readonly minReads: number };
+  /** One table of the original or the subset, as a CSV or TSV file. */
+  readonly table: {
+    readonly source: WorkingSource;
+    readonly id: TableId;
+    readonly format: TableFormat;
+  };
+  /** Every table of the original or the subset, as files in one zip. */
+  readonly tables: { readonly source: WorkingSource; readonly format: TableFormat };
 }
 
 /** One kind of request about the working PMO. */
@@ -370,6 +378,8 @@ export interface WorkingPmoValues {
   readonly open: OpenOutcome;
   readonly close: null;
   readonly summary: PmoSummary;
+  readonly table: TableFile;
+  readonly tables: TablesArchive;
 }
 
 /** A request, with the generation of the working PMO it is meant for. */

@@ -1,5 +1,5 @@
 /**
- * What the Tables, Subset and Publish tabs keep about the working PMO until
+ * What the Subset, Summary and Publish tabs keep about the working PMO until
  * they move to the working PMO session: the latest subset and each tab's
  * choice of original or subset. The file itself is the session's.
  *
@@ -17,8 +17,6 @@ import { useWorkingPmo } from "@/state";
 export interface WorkspaceState {
   /** The latest subset made of the open file. */
   readonly subset: SubsetOutcome | null;
-  /** Which PMO the Tables tab lists. */
-  readonly tableSource: WorkingSource;
   /** Which PMO the Publish tab deposits. */
   readonly publishSource: WorkingSource;
   /** Which PMO the Summary and Compare tabs sum up. */
@@ -27,7 +25,6 @@ export interface WorkspaceState {
 
 const EMPTY: WorkspaceState = {
   subset: null,
-  tableSource: "original",
   publishSource: "original",
   summarySource: "original",
 };
