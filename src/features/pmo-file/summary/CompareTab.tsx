@@ -108,7 +108,13 @@ function AllelesByGroup({
     maximumFractionDigits: 0,
   });
   return (
-    <div className="overflow-x-auto rounded-lg border border-border">
+    <section
+      aria-label={t`Microhaplotype frequencies by group`}
+      // Focusable so keyboard users can scroll it.
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+      tabIndex={0}
+      className="overflow-x-auto rounded-lg border border-border focus-visible:outline-offset-0"
+    >
       <table
         className="w-full border-collapse text-sm"
         aria-label={t`Microhaplotype frequencies by group`}
@@ -167,7 +173,7 @@ function AllelesByGroup({
           ))}
         </tbody>
       </table>
-    </div>
+    </section>
   );
 }
 
@@ -210,7 +216,13 @@ function Timeline({
             : t`${dated} of ${all} specimens have a collection date.`}
         </p>
       ) : null}
-      <div className="overflow-x-auto">
+      <section
+        aria-label={t`When specimens were collected`}
+        // Focusable so keyboard users can scroll it.
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+        className="overflow-x-auto"
+      >
         <p className="sr-only">
           {t`A bar chart of specimens per collection period. The figures are in the bars' tooltips and in the group table.`}
         </p>
@@ -268,7 +280,7 @@ function Timeline({
             );
           })}
         </svg>
-      </div>
+      </section>
       <p className="min-h-5 text-sm text-text-muted" aria-live="polite">
         {hovered === null
           ? t`Hover over a bar to see its count.`
