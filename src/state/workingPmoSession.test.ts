@@ -742,3 +742,70 @@ describe("working PMO session: worker restarts", () => {
     expect(opens).toEqual([0, 1]);
   });
 });
+
+describe("working PMO session: subset files", () => {
+  it("exports the subset as a gzipped file named with -subset, which opens as the subset", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(3));
+    const answer = await session.query({ kind: "file", gzip: true });
+    if (answer.kind !== "ok") throw new Error(`expected a file, got ${answer.kind}`);
+    expect(answer.value.fileName).toBe("study-subset.json.gz");
+
+    const { session: reader } = makeSession();
+    expect(await reader.open(chosen(new File([answer.value.blob], answer.value.fileName)))).toEqual(
+      { kind: "opened" },
+    );
+    expect(await reader.query(SUMMARY)).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 3 },
+    });
+  });
+
+  it("exports the subset as plain JSON when not gzipped", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json.gz")));
+    await session.subset(keepFirst(2));
+    const answer = await session.query({ kind: "file", gzip: false });
+    if (answer.kind !== "ok") throw new Error(`expected a file, got ${answer.kind}`);
+    expect(answer.value.fileName).toBe("study-subset.json");
+    const parsed: unknown = JSON.parse(await answer.value.blob.text());
+    expect(parsed).toMatchObject({
+      specimen_info: EXAMPLE.specimen_info
+        .slice(0, 2)
+        .map((specimen) => ({ specimen_name: specimen.specimen_name })),
+    });
+  });
+
+  it("says no file is open, or no subset has been made", async () => {
+    const { session } = makeSession();
+    expect(await session.query({ kind: "file", gzip: true })).toEqual({ kind: "not-open" });
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    expect(await session.query({ kind: "file", gzip: true })).toEqual({ kind: "no-subset" });
+  });
+
+  it("answers a file request for a file since replaced as stale", async () => {
+    const engine = createInThreadEngine();
+    const { session } = makeSession({ engine });
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    await session.subset(keepFirst(3));
+    const { generation } = session.state.getState();
+    await session.open(chosen(pmoFile(smallerPmo(3), "second.json")));
+    expect(await engine.workingPmo({ generation, request: { kind: "file", gzip: true } })).toEqual({
+      kind: "stale",
+    });
+  });
+});
+
+describe("working PMO session: publishing", () => {
+  it("keeps Publish's choice of original or subset until the next open", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    expect(session.state.getState().publishSource).toBe("original");
+    session.setPublishSource("subset");
+    expect(session.state.getState().publishSource).toBe("subset");
+    expect(session.state.getState().tableSource).toBe("original");
+    await session.open(chosen(pmoFile(EXAMPLE, "second.json")));
+    expect(session.state.getState().publishSource).toBe("original");
+  });
+});

@@ -1,7 +1,7 @@
 /**
- * What the Summary and Publish tabs keep about the working PMO until they
- * move to the working PMO session: each tab's choice of original or subset.
- * The file, its subset and the Tables tab's choice are the session's.
+ * What the Summary tab keeps about the working PMO until it moves to the
+ * working PMO session: its choice of original or subset. The file, its
+ * subset and the Tables and Publish tabs' choices are the session's.
  *
  * Everything here belongs to one generation of the session, so opening or
  * closing a file starts again from nothing.
@@ -13,16 +13,13 @@ import { createStore } from "zustand/vanilla";
 import type { WorkingSource } from "@/domain/tools/types";
 import { useWorkingPmo } from "@/state";
 
-/** What the tabs keep about the working PMO. */
+/** What the Summary tab keeps about the working PMO. */
 export interface WorkspaceState {
-  /** Which PMO the Publish tab deposits. */
-  readonly publishSource: WorkingSource;
   /** Which PMO the Summary and Compare tabs sum up. */
   readonly summarySource: WorkingSource;
 }
 
 const EMPTY: WorkspaceState = {
-  publishSource: "original",
   summarySource: "original",
 };
 

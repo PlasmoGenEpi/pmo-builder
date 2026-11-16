@@ -14,7 +14,7 @@ import type {
   WorkingPmoQuery,
 } from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
-import { useActions, useWorkingPmo, useWorkingPmoQuery, useWorkingPmoSession } from "@/state";
+import { useWorkingPmo, useWorkingPmoQuery, useWorkingPmoSession } from "@/state";
 import {
   Button,
   Callout,
@@ -190,17 +190,18 @@ function SubsetResult({
   readonly onShowTables: () => void;
   readonly onPublish: (() => void) | null;
 }) {
-  const actions = useActions();
+  const session = useWorkingPmoSession();
   const [saving, setSaving] = useState<"gzip" | "json" | null>(null);
   const [failed, setFailed] = useState(false);
 
   async function download(gzip: boolean): Promise<void> {
     setSaving(gzip ? "gzip" : "json");
     setFailed(false);
-    const file = await actions.workingPmoFile({ gzip });
+    const file = await session.query({ kind: "file", gzip });
     setSaving(null);
-    if (file === null) setFailed(true);
-    else saveFile(file.blob, file.fileName);
+    // A stale answer is for a file since replaced: there is nothing to save.
+    if (file.kind === "ok") saveFile(file.value.blob, file.value.fileName);
+    else if (file.kind !== "stale") setFailed(true);
   }
 
   switch (outcome.kind) {
