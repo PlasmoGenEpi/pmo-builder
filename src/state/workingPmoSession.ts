@@ -21,7 +21,7 @@ import { t } from "@lingui/core/macro";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
 import type { PmoFileCheck } from "@/domain/build/checkFileResult";
-import { unreachable } from "@/domain/draft";
+import { describeError, unreachable } from "@/domain/draft";
 import type {
   OpenOutcome,
   SubsetMade,
@@ -36,7 +36,7 @@ import type {
 import { isEngineStoppedError, type Engine } from "@/worker";
 
 /** An opened file's details, as the worker described it. */
-export type Opened = Extract<OpenOutcome, { kind: "opened" }>;
+export type OpenedFile = Extract<OpenOutcome, { kind: "opened" }>;
 
 /** Where a working PMO came from. */
 export type WorkingPmoOrigin =
@@ -63,7 +63,7 @@ export type OpenState =
       readonly file: Blob;
       readonly name: string;
       readonly size: number;
-      readonly opened: Opened;
+      readonly opened: OpenedFile;
       readonly origin: WorkingPmoOrigin;
     }
   | {
@@ -115,7 +115,7 @@ export type SubsetState =
     };
 
 /** What to open. */
-export type OpenSource =
+export type PmoToOpen =
   /** A file's bytes: one the user chose, or a published PMO downloaded from Zenodo. */
   | {
       readonly kind: "file";
@@ -147,23 +147,6 @@ export type PmoFileCheckResult =
   | "invalid"
   | "failed";
 
-/** The word for what a file check found. */
-export function fileCheckResult(check: PmoFileCheck | null): PmoFileCheckResult {
-  if (check === null) return "failed";
-  switch (check.kind) {
-    case "ready":
-      return check.publication.exampleData ? "example" : "ready";
-    case "unreadable":
-      return check.reason === "not-pmo" ? "not-pmo" : "unreadable";
-    case "too-large":
-    case "wrong-version":
-    case "invalid":
-      return check.kind;
-    default:
-      return unreachable(check);
-  }
-}
-
 /** What the session reports for usage counts. */
 export type WorkingPmoEvent =
   /** A PMO file was opened, and its check found `result`. */
@@ -193,7 +176,7 @@ export interface WorkingPmoSession {
    * Opens a file or the built PMO in place of whatever was open, and runs
    * the open to the end. The open that started last wins.
    */
-  open(source: OpenSource): Promise<OpenResult>;
+  open(toOpen: PmoToOpen): Promise<OpenResult>;
   /** Closes the working PMO, letting the worker free it. */
   close(): Promise<void>;
   /** Asks the worker about the working PMO, as it is now. */
@@ -236,15 +219,21 @@ function answerOf<K extends WorkingPmoKind>(
   return answer.kind === "stopped" ? { kind: "failed", message: answer.message } : answer;
 }
 
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-/** What usage counts call an open's outcome. */
+/** What usage counts call an open's outcome. `null`: the file could not be opened. */
 function checkResultOf(outcome: OpenOutcome | null): PmoFileCheckResult {
   if (outcome === null) return "failed";
-  if (outcome.kind === "refused") return fileCheckResult(outcome.check);
-  return outcome.publication.exampleData ? "example" : "ready";
+  if (outcome.kind === "opened") return outcome.publication.exampleData ? "example" : "ready";
+  const { check } = outcome;
+  switch (check.kind) {
+    case "unreadable":
+      return check.reason === "not-pmo" ? "not-pmo" : "unreadable";
+    case "too-large":
+    case "wrong-version":
+    case "invalid":
+      return check.kind;
+    default:
+      return unreachable(check);
+  }
 }
 
 /** Creates a working PMO session on `engine`. Nothing is open at first. */
@@ -353,11 +342,9 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
     if (!isLost(generation, first)) return answerOf(first);
     if (!isCurrent(generation)) return { kind: "stale" };
     if (!(await restore(generation))) {
+      // The open state says what happened, for the page to show.
       return isCurrent(generation)
-        ? {
-            kind: "failed",
-            message: t`The file was closed, probably because the browser ran out of memory. Open the file again.`,
-          }
+        ? { kind: "failed", message: "The worker lost the file and could not open it again." }
         : { kind: "stale" };
     }
     return answerOf(await post(generation, request));
@@ -368,13 +355,13 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
 
   /** The bytes to open: the file given, or the built PMO exported. */
   const bytesOf = async (
-    source: OpenSource,
+    toOpen: PmoToOpen,
   ): Promise<
     | { readonly kind: "bytes"; readonly file: Blob; readonly name: string }
     | { readonly kind: "none" }
     | { readonly kind: "failed" }
   > => {
-    if (source.kind === "file") return { kind: "bytes", file: source.file, name: source.name };
+    if (toOpen.kind === "file") return { kind: "bytes", file: toOpen.file, name: toOpen.name };
     try {
       await flush();
       const file = await engine.getPmoFile({ gzip: true });
@@ -390,17 +377,22 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
   return {
     state: store,
 
-    async open(source) {
-      const generation =
-        source.kind === "file"
-          ? nextGeneration({ kind: "opening", name: source.name, size: source.file.size })
-          : nextGeneration({ kind: "opening", name: t`Your built PMO`, size: 0 });
-      const bytes = await bytesOf(source);
+    async open(toOpen) {
+      const opening =
+        toOpen.kind === "file"
+          ? { name: toOpen.name, size: toOpen.file.size }
+          : { name: t`Your built PMO`, size: 0 };
+      const generation = nextGeneration({ kind: "opening", ...opening });
+      const bytes = await bytesOf(toOpen);
       if (!isCurrent(generation)) return { kind: "superseded" };
-      if (bytes.kind !== "bytes") {
-        // The built PMO could not be had: nothing is open.
+      if (bytes.kind === "none") {
         store.setState({ open: { kind: "none" } });
-        return bytes.kind === "none" ? { kind: "no-built-pmo" } : { kind: "failed" };
+        return { kind: "no-built-pmo" };
+      }
+      if (bytes.kind === "failed") {
+        emit({ kind: "pmo-file-checked", result: "failed" });
+        store.setState({ open: { kind: "failed", ...opening, cause: "open" } });
+        return { kind: "failed" };
       }
       const { file, name } = bytes;
       const request: WorkingPmoRequest<"open"> = { kind: "open", file, fileName: name };
@@ -422,7 +414,7 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
         store.setState({ open: { kind: "refused", name, size, check: outcome.check } });
         return { kind: "refused" };
       }
-      const origin: WorkingPmoOrigin = source.kind === "file" ? source.origin : { kind: "built" };
+      const origin: WorkingPmoOrigin = toOpen.kind === "file" ? toOpen.origin : { kind: "built" };
       store.setState({ open: { kind: "opened", file, name, size, opened: outcome, origin } });
       return { kind: "opened" };
     },

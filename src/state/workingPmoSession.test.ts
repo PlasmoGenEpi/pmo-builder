@@ -22,7 +22,7 @@ import { stoppableWorkers } from "@/worker/testing";
 import { createAppStore } from "./store";
 import {
   createWorkingPmoSession,
-  type OpenSource,
+  type PmoToOpen,
   type WorkingPmoEvent,
   type WorkingPmoSession,
 } from "./workingPmoSession";
@@ -88,7 +88,7 @@ function makeSession(
 }
 
 /** A chosen file to open. */
-function chosen(file: File): OpenSource {
+function chosen(file: File): PmoToOpen {
   return { kind: "file", file, name: file.name, origin: { kind: "chosen" } };
 }
 
@@ -101,10 +101,12 @@ describe("working PMO session: opening", () => {
     const { session } = makeSession();
     const started = gate();
     const finish = gate();
-    const slowSpecimens = 3;
+    const slowPmo = smallerPmo(3);
+    // The two files must differ in what the summary counts, to tell which one it sums up.
+    expect(slowPmo.library_sample_info.length).not.toBe(EXAMPLE.library_sample_info.length);
     const slowOpen = session.open({
       kind: "file",
-      file: slowFile(pmoFile(smallerPmo(slowSpecimens), "slow.json"), { started, finish }),
+      file: slowFile(pmoFile(slowPmo, "slow.json"), { started, finish }),
       name: "slow.json",
       origin: { kind: "chosen" },
     });
@@ -125,7 +127,6 @@ describe("working PMO session: opening", () => {
       kind: "ok",
       value: { librarySamples: EXAMPLE.library_sample_info.length },
     });
-    expect(EXAMPLE.library_sample_info.length).not.toBe(slowSpecimens);
   });
 
   it("opens a chosen file, keeping its bytes and origin, and counts the check", async () => {
@@ -193,6 +194,18 @@ describe("working PMO session: opening", () => {
     expect(await session.query(SUMMARY)).toMatchObject({ kind: "ok" });
   });
 
+  it("records a failed open when the built PMO cannot be exported", async () => {
+    const engine = createInThreadEngine();
+    const broken: Engine = {
+      ...engine,
+      getPmoFile: () => Promise.reject(new Error("out of memory")),
+    };
+    const { session, events } = makeSession({ engine: broken });
+    expect(await session.open({ kind: "built" })).toEqual({ kind: "failed" });
+    expect(session.state.getState().open).toMatchObject({ kind: "failed", cause: "open" });
+    expect(events).toEqual([{ kind: "pmo-file-checked", result: "failed" }]);
+  });
+
   it("says when the draft builds no PMO to open", async () => {
     const { session } = makeSession();
     expect(await session.open({ kind: "built" })).toEqual({ kind: "no-built-pmo" });
@@ -223,6 +236,30 @@ describe("working PMO session: queries", () => {
     const { generation } = session.state.getState();
     await session.open(chosen(pmoFile(smallerPmo(3), "second.json")));
     expect(await engine.workingPmo({ generation, request: SUMMARY })).toEqual({ kind: "stale" });
+  });
+
+  it("answers as stale a query still running when another file is opened", async () => {
+    const engine = createInThreadEngine();
+    const started = gate();
+    const finish = gate();
+    // The summary waits until told to, as a slow one on a large file would.
+    const slow: Engine = {
+      ...engine,
+      workingPmo: async (call) => {
+        if (call.request.kind === "summary" && call.generation === 1) {
+          started.open();
+          await finish.promise;
+        }
+        return engine.workingPmo(call);
+      },
+    };
+    const { session } = makeSession({ engine: slow });
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    const pending = session.query(SUMMARY);
+    await started.promise;
+    await session.open(chosen(pmoFile(smallerPmo(3), "second.json")));
+    finish.open();
+    expect(await pending).toEqual({ kind: "stale" });
   });
 
   it("resets the minimum reads on each open", async () => {
@@ -705,6 +742,32 @@ describe("working PMO session: worker restarts", () => {
       open: { kind: "failed", name: "study.json", cause: "lost" },
       subset: { kind: "none" },
     });
+  });
+
+  it("fails a query whose second try stops the worker again, without trying a third time", async () => {
+    const summaries: number[] = [];
+    const workers = stoppableWorkers((index) => {
+      const engine = createInThreadEngine();
+      if (index === 0) return engine;
+      // Every later worker opens the file, then stops while summing it up.
+      return {
+        ...engine,
+        workingPmo: (call) => {
+          if (call.request.kind !== "summary") return engine.workingPmo(call);
+          summaries.push(index);
+          workers.stop();
+          return new Promise<never>(() => undefined);
+        },
+      };
+    });
+    const { session } = makeSession({ engine: workers.engine });
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    workers.stop();
+
+    expect((await session.query(SUMMARY)).kind).toBe("failed");
+    // Tried in the worker started after the first stop, then once more after opening the file again.
+    expect(summaries).toEqual([1, 2]);
+    expect(workers.started()).toBe(3);
   });
 
   it("opens the file again once for requests that find it lost together", async () => {

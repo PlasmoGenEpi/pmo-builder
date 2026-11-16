@@ -3023,6 +3023,10 @@ msgstr ""
 msgid "Make one on the Subset tab, or download the tables of the whole file."
 msgstr ""
 
+#: src/features/pmo-file/PublishPanel.tsx
+msgid "Make one on the Subset tab, or publish the whole file."
+msgstr ""
+
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Make one on the Subset tab, or sum up the whole file."
 msgstr ""
@@ -3033,6 +3037,14 @@ msgstr ""
 
 #: src/features/pmo-file/PublishPanel.tsx
 msgid "Make the subset again on the Subset tab."
+msgstr ""
+
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "Make the subset again."
+msgstr ""
+
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "Make the subset again. If it fails again, open the file again."
 msgstr ""
 
 #: src/app/HomePage.tsx
@@ -3306,9 +3318,7 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-#: src/features/pmo-file/TablesPanel.tsx
+#: src/features/pmo-file/NoAnswer.tsx
 msgid "No file is open"
 msgstr ""
 
@@ -3401,9 +3411,7 @@ msgstr ""
 msgid "No steps yet"
 msgstr ""
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-#: src/features/pmo-file/TablesPanel.tsx
+#: src/features/pmo-file/NoAnswer.tsx
 msgid "No subset has been made yet"
 msgstr ""
 
@@ -3717,6 +3725,10 @@ msgstr ""
 msgid "Open a PMO file to download its tables."
 msgstr ""
 
+#: src/features/pmo-file/PublishPanel.tsx
+msgid "Open a PMO file to publish it."
+msgstr ""
+
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables as CSV or TSV, make a smaller PMO with only some specimens, targets or reads, or publish it. The file stays in this browser."
 msgstr ""
@@ -3811,6 +3823,11 @@ msgstr ""
 
 #: src/features/bioinformatics/BioinformaticsStep.tsx
 msgid "Optional. This tells readers of the PMO which programs and versions turned the reads into alleles, and links each run in the allele table to its pipeline."
+msgstr ""
+
+#. The PMO file as it was opened
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Original"
 msgstr ""
 
 #. A control that is neither negative nor positive
@@ -5011,10 +5028,6 @@ msgstr ""
 msgid "Something went wrong while working out the PMO: {message}"
 msgstr ""
 
-#: src/features/pmo-file/SubsetPanel.tsx
-msgid "Something went wrong. Reload the page and try again."
-msgstr ""
-
 #: src/features/pmo-file/summary/SortableTable.tsx
 msgid "Sort by {columnLabel}"
 msgstr ""
@@ -5231,6 +5244,7 @@ msgstr ""
 msgid "Subject names or codes"
 msgstr ""
 
+#. A smaller PMO made from the original
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Subset"
 msgstr ""
@@ -5643,6 +5657,10 @@ msgstr ""
 msgid "The file and your column choices for it are removed from this draft. You can add the file again later."
 msgstr ""
 
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "The file as it was opened"
+msgstr ""
+
 #: src/features/pmo-file/OpenPublished.tsx
 msgid "The file could not be downloaded from Zenodo"
 msgstr ""
@@ -5667,12 +5685,7 @@ msgstr ""
 msgid "The file is no longer loaded. Import it again."
 msgstr ""
 
-#: src/features/pmo-file/SubsetPanel.tsx
-msgid "The file is no longer open"
-msgstr ""
-
 #: src/features/pmo-file/PmoFilePage.tsx
-#: src/state/workingPmoSession.ts
 msgid "The file was closed, probably because the browser ran out of memory. Open the file again."
 msgstr ""
 
@@ -6040,6 +6053,10 @@ msgstr ""
 msgid "The specimen this library was made from, as named in the specimen table."
 msgstr ""
 
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "The specimens and targets you kept"
+msgstr ""
+
 #: src/domain/fields/samples.ts
 msgid "The SRA or ENA experiment accession, if the data was submitted."
 msgstr ""
@@ -6066,10 +6083,6 @@ msgstr ""
 
 #: src/domain/fields/panel.ts
 msgid "The strand the target lies on, + or -."
-msgstr ""
-
-#: src/features/pmo-file/PmoFilePage.tsx
-msgid "The subset"
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
@@ -6136,10 +6149,6 @@ msgstr ""
 
 #: src/domain/fields/samples.ts
 msgid "The well of the specimen on its storage plate, such as A01, instead of row and column."
-msgstr ""
-
-#: src/features/pmo-file/PmoFilePage.tsx
-msgid "The whole file"
 msgstr ""
 
 #: src/domain/fields/samples.ts

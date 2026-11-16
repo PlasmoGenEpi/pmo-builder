@@ -21,7 +21,7 @@ import {
   useWorkingPmo,
   useWorkingPmoSession,
   type OpenState,
-  type Opened,
+  type OpenedFile,
   type WorkingPmoOrigin,
 } from "@/state";
 import {
@@ -144,7 +144,7 @@ function Overview({
   origin,
   onDownload,
 }: {
-  readonly opened: Opened;
+  readonly opened: OpenedFile;
   readonly origin: WorkingPmoOrigin;
   /** Saves the file, offered for the built PMO, which has no copy on disk yet. */
   readonly onDownload: () => void;
@@ -204,22 +204,23 @@ function Overview({
 }
 
 /**
- * Opens the PMO the draft built, then shows its overview. The session runs
- * the open to the end even if this page is left meanwhile; only moving to
- * the overview is skipped then.
+ * Opens the PMO the draft built, then shows My PMO file: its overview, or
+ * why it was refused or could not be opened, as for any other file. The
+ * session runs the open to the end even if this page is left meanwhile; only
+ * moving to My PMO file is skipped then.
  */
 function OpenBuilt() {
   const session = useWorkingPmoSession();
   const [, navigate] = useLocation();
-  const [failed, setFailed] = useState(false);
+  const [noBuiltPmo, setNoBuiltPmo] = useState(false);
 
   useEffect(() => {
     let live = true;
     async function open(): Promise<void> {
       const result = await session.open({ kind: "built" });
       if (!live || result.kind === "superseded") return;
-      if (result.kind === "opened") navigate("/pmo/overview", { replace: true });
-      else setFailed(true);
+      if (result.kind === "no-built-pmo") setNoBuiltPmo(true);
+      else navigate("/pmo/overview", { replace: true });
     }
     void open();
     return () => {
@@ -227,7 +228,7 @@ function OpenBuilt() {
     };
   }, [session, navigate]);
 
-  return failed ? (
+  return noBuiltPmo ? (
     <Callout
       tone="error"
       live
@@ -309,8 +310,16 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
               value={source}
               onValueChange={(next) => session.setSource(next)}
               options={[
-                { value: "original", label: t`The whole file` },
-                { value: "subset", label: t`The subset` },
+                {
+                  value: "original",
+                  label: t({ message: "Original", comment: "The PMO file as it was opened" }),
+                  description: t`The file as it was opened`,
+                },
+                {
+                  value: "subset",
+                  label: t({ message: "Subset", comment: "A smaller PMO made from the original" }),
+                  description: t`The specimens and targets you kept`,
+                },
               ]}
             />
           ) : null}
