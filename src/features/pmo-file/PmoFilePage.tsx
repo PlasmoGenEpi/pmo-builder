@@ -15,7 +15,14 @@ import {
 import { PmoContents } from "@/features/review/PmoContents";
 import { saveFile } from "@/features/review/saveFile";
 import { zenodoConfig, type ZenodoConfig } from "@/features/review/zenodo";
-import { useActions, useBuildState } from "@/state";
+import {
+  useBuildState,
+  useWorkingPmo,
+  useWorkingPmoSession,
+  type OpenState,
+  type Opened,
+  type WorkingPmoOrigin,
+} from "@/state";
 import {
   Button,
   Callout,
@@ -32,17 +39,7 @@ import { CompareTab } from "./summary/CompareTab";
 import { SummaryPanel } from "./summary/SummaryPanel";
 import { SubsetPanel } from "./SubsetPanel";
 import { TablesPanel } from "./TablesPanel";
-import {
-  closeWorkspace,
-  finishOpening,
-  startOpening,
-  updateWorkspace,
-  useWorkspace,
-  workspaceState,
-  type FileOrigin,
-  type Opened,
-  type WorkspaceFile,
-} from "./workspace";
+import { useUpdateWorkspace, useWorkspace } from "./workspace";
 
 /** The workspace's tabs, which are also the last part of its address (`#/pmo/tables`). */
 export const PMO_TABS = ["overview", "summary", "compare", "tables", "subset", "publish"] as const;
@@ -58,7 +55,7 @@ function isTab(value: string | undefined): value is PmoTab {
 }
 
 /** Why a file cannot be opened, as one sentence. */
-function refusal(file: WorkspaceFile): string | null {
+function refusal(file: OpenState): string | null {
   const version = PUBLISHABLE_PMO_VERSION;
   if (file.kind === "failed")
     return t`The file could not be opened. Reload the page and try again.`;
@@ -145,7 +142,7 @@ function Overview({
   onDownload,
 }: {
   readonly opened: Opened;
-  readonly origin: FileOrigin;
+  readonly origin: WorkingPmoOrigin;
   /** Saves the file, offered for the built PMO, which has no copy on disk yet. */
   readonly onDownload: () => void;
 }) {
@@ -203,38 +200,29 @@ function Overview({
   );
 }
 
-/** Opens the PMO the draft built, then shows its overview. */
+/**
+ * Opens the PMO the draft built, then shows its overview. The session runs
+ * the open to the end even if this page is left meanwhile; only moving to
+ * the overview is skipped then.
+ */
 function OpenBuilt() {
-  const actions = useActions();
+  const session = useWorkingPmoSession();
   const [, navigate] = useLocation();
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let live = true;
     async function open(): Promise<void> {
-      const generation = startOpening(t`Your built PMO`, 0);
-      const result = await actions.openBuiltPmo();
-      if (!live) return;
-      if (result === null || result.outcome.kind !== "opened") {
-        finishOpening(generation, { kind: "none" });
-        setFailed(true);
-        return;
-      }
-      finishOpening(generation, {
-        kind: "opened",
-        file: result.file.blob,
-        name: result.file.fileName,
-        size: result.file.blob.size,
-        opened: result.outcome,
-        origin: { kind: "built" },
-      });
-      navigate("/pmo/overview", { replace: true });
+      const result = await session.open({ kind: "built" });
+      if (!live || result.kind === "superseded") return;
+      if (result.kind === "opened") navigate("/pmo/overview", { replace: true });
+      else setFailed(true);
     }
     void open();
     return () => {
       live = false;
     };
-  }, [actions, navigate]);
+  }, [session, navigate]);
 
   return failed ? (
     <Callout
@@ -274,31 +262,26 @@ export interface PmoFilePageProps {
  * is not touched.
  */
 export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFilePageProps) {
-  const actions = useActions();
+  const session = useWorkingPmoSession();
   const [, navigate] = useLocation();
-  const file = useWorkspace((state) => state.file);
+  const file = useWorkingPmo((state) => state.open);
+  const generation = useWorkingPmo((state) => state.generation);
+  const minReads = useWorkingPmo((state) => state.minReads);
   const subset = useWorkspace((state) => state.subset);
   const tableSource = useWorkspace((state) => state.tableSource);
   const summarySource = useWorkspace((state) => state.summarySource);
-  const minReads = useWorkspace((state) => state.minReads);
+  const updateWorkspace = useUpdateWorkspace();
   const build = useBuildState();
   const canOpenBuilt = build.view?.overall.pmo === "valid";
   const version = PUBLISHABLE_PMO_VERSION;
 
-  async function open(chosen: File): Promise<void> {
-    const generation = startOpening(chosen.name, chosen.size);
-    const outcome = await actions.openPmo(chosen, chosen.name);
-    const base = { name: chosen.name, size: chosen.size };
-    if (outcome === null) finishOpening(generation, { kind: "failed", ...base });
-    else if (outcome.kind === "opened")
-      finishOpening(generation, {
-        kind: "opened",
-        file: chosen,
-        ...base,
-        opened: outcome,
-        origin: { kind: "chosen" },
-      });
-    else finishOpening(generation, { kind: "refused", ...base, check: outcome.check });
+  function open(chosen: File): void {
+    void session.open({
+      kind: "file",
+      file: chosen,
+      name: chosen.name,
+      origin: { kind: "chosen" },
+    });
   }
 
   const made = subset?.kind === "made" ? subset : null;
@@ -329,8 +312,8 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
           description={t`A PMO file in version ${version}, saved as .json or .json.gz.`}
           accept={[".json", ".json.gz", ".gz"]}
           file={shownFile}
-          onFileSelect={(chosen) => void open(chosen)}
-          onRemove={closeWorkspace}
+          onFileSelect={open}
+          onRemove={() => void session.close()}
           busy={file.kind === "opening" ? t`Opening the file` : false}
           error={refusal(file)}
         />
@@ -371,12 +354,12 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                 label: t`Summary`,
                 content: (
                   <SummaryPanel
-                    key={workspaceState().generation}
+                    key={generation}
                     hasSubset={made !== null}
                     source={summarySource}
                     onSourceChange={(next) => updateWorkspace({ summarySource: next })}
                     minReads={minReads}
-                    onMinReadsChange={(next) => updateWorkspace({ minReads: next })}
+                    onMinReadsChange={(next) => session.setMinReads(next)}
                   />
                 ),
               },
@@ -385,12 +368,12 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                 label: t`Compare`,
                 content: (
                   <CompareTab
-                    key={workspaceState().generation}
+                    key={generation}
                     hasSubset={made !== null}
                     source={summarySource}
                     onSourceChange={(next) => updateWorkspace({ summarySource: next })}
                     minReads={minReads}
-                    onMinReadsChange={(next) => updateWorkspace({ minReads: next })}
+                    onMinReadsChange={(next) => session.setMinReads(next)}
                   />
                 ),
               },
@@ -414,7 +397,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                 content: (
                   <Reading>
                     <SubsetPanel
-                      key={workspaceState().generation}
+                      key={generation}
                       choices={file.opened.choices}
                       original={file.opened.summary}
                       outcome={subset}

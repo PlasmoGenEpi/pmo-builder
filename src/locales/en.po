@@ -3016,6 +3016,10 @@ msgstr "Locations that end before they start"
 msgid "Look into your PMO"
 msgstr "Look into your PMO"
 
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Make one on the Subset tab, or sum up the whole file."
+msgstr "Make one on the Subset tab, or sum up the whole file."
+
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Make the subset"
 msgstr "Make the subset"
@@ -3295,6 +3299,10 @@ msgstr "Negative"
 msgid "Next"
 msgstr "Next"
 
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "No file is open"
+msgstr "No file is open"
+
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "No library sample has any microhaplotypes left with these choices. Choose more specimens or targets, or fewer reads."
 msgstr "No library sample has any microhaplotypes left with these choices. Choose more specimens or targets, or fewer reads."
@@ -3383,6 +3391,10 @@ msgstr "No specimen name column is matched yet."
 #: src/features/bioinformatics/MethodsPart.tsx
 msgid "No steps yet"
 msgstr "No steps yet"
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "No subset has been made yet"
+msgstr "No subset has been made yet"
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "No target is ticked yet."
@@ -3693,6 +3705,10 @@ msgstr "Open a PMO file to see a summary of its samples and targets, compare gro
 #: src/app/HomePage.tsx
 msgid "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables, make a subset, or publish it."
 msgstr "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables, make a subset, or publish it."
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Open a PMO file to see its summary."
+msgstr "Open a PMO file to see its summary."
 
 #: src/app/SaveStatus.tsx
 msgid "Open in another tab"
@@ -6887,7 +6903,7 @@ msgstr "Your browser setting stops them being sent, whatever this switch says."
 msgid "Your browser stopped the Zenodo sign-in window. Allow pop-ups for this site and try again."
 msgstr "Your browser stopped the Zenodo sign-in window. Allow pop-ups for this site and try again."
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/state/workingPmoSession.ts
 msgid "Your built PMO"
 msgstr "Your built PMO"
 

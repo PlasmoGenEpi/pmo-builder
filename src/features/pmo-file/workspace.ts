@@ -1,129 +1,69 @@
 /**
- * What the My PMO file workspace has open. Kept outside the page, so the open
- * file and its subset survive moving between tabs and sections. The PMO
- * itself is in the worker; this holds what the page shows.
+ * What the Tables, Subset and Publish tabs keep about the working PMO until
+ * they move to the working PMO session: the latest subset and each tab's
+ * choice of original or subset. The file itself is the session's.
+ *
+ * Everything here belongs to one generation of the session, so opening or
+ * closing a file starts again from nothing.
  */
+import { useCallback } from "react";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 
-import type { PmoFileCheck } from "@/domain/build/checkFileResult";
-import type { OpenOutcome, SubsetOutcome, WorkingSource } from "@/domain/tools/types";
+import type { SubsetOutcome, WorkingSource } from "@/domain/tools/types";
+import { useWorkingPmo } from "@/state";
 
-/** An opened file's details, as the worker described it. */
-export type Opened = Extract<OpenOutcome, { kind: "opened" }>;
-
-/** Where an open file came from. */
-export type FileOrigin =
-  | { readonly kind: "chosen" }
-  /** The PMO this app built from the draft. */
-  | { readonly kind: "built" }
-  /** A published PMO, downloaded from its Zenodo record. */
-  | {
-      readonly kind: "published";
-      /** The record's id, as in `#/published/<id>`. */
-      readonly id: string;
-      readonly title: string;
-      readonly recordUrl: string;
-    };
-
-/** Where the workspace's file stands. */
-export type WorkspaceFile =
-  | { readonly kind: "none" }
-  | { readonly kind: "opening"; readonly name: string; readonly size: number }
-  | {
-      readonly kind: "opened";
-      /** The file's bytes, for depositing it on Zenodo as it is. */
-      readonly file: Blob;
-      readonly name: string;
-      readonly size: number;
-      readonly opened: Opened;
-      readonly origin: FileOrigin;
-    }
-  | {
-      readonly kind: "refused";
-      readonly name: string;
-      readonly size: number;
-      readonly check: Exclude<PmoFileCheck, { kind: "ready" }>;
-    }
-  | { readonly kind: "failed"; readonly name: string; readonly size: number };
-
-/** Everything the workspace holds. */
+/** What the tabs keep about the working PMO. */
 export interface WorkspaceState {
-  readonly file: WorkspaceFile;
   /** The latest subset made of the open file. */
   readonly subset: SubsetOutcome | null;
   /** Which PMO the Tables tab lists. */
   readonly tableSource: WorkingSource;
   /** Which PMO the Publish tab deposits. */
   readonly publishSource: WorkingSource;
-  /** Which PMO the Summary tab sums up. */
+  /** Which PMO the Summary and Compare tabs sum up. */
   readonly summarySource: WorkingSource;
-  /**
-   * The minimum reads for a microhaplotype to count in Summary and Compare,
-   * shared so the two tabs agree. `null`: count them all.
-   */
-  readonly minReads: number | null;
-  /** Counts opens, so a slow open overtaken by a newer one is ignored. */
-  readonly generation: number;
 }
 
-const INITIAL: WorkspaceState = {
-  file: { kind: "none" },
+const EMPTY: WorkspaceState = {
   subset: null,
   tableSource: "original",
   publishSource: "original",
   summarySource: "original",
-  minReads: null,
-  generation: 0,
 };
 
-const store = createStore<WorkspaceState>(() => INITIAL);
+/** The tabs' state, and the session generation it belongs to. */
+const store = createStore<{ readonly generation: number; readonly state: WorkspaceState }>(() => ({
+  generation: 0,
+  state: EMPTY,
+}));
 
-/** Reads the workspace. */
+/** Reads what the tabs keep about the file open now. */
 export function useWorkspace<T>(select: (state: WorkspaceState) => T): T {
-  return useStore(store, select);
+  const generation = useWorkingPmo((session) => session.generation);
+  return useStore(store, (kept) => select(kept.generation === generation ? kept.state : EMPTY));
 }
 
-/** The workspace as it is now, outside React. */
-export function workspaceState(): WorkspaceState {
-  return store.getState();
-}
-
-/** Replaces part of the workspace. */
-export function updateWorkspace(change: Partial<WorkspaceState>): void {
-  store.setState(change);
-}
-
-/**
- * Starts opening a file: clears what was open and returns the generation to
- * pass to {@link finishOpening}.
- */
-export function startOpening(name: string, size: number): number {
-  const generation = store.getState().generation + 1;
-  store.setState({
-    file: { kind: "opening", name, size },
-    subset: null,
-    tableSource: "original",
-    publishSource: "original",
-    summarySource: "original",
-    minReads: null,
-    generation,
-  });
-  return generation;
-}
-
-/** Records the outcome of an open, unless a newer open has started since. */
-export function finishOpening(generation: number, file: WorkspaceFile): void {
-  if (store.getState().generation !== generation) return;
-  store.setState({ file });
-}
-
-/** Closes the file. */
-export function closeWorkspace(): void {
-  store.setState({ ...INITIAL, generation: store.getState().generation + 1 });
+/** A function that changes what the tabs keep about the file open now. */
+export function useUpdateWorkspace(): (change: Partial<WorkspaceState>) => void {
+  const generation = useWorkingPmo((session) => session.generation);
+  return useCallback(
+    (change) => {
+      store.setState((kept) =>
+        // A change made for a file that has since been replaced is dropped.
+        kept.generation > generation
+          ? kept
+          : {
+              generation,
+              state: { ...(kept.generation === generation ? kept.state : EMPTY), ...change },
+            },
+      );
+    },
+    [generation],
+  );
 }
 
 /** Forgets everything. For tests. */
 export function resetWorkspace(): void {
-  store.setState(INITIAL);
+  store.setState({ generation: 0, state: EMPTY });
 }

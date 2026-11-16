@@ -1,16 +1,17 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import type {
   ControlKind,
   PmoSummary,
   SampleSummary,
   TargetSummary,
+  WorkingPmoRequest,
   WorkingSource,
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
-import { useActions } from "@/state";
+import { useWorkingPmoQuery, type WorkingPmoQueryState } from "@/state";
 import {
   Callout,
   Card,
@@ -37,11 +38,6 @@ import { SortableTable, type SortableColumn } from "./SortableTable";
 import { useSettled } from "../useSettled";
 
 import { MinReadsField, SectionJumps, ViewToolbar, type Jump } from "./ViewToolbar";
-
-type Loaded =
-  | { readonly kind: "loading" }
-  | { readonly kind: "ready"; readonly summary: PmoSummary }
-  | { readonly kind: "failed" };
 
 function sampleColumns(summary: PmoSummary): SortableColumn<SampleSummary>[] {
   return [
@@ -239,6 +235,35 @@ function Headline({ summary }: { readonly summary: PmoSummary }) {
   );
 }
 
+/** Why there is no summary to show, when there is a reason to give. */
+function NoSummary({ loaded }: { readonly loaded: WorkingPmoQueryState<"summary"> }) {
+  switch (loaded.kind) {
+    case "not-open":
+      return (
+        <Callout tone="info" live title={t`No file is open`}>
+          <Trans>Open a PMO file to see its summary.</Trans>
+        </Callout>
+      );
+    case "no-subset":
+      return (
+        <Callout tone="info" live title={t`No subset has been made yet`}>
+          <Trans>Make one on the Subset tab, or sum up the whole file.</Trans>
+        </Callout>
+      );
+    case "failed":
+      return (
+        <Callout tone="error" live title={t`The summary could not be made`}>
+          <Trans>Open the file again.</Trans>
+        </Callout>
+      );
+    case "loading":
+    case "ok":
+      return null;
+    default:
+      return null;
+  }
+}
+
 /** Props for {@link SummaryPanel}. */
 export interface SummaryPanelProps {
   /** Whether a subset has been made, so it can be summed up instead. */
@@ -262,28 +287,18 @@ export function SummaryPanel({
   minReads: minReadsInput,
   onMinReadsChange,
 }: SummaryPanelProps) {
-  const actions = useActions();
   const minReads = useSettled(Math.max(0, minReadsInput ?? 0), 400);
-  const [loaded, setLoaded] = useState<Loaded>({ kind: "loading" });
   const [allTargets, setAllTargets] = useState(false);
   const [grouped, setGrouped] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const shownSource = hasSubset ? source : "original";
+  const request = useMemo(
+    (): WorkingPmoRequest<"summary"> => ({ kind: "summary", source: shownSource, minReads }),
+    [shownSource, minReads],
+  );
+  const loaded = useWorkingPmoQuery(request);
 
-  useEffect(() => {
-    let live = true;
-    async function load(): Promise<void> {
-      const summary = await actions.workingPmoSummary({ source: shownSource, minReads });
-      if (!live) return;
-      setLoaded(summary === null ? { kind: "failed" } : { kind: "ready", summary });
-    }
-    void load();
-    return () => {
-      live = false;
-    };
-  }, [actions, shownSource, minReads]);
-
-  const summary = loaded.kind === "ready" ? loaded.summary : null;
+  const summary = loaded.kind === "ok" ? loaded.value : null;
   const columns = useMemo(
     () =>
       summary === null
@@ -330,11 +345,7 @@ export function SummaryPanel({
         {summary === null ? null : <SectionJumps jumps={jumpsOf(summary)} />}
       </ViewToolbar>
 
-      {loaded.kind === "failed" ? (
-        <Callout tone="error" live title={t`The summary could not be made`}>
-          <Trans>Open the file again.</Trans>
-        </Callout>
-      ) : null}
+      <NoSummary loaded={loaded} />
 
       {summary === null ? (
         loaded.kind === "loading" ? (

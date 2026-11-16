@@ -11,7 +11,9 @@ import { createTestStore, renderWithStore } from "@/features/shared/testing";
 
 import { OpenPublished, type FileFetcher } from "./OpenPublished";
 import { PmoFilePage, PMO_TABS, type PmoTab } from "./PmoFilePage";
-import { resetWorkspace, workspaceState } from "./workspace";
+import { workingPmoSessionOf } from "@/state";
+
+import { resetWorkspace } from "./workspace";
 
 const ZENODO: ZenodoConfig = {
   community: "plasmogenepi",
@@ -38,7 +40,7 @@ function isTab(value: string | undefined): value is PmoTab {
   return PMO_TABS.some((tab) => tab === value);
 }
 
-async function openRecord(id: string, fetcher: FileFetcher) {
+async function openRecord(id: string, fetcher: FileFetcher, store = createTestStore()) {
   const user = userEvent.setup();
   const rendered = await renderWithStore(
     <Switch>
@@ -53,7 +55,7 @@ async function openRecord(id: string, fetcher: FileFetcher) {
         )}
       </Route>
     </Switch>,
-    { store: createTestStore(), path: `/pmo/published/${id}` },
+    { store, path: `/pmo/published/${id}` },
   );
   return { user, ...rendered };
 }
@@ -86,10 +88,12 @@ describe("OpenPublished", () => {
     const first = await openRecord("303", fetcher);
     await screen.findByText("This is a published PMO");
     first.unmount();
-    await openRecord("303", fetcher);
+    const second = await openRecord("303", fetcher, first.store);
     expect(await screen.findByText("This is a published PMO")).toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(workspaceState().file).toMatchObject({ origin: { kind: "published", id: "303" } });
+    expect(workingPmoSessionOf(second.store).state.getState().open).toMatchObject({
+      origin: { kind: "published", id: "303" },
+    });
   });
 
   it("offers to try again, or to download by hand, when Zenodo cannot be reached", async () => {

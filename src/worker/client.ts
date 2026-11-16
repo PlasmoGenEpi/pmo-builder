@@ -10,6 +10,7 @@ import { t } from "@lingui/core/macro";
 
 import { currentLocale } from "@/i18n/languages";
 import { isBlob, isJsonValue, type Draft } from "@/domain/draft";
+import type { WorkingPmoAnswer, WorkingPmoKind, WorkingPmoValues } from "@/domain/tools/types";
 import { SECTION_IDS, type SectionId } from "@/domain/types";
 
 import {
@@ -39,6 +40,31 @@ function isImportOutcome(value: unknown): boolean {
   return value["kind"] === "imported"
     ? isRecord(value["table"]) && typeof value["table"]["id"] === "string"
     : isRecord(value["notice"]) && typeof value["notice"]["message"] === "string";
+}
+
+/** The kinds of answer to a request about the working PMO. */
+const WORKING_PMO_RESULTS = ["ok", "not-open", "no-subset", "stale", "failed"];
+
+/** Shape checks for the value of each kind of working PMO request that succeeded. */
+const WORKING_PMO_VALUES: {
+  readonly [K in WorkingPmoKind]: (value: unknown) => value is WorkingPmoValues[K];
+} = {
+  open: (value): value is WorkingPmoValues["open"] => hasKind(value, ["opened", "refused"]),
+  close: (value): value is null => value === null,
+  summary: (value): value is WorkingPmoValues["summary"] =>
+    isRecord(value) && Array.isArray(value["samples"]) && Array.isArray(value["targets"]),
+};
+
+/** Whether `value` is an answer to a working PMO request of kind `kind`. */
+function isWorkingPmoAnswer<K extends WorkingPmoKind>(
+  kind: K,
+  value: unknown,
+): value is WorkingPmoAnswer<K> {
+  if (!hasKind(value, WORKING_PMO_RESULTS)) return false;
+  if (value["kind"] === "failed") return typeof value["message"] === "string";
+  if (value["kind"] !== "ok") return true;
+  const guard: (candidate: unknown) => candidate is WorkingPmoValues[K] = WORKING_PMO_VALUES[kind];
+  return guard(value["value"]);
 }
 
 /**
@@ -76,10 +102,9 @@ const RESULT_GUARDS: {
   getPanelFragment: (value): value is EngineResult<"getPanelFragment"> => isJsonValue(value),
   checkPmoFile: (value): value is EngineResult<"checkPmoFile"> =>
     hasKind(value, ["ready", "too-large", "unreadable", "wrong-version", "invalid"]),
-  openPmo: (value): value is EngineResult<"openPmo"> => hasKind(value, ["opened", "refused"]),
-  openBuiltPmo: (value): value is EngineResult<"openBuiltPmo"> =>
-    value === null ||
-    (isRecord(value) && hasKind(value["outcome"], ["opened"]) && isRecord(value["file"])),
+  workingPmo: (value): value is EngineResult<"workingPmo"> =>
+    hasKind(value, WORKING_PMO_RESULTS) &&
+    (value["kind"] !== "failed" || typeof value["message"] === "string"),
   subsetPmo: (value): value is EngineResult<"subsetPmo"> =>
     hasKind(value, ["made", "empty", "not-open", "failed"]),
   previewSubset: (value): value is EngineResult<"previewSubset"> =>
@@ -225,8 +250,13 @@ export function createEngineClient(
     getPmoText: (...args) => call("getPmoText", args),
     getPanelFragment: (...args) => call("getPanelFragment", args),
     checkPmoFile: (...args) => call("checkPmoFile", args),
-    openPmo: (...args) => call("openPmo", args),
-    openBuiltPmo: (...args) => call("openBuiltPmo", args),
+    async workingPmo(workingCall) {
+      const answer: unknown = await call("workingPmo", [workingCall]);
+      if (!isWorkingPmoAnswer(workingCall.request.kind, answer)) {
+        throw new Error(`The engine gave an unexpected answer to ${workingCall.request.kind}.`);
+      }
+      return answer;
+    },
     subsetPmo: (...args) => call("subsetPmo", args),
     previewSubset: (...args) => call("previewSubset", args),
     workingPmoTables: (...args) => call("workingPmoTables", args),
@@ -331,8 +361,7 @@ export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
     getPmoText: async (...args) => engine().getPmoText(...args),
     getPanelFragment: async (...args) => engine().getPanelFragment(...args),
     checkPmoFile: async (...args) => engine().checkPmoFile(...args),
-    openPmo: async (...args) => engine().openPmo(...args),
-    openBuiltPmo: async (...args) => engine().openBuiltPmo(...args),
+    workingPmo: async (workingCall) => engine().workingPmo(workingCall),
     subsetPmo: async (...args) => engine().subsetPmo(...args),
     previewSubset: async (...args) => engine().previewSubset(...args),
     workingPmoTables: async (...args) => engine().workingPmoTables(...args),
@@ -423,8 +452,7 @@ export function createLazyEngine(make: () => Promise<Engine>): Engine {
     getPmoText: async (...args) => (await load()).getPmoText(...args),
     getPanelFragment: async (...args) => (await load()).getPanelFragment(...args),
     checkPmoFile: async (...args) => (await load()).checkPmoFile(...args),
-    openPmo: async (...args) => (await load()).openPmo(...args),
-    openBuiltPmo: async (...args) => (await load()).openBuiltPmo(...args),
+    workingPmo: async (workingCall) => (await load()).workingPmo(workingCall),
     subsetPmo: async (...args) => (await load()).subsetPmo(...args),
     previewSubset: async (...args) => (await load()).previewSubset(...args),
     workingPmoTables: async (...args) => (await load()).workingPmoTables(...args),

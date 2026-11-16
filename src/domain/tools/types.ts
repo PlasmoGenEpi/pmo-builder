@@ -335,3 +335,60 @@ export interface GroupComparison {
   /** Specimens whose date gives the period, of all specimens. */
   readonly dated: number;
 }
+
+/**
+ * What each kind of request about the working PMO carries, besides its kind.
+ * A new operation is a new kind here, its answer in {@link WorkingPmoValues},
+ * and its handler in `answerWorkingPmo`.
+ */
+export interface WorkingPmoRequests {
+  /** Reads and checks a PMO file, and holds it in place of the PMO held before. */
+  readonly open: { readonly file: Blob; readonly fileName: string };
+  /** Lets go of the PMO held, and its subset. */
+  readonly close: object;
+  /** The summary of the original or the subset, counting microhaplotypes with at least `minReads` reads. */
+  readonly summary: { readonly source: WorkingSource; readonly minReads: number };
+}
+
+/** One kind of request about the working PMO. */
+export type WorkingPmoKind = keyof WorkingPmoRequests;
+
+/** A request about the working PMO, of kind `K` (any kind by default), sent to the worker. */
+export type WorkingPmoRequest<K extends WorkingPmoKind = WorkingPmoKind> = {
+  readonly [P in K]: { readonly kind: P } & WorkingPmoRequests[P];
+}[K];
+
+/** The kinds of request that read the working PMO without opening or closing it. */
+export type WorkingPmoQueryKind = Exclude<WorkingPmoKind, "open" | "close">;
+
+/** A request that reads the working PMO without opening or closing it. */
+export type WorkingPmoQuery<K extends WorkingPmoQueryKind = WorkingPmoQueryKind> =
+  WorkingPmoRequest<K>;
+
+/** What each kind of request gives when it succeeds. */
+export interface WorkingPmoValues {
+  readonly open: OpenOutcome;
+  readonly close: null;
+  readonly summary: PmoSummary;
+}
+
+/** A request, with the generation of the working PMO it is meant for. */
+export interface WorkingPmoCall<K extends WorkingPmoKind = WorkingPmoKind> {
+  /** Goes up with every open or close. A request for an older generation is answered as stale. */
+  readonly generation: number;
+  readonly request: WorkingPmoRequest<K>;
+}
+
+/** What a request about the working PMO gives. */
+export type WorkingPmoResult<T> =
+  | { readonly kind: "ok"; readonly value: T }
+  /** No PMO is open. */
+  | { readonly kind: "not-open" }
+  /** The request is for the subset, and none has been made. */
+  | { readonly kind: "no-subset" }
+  /** The request was for a PMO that has since been closed or replaced. Callers ignore it. */
+  | { readonly kind: "stale" }
+  | { readonly kind: "failed"; readonly message: string };
+
+/** What a request of kind `K` gives. */
+export type WorkingPmoAnswer<K extends WorkingPmoKind> = WorkingPmoResult<WorkingPmoValues[K]>;

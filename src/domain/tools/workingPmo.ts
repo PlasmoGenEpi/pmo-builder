@@ -32,7 +32,7 @@ import {
 } from "pmotools-ts";
 
 import { readPmoFile } from "@/domain/build/checkFile";
-import { MAX_LISTED, PUBLISHABLE_PMO_VERSION } from "@/domain/build/checkFileResult";
+import { PUBLISHABLE_PMO_VERSION } from "@/domain/build/checkFileResult";
 import { summarisePmo } from "@/domain/build/merge";
 import { summarisePublication } from "@/domain/build/publication";
 
@@ -227,18 +227,6 @@ export async function openPmo(
     };
   }
   return { outcome: describe(pmo, fileName, check.warnings), pmo };
-}
-
-/** Opens a PMO this app has just built, which needs no reading or format check. */
-export function openBuiltPmo(pmo: Pmo, fileName: string): Extract<OpenOutcome, { kind: "opened" }> {
-  const warnings = [
-    ...new Set(
-      checkPmoIntegrity(pmo)
-        .filter((issue) => issue.severity === "warning")
-        .map((issue) => issue.message),
-    ),
-  ].slice(0, MAX_LISTED);
-  return describe(pmo, fileName, warnings);
 }
 
 /** A file name without `.json`, `.json.gz` or `.gz`, and without a `.pmo` before them. */

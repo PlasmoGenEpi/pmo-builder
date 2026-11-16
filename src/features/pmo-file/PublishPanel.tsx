@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 import type { SubsetOutcome, WorkingSource } from "@/domain/tools/types";
 import { PublishToZenodo } from "@/features/review/PublishToZenodo";
 import type { ZenodoConfig } from "@/features/review/zenodo";
-import { useActions } from "@/state";
+import { useActions, type OpenState } from "@/state";
 import { Callout, Link, SegmentedControl, Spinner } from "@/ui";
 
-import { updateWorkspace, useWorkspace, type WorkspaceFile } from "./workspace";
+import { useUpdateWorkspace, useWorkspace } from "./workspace";
 
 type Made = Extract<SubsetOutcome, { kind: "made" }>;
 
@@ -76,7 +76,7 @@ function SubsetDeposit({
 /** Props for {@link PublishPanel}. */
 export interface PublishPanelProps {
   readonly zenodo: ZenodoConfig;
-  readonly file: Extract<WorkspaceFile, { kind: "opened" }>;
+  readonly file: Extract<OpenState, { kind: "opened" }>;
   /** The subset, when one has been made. */
   readonly subset: Made | null;
 }
@@ -84,6 +84,7 @@ export interface PublishPanelProps {
 /** Depositing the open file, or its subset, in the Zenodo community. */
 export function PublishPanel({ zenodo, file, subset }: PublishPanelProps) {
   const chosen = useWorkspace((state) => state.publishSource);
+  const updateWorkspace = useUpdateWorkspace();
   const source: WorkingSource = subset === null ? "original" : chosen;
   const recordTitle = file.origin.kind === "published" ? file.origin.title : "";
 

@@ -3016,6 +3016,10 @@ msgstr ""
 msgid "Look into your PMO"
 msgstr ""
 
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Make one on the Subset tab, or sum up the whole file."
+msgstr ""
+
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Make the subset"
 msgstr ""
@@ -3295,6 +3299,10 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "No file is open"
+msgstr ""
+
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "No library sample has any microhaplotypes left with these choices. Choose more specimens or targets, or fewer reads."
 msgstr ""
@@ -3382,6 +3390,10 @@ msgstr ""
 
 #: src/features/bioinformatics/MethodsPart.tsx
 msgid "No steps yet"
+msgstr ""
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "No subset has been made yet"
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
@@ -3692,6 +3704,10 @@ msgstr ""
 
 #: src/app/HomePage.tsx
 msgid "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables, make a subset, or publish it."
+msgstr ""
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Open a PMO file to see its summary."
 msgstr ""
 
 #: src/app/SaveStatus.tsx
@@ -6887,7 +6903,7 @@ msgstr ""
 msgid "Your browser stopped the Zenodo sign-in window. Allow pop-ups for this site and try again."
 msgstr ""
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/state/workingPmoSession.ts
 msgid "Your built PMO"
 msgstr ""
 

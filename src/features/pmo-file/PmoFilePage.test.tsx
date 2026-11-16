@@ -12,8 +12,9 @@ import type { ZenodoConfig } from "@/features/review/zenodo";
 import { signIn } from "@/features/review/zenodoAuth";
 import { depositDraft } from "@/features/review/zenodoDeposit";
 import { createTestStore, renderWithStore } from "@/features/shared/testing";
+import { installBlobStream } from "@/test/blobStream";
 
-import { PmoFilePage, PMO_TABS, type PmoTab } from "./PmoFilePage";
+import { OPEN_BUILT_PATH, PmoFilePage, PmoFileRoute, PMO_TABS, type PmoTab } from "./PmoFilePage";
 import { resetWorkspace } from "./workspace";
 
 vi.mock("@/features/review/saveFile", () => ({ saveFile: vi.fn<typeof saveFile>() }));
@@ -49,7 +50,7 @@ function isTab(value: string | undefined): value is PmoTab {
 }
 
 /** The page under its routes, as the app has it, so tabs change the address. */
-async function renderPage(zenodo: ZenodoConfig | null = ZENODO) {
+async function renderPage(zenodo: ZenodoConfig | null = ZENODO, store = createTestStore()) {
   const user = userEvent.setup();
   const rendered = await renderWithStore(
     <Switch>
@@ -62,7 +63,7 @@ async function renderPage(zenodo: ZenodoConfig | null = ZENODO) {
         )}
       </Route>
     </Switch>,
-    { store: createTestStore(), path: "/pmo" },
+    { store, path: "/pmo" },
   );
   return { user, ...rendered };
 }
@@ -129,9 +130,36 @@ describe("PmoFilePage: opening", () => {
     const first = await open(pmoFile(ownPmo()));
     await screen.findByText("This file is a valid PMO");
     first.unmount();
-    await renderPage();
+    await renderPage(ZENODO, first.store);
     expect(screen.getByText("This file is a valid PMO")).toBeInTheDocument();
     expect(screen.getByText("study.json")).toBeInTheDocument();
+  });
+});
+
+describe("PmoFilePage: opening the built PMO", () => {
+  it("finishes opening the built PMO when the page is left meanwhile", async () => {
+    installBlobStream();
+    const store = createTestStore();
+    await store.getState().actions.initialise();
+    await act(() => store.getState().actions.loadExample());
+    await act(() => store.getState().actions.flush());
+    const routes = (
+      <Switch>
+        <Route path="/pmo">
+          <PmoFilePage zenodo={ZENODO} />
+        </Route>
+        <Route path="/pmo/:tab">
+          <PmoFileRoute />
+        </Route>
+      </Switch>
+    );
+    const opening = await renderWithStore(routes, { store, path: OPEN_BUILT_PATH });
+    expect(screen.getByText("Opening the PMO built from your draft")).toBeInTheDocument();
+    // Left before the open finishes.
+    opening.unmount();
+    await renderWithStore(routes, { store, path: "/pmo" });
+    expect(await screen.findByText("This is the PMO built from your draft")).toBeInTheDocument();
+    expect(screen.queryByText("Opening the file")).not.toBeInTheDocument();
   });
 });
 

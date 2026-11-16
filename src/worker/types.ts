@@ -18,7 +18,6 @@ import type { Draft, JsonValue, TableRef } from "@/domain/draft";
 import type {
   GroupComparison,
   GroupKey,
-  OpenOutcome,
   PmoSummary,
   SubsetOutcome,
   SubsetPreview,
@@ -27,6 +26,9 @@ import type {
   TableFormat,
   TableId,
   TablesArchive,
+  WorkingPmoAnswer,
+  WorkingPmoCall,
+  WorkingPmoKind,
   WorkingSource,
 } from "@/domain/tools/types";
 import type { ImportFailure, parseFile } from "@/domain/import";
@@ -195,16 +197,12 @@ export interface Engine {
   /** Reads and checks a PMO file the user already has, for publishing. Leaves the draft alone. */
   checkPmoFile(file: Blob): Promise<PmoFileCheck>;
   /**
-   * Opens a PMO file the user already has, to subset it or export its tables,
-   * and keeps it. Replaces any PMO opened before, and its subset. Leaves the
-   * draft alone.
+   * Carries every request about the working PMO: opening, closing, and
+   * reading it. A request for an older generation than the newest open or
+   * close is answered as stale. Opening a file lets go of the PMO held before,
+   * before reading the new one.
    */
-  openPmo(file: Blob, fileName: string): Promise<OpenOutcome>;
-  /**
-   * Opens the PMO the draft last built, as if its file had been chosen, and
-   * gives that file too. `null` when nothing has been built.
-   */
-  openBuiltPmo(): Promise<{ readonly outcome: OpenOutcome; readonly file: PmoFile } | null>;
+  workingPmo<K extends WorkingPmoKind>(call: WorkingPmoCall<K>): Promise<WorkingPmoAnswer<K>>;
   /** Makes a subset of the opened PMO and keeps it, replacing any earlier subset. */
   subsetPmo(request: SubsetRequest): Promise<SubsetOutcome>;
   /** What a subset of the opened PMO would keep, without making it. `null` when none is open. */
