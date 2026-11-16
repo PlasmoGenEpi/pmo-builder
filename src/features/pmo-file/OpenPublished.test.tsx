@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { stringifyPmo, type PortableMicrohaplotypeObject } from "pmotools-ts";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Route, Switch } from "wouter";
 
 import { buildExamplePmo } from "@/domain/build/testing";
@@ -12,8 +12,6 @@ import { createTestStore, renderWithStore } from "@/features/shared/testing";
 import { OpenPublished, type FileFetcher } from "./OpenPublished";
 import { PmoFilePage, PMO_TABS, type PmoTab } from "./PmoFilePage";
 import { workingPmoSessionOf } from "@/state";
-
-import { resetWorkspace } from "./workspace";
 
 const ZENODO: ZenodoConfig = {
   community: "plasmogenepi",
@@ -59,10 +57,6 @@ async function openRecord(id: string, fetcher: FileFetcher, store = createTestSt
   );
   return { user, ...rendered };
 }
-
-beforeEach(() => {
-  resetWorkspace();
-});
 
 describe("OpenPublished", () => {
   it("downloads the record's file from Zenodo and opens it on the overview", async () => {

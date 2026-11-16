@@ -39,9 +39,8 @@ import { CompareTab } from "./summary/CompareTab";
 import { SummaryPanel } from "./summary/SummaryPanel";
 import { SubsetPanel } from "./SubsetPanel";
 import { TablesPanel } from "./TablesPanel";
-import { useUpdateWorkspace, useWorkspace } from "./workspace";
 
-/** The workspace's tabs, which are also the last part of its address (`#/pmo/tables`). */
+/** My PMO file's tabs, which are also the last part of its address (`#/pmo/tables`). */
 export const PMO_TABS = ["overview", "summary", "compare", "tables", "subset", "publish"] as const;
 
 /** One of {@link PMO_TABS}. */
@@ -269,8 +268,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
   const minReads = useWorkingPmo((state) => state.minReads);
   const subset = useWorkingPmo((state) => state.subset);
   const tableSource = useWorkingPmo((state) => state.tableSource);
-  const summarySource = useWorkspace((state) => state.summarySource);
-  const updateWorkspace = useUpdateWorkspace();
+  const summarySource = useWorkingPmo((state) => state.summarySource);
   const build = useBuildState();
   const canOpenBuilt = build.view?.overall.pmo === "valid";
   const version = PUBLISHABLE_PMO_VERSION;
@@ -357,7 +355,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                     key={generation}
                     hasSubset={made !== null}
                     source={summarySource}
-                    onSourceChange={(next) => updateWorkspace({ summarySource: next })}
+                    onSourceChange={(next) => session.setSummarySource(next)}
                     minReads={minReads}
                     onMinReadsChange={(next) => session.setMinReads(next)}
                   />
@@ -371,7 +369,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                     key={generation}
                     hasSubset={made !== null}
                     source={summarySource}
-                    onSourceChange={(next) => updateWorkspace({ summarySource: next })}
+                    onSourceChange={(next) => session.setSummarySource(next)}
                     minReads={minReads}
                     onMinReadsChange={(next) => session.setMinReads(next)}
                   />
@@ -401,7 +399,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                       choices={file.opened.choices}
                       original={file.opened.summary}
                       onShowSummary={() => {
-                        updateWorkspace({ summarySource: "subset" });
+                        session.setSummarySource("subset");
                         navigate("/pmo/summary");
                       }}
                       onShowTables={() => {

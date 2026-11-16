@@ -251,12 +251,10 @@ describe("working PMO session: tables", () => {
   });
 
   it("zips every table of the subset, named with -subset", async () => {
-    const engine = createInThreadEngine();
-    const { session } = makeSession({ engine });
+    const { session } = makeSession();
     await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
-    // Made through the engine until the subset request moves to the session.
     const names = EXAMPLE.specimen_info.slice(0, 2).map((specimen) => specimen.specimen_name);
-    await engine.subsetPmo({
+    await session.subset({
       specimens: { kind: "names", names },
       targets: { kind: "all" },
       minReads: 0,
@@ -310,6 +308,19 @@ describe("working PMO session: tables", () => {
     expect(session.state.getState().tableSource).toBe("subset");
     await session.open(chosen(pmoFile(EXAMPLE, "second.json")));
     expect(session.state.getState().tableSource).toBe("original");
+  });
+});
+
+describe("working PMO session: Summary and Compare", () => {
+  it("keeps Summary and Compare's choice of original or subset until the next open", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    expect(session.state.getState().summarySource).toBe("original");
+    session.setSummarySource("subset");
+    expect(session.state.getState().summarySource).toBe("subset");
+    expect(session.state.getState().tableSource).toBe("original");
+    await session.open(chosen(pmoFile(EXAMPLE, "second.json")));
+    expect(session.state.getState().summarySource).toBe("original");
   });
 });
 

@@ -9,28 +9,12 @@ import type {
   MergeSummary,
   PublicationSummary,
   PmoFile,
-  PmoFileCheck,
   SectionSummaries,
   Suggestions,
   BuildDeps,
 } from "@/domain/build";
 import type { Draft, JsonValue, TableRef } from "@/domain/draft";
-import type {
-  GroupComparison,
-  GroupKey,
-  PmoSummary,
-  SubsetOutcome,
-  SubsetPreview,
-  SubsetRequest,
-  TableFile,
-  TableFormat,
-  TableId,
-  TablesArchive,
-  WorkingPmoAnswer,
-  WorkingPmoCall,
-  WorkingPmoKind,
-  WorkingSource,
-} from "@/domain/tools/types";
+import type { WorkingPmoAnswer, WorkingPmoCall, WorkingPmoKind } from "@/domain/tools/types";
 import type { ImportFailure, parseFile } from "@/domain/import";
 import type { Notice, RawRow, SectionId, SectionStatus } from "@/domain/types";
 
@@ -194,8 +178,6 @@ export interface Engine {
   getPmoText(options?: { readonly maxLength?: number }): Promise<PmoTextPreview | null>;
   /** One panel's built fragment, for saving to the library, or `null` when it has not built. */
   getPanelFragment(panelId: string): Promise<JsonValue | null>;
-  /** Reads and checks a PMO file the user already has, for publishing. Leaves the draft alone. */
-  checkPmoFile(file: Blob): Promise<PmoFileCheck>;
   /**
    * Carries every request about the working PMO: opening, closing, and
    * reading it. A request for an older generation than the newest open or
@@ -203,40 +185,6 @@ export interface Engine {
    * before reading the new one.
    */
   workingPmo<K extends WorkingPmoKind>(call: WorkingPmoCall<K>): Promise<WorkingPmoAnswer<K>>;
-  /** Makes a subset of the opened PMO and keeps it, replacing any earlier subset. */
-  subsetPmo(request: SubsetRequest): Promise<SubsetOutcome>;
-  /** What a subset of the opened PMO would keep, without making it. `null` when none is open. */
-  previewSubset(request: SubsetRequest): Promise<SubsetPreview | null>;
-  /** One table of the opened PMO or its subset, or `null` when there is none. */
-  workingPmoTable(request: {
-    readonly source: WorkingSource;
-    readonly id: TableId;
-    readonly format: TableFormat;
-  }): Promise<TableFile | null>;
-  /** Every table of the opened PMO or its subset in one zip, or `null` when there is none. */
-  workingPmoTables(request: {
-    readonly source: WorkingSource;
-    readonly format: TableFormat;
-  }): Promise<TablesArchive | null>;
-  /**
-   * The summary of the opened PMO or its subset, counting microhaplotypes with
-   * at least `minReads` reads. `null` when there is none.
-   */
-  workingPmoSummary(request: {
-    readonly source: WorkingSource;
-    readonly minReads: number;
-  }): Promise<PmoSummary | null>;
-  /**
-   * The opened PMO or its subset with its specimens grouped by `key`, counting
-   * microhaplotypes with at least `minReads` reads. `null` when there is none.
-   */
-  workingPmoGroups(request: {
-    readonly source: WorkingSource;
-    readonly minReads: number;
-    readonly key: GroupKey;
-  }): Promise<GroupComparison | null>;
-  /** The opened PMO's subset as a file, or `null` when none was made. */
-  workingPmoFile(request: { readonly gzip: boolean }): Promise<PmoFile | null>;
   /** Releases the engine. A worker is terminated. */
   dispose(): Promise<void>;
 }

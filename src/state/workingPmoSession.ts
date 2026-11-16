@@ -81,6 +81,8 @@ export interface WorkingPmoState {
   readonly minReads: number | null;
   /** The subset made of the original, if any. Reset on each open. */
   readonly subset: SubsetState;
+  /** Which PMO the Summary and Compare tabs sum up. Reset to the original on each open. */
+  readonly summarySource: WorkingSource;
   /** Which PMO the Tables tab writes tables of. Reset to the original on each open. */
   readonly tableSource: WorkingSource;
   /** Which PMO the Publish tab deposits. Reset to the original on each open. */
@@ -189,6 +191,8 @@ export interface WorkingPmoSession {
   subset(request: SubsetRequest): Promise<WorkingPmoAnswer<"subset">>;
   /** Sets the minimum reads for Summary and Compare. */
   setMinReads(value: number | null): void;
+  /** Sets which PMO the Summary and Compare tabs sum up. */
+  setSummarySource(source: WorkingSource): void;
   /** Sets which PMO the Tables tab writes tables of. */
   setTableSource(source: WorkingSource): void;
   /** Sets which PMO the Publish tab deposits. */
@@ -202,6 +206,7 @@ const INITIAL: WorkingPmoState = {
   open: { kind: "none" },
   minReads: null,
   subset: NO_SUBSET,
+  summarySource: "original",
   tableSource: "original",
   publishSource: "original",
 };
@@ -243,6 +248,7 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
       open,
       minReads: null,
       subset: NO_SUBSET,
+      summarySource: "original",
       tableSource: "original",
       publishSource: "original",
     });
@@ -334,6 +340,10 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
 
     setMinReads(value) {
       store.setState({ minReads: value });
+    },
+
+    setSummarySource(source) {
+      store.setState({ summarySource: source });
     },
 
     setTableSource(source) {

@@ -21,7 +21,6 @@ import { createInThreadEngine } from "@/worker/engine";
 import { OPEN_BUILT_PATH, PmoFilePage, PmoFileRoute, PMO_TABS, type PmoTab } from "./PmoFilePage";
 import { TablesPanel } from "./TablesPanel";
 import { CompareTab } from "./summary/CompareTab";
-import { resetWorkspace } from "./workspace";
 
 vi.mock("@/features/review/saveFile", () => ({ saveFile: vi.fn<typeof saveFile>() }));
 vi.mock("@/features/review/zenodoAuth", () => ({ signIn: vi.fn<typeof signIn>() }));
@@ -88,7 +87,6 @@ async function savedText(): Promise<{ readonly name: string; readonly text: stri
 }
 
 beforeEach(() => {
-  resetWorkspace();
   vi.mocked(saveFile).mockReset();
   vi.mocked(signIn).mockReset();
   vi.mocked(depositDraft).mockReset();
@@ -469,7 +467,7 @@ describe("PmoFilePage: summary", () => {
       readsBefore,
     );
 
-    // The threshold is the workspace's, so it survives a visit to another tab.
+    // The threshold is the session's, so it survives a visit to another tab.
     await user.click(screen.getByRole("tab", { name: "Tables" }));
     await user.click(screen.getByRole("tab", { name: "Summary" }));
     expect(await screen.findByLabelText("Minimum reads per microhaplotype")).toHaveValue("100000");

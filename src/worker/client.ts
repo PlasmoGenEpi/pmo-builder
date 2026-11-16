@@ -129,30 +129,9 @@ const RESULT_GUARDS: {
     value === null ||
     (isRecord(value) && typeof value["text"] === "string" && typeof value["length"] === "number"),
   getPanelFragment: (value): value is EngineResult<"getPanelFragment"> => isJsonValue(value),
-  checkPmoFile: (value): value is EngineResult<"checkPmoFile"> =>
-    hasKind(value, ["ready", "too-large", "unreadable", "wrong-version", "invalid"]),
   workingPmo: (value): value is EngineResult<"workingPmo"> =>
     hasKind(value, WORKING_PMO_RESULTS) &&
     (value["kind"] !== "failed" || typeof value["message"] === "string"),
-  subsetPmo: (value): value is EngineResult<"subsetPmo"> =>
-    hasKind(value, ["made", "empty", "not-open", "failed"]),
-  previewSubset: (value): value is EngineResult<"previewSubset"> =>
-    value === null || isSubsetPreview(value),
-  workingPmoTables: (value): value is EngineResult<"workingPmoTables"> =>
-    value === null ||
-    (isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string"),
-  workingPmoTable: (value): value is EngineResult<"workingPmoTable"> =>
-    value === null ||
-    (isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string"),
-  workingPmoSummary: (value): value is EngineResult<"workingPmoSummary"> =>
-    value === null ||
-    (isRecord(value) && Array.isArray(value["samples"]) && Array.isArray(value["targets"])),
-  workingPmoGroups: (value): value is EngineResult<"workingPmoGroups"> =>
-    value === null ||
-    (isRecord(value) && Array.isArray(value["groups"]) && Array.isArray(value["targets"])),
-  workingPmoFile: (value): value is EngineResult<"workingPmoFile"> =>
-    value === null ||
-    (isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string"),
 };
 
 /**
@@ -274,7 +253,6 @@ export function createEngineClient(
     getPmoFileSize: (...args) => call("getPmoFileSize", args),
     getPmoText: (...args) => call("getPmoText", args),
     getPanelFragment: (...args) => call("getPanelFragment", args),
-    checkPmoFile: (...args) => call("checkPmoFile", args),
     async workingPmo(workingCall) {
       const answer: unknown = await call("workingPmo", [workingCall]);
       if (!isWorkingPmoAnswer(workingCall.request.kind, answer)) {
@@ -282,13 +260,6 @@ export function createEngineClient(
       }
       return answer;
     },
-    subsetPmo: (...args) => call("subsetPmo", args),
-    previewSubset: (...args) => call("previewSubset", args),
-    workingPmoTables: (...args) => call("workingPmoTables", args),
-    workingPmoTable: (...args) => call("workingPmoTable", args),
-    workingPmoSummary: (...args) => call("workingPmoSummary", args),
-    workingPmoGroups: (...args) => call("workingPmoGroups", args),
-    workingPmoFile: (...args) => call("workingPmoFile", args),
     async dispose(...args) {
       try {
         await call("dispose", args);
@@ -385,15 +356,7 @@ export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
     getPmoFileSize: async (...args) => engine().getPmoFileSize(...args),
     getPmoText: async (...args) => engine().getPmoText(...args),
     getPanelFragment: async (...args) => engine().getPanelFragment(...args),
-    checkPmoFile: async (...args) => engine().checkPmoFile(...args),
     workingPmo: async (workingCall) => engine().workingPmo(workingCall),
-    subsetPmo: async (...args) => engine().subsetPmo(...args),
-    previewSubset: async (...args) => engine().previewSubset(...args),
-    workingPmoTables: async (...args) => engine().workingPmoTables(...args),
-    workingPmoTable: async (...args) => engine().workingPmoTable(...args),
-    workingPmoSummary: async (...args) => engine().workingPmoSummary(...args),
-    workingPmoGroups: async (...args) => engine().workingPmoGroups(...args),
-    workingPmoFile: async (...args) => engine().workingPmoFile(...args),
     async dispose() {
       files.clear();
       const client = current;
@@ -476,15 +439,7 @@ export function createLazyEngine(make: () => Promise<Engine>): Engine {
     getPmoFileSize: async (...args) => (await load()).getPmoFileSize(...args),
     getPmoText: async (...args) => (await load()).getPmoText(...args),
     getPanelFragment: async (...args) => (await load()).getPanelFragment(...args),
-    checkPmoFile: async (...args) => (await load()).checkPmoFile(...args),
     workingPmo: async (workingCall) => (await load()).workingPmo(workingCall),
-    subsetPmo: async (...args) => (await load()).subsetPmo(...args),
-    previewSubset: async (...args) => (await load()).previewSubset(...args),
-    workingPmoTables: async (...args) => (await load()).workingPmoTables(...args),
-    workingPmoTable: async (...args) => (await load()).workingPmoTable(...args),
-    workingPmoSummary: async (...args) => (await load()).workingPmoSummary(...args),
-    workingPmoGroups: async (...args) => (await load()).workingPmoGroups(...args),
-    workingPmoFile: async (...args) => (await load()).workingPmoFile(...args),
     // Nothing to release if the engine was never loaded.
     dispose: async (...args) => (loading === null ? undefined : (await load()).dispose(...args)),
   };
