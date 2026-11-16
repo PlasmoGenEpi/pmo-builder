@@ -1,5 +1,4 @@
 import { plural, t } from "@lingui/core/macro";
-import { Trans } from "@lingui/react/macro";
 import { useMemo, useState } from "react";
 
 import type {
@@ -11,8 +10,8 @@ import type {
   WorkingSource,
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
-import { useWorkingPmoQuery, type WorkingPmoQueryState } from "@/state";
-import { Callout, Card, SectionHeading, Skeleton, Stat, Switch, formatCount } from "@/ui";
+import { useWorkingPmoQuery } from "@/state";
+import { Card, SectionHeading, Skeleton, Stat, Switch, formatCount } from "@/ui";
 
 import { AlleleBars } from "./AlleleBars";
 import {
@@ -26,6 +25,7 @@ import {
 } from "./QualityViews";
 import { ReadsGrid } from "./ReadsGrid";
 import { SortableTable, type SortableColumn } from "./SortableTable";
+import { NoAnswer } from "../NoAnswer";
 import { useSettled } from "../useSettled";
 
 import { MinReadsField, SectionJumps, ViewToolbar, type Jump } from "./ViewToolbar";
@@ -226,35 +226,6 @@ function Headline({ summary }: { readonly summary: PmoSummary }) {
   );
 }
 
-/** Why there is no summary to show, when there is a reason to give. */
-function NoSummary({ loaded }: { readonly loaded: WorkingPmoQueryState<"summary"> }) {
-  switch (loaded.kind) {
-    case "not-open":
-      return (
-        <Callout tone="info" live title={t`No file is open`}>
-          <Trans>Open a PMO file to see its summary.</Trans>
-        </Callout>
-      );
-    case "no-subset":
-      return (
-        <Callout tone="info" live title={t`No subset has been made yet`}>
-          <Trans>Make one on the Subset tab, or sum up the whole file.</Trans>
-        </Callout>
-      );
-    case "failed":
-      return (
-        <Callout tone="error" live title={t`The summary could not be made`}>
-          <Trans>Open the file again.</Trans>
-        </Callout>
-      );
-    case "loading":
-    case "ok":
-      return null;
-    default:
-      return null;
-  }
-}
-
 /** Props for {@link SummaryPanel}. */
 export interface SummaryPanelProps {
   /** Which PMO to sum up. */
@@ -320,7 +291,14 @@ export function SummaryPanel({
         {summary === null ? null : <SectionJumps jumps={jumpsOf(summary)} />}
       </ViewToolbar>
 
-      <NoSummary loaded={loaded} />
+      {loaded.kind === "ok" || loaded.kind === "loading" ? null : (
+        <NoAnswer
+          reason={loaded.kind}
+          notOpen={t`Open a PMO file to see its summary.`}
+          noSubset={t`Make one on the Subset tab, or sum up the whole file.`}
+          failed={{ title: t`The summary could not be made`, body: t`Open the file again.` }}
+        />
+      )}
 
       {summary === null ? (
         loaded.kind === "loading" ? (

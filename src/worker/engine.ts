@@ -30,6 +30,7 @@ import {
   type TableLookupResult,
 } from "@/domain/build";
 import {
+  describeError,
   newId,
   referencedTableIds,
   sectionTableIds,
@@ -48,7 +49,7 @@ import {
   NOTHING_HELD,
   settleWorkingPmo,
   type WorkingPmoHeld,
-} from "@/domain/tools/workingPmoRoute";
+} from "@/domain/tools/workingPmoHandlers";
 import type { Notice, ParsedFile, RawTable, SectionId } from "@/domain/types";
 import { SECTION_IDS } from "@/domain/types";
 
@@ -148,10 +149,6 @@ function pad(value: number): string {
 function today(): string {
   const now = new Date();
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 function toRef(entry: TableEntry, parsed: ParsedFile): TableRef {
@@ -508,7 +505,7 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       const step = answerWorkingPmo(held, call);
       held = step.held;
       const work = await step.work;
-      const settled = settleWorkingPmo(held, call, work);
+      const settled = settleWorkingPmo({ held, call, work });
       held = settled.held;
       return settled.result;
     },

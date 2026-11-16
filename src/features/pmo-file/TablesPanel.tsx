@@ -1,5 +1,4 @@
 import { plural, t } from "@lingui/core/macro";
-import { Trans } from "@lingui/react/macro";
 import { Download, FileArchive } from "lucide-react";
 import { useState } from "react";
 
@@ -12,7 +11,9 @@ import type {
 } from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
 import { useWorkingPmoSession } from "@/state";
-import { Button, Callout, SegmentedControl } from "@/ui";
+import { Button, SegmentedControl } from "@/ui";
+
+import { NoAnswer } from "./NoAnswer";
 
 /** What each table is called and holds. */
 function describe(id: TableId): { readonly title: string; readonly body: string } {
@@ -62,29 +63,6 @@ type Problem =
   /** Making the file failed: one table's, or the zip of all of them. */
   | { readonly kind: "failed"; readonly target: TableId | "all" };
 
-/** Why there is no file, for the problems that concern the whole tab. */
-function NoTables({ problem }: { readonly problem: Problem | null }) {
-  switch (problem?.kind) {
-    case "not-open":
-      return (
-        <Callout tone="info" live title={t`No file is open`}>
-          <Trans>Open a PMO file to download its tables.</Trans>
-        </Callout>
-      );
-    case "no-subset":
-      return (
-        <Callout tone="info" live title={t`No subset has been made yet`}>
-          <Trans>Make one on the Subset tab, or download the tables of the whole file.</Trans>
-        </Callout>
-      );
-    case "failed":
-    case undefined:
-      return null;
-    default:
-      return null;
-  }
-}
-
 /** Props for {@link TablesPanel}. */
 export interface TablesPanelProps {
   readonly tables: readonly TableInfo[];
@@ -104,11 +82,15 @@ export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) 
   const failed = problem?.kind === "failed" ? problem.target : null;
 
   /** Saves what `answer` holds, or records why it holds nothing. A stale answer is ignored. */
-  function settle<T>(
-    target: TableId | "all",
-    answer: WorkingPmoResult<T>,
-    save: (value: T) => void,
-  ): void {
+  function settle<T>({
+    target,
+    answer,
+    save,
+  }: {
+    readonly target: TableId | "all";
+    readonly answer: WorkingPmoResult<T>;
+    readonly save: (value: T) => void;
+  }): void {
     setSaving(null);
     switch (answer.kind) {
       case "ok":
@@ -132,9 +114,13 @@ export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) 
     setSaving(id);
     setProblem(null);
     const answer = await session.query({ kind: "table", source, id, format });
-    settle(id, answer, (file) => {
-      const type = format === "csv" ? "text/csv" : "text/tab-separated-values";
-      saveFile(new Blob([file.text], { type: `${type};charset=utf-8` }), file.fileName);
+    settle({
+      target: id,
+      answer,
+      save: (file) => {
+        const type = format === "csv" ? "text/csv" : "text/tab-separated-values";
+        saveFile(new Blob([file.text], { type: `${type};charset=utf-8` }), file.fileName);
+      },
     });
   }
 
@@ -142,7 +128,11 @@ export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) 
     setSaving("all");
     setProblem(null);
     const answer = await session.query({ kind: "tables", source, format });
-    settle("all", answer, (archive) => saveFile(archive.blob, archive.fileName));
+    settle({
+      target: "all",
+      answer,
+      save: (archive) => saveFile(archive.blob, archive.fileName),
+    });
   }
 
   return (
@@ -167,7 +157,15 @@ export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) 
           {t`Download all tables (.zip)`}
         </Button>
       </div>
-      <NoTables problem={problem} />
+      {problem === null ? null : (
+        <NoAnswer
+          reason={problem.kind}
+          notOpen={t`Open a PMO file to download its tables.`}
+          noSubset={t`Make one on the Subset tab, or download the tables of the whole file.`}
+          // A failure is shown beside the table it concerns.
+          failed={null}
+        />
+      )}
       {failed === "all" ? (
         <p role="alert" className="text-sm text-danger-text">
           {t`The tables could not be made. Open the file again.`}

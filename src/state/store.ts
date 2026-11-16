@@ -70,8 +70,6 @@ import {
   type WorkingPmoSession,
 } from "./workingPmoSession";
 
-export { fileCheckResult, type PmoFileCheckResult } from "./workingPmoSession";
-
 /** Where saving to the browser stands. */
 export type PersistenceState =
   /** Reading the saved draft at start-up. */

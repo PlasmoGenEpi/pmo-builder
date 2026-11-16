@@ -419,6 +419,11 @@ export function isBlankRecord<K extends string>(record: FormRecord<K>): boolean 
   return valuesBlank && extraBlank;
 }
 
+/** An error's message, for logs and debugging. Not for the screen: it is not translated. */
+export function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 /**
  * Marks the end of an exhaustive `switch`. The compiler checks that `value`
  * is `never`; reaching it at run time means a value came from outside the types.

@@ -15,6 +15,7 @@ import { depositDraft } from "@/features/review/zenodoDeposit";
 import { createTestStore, renderWithStore } from "@/features/shared/testing";
 import { workingPmoSessionOf } from "@/state";
 import { installBlobStream } from "@/test/blobStream";
+import type { WorkingPmoKind, WorkingPmoResult } from "@/domain/tools/types";
 import { EngineStoppedError, type Engine } from "@/worker";
 import { createInThreadEngine } from "@/worker/engine";
 
@@ -167,6 +168,40 @@ describe("PmoFilePage: opening the built PMO", () => {
   });
 });
 
+describe("PmoFilePage: when the built PMO cannot be opened", () => {
+  const ROUTES = (
+    <Switch>
+      <Route path="/pmo">
+        <PmoFilePage zenodo={ZENODO} />
+      </Route>
+      <Route path="/pmo/:tab">
+        <PmoFileRoute />
+      </Route>
+    </Switch>
+  );
+
+  it("says there is no built PMO when the draft builds none", async () => {
+    await renderWithStore(ROUTES, { path: OPEN_BUILT_PATH });
+    expect(await screen.findByText("There is no built PMO to open")).toBeInTheDocument();
+  });
+
+  it("says the built PMO could not be opened when exporting it fails", async () => {
+    const engine = createInThreadEngine();
+    const broken: Engine = {
+      ...engine,
+      getPmoFile: () => Promise.reject(new Error("out of memory")),
+    };
+    await renderWithStore(ROUTES, {
+      store: createTestStore({ engine: broken }),
+      path: OPEN_BUILT_PATH,
+    });
+    expect(
+      await screen.findByText("The file could not be opened. Reload the page and try again."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("There is no built PMO to open")).not.toBeInTheDocument();
+  });
+});
+
 describe("PmoFilePage: tables", () => {
   it("downloads the allele table as CSV", async () => {
     const { user } = await open(pmoFile(EXAMPLE));
@@ -298,7 +333,7 @@ describe("PmoFilePage: subset", () => {
     await user.type(screen.getByLabelText(/Minimum reads per microhaplotype/), "0");
     expect(screen.queryByText("The subset is ready")).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "Tables" }));
-    expect(await screen.findByRole("radio", { name: "The subset" })).toBeInTheDocument();
+    expect(await screen.findByRole("radio", { name: "Subset" })).toBeInTheDocument();
   });
 
   it("says before making it when nothing would be left", async () => {
@@ -320,7 +355,7 @@ describe("PmoFilePage: subset", () => {
     await user.click(screen.getByRole("button", { name: "Make the subset" }));
     await screen.findByText("The subset is ready");
     await user.click(screen.getByRole("button", { name: "Download its tables" }));
-    expect(await screen.findByRole("radio", { name: "The subset" })).toBeChecked();
+    expect(await screen.findByRole("radio", { name: "Subset" })).toBeChecked();
     await user.click(screen.getByRole("button", { name: "Download Allele table as csv" }));
     await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
     const { name, text } = await savedText();
@@ -335,13 +370,18 @@ describe("PmoFilePage: subset", () => {
 });
 
 /** Makes a subset of the first `count` specimens on the Subset tab. */
-async function makeSubset(user: ReturnType<typeof userEvent.setup>, count: number) {
+/** Asks for a subset of the first `count` specimens, on the Subset tab. */
+async function askForSubset(user: ReturnType<typeof userEvent.setup>, count: number) {
   await user.click(await screen.findByRole("tab", { name: "Subset" }));
   await user.click(screen.getByRole("radio", { name: "Specimens I tick" }));
   const boxes = within(screen.getByRole("group", { name: "Specimens" })).getAllByRole("checkbox");
   // oxlint-disable-next-line no-await-in-loop
   for (const box of boxes.slice(0, count)) await user.click(box);
   await user.click(screen.getByRole("button", { name: "Make the subset" }));
+}
+
+async function makeSubset(user: ReturnType<typeof userEvent.setup>, count: number) {
+  await askForSubset(user, count);
   await screen.findByText("The subset is ready");
 }
 
@@ -403,7 +443,7 @@ describe("PmoFilePage: original or subset", () => {
     const { user } = await open(pmoFile(ownPmo()));
     await makeSubset(user, 3);
     const choice = screen.getByRole("radiogroup", SWITCH);
-    expect(within(choice).getByRole("radio", { name: "The subset" })).toBeChecked();
+    expect(within(choice).getByRole("radio", { name: "Subset" })).toBeChecked();
     expect(await described(user)).toEqual({
       samples: 3,
       compared: 3,
@@ -411,7 +451,7 @@ describe("PmoFilePage: original or subset", () => {
       published: "study-subset.json.gz",
     });
 
-    await user.click(within(choice).getByRole("radio", { name: "The whole file" }));
+    await user.click(within(choice).getByRole("radio", { name: "Original" }));
     expect(await described(user)).toEqual({
       samples: EXAMPLE.library_sample_info.length,
       compared: EXAMPLE.specimen_info.length,
@@ -423,19 +463,19 @@ describe("PmoFilePage: original or subset", () => {
   it("stays on the subset when a new one replaces it", async () => {
     const { user } = await open(pmoFile(ownPmo()));
     await makeSubset(user, 3);
-    await user.click(screen.getByRole("radio", { name: "The whole file" }));
+    await user.click(screen.getByRole("radio", { name: "Original" }));
     await makeSubset(user, 2);
-    expect(screen.getByRole("radio", { name: "The subset" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Subset" })).toBeChecked();
   });
 
   it("changes from the keyboard", async () => {
     const { user } = await open(pmoFile(ownPmo()));
     await makeSubset(user, 3);
     const choice = screen.getByRole("radiogroup", SWITCH);
-    within(choice).getByRole("radio", { name: "The subset" }).focus();
+    within(choice).getByRole("radio", { name: "Subset" }).focus();
     // Held down, as Radix checks the radio it moves to only while an arrow key is down.
     await user.keyboard("{ArrowLeft>}");
-    const original = within(choice).getByRole("radio", { name: "The whole file" });
+    const original = within(choice).getByRole("radio", { name: "Original" });
     await vi.waitFor(() => expect(original).toBeChecked());
     await user.keyboard("{/ArrowLeft}");
     expect(original).toHaveFocus();
@@ -454,6 +494,54 @@ describe("PmoFilePage: original or subset", () => {
     await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
     expect((await savedText()).name).toBe("other-specimens.csv");
   });
+});
+
+describe("PmoFilePage: when a subset cannot be made", () => {
+  it("says the subset could not be made, without the engine's own words", async () => {
+    let instead: Instead = null;
+    const { engine } = watchedEngine((kind) => (kind === "subset" ? instead : null));
+    const { user } = await openWithEngine(pmoFile(ownPmo()), engine);
+    await screen.findByText("This file is a valid PMO");
+    instead = { kind: "failed", message: "RangeError: Invalid array length" };
+    await askForSubset(user, 2);
+    expect(await screen.findByText("The subset could not be made")).toBeInTheDocument();
+    expect(
+      screen.getByText("Make the subset again. If it fails again, open the file again."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Invalid array length/)).not.toBeInTheDocument();
+  });
+
+  it("says no subset has been made when the worker made none", async () => {
+    const { engine } = watchedEngine((kind) => (kind === "subset" ? { kind: "no-subset" } : null));
+    const { user } = await openWithEngine(pmoFile(ownPmo()), engine);
+    await askForSubset(user, 2);
+    expect(await screen.findByText("No subset has been made yet")).toBeInTheDocument();
+    expect(screen.queryByText(/Something went wrong/)).not.toBeInTheDocument();
+  });
+});
+
+describe("PmoFilePage: when the subset cannot be published", () => {
+  it.each([
+    {
+      answer: { kind: "failed", message: "out of memory" },
+      title: "The subset could not be prepared",
+    },
+    { answer: { kind: "no-subset" }, title: "No subset has been made yet" },
+    { answer: { kind: "not-open" }, title: "No file is open" },
+  ] satisfies readonly { readonly answer: Instead; readonly title: string }[])(
+    "says $title",
+    async ({ answer, title }) => {
+      installBlobStream();
+      let instead: Instead = null;
+      const { engine } = watchedEngine((kind) => (kind === "file" ? instead : null));
+      const { user } = await openWithEngine(pmoFile(ownPmo()), engine);
+      await makeSubset(user, 2);
+      instead = answer;
+      await user.click(screen.getByRole("button", { name: "Publish the subset" }));
+      expect(await screen.findByText(title)).toBeInTheDocument();
+      expect(screen.queryByText(/out of memory/)).not.toBeInTheDocument();
+    },
+  );
 });
 
 describe("PmoFilePage: publishing", () => {
@@ -496,7 +584,7 @@ describe("PmoFilePage: publishing", () => {
     await user.click(screen.getByRole("button", { name: "Make the subset" }));
     await screen.findByText("The subset is ready");
     await user.click(screen.getByRole("button", { name: "Publish the subset" }));
-    expect(await screen.findByRole("radio", { name: "The subset" })).toBeChecked();
+    expect(await screen.findByRole("radio", { name: "Subset" })).toBeChecked();
     const publish = await screen.findByRole("region", { name: "Publish to Zenodo" });
     await user.click(
       await within(publish).findByRole("button", { name: "Deposit in the PlasmoGenEpi community" }),
@@ -687,7 +775,14 @@ describe("PmoFilePage: optional details", () => {
  * An in-thread engine that notes the kind of each working PMO request, and
  * fails comparisons when asked to.
  */
-function watchedEngine(options: { readonly failGroups?: boolean } = {}): {
+/** What a watched engine gives instead of answering: an answer, an error to throw, or `null` to answer. */
+type Instead = WorkingPmoResult<never> | Error | null;
+
+/**
+ * An engine in this thread that records the kind of each working PMO
+ * request, and gives what `instead` says in place of answering it.
+ */
+function watchedEngine(instead: (kind: WorkingPmoKind) => Instead = () => null): {
   readonly engine: Engine;
   readonly kinds: string[];
 } {
@@ -699,9 +794,9 @@ function watchedEngine(options: { readonly failGroups?: boolean } = {}): {
       ...engine,
       workingPmo: (call) => {
         kinds.push(call.request.kind);
-        return options.failGroups === true && call.request.kind === "groups"
-          ? Promise.reject(new Error("out of memory"))
-          : engine.workingPmo(call);
+        const given = instead(call.request.kind);
+        if (given === null) return engine.workingPmo(call);
+        return given instanceof Error ? Promise.reject(given) : Promise.resolve(given);
       },
     },
   };
@@ -765,7 +860,9 @@ describe("PmoFilePage: compare", () => {
   });
 
   it("says when the comparison could not be made", async () => {
-    const { engine } = watchedEngine({ failGroups: true });
+    const { engine } = watchedEngine((kind) =>
+      kind === "groups" ? new Error("out of memory") : null,
+    );
     const { user } = await openWithEngine(pmoFile(richPmo()), engine);
     await user.click(await screen.findByRole("tab", { name: "Compare" }));
     expect(await screen.findByText("The comparison could not be made")).toBeInTheDocument();

@@ -20,7 +20,7 @@ import { t } from "@lingui/core/macro";
 import { createStore, del, get, keys, promisifyRequest } from "idb-keyval";
 
 import { checkDraft } from "./guard";
-import { isBlob, isJsonValue, newId, type Draft, type JsonValue } from "./model";
+import { describeError, isBlob, isJsonValue, newId, type Draft, type JsonValue } from "./model";
 import { panelContentKey } from "./panels";
 
 /** A minimal key-value store. Both IndexedDB and memory implement it. */
@@ -169,10 +169,6 @@ function idbBackendFactory(prefix: string): BackendFactory {
       keys: async () => (await keys<IDBValidKey>(open())).filter((key) => typeof key === "string"),
     };
   };
-}
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {

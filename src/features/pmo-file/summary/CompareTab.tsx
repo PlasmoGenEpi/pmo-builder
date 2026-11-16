@@ -19,7 +19,7 @@ import type {
   WorkingSource,
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
-import { useWorkingPmoQuery, type WorkingPmoQueryState } from "@/state";
+import { useWorkingPmoQuery } from "@/state";
 import {
   Callout,
   Combobox,
@@ -31,6 +31,7 @@ import {
   formatCount,
 } from "@/ui";
 
+import { NoAnswer, type NoAnswerReason } from "../NoAnswer";
 import { useSettled } from "../useSettled";
 
 import { SortableTable, type SortableColumn } from "./SortableTable";
@@ -280,33 +281,16 @@ function Timeline({
   );
 }
 
-/** Why there is nothing to compare, when there is a reason to give. */
-function NoComparison({
-  reason,
-}: {
-  readonly reason: Exclude<WorkingPmoQueryState<"groups">["kind"], "loading" | "ok">;
-}) {
-  switch (reason) {
-    case "not-open":
-      return (
-        <Callout tone="info" live title={t`No file is open`}>
-          <Trans>Open a PMO file to compare groups of its specimens.</Trans>
-        </Callout>
-      );
-    case "no-subset":
-      return (
-        <Callout tone="info" live title={t`No subset has been made yet`}>
-          <Trans>Make one on the Subset tab, or compare the whole file.</Trans>
-        </Callout>
-      );
-    case "failed":
-    default:
-      return (
-        <Callout tone="error" live title={t`The comparison could not be made`}>
-          <Trans>Open the file again.</Trans>
-        </Callout>
-      );
-  }
+/** Why there is nothing to compare. */
+function NoComparison({ reason }: { readonly reason: NoAnswerReason }) {
+  return (
+    <NoAnswer
+      reason={reason}
+      notOpen={t`Open a PMO file to compare groups of its specimens.`}
+      noSubset={t`Make one on the Subset tab, or compare the whole file.`}
+      failed={{ title: t`The comparison could not be made`, body: t`Open the file again.` }}
+    />
+  );
 }
 
 /** The groups of one field, side by side, counted in the worker. */

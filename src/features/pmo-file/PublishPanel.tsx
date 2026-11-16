@@ -7,6 +7,8 @@ import type { ZenodoConfig } from "@/features/review/zenodo";
 import { useWorkingPmoQuery, type OpenState } from "@/state";
 import { Callout, Link, Spinner } from "@/ui";
 
+import { NoAnswer } from "./NoAnswer";
+
 type Made = Extract<SubsetOutcome, { kind: "made" }>;
 
 /** The subset's file, gzipped as published PMOs are. */
@@ -33,9 +35,15 @@ function SubsetDeposit({
   }
   if (file.kind !== "ok") {
     return (
-      <Callout tone="error" live title={t`The subset could not be prepared`}>
-        <Trans>Make the subset again on the Subset tab.</Trans>
-      </Callout>
+      <NoAnswer
+        reason={file.kind}
+        notOpen={t`Open a PMO file to publish it.`}
+        noSubset={t`Make one on the Subset tab, or publish the whole file.`}
+        failed={{
+          title: t`The subset could not be prepared`,
+          body: t`Make the subset again on the Subset tab.`,
+        }}
+      />
     );
   }
   return (

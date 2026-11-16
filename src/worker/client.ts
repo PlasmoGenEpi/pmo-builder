@@ -59,6 +59,19 @@ function isSubsetPreview(value: unknown): value is SubsetPreview {
 /** The kinds of answer to a request about the working PMO. */
 const WORKING_PMO_RESULTS = ["ok", "not-open", "no-subset", "stale", "failed"];
 
+/** Whether `value` has the shape of an answer about the working PMO, its value aside. */
+function isWorkingPmoEnvelope(value: unknown): value is Readonly<Record<string, unknown>> {
+  return (
+    hasKind(value, WORKING_PMO_RESULTS) &&
+    (value["kind"] !== "failed" || typeof value["message"] === "string")
+  );
+}
+
+/** Whether `value` is a file made in the worker: its bytes and its name. */
+function isMadeFile(value: unknown): value is { readonly blob: Blob; readonly fileName: string } {
+  return isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string";
+}
+
 /** Shape checks for the value of each kind of working PMO request that succeeded. */
 const WORKING_PMO_VALUES: {
   readonly [K in WorkingPmoKind]: (value: unknown) => value is WorkingPmoValues[K];
@@ -73,10 +86,8 @@ const WORKING_PMO_VALUES: {
   preview: (value): value is WorkingPmoValues["preview"] => isSubsetPreview(value),
   table: (value): value is WorkingPmoValues["table"] =>
     isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string",
-  tables: (value): value is WorkingPmoValues["tables"] =>
-    isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string",
-  file: (value): value is WorkingPmoValues["file"] =>
-    isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string",
+  tables: (value): value is WorkingPmoValues["tables"] => isMadeFile(value),
+  file: (value): value is WorkingPmoValues["file"] => isMadeFile(value),
   groupFields: (value): value is WorkingPmoValues["groupFields"] =>
     Array.isArray(value) &&
     value.every((field) => isRecord(field) && typeof field["key"] === "string"),
@@ -89,8 +100,7 @@ function isWorkingPmoAnswer<K extends WorkingPmoKind>(
   kind: K,
   value: unknown,
 ): value is WorkingPmoAnswer<K> {
-  if (!hasKind(value, WORKING_PMO_RESULTS)) return false;
-  if (value["kind"] === "failed") return typeof value["message"] === "string";
+  if (!isWorkingPmoEnvelope(value)) return false;
   if (value["kind"] !== "ok") return true;
   const guard: (candidate: unknown) => candidate is WorkingPmoValues[K] = WORKING_PMO_VALUES[kind];
   return guard(value["value"]);
@@ -129,9 +139,7 @@ const RESULT_GUARDS: {
     value === null ||
     (isRecord(value) && typeof value["text"] === "string" && typeof value["length"] === "number"),
   getPanelFragment: (value): value is EngineResult<"getPanelFragment"> => isJsonValue(value),
-  workingPmo: (value): value is EngineResult<"workingPmo"> =>
-    hasKind(value, WORKING_PMO_RESULTS) &&
-    (value["kind"] !== "failed" || typeof value["message"] === "string"),
+  workingPmo: (value): value is EngineResult<"workingPmo"> => isWorkingPmoEnvelope(value),
 };
 
 /**

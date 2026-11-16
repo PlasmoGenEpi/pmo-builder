@@ -13,7 +13,7 @@
  */
 import type { PortableMicrohaplotypeObject } from "pmotools-ts";
 
-import { unreachable } from "@/domain/draft";
+import { describeError, unreachable } from "@/domain/draft";
 
 import { comparableFields, compareGroups } from "./groups";
 import { summaryOf } from "./summary";
@@ -22,6 +22,8 @@ import type {
   WorkingPmoAnswer,
   WorkingPmoCall,
   WorkingPmoKind,
+  WorkingPmoRequest,
+  WorkingPmoValues,
   WorkingSource,
 } from "./types";
 import {
@@ -68,15 +70,18 @@ export interface WorkingPmoStep<K extends WorkingPmoKind> {
   readonly work: Promise<WorkingPmoWork<K>>;
 }
 
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 function answered<K extends WorkingPmoKind>(
   held: WorkingPmoHeld,
   result: WorkingPmoAnswer<K>,
 ): WorkingPmoStep<K> {
   return { held, work: Promise.resolve({ kind: "answer", result }) };
+}
+
+/** A PMO the worker holds, found for a request. */
+interface Found {
+  readonly pmo: Pmo;
+  /** What files made from it are named after. */
+  readonly baseName: string;
 }
 
 /**
@@ -88,7 +93,7 @@ function pmoFor(
   held: WorkingPmoHeld,
   source: WorkingSource,
 ):
-  | { readonly kind: "found"; readonly pmo: Pmo; readonly baseName: string }
+  | ({ readonly kind: "found" } & Found)
   | { readonly kind: "not-open" }
   | { readonly kind: "no-subset" } {
   if (held.pmo === null) return { kind: "not-open" };
@@ -125,20 +130,43 @@ async function guarded<K extends WorkingPmoKind>(
   }
 }
 
-type Handlers = {
-  readonly [K in WorkingPmoKind]: (
-    held: WorkingPmoHeld,
-    call: WorkingPmoCall<K>,
-  ) => WorkingPmoStep<K>;
-};
+/** Starts a request that is not stale. */
+type Handler<K extends WorkingPmoKind> = (
+  held: WorkingPmoHeld,
+  call: WorkingPmoCall<K>,
+) => WorkingPmoStep<K>;
 
-const HANDLERS: Handlers = {
-  open(held, call) {
-    if (call.generation < held.generation) return answered(held, { kind: "stale" });
-    const { file, fileName } = call.request;
+/**
+ * A request that reads one PMO and leaves what is held alone: the PMO
+ * `sourceOf` the request means, made into an answer by `read`.
+ */
+function reading<K extends WorkingPmoKind>(options: {
+  readonly sourceOf: (request: WorkingPmoRequest<K>) => WorkingSource;
+  readonly read: (
+    found: Found,
+    request: WorkingPmoRequest<K>,
+  ) => Promise<WorkingPmoValues[K]> | WorkingPmoValues[K];
+}): Handler<K> {
+  const { sourceOf, read } = options;
+  return (held, { request }) => {
+    const found = pmoFor(held, sourceOf(request));
+    if (found.kind !== "found") return answered(held, found);
+    return {
+      held,
+      work: guarded(async () => ({
+        kind: "answer",
+        result: { kind: "ok", value: await read(found, request) },
+      })),
+    };
+  };
+}
+
+const HANDLERS: { readonly [K in WorkingPmoKind]: Handler<K> } = {
+  open(_held, { generation, request }) {
+    const { file, fileName } = request;
     return {
       // Let go of the previous PMO before reading the new one, so two are never held.
-      held: { generation: call.generation, pmo: null },
+      held: { generation, pmo: null },
       work: guarded(async () => {
         const { outcome, pmo } = await openPmo(file, fileName);
         return {
@@ -150,27 +178,11 @@ const HANDLERS: Handlers = {
     };
   },
 
-  close(held, call) {
-    if (call.generation < held.generation) return answered(held, { kind: "stale" });
-    return answered({ generation: call.generation, pmo: null }, { kind: "ok", value: null });
+  close(_held, { generation }) {
+    return answered({ generation, pmo: null }, { kind: "ok", value: null });
   },
 
-  summary(held, call) {
-    if (call.generation < held.generation) return answered(held, { kind: "stale" });
-    const found = pmoFor(held, call.request.source);
-    if (found.kind !== "found") return answered(held, found);
-    const { minReads } = call.request;
-    return {
-      held,
-      work: guarded(() => ({
-        kind: "answer",
-        result: { kind: "ok", value: summaryOf(found.pmo, minReads) },
-      })),
-    };
-  },
-
-  subset(held, call) {
-    if (call.generation < held.generation) return answered(held, { kind: "stale" });
+  subset(held, { request }) {
     const working = held.pmo;
     if (working === null) return answered(held, { kind: "not-open" });
     // Let go of the previous subset before making the next, so two are never held.
@@ -178,7 +190,7 @@ const HANDLERS: Handlers = {
     return {
       held: { ...held, pmo: original },
       work: guarded(() => {
-        const { outcome, subset } = makeSubset(original.original, call.request, original.fileName);
+        const { outcome, subset } = makeSubset(original.original, request, original.fileName);
         return {
           kind: "hold",
           pmo: { ...original, subset },
@@ -188,91 +200,40 @@ const HANDLERS: Handlers = {
     };
   },
 
-  preview(held, call) {
-    if (call.generation < held.generation) return answered(held, { kind: "stale" });
-    const found = pmoFor(held, "original");
-    if (found.kind !== "found") return answered(held, found);
-    const { request } = call;
-    return {
-      held,
-      work: guarded(() => ({
-        kind: "answer",
-        result: { kind: "ok", value: previewSubset(found.pmo, request) },
-      })),
-    };
-  },
+  summary: reading<"summary">({
+    sourceOf: (request) => request.source,
+    read: ({ pmo }, { minReads }) => summaryOf(pmo, minReads),
+  }),
 
-  table(held, call) {
-    if (call.generation < held.generation) return answered(held, { kind: "stale" });
-    const found = pmoFor(held, call.request.source);
-    if (found.kind !== "found") return answered(held, found);
-    const { id, format } = call.request;
-    const { pmo, baseName } = found;
-    return {
-      held,
-      work: guarded(() => ({
-        kind: "answer",
-        result: { kind: "ok", value: tableFile(pmo, { id, format, baseName }) },
-      })),
-    };
-  },
+  preview: reading<"preview">({
+    sourceOf: () => "original",
+    read: ({ pmo }, request) => previewSubset(pmo, request),
+  }),
 
-  tables(held, call) {
-    if (call.generation < held.generation) return answered(held, { kind: "stale" });
-    const found = pmoFor(held, call.request.source);
-    if (found.kind !== "found") return answered(held, found);
-    const { format } = call.request;
-    const { pmo, baseName } = found;
-    return {
-      held,
-      work: guarded(async () => ({
-        kind: "answer",
-        result: { kind: "ok", value: await tablesArchive(pmo, { format, baseName }) },
-      })),
-    };
-  },
+  table: reading<"table">({
+    sourceOf: (request) => request.source,
+    read: ({ pmo, baseName }, { id, format }) => tableFile(pmo, { id, format, baseName }),
+  }),
 
-  file(held, call) {
-    if (call.generation < held.generation) return answered(held, { kind: "stale" });
-    const found = pmoFor(held, "subset");
-    if (found.kind !== "found") return answered(held, found);
-    const { gzip } = call.request;
-    const { pmo, baseName } = found;
-    return {
-      held,
-      work: guarded(async () => ({
-        kind: "answer",
-        result: { kind: "ok", value: await pmoFile(pmo, { gzip, baseName }) },
-      })),
-    };
-  },
+  tables: reading<"tables">({
+    sourceOf: (request) => request.source,
+    read: ({ pmo, baseName }, { format }) => tablesArchive(pmo, { format, baseName }),
+  }),
 
-  groupFields(held, call) {
-    if (call.generation < held.generation) return answered(held, { kind: "stale" });
-    const found = pmoFor(held, call.request.source);
-    if (found.kind !== "found") return answered(held, found);
-    return {
-      held,
-      work: guarded(() => ({
-        kind: "answer",
-        result: { kind: "ok", value: comparableFields(found.pmo) },
-      })),
-    };
-  },
+  file: reading<"file">({
+    sourceOf: () => "subset",
+    read: ({ pmo, baseName }, { gzip }) => pmoFile(pmo, { gzip, baseName }),
+  }),
 
-  groups(held, call) {
-    if (call.generation < held.generation) return answered(held, { kind: "stale" });
-    const found = pmoFor(held, call.request.source);
-    if (found.kind !== "found") return answered(held, found);
-    const { key, minReads } = call.request;
-    return {
-      held,
-      work: guarded(() => ({
-        kind: "answer",
-        result: { kind: "ok", value: compareGroups(found.pmo, key, minReads) },
-      })),
-    };
-  },
+  groupFields: reading<"groupFields">({
+    sourceOf: (request) => request.source,
+    read: ({ pmo }) => comparableFields(pmo),
+  }),
+
+  groups: reading<"groups">({
+    sourceOf: (request) => request.source,
+    read: ({ pmo }, { key, minReads }) => compareGroups(pmo, key, minReads),
+  }),
 };
 
 /**
@@ -287,7 +248,8 @@ export function answerWorkingPmo<K extends WorkingPmoKind>(
   held: WorkingPmoHeld,
   call: WorkingPmoCall<K>,
 ): WorkingPmoStep<K> {
-  const handler: Handlers[K] = HANDLERS[call.request.kind];
+  if (call.generation < held.generation) return answered(held, { kind: "stale" });
+  const handler: Handler<K> = HANDLERS[call.request.kind];
   return handler(held, call);
 }
 
@@ -296,11 +258,14 @@ export function answerWorkingPmo<K extends WorkingPmoKind>(
  * generation that is no longer the newest is stale, and what it found is not
  * kept.
  */
-export function settleWorkingPmo<K extends WorkingPmoKind>(
-  held: WorkingPmoHeld,
-  call: WorkingPmoCall<K>,
-  work: WorkingPmoWork<K>,
-): { readonly held: WorkingPmoHeld; readonly result: WorkingPmoAnswer<K> } {
+export function settleWorkingPmo<K extends WorkingPmoKind>(options: {
+  /** What the worker holds now. */
+  readonly held: WorkingPmoHeld;
+  readonly call: WorkingPmoCall<K>;
+  /** What the call's work found. */
+  readonly work: WorkingPmoWork<K>;
+}): { readonly held: WorkingPmoHeld; readonly result: WorkingPmoAnswer<K> } {
+  const { held, call, work } = options;
   if (call.generation < held.generation) return { held, result: { kind: "stale" } };
   if (work.kind === "answer") return { held, result: work.result };
   return { held: { generation: call.generation, pmo: work.pmo }, result: work.result };

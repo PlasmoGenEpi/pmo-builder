@@ -3017,6 +3017,10 @@ msgstr "Créez-en un dans l’onglet Sous-ensemble, ou comparez le fichier entie
 msgid "Make one on the Subset tab, or download the tables of the whole file."
 msgstr "Créez-en un dans l’onglet Sous-ensemble, ou téléchargez les tableaux du fichier entier."
 
+#: src/features/pmo-file/PublishPanel.tsx
+msgid "Make one on the Subset tab, or publish the whole file."
+msgstr "Créez-en un dans l’onglet Sous-ensemble, ou publiez le fichier entier."
+
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Make one on the Subset tab, or sum up the whole file."
 msgstr "Créez-en un dans l’onglet Sous-ensemble, ou résumez le fichier entier."
@@ -3028,6 +3032,14 @@ msgstr "Créer le sous-ensemble"
 #: src/features/pmo-file/PublishPanel.tsx
 msgid "Make the subset again on the Subset tab."
 msgstr "Créez de nouveau le sous-ensemble dans l’onglet Sous-ensemble."
+
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "Make the subset again."
+msgstr "Créez de nouveau le sous-ensemble."
+
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "Make the subset again. If it fails again, open the file again."
+msgstr "Créez de nouveau le sous-ensemble. Si cela échoue encore, ouvrez de nouveau le fichier."
 
 #: src/app/HomePage.tsx
 msgid "Make, use and find Portable Microhaplotype Object (PMO) files."
@@ -3300,9 +3312,7 @@ msgstr "Négatif"
 msgid "Next"
 msgstr "Suivant"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-#: src/features/pmo-file/TablesPanel.tsx
+#: src/features/pmo-file/NoAnswer.tsx
 msgid "No file is open"
 msgstr "Aucun fichier n’est ouvert"
 
@@ -3395,9 +3405,7 @@ msgstr "Aucune colonne de nom de spécimen n’est encore associée."
 msgid "No steps yet"
 msgstr "Aucune étape pour l’instant"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-#: src/features/pmo-file/TablesPanel.tsx
+#: src/features/pmo-file/NoAnswer.tsx
 msgid "No subset has been made yet"
 msgstr "Aucun sous-ensemble n’a encore été créé"
 
@@ -3711,6 +3719,10 @@ msgstr "Ouvrez un fichier PMO pour comparer des groupes de ses spécimens."
 msgid "Open a PMO file to download its tables."
 msgstr "Ouvrez un fichier PMO pour télécharger ses tableaux."
 
+#: src/features/pmo-file/PublishPanel.tsx
+msgid "Open a PMO file to publish it."
+msgstr "Ouvrez un fichier PMO pour le publier."
+
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Open a PMO file to see a summary of its samples and targets, compare groups of specimens, download its tables as CSV or TSV, make a smaller PMO with only some specimens, targets or reads, or publish it. The file stays in this browser."
 msgstr "Ouvrez un fichier PMO pour voir un résumé de ses échantillons et de ses cibles, comparer des groupes de spécimens, télécharger ses tableaux en CSV ou TSV, créer un PMO plus petit avec seulement certains spécimens, cibles ou lectures, ou le publier. Le fichier reste dans ce navigateur."
@@ -3806,6 +3818,11 @@ msgstr "Facultatif. Le projet donne au PMO un nom et une description de votre é
 #: src/features/bioinformatics/BioinformaticsStep.tsx
 msgid "Optional. This tells readers of the PMO which programs and versions turned the reads into alleles, and links each run in the allele table to its pipeline."
 msgstr "Facultatif. Cette étape indique aux lecteurs du PMO quels programmes et quelles versions ont transformé les lectures en allèles, et relie chaque run du tableau des allèles à son pipeline."
+
+#. The PMO file as it was opened
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Original"
+msgstr "Original"
 
 #. A control that is neither negative nor positive
 #. Heading for a group of optional fields in the column-matching editor
@@ -5005,10 +5022,6 @@ msgstr "Un problème est survenu lors de la lecture du {table}. Vérifiez l’as
 msgid "Something went wrong while working out the PMO: {message}"
 msgstr "Un problème est survenu lors de la génération du PMO : {message}"
 
-#: src/features/pmo-file/SubsetPanel.tsx
-msgid "Something went wrong. Reload the page and try again."
-msgstr "Un problème est survenu. Rechargez la page et réessayez."
-
 #: src/features/pmo-file/summary/SortableTable.tsx
 msgid "Sort by {columnLabel}"
 msgstr "Trier par {columnLabel}"
@@ -5225,6 +5238,7 @@ msgstr "Étude et méthodes"
 msgid "Subject names or codes"
 msgstr "Noms ou codes des sujets"
 
+#. A smaller PMO made from the original
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Subset"
 msgstr "Sous-ensemble"
@@ -5637,6 +5651,10 @@ msgstr "Le fichier « {fileName} » du {table} n’est pas chargé. Importez-l
 msgid "The file and your column choices for it are removed from this draft. You can add the file again later."
 msgstr "Le fichier et vos choix de colonnes pour ce fichier sont retirés de ce brouillon. Vous pourrez ajouter le fichier à nouveau plus tard."
 
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "The file as it was opened"
+msgstr "Le fichier tel qu’il a été ouvert"
+
 #: src/features/pmo-file/OpenPublished.tsx
 msgid "The file could not be downloaded from Zenodo"
 msgstr "Le fichier n’a pas pu être téléchargé depuis Zenodo"
@@ -5661,12 +5679,7 @@ msgstr "Le fichier dépasse la taille acceptée par Zenodo."
 msgid "The file is no longer loaded. Import it again."
 msgstr "Le fichier n’est plus chargé. Importez-le à nouveau."
 
-#: src/features/pmo-file/SubsetPanel.tsx
-msgid "The file is no longer open"
-msgstr "Le fichier n’est plus ouvert"
-
 #: src/features/pmo-file/PmoFilePage.tsx
-#: src/state/workingPmoSession.ts
 msgid "The file was closed, probably because the browser ran out of memory. Open the file again."
 msgstr "Le fichier a été fermé, probablement parce que le navigateur a manqué de mémoire. Ouvrez de nouveau le fichier."
 
@@ -6034,6 +6047,10 @@ msgstr "Le matériel source, par exemple GENOMIC ou TRANSCRIPTOMIC."
 msgid "The specimen this library was made from, as named in the specimen table."
 msgstr "Le spécimen à partir duquel cette bibliothèque a été préparée, tel que nommé dans le tableau des spécimens."
 
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "The specimens and targets you kept"
+msgstr "Les spécimens et les cibles que vous avez gardés"
+
 #: src/domain/fields/samples.ts
 msgid "The SRA or ENA experiment accession, if the data was submitted."
 msgstr "Le numéro d’accession de l’expérience SRA ou ENA, si les données ont été soumises."
@@ -6061,10 +6078,6 @@ msgstr "Le brin du segment de référence auquel se rapporte le pseudo-CIGAR."
 #: src/domain/fields/panel.ts
 msgid "The strand the target lies on, + or -."
 msgstr "Le brin sur lequel se trouve la cible, + ou -."
-
-#: src/features/pmo-file/PmoFilePage.tsx
-msgid "The subset"
-msgstr "Le sous-ensemble"
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "The subset could not be made"
@@ -6131,10 +6144,6 @@ msgstr "Le puits de la bibliothèque sur sa plaque, par exemple A01, au lieu de 
 #: src/domain/fields/samples.ts
 msgid "The well of the specimen on its storage plate, such as A01, instead of row and column."
 msgstr "Le puits du spécimen sur sa plaque de conservation, par exemple A01, au lieu de la ligne et de la colonne."
-
-#: src/features/pmo-file/PmoFilePage.tsx
-msgid "The whole file"
-msgstr "Le fichier entier"
 
 #: src/domain/fields/samples.ts
 msgid "The wider setting of the collection site, such as highlands or lowlands."
