@@ -193,16 +193,18 @@ function SubsetResult({
 }) {
   const session = useWorkingPmoSession();
   const [saving, setSaving] = useState<"gzip" | "json" | null>(null);
-  const [failed, setFailed] = useState(false);
+  /** Why the last download gave no file. */
+  const [unsaved, setUnsaved] = useState<NoAnswerReason | null>(null);
 
   async function download(gzip: boolean): Promise<void> {
     setSaving(gzip ? "gzip" : "json");
-    setFailed(false);
-    const file = await session.query({ kind: "file", gzip });
+    setUnsaved(null);
+    const answer = await session.query({ kind: "file", gzip });
     setSaving(null);
-    // A stale answer is for a file since replaced: there is nothing to save.
-    if (file.kind === "ok") saveFile(file.value.blob, file.value.fileName);
-    else if (file.kind !== "stale") setFailed(true);
+    settleAnswer(answer, {
+      ok: (file) => saveFile(file.blob, file.fileName),
+      none: setUnsaved,
+    });
   }
 
   return (
@@ -253,11 +255,14 @@ function SubsetResult({
           </Button>
         )}
       </div>
-      {failed ? (
-        <p role="alert" className="text-sm text-danger-text">
-          {t`The file could not be made. Make the subset again.`}
-        </p>
-      ) : null}
+      {unsaved === null ? null : (
+        <NoAnswer
+          reason={unsaved}
+          notOpen={t`Choose the file again, then make the subset again.`}
+          noSubset={t`Make the subset again.`}
+          failed={{ title: t`The file could not be made`, body: t`Make the subset again.` }}
+        />
+      )}
     </div>
   );
 }
@@ -290,16 +295,23 @@ function NotMade({ tried }: { readonly tried: Tried }) {
   );
 }
 
+/** What the preview of a subset shows. */
+type PreviewState =
+  /** What the subset would keep. `stale` while newer choices are being counted. */
+  | { readonly kind: "counts"; readonly counts: SubsetPreview; readonly stale: boolean }
+  /** Why it could not be counted. */
+  | { readonly kind: "unanswered"; readonly reason: NoAnswerReason }
+  /** Nothing: before the first count, and while the choices are not complete. */
+  | { readonly kind: "none" };
+
+const NO_PREVIEW: PreviewState = { kind: "none" };
+
 /**
  * What `request` would keep, counted in the worker once the form has settled.
  * While newer choices are being counted, the last counts are given as stale.
- * `null` before the first count, when it could not be counted, and while
- * `enabled` is false.
+ * Nothing while `enabled` is false.
  */
-function useSubsetPreview(
-  request: SubsetRequest,
-  enabled: boolean,
-): { readonly counts: SubsetPreview; readonly stale: boolean } | null {
+function useSubsetPreview(request: SubsetRequest, enabled: boolean): PreviewState {
   const settled = useSettled(request, 300);
   const query = useMemo(
     (): WorkingPmoQuery<"preview"> => ({ kind: "preview", ...settled }),
@@ -309,9 +321,14 @@ function useSubsetPreview(
   // The last counts, shown greyed out while newer choices are counted.
   const [last, setLast] = useState<SubsetPreview | null>(null);
   if (answer.kind === "ok" && answer.value !== last) setLast(answer.value);
-  if (!enabled) return null;
-  if (answer.kind === "ok") return { counts: answer.value, stale: settled !== request };
-  return answer.kind === "loading" && last !== null ? { counts: last, stale: true } : null;
+  if (!enabled) return NO_PREVIEW;
+  if (answer.kind === "ok") {
+    return { kind: "counts", counts: answer.value, stale: settled !== request };
+  }
+  if (answer.kind === "loading") {
+    return last === null ? NO_PREVIEW : { kind: "counts", counts: last, stale: true };
+  }
+  return { kind: "unanswered", reason: answer.kind };
 }
 
 /** What the panel shows under the form. */
@@ -365,7 +382,8 @@ export function SubsetPanel({
   const targetsWithoutData = choices.targetsWithoutData;
   const request = useMemo(() => requestOf(form), [form]);
   const preview = useSubsetPreview(request, problem === null);
-  const nothingLeft = preview?.counts.librarySamplesWithData === 0 && !preview.stale;
+  const nothingLeft =
+    preview.kind === "counts" && preview.counts.librarySamplesWithData === 0 && !preview.stale;
 
   function change(next: Partial<SubsetForm>): void {
     setForm((before) => ({ ...before, ...next }));
@@ -488,7 +506,19 @@ export function SubsetPanel({
       </section>
 
       <div className="flex flex-col gap-3 border-t border-border pt-6">
-        {preview === null || made !== null ? null : (
+        {made === null && preview.kind === "unanswered" ? (
+          <NoAnswer
+            reason={preview.reason}
+            notOpen={t`Choose the file again.`}
+            // A preview counts what the original would give, so it never needs a subset.
+            noSubset={t`Make the subset again.`}
+            failed={{
+              title: t`The subset could not be counted`,
+              body: t`You can still make it. If that fails too, open the file again.`,
+            }}
+          />
+        ) : null}
+        {preview.kind !== "counts" || made !== null ? null : (
           <p
             aria-live="polite"
             aria-busy={preview.stale}

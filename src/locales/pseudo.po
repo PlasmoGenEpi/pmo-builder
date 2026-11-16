@@ -1666,6 +1666,10 @@ msgid "Choose the column of the runs table that names each run's method."
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
+msgid "Choose the file again, then make the subset again."
+msgstr ""
+
+#: src/features/pmo-file/SubsetPanel.tsx
 msgid "Choose the file again."
 msgstr ""
 
@@ -5674,7 +5678,7 @@ msgid "The file could not be downloaded from Zenodo"
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
-msgid "The file could not be made. Make the subset again."
+msgid "The file could not be made"
 msgstr ""
 
 #: src/features/pmo-file/PmoFilePage.tsx
@@ -6091,6 +6095,10 @@ msgstr ""
 
 #: src/domain/fields/panel.ts
 msgid "The strand the target lies on, + or -."
+msgstr ""
+
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "The subset could not be counted"
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
@@ -6912,6 +6920,10 @@ msgstr ""
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "Written from what is in your PMO. You can change them on Zenodo before you submit."
+msgstr ""
+
+#: src/features/pmo-file/SubsetPanel.tsx
+msgid "You can still make it. If that fails too, open the file again."
 msgstr ""
 
 #: src/features/review/PublishToZenodo.tsx

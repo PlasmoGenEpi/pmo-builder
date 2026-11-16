@@ -563,6 +563,52 @@ describe("PmoFilePage: when a subset cannot be made", () => {
   });
 });
 
+describe("PmoFilePage: when the subset cannot be counted", () => {
+  it.each([
+    {
+      answer: { kind: "failed", message: "out of memory" },
+      title: "The subset could not be counted",
+    },
+    { answer: { kind: "not-open" }, title: "No file is open" },
+  ] satisfies readonly { readonly answer: Instead; readonly title: string }[])(
+    "says $title",
+    async ({ answer, title }) => {
+      const { engine } = watchedEngine((kind) => (kind === "preview" ? answer : null));
+      const { user } = await openWithEngine(pmoFile(ownPmo()), engine);
+      await user.click(await screen.findByRole("tab", { name: "Subset" }));
+      await user.click(screen.getByRole("radio", { name: "Specimens I tick" }));
+      const boxes = within(screen.getByRole("group", { name: "Specimens" })).getAllByRole(
+        "checkbox",
+      );
+      // oxlint-disable-next-line no-await-in-loop
+      for (const box of boxes.slice(0, 2)) await user.click(box);
+      expect(await screen.findByText(title)).toBeInTheDocument();
+      expect(screen.queryByText(/out of memory/)).not.toBeInTheDocument();
+    },
+  );
+});
+
+describe("PmoFilePage: when the subset cannot be downloaded", () => {
+  it.each([
+    { answer: { kind: "failed", message: "out of memory" }, title: "The file could not be made" },
+    { answer: { kind: "no-subset" }, title: "No subset has been made yet" },
+    { answer: { kind: "not-open" }, title: "No file is open" },
+  ] satisfies readonly { readonly answer: Instead; readonly title: string }[])(
+    "says $title",
+    async ({ answer, title }) => {
+      let instead: Instead = null;
+      const { engine } = watchedEngine((kind) => (kind === "file" ? instead : null));
+      const { user } = await openWithEngine(pmoFile(ownPmo()), engine);
+      await makeSubset(user, 2);
+      instead = answer;
+      await user.click(screen.getByRole("button", { name: "Download as .json" }));
+      expect(await screen.findByText(title)).toBeInTheDocument();
+      expect(screen.queryByText(/out of memory/)).not.toBeInTheDocument();
+      expect(saveFile).not.toHaveBeenCalled();
+    },
+  );
+});
+
 describe("PmoFilePage: when the subset cannot be published", () => {
   it.each([
     {
