@@ -18,7 +18,8 @@ import {
   type WorkerHandle,
 } from "./client";
 import { createInThreadEngine, type Engine, type ImportOutcome } from "./engine";
-import { isCallMessage, serveEngine, type Endpoint } from "./protocol";
+import { isCallMessage, serveEngine } from "./protocol";
+import { endpointPair } from "./testing";
 
 /** An engine on the test dependencies. */
 function testEngine(): Engine {
@@ -363,38 +364,6 @@ describe("engine", () => {
     });
   });
 });
-
-/** One side of a fake channel: it delivers what the other side posts. */
-class FakeEndpoint implements Endpoint {
-  peer: FakeEndpoint | null = null;
-  private readonly listeners = new Set<(event: MessageEvent) => void>();
-
-  postMessage(message: unknown): void {
-    const copy = structuredClone(message);
-    setTimeout(() => this.peer?.deliver(copy), 0);
-  }
-
-  addEventListener(_type: "message", listener: (event: MessageEvent) => void): void {
-    this.listeners.add(listener);
-  }
-
-  removeEventListener(_type: "message", listener: (event: MessageEvent) => void): void {
-    this.listeners.delete(listener);
-  }
-
-  private deliver(data: unknown): void {
-    for (const listener of this.listeners) listener(new MessageEvent("message", { data }));
-  }
-}
-
-/** Two endpoints joined like a page and its worker: messages are cloned and arrive later. */
-function endpointPair(): readonly [FakeEndpoint, FakeEndpoint] {
-  const page = new FakeEndpoint();
-  const worker = new FakeEndpoint();
-  page.peer = worker;
-  worker.peer = page;
-  return [page, worker];
-}
 
 describe("worker protocol", () => {
   it("gives the client the same results as the engine itself", async () => {
