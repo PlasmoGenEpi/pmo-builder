@@ -12,7 +12,6 @@
 import type { PortableMicrohaplotypeObject, Table } from "pmotools-ts";
 
 import {
-  checkPmoFile,
   DEFAULT_BUILD_DEPS,
   NO_SUGGESTIONS,
   buildSection,
@@ -45,20 +44,11 @@ import {
   type ImportFailure,
 } from "@/domain/import";
 import {
-  baseNameOf,
-  makeSubset,
-  previewSubset,
-  tableFile,
-  tablesArchive,
-} from "@/domain/tools/workingPmo";
-import {
   answerWorkingPmo,
   NOTHING_HELD,
   settleWorkingPmo,
   type WorkingPmoHeld,
 } from "@/domain/tools/workingPmoRoute";
-import { compareGroups } from "@/domain/tools/groups";
-import { summaryOf } from "@/domain/tools/summary";
 import type { Notice, ParsedFile, RawTable, SectionId } from "@/domain/types";
 import { SECTION_IDS } from "@/domain/types";
 
@@ -514,10 +504,6 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       return Promise.resolve(previewMemo.preview);
     },
 
-    checkPmoFile(file) {
-      return checkPmoFile(file);
-    },
-
     async workingPmo(call) {
       const step = answerWorkingPmo(held, call);
       held = step.held;
@@ -525,66 +511,6 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       const settled = settleWorkingPmo(held, call, work);
       held = settled.held;
       return settled.result;
-    },
-
-    // What follows is the old route to the working PMO, kept until each tab
-    // moves to `workingPmo`. It works on the same PMO the session opened.
-
-    subsetPmo(request) {
-      const working = held.pmo;
-      if (working === null) return Promise.resolve({ kind: "not-open" as const });
-      const { outcome, subset } = makeSubset(working.original, request, working.fileName);
-      held = { ...held, pmo: { ...working, subset } };
-      return Promise.resolve(outcome);
-    },
-
-    previewSubset(request) {
-      const working = held.pmo;
-      return Promise.resolve(working === null ? null : previewSubset(working.original, request));
-    },
-
-    async workingPmoTables(request) {
-      const working = held.pmo;
-      if (working === null) return null;
-      const pmo = request.source === "subset" ? working.subset : working.original;
-      if (pmo === null) return null;
-      const baseName =
-        baseNameOf(working.fileName) + (request.source === "subset" ? "-subset" : "");
-      return tablesArchive(pmo, { format: request.format, baseName });
-    },
-
-    workingPmoTable(request) {
-      const working = held.pmo;
-      if (working === null) return Promise.resolve(null);
-      const pmo = request.source === "subset" ? working.subset : working.original;
-      if (pmo === null) return Promise.resolve(null);
-      const baseName =
-        baseNameOf(working.fileName) + (request.source === "subset" ? "-subset" : "");
-      return Promise.resolve(tableFile(pmo, { id: request.id, format: request.format, baseName }));
-    },
-
-    workingPmoSummary(request) {
-      const working = held.pmo;
-      if (working === null) return Promise.resolve(null);
-      const pmo = request.source === "subset" ? working.subset : working.original;
-      return Promise.resolve(pmo === null ? null : summaryOf(pmo, request.minReads));
-    },
-
-    workingPmoGroups(request) {
-      const working = held.pmo;
-      if (working === null) return Promise.resolve(null);
-      const pmo = request.source === "subset" ? working.subset : working.original;
-      return Promise.resolve(
-        pmo === null ? null : compareGroups(pmo, request.key, request.minReads),
-      );
-    },
-
-    async workingPmoFile(request) {
-      const working = held.pmo;
-      if (working?.subset === null || working === null) return null;
-      const file = await exportPmo(working.subset, { gzip: request.gzip });
-      const fileName = `${baseNameOf(working.fileName)}-subset.json${request.gzip ? ".gz" : ""}`;
-      return { blob: file.blob, fileName };
     },
 
     getPanelFragment(panelId) {
