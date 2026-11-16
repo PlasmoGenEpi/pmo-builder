@@ -10,7 +10,7 @@ import {
   useCatalogue,
   type CatalogueLoader,
 } from "@/features/published/useCatalogue";
-import { useWorkingPmoSession, type WorkingPmoSession } from "@/state";
+import { useWorkingPmoSession } from "@/state";
 import { Button, ButtonLink, Callout, Spinner, buttonClassName, formatBytes } from "@/ui";
 
 import { PMO_TABS, type PmoTab } from "./PmoFilePage";
@@ -35,11 +35,6 @@ type Opening =
   | { readonly kind: "refused" }
   /** The file was downloaded, but opening it in this browser failed. */
   | { readonly kind: "failed" };
-
-function isAlreadyOpen(session: WorkingPmoSession, id: string): boolean {
-  const { open } = session.state.getState();
-  return open.kind === "opened" && open.origin.kind === "published" && open.origin.id === id;
-}
 
 /**
  * Downloads one dataset's file and hands it to the working PMO session to
@@ -69,7 +64,7 @@ function OpenDataset({
 
   useEffect(() => {
     if (dataset.file.size > MAX_BYTES) return undefined;
-    if (isAlreadyOpen(session, dataset.id)) {
+    if (session.isPublishedOpen(dataset.id)) {
       navigate(`/pmo/${tab}`, { replace: true });
       return undefined;
     }

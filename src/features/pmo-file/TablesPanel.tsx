@@ -2,18 +2,13 @@ import { plural, t } from "@lingui/core/macro";
 import { Download, FileArchive } from "lucide-react";
 import { useState } from "react";
 
-import type {
-  TableFormat,
-  TableId,
-  TableInfo,
-  WorkingPmoResult,
-  WorkingSource,
-} from "@/domain/tools/types";
+import type { TableFormat, TableId, TableInfo, WorkingSource } from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
 import { useWorkingPmoSession } from "@/state";
 import { Button, SegmentedControl } from "@/ui";
 
-import { NoAnswer } from "./NoAnswer";
+import { NoAnswer, type NoAnswerReason } from "./NoAnswer";
+import { settleAnswer } from "./settleAnswer";
 
 /** What each table is called and holds. */
 function describe(id: TableId): { readonly title: string; readonly body: string } {
@@ -56,12 +51,11 @@ function describe(id: TableId): { readonly title: string; readonly body: string 
   }
 }
 
-/** Why the last download gave no file. */
-type Problem =
-  | { readonly kind: "not-open" }
-  | { readonly kind: "no-subset" }
-  /** Making the file failed: one table's, or the zip of all of them. */
-  | { readonly kind: "failed"; readonly target: TableId | "all" };
+/** Why the last download gave no file, and which it was: one table, or the zip of all of them. */
+interface Problem {
+  readonly reason: NoAnswerReason;
+  readonly target: TableId | "all";
+}
 
 /** Props for {@link TablesPanel}. */
 export interface TablesPanelProps {
@@ -79,48 +73,19 @@ export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) 
   const [saving, setSaving] = useState<TableId | "all" | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const shown = source === "subset" && subsetTables !== null ? subsetTables : tables;
-  const failed = problem?.kind === "failed" ? problem.target : null;
-
-  /** Saves what `answer` holds, or records why it holds nothing. A stale answer is ignored. */
-  function settle<T>({
-    target,
-    answer,
-    save,
-  }: {
-    readonly target: TableId | "all";
-    readonly answer: WorkingPmoResult<T>;
-    readonly save: (value: T) => void;
-  }): void {
-    setSaving(null);
-    switch (answer.kind) {
-      case "ok":
-        save(answer.value);
-        return;
-      case "failed":
-        setProblem({ kind: "failed", target });
-        return;
-      case "not-open":
-      case "no-subset":
-        setProblem({ kind: answer.kind });
-        return;
-      case "stale":
-        return;
-      default:
-        return;
-    }
-  }
+  const failed = problem?.reason === "failed" ? problem.target : null;
 
   async function download(id: TableId): Promise<void> {
     setSaving(id);
     setProblem(null);
     const answer = await session.query({ kind: "table", source, id, format });
-    settle({
-      target: id,
-      answer,
-      save: (file) => {
+    setSaving(null);
+    settleAnswer(answer, {
+      ok: (file) => {
         const type = format === "csv" ? "text/csv" : "text/tab-separated-values";
         saveFile(new Blob([file.text], { type: `${type};charset=utf-8` }), file.fileName);
       },
+      none: (reason) => setProblem({ reason, target: id }),
     });
   }
 
@@ -128,10 +93,10 @@ export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) 
     setSaving("all");
     setProblem(null);
     const answer = await session.query({ kind: "tables", source, format });
-    settle({
-      target: "all",
-      answer,
-      save: (archive) => saveFile(archive.blob, archive.fileName),
+    setSaving(null);
+    settleAnswer(answer, {
+      ok: (archive) => saveFile(archive.blob, archive.fileName),
+      none: (reason) => setProblem({ reason, target: "all" }),
     });
   }
 
@@ -159,7 +124,7 @@ export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) 
       </div>
       {problem === null ? null : (
         <NoAnswer
-          reason={problem.kind}
+          reason={problem.reason}
           notOpen={t`Open a PMO file to download its tables.`}
           noSubset={t`Make one on the Subset tab. Until then, only the original's tables can be downloaded.`}
           // A failure is shown beside the table it concerns.

@@ -2,12 +2,17 @@
  * Test helpers for the worker protocol: a fake channel between a page and
  * its worker, and an engine served through workers that a test can stop.
  */
-import { createRestartingEngine, type WorkerHandle } from "./client";
-import { serveEngine, type Endpoint } from "./protocol";
-import type { Engine } from "./types";
+import {
+  createRestartingEngine,
+  serveEngine,
+  type Endpoint,
+  type Engine,
+  type WorkerHandle,
+} from "@/worker";
 
 /** One side of a fake channel: it delivers what the other side posts. */
 export class FakeEndpoint implements Endpoint {
+  /** The other side, which receives what this side posts. `null` until joined. */
   peer: FakeEndpoint | null = null;
   private readonly listeners = new Set<(event: MessageEvent) => void>();
 

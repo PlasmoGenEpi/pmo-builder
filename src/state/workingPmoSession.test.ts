@@ -17,7 +17,7 @@ import type { SubsetRequest, WorkingPmoRequest } from "@/domain/tools/types";
 import type { Engine } from "@/worker";
 import { readZip } from "@/domain/tools/zipTesting";
 import { createInThreadEngine } from "@/worker/engine";
-import { stoppableWorkers } from "@/worker/testing";
+import { stoppableWorkers } from "@/test/workers";
 
 import { createAppStore } from "./store";
 import {

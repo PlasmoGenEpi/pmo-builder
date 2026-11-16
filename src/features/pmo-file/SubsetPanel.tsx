@@ -4,13 +4,11 @@ import { ChartColumn, CloudUpload, Download, Plus, Scissors, Table, X } from "lu
 import { useMemo, useState } from "react";
 
 import type { MergeSummary } from "@/domain/build/merge";
-import { unreachable } from "@/domain/draft";
 import type {
   PmoChoices,
-  SubsetOutcome,
+  SubsetDetails,
   SubsetPreview,
   SubsetRequest,
-  WorkingPmoAnswer,
   WorkingPmoQuery,
 } from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
@@ -31,6 +29,7 @@ import {
 
 import { NameChecklist } from "./NameChecklist";
 import { NoAnswer, type NoAnswerReason } from "./NoAnswer";
+import { settleAnswer } from "./settleAnswer";
 import {
   formProblem,
   initialForm,
@@ -42,8 +41,6 @@ import {
   type TargetMode,
 } from "./subsetModel";
 import { useSettled } from "./useSettled";
-
-type Made = Extract<SubsetOutcome, { readonly kind: "made" }>;
 
 function problemText(problem: ReturnType<typeof formProblem>): string | null {
   switch (problem) {
@@ -188,7 +185,7 @@ function SubsetResult({
   onShowTables,
   onPublish,
 }: {
-  readonly made: Made;
+  readonly made: SubsetDetails;
   readonly original: MergeSummary;
   readonly onShowSummary: () => void;
   readonly onShowTables: () => void;
@@ -328,22 +325,6 @@ type Shown =
 
 const SHOW_SUBSET: Shown = { kind: "subset" };
 
-/** What to show after trying to make a subset. `null` for a stale answer, which is ignored. */
-function shownAfter(answer: WorkingPmoAnswer<"subset">): Shown | null {
-  switch (answer.kind) {
-    case "ok":
-      return answer.value.kind === "made" ? SHOW_SUBSET : { kind: "tried", tried: "empty" };
-    case "not-open":
-    case "no-subset":
-    case "failed":
-      return { kind: "tried", tried: answer.kind };
-    case "stale":
-      return null;
-    default:
-      return unreachable(answer);
-  }
-}
-
 /** Props for {@link SubsetPanel}. */
 export interface SubsetPanelProps {
   readonly choices: PmoChoices;
@@ -393,9 +374,13 @@ export function SubsetPanel({
 
   async function make(): Promise<void> {
     setMaking(true);
-    const next = shownAfter(await session.subset(request));
+    const answer = await session.subset(request);
     setMaking(false);
-    if (next !== null) setShown(next);
+    settleAnswer(answer, {
+      ok: (value) =>
+        setShown(value.kind === "made" ? SHOW_SUBSET : { kind: "tried", tried: "empty" }),
+      none: (reason) => setShown({ kind: "tried", tried: reason }),
+    });
   }
 
   return (

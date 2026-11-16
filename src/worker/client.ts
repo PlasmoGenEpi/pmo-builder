@@ -14,6 +14,7 @@ import type {
   SubsetPreview,
   WorkingPmoAnswer,
   WorkingPmoKind,
+  WorkingPmoResult,
   WorkingPmoValues,
 } from "@/domain/tools/types";
 import { SECTION_IDS, type SectionId } from "@/domain/types";
@@ -56,8 +57,14 @@ function isSubsetPreview(value: unknown): value is SubsetPreview {
   );
 }
 
-/** The kinds of answer to a request about the working PMO. */
-const WORKING_PMO_RESULTS = ["ok", "not-open", "no-subset", "stale", "failed"];
+/** The kinds of answer to a request about the working PMO: every one, and only those. */
+const WORKING_PMO_RESULTS = Object.keys({
+  ok: true,
+  "not-open": true,
+  "no-subset": true,
+  stale: true,
+  failed: true,
+} satisfies Record<WorkingPmoResult<unknown>["kind"], true>);
 
 /** Whether `value` has the shape of an answer about the working PMO, its value aside. */
 function isWorkingPmoEnvelope(value: unknown): value is Readonly<Record<string, unknown>> {

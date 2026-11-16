@@ -21,10 +21,11 @@ import { t } from "@lingui/core/macro";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
 import type { PmoFileCheck } from "@/domain/build/checkFileResult";
-import { describeError, unreachable } from "@/domain/draft";
+import { unreachable } from "@/domain/draft";
+import { describeError } from "@/domain/errors";
 import type {
   OpenOutcome,
-  SubsetMade,
+  SubsetDetails,
   SubsetRequest,
   WorkingPmoAnswer,
   WorkingPmoKind,
@@ -35,8 +36,8 @@ import type {
 } from "@/domain/tools/types";
 import { isEngineStoppedError, type Engine } from "@/worker";
 
-/** An opened file's details, as the worker described it. */
-export type OpenedFile = Extract<OpenOutcome, { kind: "opened" }>;
+/** The working PMO's details, as the worker described it on opening. */
+export type WorkingPmoDetails = Extract<OpenOutcome, { kind: "opened" }>;
 
 /** Where a working PMO came from. */
 export type WorkingPmoOrigin =
@@ -63,7 +64,7 @@ export type OpenState =
       readonly file: Blob;
       readonly name: string;
       readonly size: number;
-      readonly opened: OpenedFile;
+      readonly opened: WorkingPmoDetails;
       readonly origin: WorkingPmoOrigin;
     }
   | {
@@ -111,7 +112,7 @@ export type SubsetState =
       readonly kind: "made";
       /** What the subset was made from, so it can be made again. */
       readonly request: SubsetRequest;
-      readonly made: Extract<SubsetMade, { readonly kind: "made" }>;
+      readonly made: SubsetDetails;
     };
 
 /** What to open. */
@@ -189,6 +190,8 @@ export interface WorkingPmoSession {
    * made is answered as stale.
    */
   subset(request: SubsetRequest): Promise<WorkingPmoAnswer<"subset">>;
+  /** Whether the working PMO is open and is the published PMO with Zenodo record `id`. */
+  isPublishedOpen(id: string): boolean;
   /** Sets the minimum reads for Summary and Compare. */
   setMinReads(value: number | null): void;
   /**
@@ -247,7 +250,7 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
    * Sends a request for `generation` once. An engine that throws answers
    * failed, or `stopped` when its worker stopped.
    */
-  const post = async <K extends WorkingPmoKind>(
+  const sendOnce = async <K extends WorkingPmoKind>(
     generation: number,
     request: WorkingPmoRequest<K>,
   ): Promise<WorkingPmoAnswer<K> | Stopped> => {
@@ -280,7 +283,10 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
    * while answering, or it answers that nothing is open while a file is.
    * Only a worker started again after stopping can do that.
    */
-  const isLost = (generation: number, answer: { readonly kind: string }): boolean =>
+  const isLost = <K extends WorkingPmoKind>(
+    generation: number,
+    answer: WorkingPmoAnswer<K> | Stopped,
+  ): boolean =>
     answer.kind === "stopped" ||
     (answer.kind === "not-open" &&
       isCurrent(generation) &&
@@ -307,7 +313,7 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
       }
       return false;
     };
-    const opened = await post(generation, {
+    const opened = await sendOnce(generation, {
       kind: "open",
       file: open.file,
       fileName: open.name,
@@ -317,7 +323,7 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
     // Read after opening, so a subset made meanwhile is the one made again.
     const { subset } = store.getState();
     if (subset.kind === "none") return true;
-    const remade = await post(generation, { kind: "subset", ...subset.request });
+    const remade = await sendOnce(generation, { kind: "subset", ...subset.request });
     if (!isCurrent(generation)) return false;
     return remade.kind === "ok" && remade.value.kind === "made" ? true : fail();
   };
@@ -336,11 +342,11 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
    * Sends a request for `generation`. If the worker lost the working PMO,
    * restores it and sends the request once more.
    */
-  const send = async <K extends WorkingPmoKind>(
+  const sendRestoring = async <K extends WorkingPmoKind>(
     generation: number,
     request: WorkingPmoRequest<K>,
   ): Promise<WorkingPmoAnswer<K>> => {
-    const first = await post(generation, request);
+    const first = await sendOnce(generation, request);
     if (!isLost(generation, first)) return answerOf(first);
     if (!isCurrent(generation)) return { kind: "stale" };
     if (!(await restore(generation))) {
@@ -352,7 +358,7 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
           }
         : { kind: "stale" };
     }
-    return answerOf(await post(generation, request));
+    return answerOf(await sendOnce(generation, request));
   };
 
   /** Counts subset requests, so only the latest one's subset is kept. */
@@ -401,11 +407,11 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
       }
       const { file, name } = bytes;
       const request: WorkingPmoRequest<"open"> = { kind: "open", file, fileName: name };
-      const first = await post(generation, request);
+      const first = await sendOnce(generation, request);
       // A worker that stopped while reading is started again: read the file once more.
       const answer: WorkingPmoAnswer<"open"> =
         first.kind === "stopped" && isCurrent(generation)
-          ? answerOf<"open">(await post(generation, request))
+          ? answerOf<"open">(await sendOnce(generation, request))
           : answerOf<"open">(first);
       if (answer.kind === "stale" || !isCurrent(generation)) return { kind: "superseded" };
       const outcome = answer.kind === "ok" ? answer.value : null;
@@ -426,11 +432,11 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
 
     async close() {
       const generation = nextGeneration({ kind: "none" });
-      await post(generation, { kind: "close" });
+      await sendOnce(generation, { kind: "close" });
     },
 
     query(request) {
-      return send(store.getState().generation, request);
+      return sendRestoring(store.getState().generation, request);
     },
 
     async subset(request) {
@@ -438,7 +444,7 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
       subsetRequests += 1;
       const run = subsetRequests;
       // The subset made before stays, and stays chosen, until this one is answered.
-      const answer = await send(generation, { kind: "subset", ...request });
+      const answer = await sendRestoring(generation, { kind: "subset", ...request });
       if (!isCurrent(generation) || run !== subsetRequests) return { kind: "stale" };
       store.setState(
         answer.kind === "ok" && answer.value.kind === "made"
@@ -447,6 +453,11 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
             { subset: NO_SUBSET, source: "original" },
       );
       return answer;
+    },
+
+    isPublishedOpen(id) {
+      const { open } = store.getState();
+      return open.kind === "opened" && open.origin.kind === "published" && open.origin.id === id;
     },
 
     setMinReads(value) {

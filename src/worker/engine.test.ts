@@ -19,7 +19,7 @@ import {
 } from "./client";
 import { createInThreadEngine, type Engine, type ImportOutcome } from "./engine";
 import { isCallMessage, serveEngine } from "./protocol";
-import { endpointPair } from "./testing";
+import { endpointPair } from "@/test/workers";
 
 /** An engine on the test dependencies. */
 function testEngine(): Engine {

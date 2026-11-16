@@ -144,6 +144,9 @@ export type SubsetOutcome =
 /** What a subset request gives when it could be carried out: the subset, or that nothing was left. */
 export type SubsetMade = Extract<SubsetOutcome, { readonly kind: "made" | "empty" }>;
 
+/** A subset that was made: its file's name, what it holds and what checking it found. */
+export type SubsetDetails = Extract<SubsetOutcome, { readonly kind: "made" }>;
+
 /** Which PMO a download comes from. */
 export type WorkingSource = "original" | "subset";
 
