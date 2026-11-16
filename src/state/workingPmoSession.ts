@@ -19,6 +19,8 @@ import type { PmoFileCheck } from "@/domain/build/checkFileResult";
 import { unreachable } from "@/domain/draft";
 import type {
   OpenOutcome,
+  SubsetMade,
+  SubsetRequest,
   WorkingPmoAnswer,
   WorkingPmoKind,
   WorkingPmoQuery,
@@ -77,9 +79,21 @@ export interface WorkingPmoState {
    * shared so the two tabs agree. `null`: count them all. Reset on each open.
    */
   readonly minReads: number | null;
+  /** The subset made of the original, if any. Reset on each open. */
+  readonly subset: SubsetState;
   /** Which PMO the Tables tab writes tables of. Reset to the original on each open. */
   readonly tableSource: WorkingSource;
 }
+
+/** The subset of the working PMO. */
+export type SubsetState =
+  | { readonly kind: "none" }
+  | {
+      readonly kind: "made";
+      /** What the subset was made from, so it can be made again. */
+      readonly request: SubsetRequest;
+      readonly made: Extract<SubsetMade, { readonly kind: "made" }>;
+    };
 
 /** What to open. */
 export type OpenSource =
@@ -165,16 +179,25 @@ export interface WorkingPmoSession {
   close(): Promise<void>;
   /** Asks the worker about the working PMO, as it is now. */
   query<K extends WorkingPmoQueryKind>(request: WorkingPmoQuery<K>): Promise<WorkingPmoAnswer<K>>;
+  /**
+   * Makes a subset of the original in place of the one made before, which
+   * is let go of first. The subset made last wins: an older one still being
+   * made is answered as stale.
+   */
+  subset(request: SubsetRequest): Promise<WorkingPmoAnswer<"subset">>;
   /** Sets the minimum reads for Summary and Compare. */
   setMinReads(value: number | null): void;
   /** Sets which PMO the Tables tab writes tables of. */
   setTableSource(source: WorkingSource): void;
 }
 
+const NO_SUBSET: SubsetState = { kind: "none" };
+
 const INITIAL: WorkingPmoState = {
   generation: 0,
   open: { kind: "none" },
   minReads: null,
+  subset: NO_SUBSET,
   tableSource: "original",
 };
 
@@ -210,11 +233,20 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
   /** Starts a new generation, showing `open` and resetting what belongs to the last file. */
   const nextGeneration = (open: OpenState): number => {
     const generation = store.getState().generation + 1;
-    store.setState({ generation, open, minReads: null, tableSource: "original" });
+    store.setState({
+      generation,
+      open,
+      minReads: null,
+      subset: NO_SUBSET,
+      tableSource: "original",
+    });
     return generation;
   };
 
   const isCurrent = (generation: number): boolean => store.getState().generation === generation;
+
+  /** Counts subset requests, so only the latest one's subset is kept. */
+  let subsets = 0;
 
   /** The bytes to open: the file given, or the built PMO exported. */
   const bytesOf = async (
@@ -278,6 +310,20 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
 
     query(request) {
       return send(store.getState().generation, request);
+    },
+
+    async subset(request) {
+      const { generation } = store.getState();
+      subsets += 1;
+      const run = subsets;
+      // The worker lets go of the previous subset before making this one.
+      store.setState({ subset: NO_SUBSET });
+      const answer = await send(generation, { kind: "subset", ...request });
+      if (!isCurrent(generation) || run !== subsets) return { kind: "stale" };
+      if (answer.kind === "ok" && answer.value.kind === "made") {
+        store.setState({ subset: { kind: "made", request, made: answer.value } });
+      }
+      return answer;
     },
 
     setMinReads(value) {

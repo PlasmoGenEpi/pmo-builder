@@ -140,6 +140,9 @@ export type SubsetOutcome =
   | { readonly kind: "not-open" }
   | { readonly kind: "failed"; readonly message: string };
 
+/** What a subset request gives when it could be carried out: the subset, or that nothing was left. */
+export type SubsetMade = Extract<SubsetOutcome, { readonly kind: "made" | "empty" }>;
+
 /** Which PMO a download comes from. */
 export type WorkingSource = "original" | "subset";
 
@@ -346,6 +349,10 @@ export interface WorkingPmoRequests {
   readonly close: object;
   /** The summary of the original or the subset, counting microhaplotypes with at least `minReads` reads. */
   readonly summary: { readonly source: WorkingSource; readonly minReads: number };
+  /** Makes a subset of the original, in place of any subset held before. */
+  readonly subset: SubsetRequest;
+  /** What a subset of the original would keep, counted without making it. */
+  readonly preview: SubsetRequest;
   /** One table of the original or the subset, as a CSV or TSV file. */
   readonly table: {
     readonly source: WorkingSource;
@@ -372,10 +379,10 @@ export type WorkingPmoRequest<K extends WorkingPmoKind = WorkingPmoKind> = {
   readonly [P in K]: { readonly kind: P } & WorkingPmoRequests[P];
 }[K];
 
-/** The kinds of request that read the working PMO without opening or closing it. */
-export type WorkingPmoQueryKind = Exclude<WorkingPmoKind, "open" | "close">;
+/** The kinds of request that read the working PMO without opening, closing or subsetting it. */
+export type WorkingPmoQueryKind = Exclude<WorkingPmoKind, "open" | "close" | "subset">;
 
-/** A request that reads the working PMO without opening or closing it. */
+/** A request that reads the working PMO without opening, closing or subsetting it. */
 export type WorkingPmoQuery<K extends WorkingPmoQueryKind = WorkingPmoQueryKind> =
   WorkingPmoRequest<K>;
 
@@ -384,6 +391,8 @@ export interface WorkingPmoValues {
   readonly open: OpenOutcome;
   readonly close: null;
   readonly summary: PmoSummary;
+  readonly subset: SubsetMade;
+  readonly preview: SubsetPreview;
   readonly table: TableFile;
   readonly tables: TablesArchive;
   readonly groupFields: readonly GroupField[];

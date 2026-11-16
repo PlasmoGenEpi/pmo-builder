@@ -10,7 +10,12 @@ import { t } from "@lingui/core/macro";
 
 import { currentLocale } from "@/i18n/languages";
 import { isBlob, isJsonValue, type Draft } from "@/domain/draft";
-import type { WorkingPmoAnswer, WorkingPmoKind, WorkingPmoValues } from "@/domain/tools/types";
+import type {
+  SubsetPreview,
+  WorkingPmoAnswer,
+  WorkingPmoKind,
+  WorkingPmoValues,
+} from "@/domain/tools/types";
 import { SECTION_IDS, type SectionId } from "@/domain/types";
 
 import {
@@ -42,6 +47,15 @@ function isImportOutcome(value: unknown): boolean {
     : isRecord(value["notice"]) && typeof value["notice"]["message"] === "string";
 }
 
+function isSubsetPreview(value: unknown): value is SubsetPreview {
+  return (
+    isRecord(value) &&
+    typeof value["specimens"] === "number" &&
+    typeof value["librarySamplesWithData"] === "number" &&
+    typeof value["targetsWithCalls"] === "number"
+  );
+}
+
 /** The kinds of answer to a request about the working PMO. */
 const WORKING_PMO_RESULTS = ["ok", "not-open", "no-subset", "stale", "failed"];
 
@@ -53,6 +67,10 @@ const WORKING_PMO_VALUES: {
   close: (value): value is null => value === null,
   summary: (value): value is WorkingPmoValues["summary"] =>
     isRecord(value) && Array.isArray(value["samples"]) && Array.isArray(value["targets"]),
+  subset: (value): value is WorkingPmoValues["subset"] =>
+    hasKind(value, ["made", "empty"]) &&
+    (value["kind"] === "empty" || typeof value["fileName"] === "string"),
+  preview: (value): value is WorkingPmoValues["preview"] => isSubsetPreview(value),
   table: (value): value is WorkingPmoValues["table"] =>
     isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string",
   tables: (value): value is WorkingPmoValues["tables"] =>
@@ -117,11 +135,7 @@ const RESULT_GUARDS: {
   subsetPmo: (value): value is EngineResult<"subsetPmo"> =>
     hasKind(value, ["made", "empty", "not-open", "failed"]),
   previewSubset: (value): value is EngineResult<"previewSubset"> =>
-    value === null ||
-    (isRecord(value) &&
-      typeof value["specimens"] === "number" &&
-      typeof value["librarySamplesWithData"] === "number" &&
-      typeof value["targetsWithCalls"] === "number"),
+    value === null || isSubsetPreview(value),
   workingPmoTables: (value): value is EngineResult<"workingPmoTables"> =>
     value === null ||
     (isRecord(value) && isBlob(value["blob"]) && typeof value["fileName"] === "string"),

@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { buildExamplePmo } from "@/domain/build/testing";
 import { richPmo } from "@/domain/tools/testing";
 import { createDraftStorage, createMemoryBackend } from "@/domain/draft";
-import type { WorkingPmoRequest } from "@/domain/tools/types";
+import type { SubsetRequest, WorkingPmoRequest } from "@/domain/tools/types";
 import type { Engine } from "@/worker";
 import { readZip } from "@/domain/tools/zipTesting";
 import { createInThreadEngine } from "@/worker/engine";
@@ -436,6 +436,141 @@ describe("working PMO session: comparing groups", () => {
         generation,
         request: { kind: "groups", source: "original", key: "project", minReads: 0 },
       }),
+    ).toEqual({ kind: "stale" });
+  });
+});
+
+/** The names of the example's first `count` specimens. */
+function firstSpecimens(count: number): readonly string[] {
+  return EXAMPLE.specimen_info.slice(0, count).map((specimen) => specimen.specimen_name);
+}
+
+/** A subset keeping the example's first `count` specimens. */
+function keepFirst(count: number): SubsetRequest {
+  return {
+    specimens: { kind: "names", names: firstSpecimens(count) },
+    targets: { kind: "all" },
+    minReads: 0,
+  };
+}
+
+describe("working PMO session: subsets", () => {
+  it("makes a subset of the original and remembers what it was made from", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    const answer = await session.subset(keepFirst(3));
+    expect(answer).toMatchObject({
+      kind: "ok",
+      value: { kind: "made", fileName: "study-subset.json.gz", summary: { specimens: 3 } },
+    });
+    expect(session.state.getState().subset).toMatchObject({
+      kind: "made",
+      request: keepFirst(3),
+      made: { fileName: "study-subset.json.gz" },
+    });
+    expect(await session.query({ ...SUMMARY, source: "subset" })).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 3 },
+    });
+  });
+});
+
+describe("working PMO session: replacing subsets", () => {
+  it("replaces the first subset with the second", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(3));
+    await session.subset(keepFirst(2));
+    expect(session.state.getState().subset).toMatchObject({ request: keepFirst(2) });
+    expect(await session.query({ ...SUMMARY, source: "subset" })).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 2 },
+    });
+  });
+
+  it("makes each subset from the original, not from the subset before", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(2));
+    expect(await session.subset(keepFirst(3))).toMatchObject({
+      kind: "ok",
+      value: { kind: "made", summary: { specimens: 3 } },
+    });
+  });
+
+  it("keeps no subset when nothing would be left", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(3));
+    const nothing: SubsetRequest = { ...keepFirst(3), minReads: 1e9 };
+    expect(await session.subset(nothing)).toEqual({ kind: "ok", value: { kind: "empty" } });
+    expect(session.state.getState().subset).toEqual({ kind: "none" });
+    expect(await session.query({ ...SUMMARY, source: "subset" })).toEqual({ kind: "no-subset" });
+  });
+
+  it("says no file is open when asked for a subset before any is", async () => {
+    const { session } = makeSession();
+    expect(await session.subset(keepFirst(3))).toEqual({ kind: "not-open" });
+    expect(session.state.getState().subset).toEqual({ kind: "none" });
+  });
+
+  it("answers a subset as stale when another file is opened meanwhile, and keeps none", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    const making = session.subset(keepFirst(3));
+    const opening = session.open(chosen(pmoFile(smallerPmo(4), "second.json")));
+    expect(await making).toEqual({ kind: "stale" });
+    expect(await opening).toEqual({ kind: "opened" });
+    expect(session.state.getState().subset).toEqual({ kind: "none" });
+    expect(await session.query({ ...SUMMARY, source: "subset" })).toEqual({ kind: "no-subset" });
+  });
+
+  it("forgets the subset when another file is opened", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    await session.subset(keepFirst(3));
+    await session.open(chosen(pmoFile(EXAMPLE, "second.json")));
+    expect(session.state.getState().subset).toEqual({ kind: "none" });
+    expect(await session.query({ ...SUMMARY, source: "subset" })).toEqual({ kind: "no-subset" });
+  });
+});
+
+describe("working PMO session: previews", () => {
+  it("counts what a subset of the original would keep, without making it", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    await session.subset(keepFirst(2));
+    expect(await session.query({ kind: "preview", ...keepFirst(3) })).toEqual({
+      kind: "ok",
+      value: expect.objectContaining({ specimens: 3, librarySamples: 3 }),
+    });
+    expect(session.state.getState().subset).toMatchObject({ request: keepFirst(2) });
+  });
+
+  it("counts nothing left when no microhaplotype has enough reads", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+    expect(await session.query({ kind: "preview", ...keepFirst(3), minReads: 1e9 })).toMatchObject({
+      kind: "ok",
+      value: { librarySamplesWithData: 0 },
+    });
+  });
+
+  it("says no file is open before any is", async () => {
+    const { session } = makeSession();
+    expect(await session.query({ kind: "preview", ...keepFirst(3) })).toEqual({
+      kind: "not-open",
+    });
+  });
+
+  it("answers a preview for a file since replaced as stale", async () => {
+    const engine = createInThreadEngine();
+    const { session } = makeSession({ engine });
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    const { generation } = session.state.getState();
+    await session.open(chosen(pmoFile(smallerPmo(3), "second.json")));
+    expect(
+      await engine.workingPmo({ generation, request: { kind: "preview", ...keepFirst(3) } }),
     ).toEqual({ kind: "stale" });
   });
 });

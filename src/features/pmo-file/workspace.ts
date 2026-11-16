@@ -1,7 +1,7 @@
 /**
- * What the Subset, Summary and Publish tabs keep about the working PMO until
- * they move to the working PMO session: the latest subset and each tab's
- * choice of original or subset. The file itself is the session's.
+ * What the Summary and Publish tabs keep about the working PMO until they
+ * move to the working PMO session: each tab's choice of original or subset.
+ * The file, its subset and the Tables tab's choice are the session's.
  *
  * Everything here belongs to one generation of the session, so opening or
  * closing a file starts again from nothing.
@@ -10,13 +10,11 @@ import { useCallback } from "react";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 
-import type { SubsetOutcome, WorkingSource } from "@/domain/tools/types";
+import type { WorkingSource } from "@/domain/tools/types";
 import { useWorkingPmo } from "@/state";
 
 /** What the tabs keep about the working PMO. */
 export interface WorkspaceState {
-  /** The latest subset made of the open file. */
-  readonly subset: SubsetOutcome | null;
   /** Which PMO the Publish tab deposits. */
   readonly publishSource: WorkingSource;
   /** Which PMO the Summary and Compare tabs sum up. */
@@ -24,7 +22,6 @@ export interface WorkspaceState {
 }
 
 const EMPTY: WorkspaceState = {
-  subset: null,
   publishSource: "original",
   summarySource: "original",
 };
