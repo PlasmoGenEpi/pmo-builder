@@ -4336,6 +4336,7 @@ msgstr ""
 msgid "Reads at each stage"
 msgstr ""
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Reads by sample and target"
 msgstr ""
