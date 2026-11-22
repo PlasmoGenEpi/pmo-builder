@@ -4,15 +4,18 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { buildDraft } from "@/domain/build";
-import { EXAMPLE_MAPPINGS, mappedTable, rawTable, testContext } from "@/domain/build/testing";
-import { createEmptyDraft, createPanelEntry } from "@/domain/draft";
-
 import { run } from "./run";
+import {
+  LISTING_PREFIX,
+  listingPage,
+  minimalPmoBytes,
+  requestUrl,
+  zenodoFileUrl,
+  zenodoRecord,
+} from "./testing";
 import { INDEX_VERSION } from "./types";
 
 const FALLBACK = "https://example.org/repository";
-const LISTING_PREFIX = "https://zenodo.org/api/communities/pmocommunity/records";
 const LAST_INDEX = JSON.stringify({
   version: INDEX_VERSION,
   harvestedAt: "2026-11-14T00:00:00.000Z",
@@ -20,60 +23,6 @@ const LAST_INDEX = JSON.stringify({
   datasets: [],
 });
 const LAST_SPECIMENS = JSON.stringify([]);
-
-function minimalPmoBytes(): Uint8Array {
-  const alleles = rawTable([{ SampleID: "s1", Locus: "t1", ASV: "ACGT", Reads: "10" }]);
-  const panel = rawTable([{ amplicon: "t1", fwd_primer: "AAAA", rev_primer: "TTTT" }]);
-  const empty = createEmptyDraft();
-  const { merge } = buildDraft(
-    {
-      ...empty,
-      microhaplotypes: {
-        table: mappedTable("alleles", alleles, EXAMPLE_MAPPINGS.alleles),
-        runName: { mode: "fixed", fixedName: "run1", column: null },
-        representativeColumns: [],
-      },
-      panel: {
-        panels: [
-          {
-            ...createPanelEntry("Panel1"),
-            table: mappedTable("panel", panel, EXAMPLE_MAPPINGS.panel),
-          },
-        ],
-      },
-    },
-    testContext({ alleles, panel }),
-    { creationDate: "2026-01-01" },
-  );
-  if (merge.outcome.kind !== "built") throw new Error("minimal PMO did not build");
-  return new TextEncoder().encode(JSON.stringify(merge.outcome.pmo));
-}
-
-function zenodoRecord(id: string, fileName: string, title = `Dataset ${id}`): unknown {
-  return {
-    id,
-    pids: { doi: { identifier: `10.5281/zenodo.${id}` } },
-    links: { self_html: `https://zenodo.org/records/${id}` },
-    metadata: {
-      title,
-      publication_date: "2026-11-14",
-      creators: [{ person_or_org: { type: "personal", name: "Okello, Grace" } }],
-    },
-    files: {
-      entries: {
-        [fileName]: { key: fileName, size: 512, checksum: `md5:${id}-${fileName}` },
-      },
-    },
-  };
-}
-
-function fileUrl(id: string, fileName: string): string {
-  return `https://zenodo.org/api/records/${id}/files/${encodeURIComponent(fileName)}/content`;
-}
-
-function requestUrl(input: Parameters<typeof fetch>[0]): string {
-  return typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-}
 
 describe("run", () => {
   let out = "";
@@ -92,7 +41,7 @@ describe("run", () => {
   it("keeps the last published catalogue when Zenodo reports more records than it returns", async () => {
     const fakeFetch = vi.fn<typeof fetch>((input) => {
       const url = requestUrl(input);
-      if (url.startsWith("https://zenodo.org/api/communities/pmocommunity/records")) {
+      if (url.startsWith(LISTING_PREFIX)) {
         return Promise.resolve(
           new Response(JSON.stringify({ hits: { hits: [], total: 10 }, links: {} })),
         );
@@ -117,15 +66,13 @@ describe("run", () => {
     let page = 1;
     const fakeFetch = vi.fn<typeof fetch>((input) => {
       const url = requestUrl(input);
-      if (url.startsWith("https://zenodo.org/api/communities/pmocommunity/records")) {
+      if (url.startsWith(LISTING_PREFIX)) {
         page += 1;
         return Promise.resolve(
           new Response(
             JSON.stringify({
               hits: { hits: [] },
-              links: {
-                next: `https://zenodo.org/api/communities/pmocommunity/records?page=${page}`,
-              },
+              links: { next: listingPage(page) },
             }),
           ),
         );
@@ -149,7 +96,7 @@ describe("run", () => {
   it("returns 1 on a listing shortfall when no fallback is given", async () => {
     const fakeFetch = vi.fn<typeof fetch>((input) => {
       const url = requestUrl(input);
-      if (url.startsWith("https://zenodo.org/api/communities/pmocommunity/records")) {
+      if (url.startsWith(LISTING_PREFIX)) {
         return Promise.resolve(
           new Response(JSON.stringify({ hits: { hits: [], total: 10 }, links: {} })),
         );
@@ -165,8 +112,8 @@ describe("run", () => {
 
   it("carries unchanged records over from --fallback and reports carried over, downloaded and left out", async () => {
     const bytes = minimalPmoBytes();
-    const kept = zenodoRecord("101", "kept.pmo.json");
-    const added = zenodoRecord("102", "added.pmo.json");
+    const kept = zenodoRecord("101", { files: ["kept.pmo.json"] });
+    const added = zenodoRecord("102", { files: ["added.pmo.json"] });
     const invalid = {
       id: "103",
       metadata: { title: "No JSON" },
@@ -185,7 +132,7 @@ describe("run", () => {
             new Response(JSON.stringify({ hits: { hits: [kept], total: 1 }, links: {} })),
           );
         }
-        if (url === fileUrl("101", "kept.pmo.json")) {
+        if (url === zenodoFileUrl("101", "kept.pmo.json")) {
           return Promise.resolve(new Response(Uint8Array.from(bytes)));
         }
         return Promise.resolve(new Response(null, { status: 404 }));
@@ -210,7 +157,7 @@ describe("run", () => {
             ),
           );
         }
-        if (url === fileUrl("102", "added.pmo.json")) {
+        if (url === zenodoFileUrl("102", "added.pmo.json")) {
           return Promise.resolve(new Response(Uint8Array.from(bytes)));
         }
         return Promise.resolve(new Response(null, { status: 404 }));
@@ -224,8 +171,8 @@ describe("run", () => {
       );
 
       expect(exitCode).toBe(0);
-      expect(asked).not.toContain(fileUrl("101", "kept.pmo.json"));
-      expect(asked).toContain(fileUrl("102", "added.pmo.json"));
+      expect(asked).not.toContain(zenodoFileUrl("101", "kept.pmo.json"));
+      expect(asked).toContain(zenodoFileUrl("102", "added.pmo.json"));
       expect(JSON.parse(await readFile(path.join(out, "index.json"), "utf8"))).toMatchObject({
         version: INDEX_VERSION,
         datasets: [expect.objectContaining({ id: "101" }), expect.objectContaining({ id: "102" })],
@@ -252,7 +199,7 @@ describe("run", () => {
 
   it("carries unchanged records over from --out when --fallback is omitted", async () => {
     const bytes = minimalPmoBytes();
-    const kept = zenodoRecord("101", "kept.pmo.json");
+    const kept = zenodoRecord("101", { files: ["kept.pmo.json"] });
 
     const firstAsked: string[] = [];
     const firstFetch = vi.fn<typeof fetch>((input) => {
@@ -263,13 +210,13 @@ describe("run", () => {
           new Response(JSON.stringify({ hits: { hits: [kept], total: 1 }, links: {} })),
         );
       }
-      if (url === fileUrl("101", "kept.pmo.json")) {
+      if (url === zenodoFileUrl("101", "kept.pmo.json")) {
         return Promise.resolve(new Response(Uint8Array.from(bytes)));
       }
       return Promise.resolve(new Response(null, { status: 404 }));
     });
     expect(await run(["--community", "pmocommunity", "--out", out], { fetch: firstFetch })).toBe(0);
-    expect(firstAsked).toContain(fileUrl("101", "kept.pmo.json"));
+    expect(firstAsked).toContain(zenodoFileUrl("101", "kept.pmo.json"));
 
     const secondAsked: string[] = [];
     const secondFetch = vi.fn<typeof fetch>((input) => {
@@ -285,7 +232,7 @@ describe("run", () => {
     expect(await run(["--community", "pmocommunity", "--out", out], { fetch: secondFetch })).toBe(
       0,
     );
-    expect(secondAsked).not.toContain(fileUrl("101", "kept.pmo.json"));
+    expect(secondAsked).not.toContain(zenodoFileUrl("101", "kept.pmo.json"));
     expect(JSON.parse(await readFile(path.join(out, "index.json"), "utf8"))).toMatchObject({
       datasets: [expect.objectContaining({ id: "101" })],
     });
@@ -296,7 +243,7 @@ describe("run", () => {
 
   it("forces a full rebuild when --full is passed", async () => {
     const bytes = minimalPmoBytes();
-    const kept = zenodoRecord("101", "kept.pmo.json");
+    const kept = zenodoRecord("101", { files: ["kept.pmo.json"] });
 
     const makeFetch = (asked: string[]) =>
       vi.fn<typeof fetch>((input) => {
@@ -307,7 +254,7 @@ describe("run", () => {
             new Response(JSON.stringify({ hits: { hits: [kept], total: 1 }, links: {} })),
           );
         }
-        if (url === fileUrl("101", "kept.pmo.json")) {
+        if (url === zenodoFileUrl("101", "kept.pmo.json")) {
           return Promise.resolve(new Response(Uint8Array.from(bytes)));
         }
         return Promise.resolve(new Response(null, { status: 404 }));
@@ -325,7 +272,7 @@ describe("run", () => {
         fetch: makeFetch(diskAsked),
       }),
     ).toBe(0);
-    expect(diskAsked).toContain(fileUrl("101", "kept.pmo.json"));
+    expect(diskAsked).toContain(zenodoFileUrl("101", "kept.pmo.json"));
 
     const fallbackAsked: string[] = [];
     const fallbackFetch = vi.fn<typeof fetch>((input) => {
@@ -339,7 +286,7 @@ describe("run", () => {
           new Response(JSON.stringify({ hits: { hits: [kept], total: 1 }, links: {} })),
         );
       }
-      if (url === fileUrl("101", "kept.pmo.json")) {
+      if (url === zenodoFileUrl("101", "kept.pmo.json")) {
         return Promise.resolve(new Response(Uint8Array.from(bytes)));
       }
       return Promise.resolve(new Response(null, { status: 404 }));
@@ -350,12 +297,12 @@ describe("run", () => {
       }),
     ).toBe(0);
     expect(fallbackAsked).not.toContain(`${FALLBACK}/index.json`);
-    expect(fallbackAsked).toContain(fileUrl("101", "kept.pmo.json"));
+    expect(fallbackAsked).toContain(zenodoFileUrl("101", "kept.pmo.json"));
   });
 
   it("falls back to a full harvest when the previous catalogue cannot be read", async () => {
     const bytes = minimalPmoBytes();
-    const kept = zenodoRecord("101", "kept.pmo.json");
+    const kept = zenodoRecord("101", { files: ["kept.pmo.json"] });
 
     // Unreadable --fallback (404 / corrupt JSON).
     const fallbackAsked: string[] = [];
@@ -370,7 +317,7 @@ describe("run", () => {
           new Response(JSON.stringify({ hits: { hits: [kept], total: 1 }, links: {} })),
         );
       }
-      if (url === fileUrl("101", "kept.pmo.json")) {
+      if (url === zenodoFileUrl("101", "kept.pmo.json")) {
         return Promise.resolve(new Response(Uint8Array.from(bytes)));
       }
       return Promise.resolve(new Response(null, { status: 404 }));
@@ -380,7 +327,7 @@ describe("run", () => {
         fetch: brokenFallback,
       }),
     ).toBe(0);
-    expect(fallbackAsked).toContain(fileUrl("101", "kept.pmo.json"));
+    expect(fallbackAsked).toContain(zenodoFileUrl("101", "kept.pmo.json"));
 
     // Corrupt files in --out on disk.
     await writeFile(path.join(out, "index.json"), "{corrupt");
@@ -394,12 +341,12 @@ describe("run", () => {
           new Response(JSON.stringify({ hits: { hits: [kept], total: 1 }, links: {} })),
         );
       }
-      if (url === fileUrl("101", "kept.pmo.json")) {
+      if (url === zenodoFileUrl("101", "kept.pmo.json")) {
         return Promise.resolve(new Response(Uint8Array.from(bytes)));
       }
       return Promise.resolve(new Response(null, { status: 404 }));
     });
     expect(await run(["--community", "pmocommunity", "--out", out], { fetch: diskFetch })).toBe(0);
-    expect(diskAsked).toContain(fileUrl("101", "kept.pmo.json"));
+    expect(diskAsked).toContain(zenodoFileUrl("101", "kept.pmo.json"));
   });
 });

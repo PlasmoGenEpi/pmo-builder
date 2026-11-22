@@ -35,6 +35,10 @@ function option(args: readonly string[], name: string): string | undefined {
   return index === -1 ? undefined : args[index + 1];
 }
 
+function baseUrl(url: string): string {
+  return url.endsWith("/") ? url : `${url}/`;
+}
+
 async function write(directory: string, name: string, value: unknown): Promise<void> {
   await writeFile(path.join(directory, name), `${JSON.stringify(value)}\n`);
 }
@@ -44,7 +48,7 @@ async function loadPreviousFromUrl(
   send: typeof fetch,
 ): Promise<PreviousCatalogue | undefined> {
   try {
-    const base = fallback.endsWith("/") ? fallback : `${fallback}/`;
+    const base = baseUrl(fallback);
     const [indexResponse, specimensResponse] = await Promise.all([
       send(new URL("index.json", base)),
       send(new URL("specimens.json", base)),
@@ -132,7 +136,7 @@ export async function run(args: readonly string[], options: RunOptions = {}): Pr
     if (fallback === undefined) return 1;
     // Keep the catalogue that is already published, so a deploy while Zenodo
     // is down does not empty the page.
-    const base = fallback.endsWith("/") ? fallback : `${fallback}/`;
+    const base = baseUrl(fallback);
     for (const name of ["index.json", "specimens.json"]) {
       // oxlint-disable-next-line no-await-in-loop -- two small files
       const response = await send(new URL(name, base));
