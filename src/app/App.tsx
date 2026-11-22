@@ -3,7 +3,7 @@ import { I18nProvider } from "@lingui/react";
 import { Suspense, useEffect, type ReactNode } from "react";
 import { Redirect, Route, Router, Switch, useLocation, type BaseLocationHook } from "wouter";
 // Aliased: the router takes the hook itself as a value.
-import { useHashLocation as hashLocation } from "wouter/use-hash-location";
+import { useHashLocation as hashLocation } from "./hashLocation";
 
 import { recordPageOpened, recordStepOpened } from "@/analytics";
 import { i18n } from "@/i18n";
