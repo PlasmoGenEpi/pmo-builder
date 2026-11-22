@@ -28,6 +28,7 @@ import type {
   PmoSlot,
   SubsetDetails,
   SubsetRequest,
+  TableFormat,
   WorkingPmoAnswer,
   WorkingPmoKind,
   WorkingPmoQuery,
@@ -104,6 +105,8 @@ export interface WorkingPmoState {
    * back. Reset to the original on each open.
    */
   readonly source: WorkingSource;
+  /** The delimited format for table downloads on Tables and Summary. Defaults to `"csv"`. */
+  readonly tableFormat: TableFormat;
 }
 
 /** The subset of the working PMO. */
@@ -202,6 +205,8 @@ export interface WorkingPmoSession {
    * can be chosen only once one is made.
    */
   setSource(source: WorkingSource): void;
+  /** Sets the delimited format for table downloads on Tables and Summary. */
+  setTableFormat(format: TableFormat): void;
 }
 
 const NO_SUBSET: SubsetState = { kind: "none" };
@@ -212,6 +217,7 @@ const INITIAL: WorkingPmoState = {
   minReads: null,
   subset: NO_SUBSET,
   source: "original",
+  tableFormat: "csv",
 };
 
 /** A request the worker stopped before answering. */
@@ -470,6 +476,10 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
     setSource(source) {
       if (source === "subset" && store.getState().subset.kind !== "made") return;
       store.setState({ source });
+    },
+
+    setTableFormat(tableFormat) {
+      store.setState({ tableFormat });
     },
   };
 }

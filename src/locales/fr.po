@@ -986,6 +986,7 @@ msgstr "{total, plural, one {Plus de # méthode : {methodNames}, et d’autres.
 msgid "{total, plural, one {More than # method: {methodNames}. Runs refer to a method by this name.} other {More than # methods: {methodNames}. Runs refer to a method by this name.}}"
 msgstr "{total, plural, one {Plus de # méthode : {methodNames}. Les runs désignent une méthode par ce nom.} other {Plus de # méthodes : {methodNames}. Les runs désignent une méthode par ce nom.}}"
 
+#: src/features/pmo-file/summary/SortableTable.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 #: src/ui/DataTable.tsx
 msgid "{total, plural, one {Showing {shownCount} of {totalCount} row} other {Showing {shownCount} of {totalCount} rows}}"
@@ -1797,6 +1798,11 @@ msgstr "Chromosome"
 msgid "Chromosomes"
 msgstr "Chromosomes"
 
+#. Verb: clear a table search box
+#: src/features/pmo-file/summary/SortableTable.tsx
+msgid "Clear"
+msgstr "Effacer"
+
 #: src/features/published/CountryFilter.tsx
 msgid "Clear countries"
 msgstr "Effacer les pays"
@@ -1804,6 +1810,10 @@ msgstr "Effacer les pays"
 #: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Clear minimum reads"
 msgstr "Effacer le minimum de lectures"
+
+#: src/features/pmo-file/summary/SortableTable.tsx
+msgid "Clear search for {label}"
+msgstr "Effacer la recherche dans {label}"
 
 #: src/features/published/PublishedPage.tsx
 msgid "Clear the filters"
@@ -2170,10 +2180,12 @@ msgid "Done"
 msgstr "Terminé"
 
 #: src/features/pmo-file/PmoOverview.tsx
+#: src/features/pmo-file/summary/SortableTable.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Download"
 msgstr "Télécharger"
 
+#: src/features/pmo-file/summary/SortableTable.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Download {title} as {format}"
 msgstr "Télécharger {title} au format {format}"
@@ -3767,6 +3779,7 @@ msgid "Nothing leaves this copy. These are the records it would send if usage co
 msgstr "Rien ne quitte cette instance. Voici les relevés qu’elle enverrait si les statistiques d’utilisation étaient configurées, pour que vous puissiez voir ce qu’ils contiennent."
 
 #: src/features/pmo-file/NameChecklist.tsx
+#: src/features/pmo-file/summary/SortableTable.tsx
 msgid "Nothing matches the search."
 msgstr "Rien ne correspond à la recherche."
 
@@ -5010,9 +5023,25 @@ msgstr "Enregistré sur cet appareil"
 msgid "Search"
 msgstr "Rechercher"
 
+#: src/features/pmo-file/summary/SortableTable.tsx
+msgid "Search {label}"
+msgstr "Rechercher dans {label}"
+
 #: src/features/published/PublishedPage.tsx
 msgid "Search datasets"
 msgstr "Rechercher des jeux de données"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Search sample"
+msgstr "Rechercher un échantillon"
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Search sample or specimen"
+msgstr "Rechercher un échantillon ou un spécimen"
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Search target"
+msgstr "Rechercher une cible"
 
 #: src/features/pmo-file/NameChecklist.tsx
 msgid "Search to see the others."

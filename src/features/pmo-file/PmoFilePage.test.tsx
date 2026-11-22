@@ -1487,6 +1487,128 @@ describe("PmoFilePage: summary", () => {
     expect(columnOf(stages, /Library sample/)).toEqual(["S2", "S1", "S3"]);
     expect(columnOf(stages, /denoised/).at(-1)).toBe("–");
   });
+
+  it("searches, counts and downloads Samples, Targets and pipeline stage tables in the chosen format", async () => {
+    const { user } = await open(pmoFile(examplePmoWithReadCounts(), "study.json"));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+
+    const samples = await screen.findByRole("table", { name: "Samples" });
+    const targets = screen.getByRole("table", { name: "Targets" });
+    const stages = screen.getByRole("table", { name: "Reads at each pipeline stage" });
+
+    // Samples (50 rows) and Targets (21 rows) show search; Stages (3 rows) hides search.
+    const samplesSearch = screen.getByRole("searchbox", { name: "Search Samples" });
+    const targetsSearch = screen.getByRole("searchbox", { name: "Search Targets" });
+    expect(
+      screen.queryByRole("searchbox", { name: "Search Reads at each pipeline stage" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Showing 50 of 50 rows")).toBeInTheDocument();
+    expect(screen.getByText("Showing 21 of 21 rows")).toBeInTheDocument();
+    expect(screen.getByText("Showing 3 of 3 rows")).toBeInTheDocument();
+
+    // Narrow Targets by part of the first target's name and download CSV of shown rows.
+    const firstTarget = columnOf(targets, /^Target/)[0] ?? "";
+    expect(firstTarget.length).toBeGreaterThan(3);
+    await user.type(targetsSearch, firstTarget);
+    const matchingTargets = columnOf(targets, /^Target/);
+    expect(matchingTargets).toContain(firstTarget);
+    expect(matchingTargets.length).toBeLessThan(21);
+    expect(screen.getByText(`Showing ${matchingTargets.length} of 21 rows`)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Download Targets as csv" }));
+    const targetsCsv = await savedText();
+    expect(targetsCsv.name).toBe("study-summary-targets.csv");
+    const targetLines = targetsCsv.text.trimEnd().split("\n");
+    expect(targetLines[0]).toBe("Target,Samples with data,Alleles,Heterozygosity");
+    expect(targetLines).toHaveLength(matchingTargets.length + 1);
+    expect(targetLines[1]?.split(",")[0]).toBe(matchingTargets[0]);
+
+    await user.click(screen.getByRole("button", { name: "Clear search for Targets" }));
+    expect(screen.getByText("Showing 21 of 21 rows")).toBeInTheDocument();
+
+    // Narrow Samples by library sample name, then by specimen name.
+    const firstSample = columnOf(samples, /^Library sample/)[0] ?? "";
+    await user.type(samplesSearch, firstSample);
+    expect(columnOf(samples, /^Library sample/)).toContain(firstSample);
+    expect(columnOf(samples, /^Library sample/).length).toBeLessThan(50);
+
+    await user.click(screen.getByRole("button", { name: "Clear search for Samples" }));
+    expect(screen.getByText("Showing 50 of 50 rows")).toBeInTheDocument();
+
+    await user.type(samplesSearch, "specimen_05");
+    const matchingSpecimens = columnOf(samples, /^Specimen/);
+    expect(matchingSpecimens).toEqual(["example_specimen_05"]);
+    expect(screen.getByText("Showing 1 of 50 rows")).toBeInTheDocument();
+
+    vi.mocked(saveFile).mockReset();
+    await user.click(screen.getByRole("button", { name: "Download Samples as csv" }));
+    const samplesCsv = await savedText();
+    expect(samplesCsv.name).toBe("study-summary-samples.csv");
+    const sampleLines = samplesCsv.text.trimEnd().split("\n");
+    expect(sampleLines[0]).toContain("Library sample,Specimen,");
+    expect(sampleLines).toHaveLength(2);
+    expect(sampleLines[1]).toContain("example_specimen_05");
+
+    // Download pipeline stage table (3 rows, no search).
+    expect(columnOf(stages, /^Library sample/)).toHaveLength(3);
+    vi.mocked(saveFile).mockReset();
+    await user.click(
+      screen.getByRole("button", { name: "Download Reads at each pipeline stage as csv" }),
+    );
+    const stagesCsv = await savedText();
+    expect(stagesCsv.name).toBe("study-summary-pipeline-stages.csv");
+    expect(stagesCsv.text.trimEnd().split("\n")).toHaveLength(4);
+
+    // Format chosen on Tables carries over to Summary downloads.
+    await user.click(screen.getByRole("tab", { name: "Tables" }));
+    await user.click(screen.getByRole("radio", { name: "TSV" }));
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+
+    vi.mocked(saveFile).mockReset();
+    await user.click(await screen.findByRole("button", { name: "Download Targets as tsv" }));
+    const targetsTsv = await savedText();
+    expect(targetsTsv.name).toBe("study-summary-targets.tsv");
+    expect(targetsTsv.text.split("\n")[0]).toBe(
+      "Target\tSamples with data\tAlleles\tHeterozygosity",
+    );
+  });
+
+  it("shows search on the pipeline stage table when more than five samples have stage counts", async () => {
+    const base = examplePmoWithReadCounts();
+    const firstStageGroup = base.read_counts_by_stage?.[0];
+    if (firstStageGroup === undefined) throw new Error("expected read_counts_by_stage");
+    const withSixStages: PortableMicrohaplotypeObject = {
+      ...base,
+      read_counts_by_stage: [
+        {
+          ...firstStageGroup,
+          read_counts_by_library_sample_by_stage: Array.from({ length: 6 }, (_, index) => ({
+            library_sample_id: index,
+            total_raw_count: 500 + index * 10,
+            read_counts_for_targets: [
+              {
+                target_id: 0,
+                stages: [{ stage: "demux", reads: 200 + index * 10 }],
+              },
+            ],
+          })),
+        },
+      ],
+    };
+    const { user } = await open(pmoFile(withSixStages, "study.json"));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+
+    const stages = await screen.findByRole("table", { name: "Reads at each pipeline stage" });
+    const stagesSearch = screen.getByRole("searchbox", {
+      name: "Search Reads at each pipeline stage",
+    });
+    expect(screen.getByText("Showing 6 of 6 rows")).toBeInTheDocument();
+
+    const firstSample = columnOf(stages, /^Library sample/)[0] ?? "";
+    await user.type(stagesSearch, firstSample);
+    expect(columnOf(stages, /^Library sample/)).toEqual([firstSample]);
+    expect(screen.getByText("Showing 1 of 6 rows")).toBeInTheDocument();
+  });
 });
 
 describe("PmoFilePage: optional details", () => {

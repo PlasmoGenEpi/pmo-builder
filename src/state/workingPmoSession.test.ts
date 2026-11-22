@@ -1234,4 +1234,30 @@ describe("working and published PMO slots", () => {
       }),
     ).toEqual({ kind: "not-open" });
   });
+
+  it("defaults tableFormat to csv and updates it per session", () => {
+    const engine = createInThreadEngine();
+    const working = createWorkingPmoSession({
+      engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "working",
+    });
+    const published = createWorkingPmoSession({
+      engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "published",
+    });
+
+    expect(working.state.getState().tableFormat).toBe("csv");
+    expect(published.state.getState().tableFormat).toBe("csv");
+
+    working.setTableFormat("tsv");
+    expect(working.state.getState().tableFormat).toBe("tsv");
+    expect(published.state.getState().tableFormat).toBe("csv");
+
+    working.setTableFormat("csv");
+    expect(working.state.getState().tableFormat).toBe("csv");
+  });
 });

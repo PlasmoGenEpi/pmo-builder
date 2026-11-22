@@ -10,10 +10,11 @@ import type {
   WorkingSource,
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
-import { usePmoQuery } from "@/state";
+import { usePmo, usePmoQuery } from "@/state";
 import { Card, SectionHeading, Skeleton, Stat, Switch, formatCount, jumpToHeading } from "@/ui";
 
 import { AlleleBars } from "./AlleleBars";
+import { pmoBaseName } from "./exportTable";
 import {
   ControlsCheck,
   DensityView,
@@ -299,6 +300,9 @@ export function SummaryPanel({
   const [allTargets, setAllTargets] = useState(false);
   const [grouped, setGrouped] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
+  const tableFormat = usePmo((state) => state.tableFormat);
+  const openName = usePmo((state) => (state.open.kind === "opened" ? state.open.name : null));
+  const fileBase = pmoBaseName(openName, source);
   const request = useMemo(
     (): WorkingPmoRequest<"summary"> => ({ kind: "summary", source, minReads }),
     [source, minReads],
@@ -411,6 +415,9 @@ export function SummaryPanel({
               rows={summary.samples}
               rowKey={(row) => `${row.run}\u0000${row.name}`}
               initialSort={{ key: "reads", descending: false }}
+              searchableColumns={["name", "specimen"]}
+              searchPlaceholder={t`Search sample or specimen`}
+              download={{ fileName: `${fileBase}-summary-samples`, format: tableFormat }}
             />
           </section>
 
@@ -433,6 +440,9 @@ export function SummaryPanel({
                 onRowSelect={(row) => setSelected(row.name)}
                 selectedKey={chosenTarget?.name ?? null}
                 initialSort={{ key: "samples", descending: true }}
+                searchableColumns={["name"]}
+                searchPlaceholder={t`Search target`}
+                download={{ fileName: `${fileBase}-summary-targets`, format: tableFormat }}
               />
               <Card padding="md">
                 {chosenTarget === null ? null : <AlleleBars target={chosenTarget} />}
@@ -442,7 +452,11 @@ export function SummaryPanel({
 
           <PlateView summary={summary} headingId={HEADING.plates} />
           <DensityView summary={summary} headingId={HEADING.density} />
-          <StagesView summary={summary} headingId={HEADING.stages} />
+          <StagesView
+            summary={summary}
+            headingId={HEADING.stages}
+            download={{ fileName: `${fileBase}-summary-pipeline-stages`, format: tableFormat }}
+          />
         </>
       )}
     </div>

@@ -223,6 +223,7 @@ describe("Published view (OpenPublished)", () => {
     await user.click(screen.getByRole("tab", { name: "Tables" }));
     expect(await screen.findByRole("tab", { name: "Tables", selected: true })).toBeInTheDocument();
     expect(location.history.at(-1)).toBe("/published/303/tables");
+    await user.click(screen.getByRole("radio", { name: "TSV" }));
 
     await user.click(screen.getByRole("tab", { name: "Overview" }));
     expect(
@@ -236,6 +237,7 @@ describe("Published view (OpenPublished)", () => {
 
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("50");
+    expect(screen.getByRole("button", { name: "Download Samples as tsv" })).toBeInTheDocument();
   });
 
   it("leaves a pre-existing working PMO and its subset untouched, and drops the published PMO on leaving", async () => {
