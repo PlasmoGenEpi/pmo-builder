@@ -278,6 +278,10 @@ msgstr "{0, plural, one {Este campo também precisa de {neededFields}. Associe-o
 msgid "{0, plural, one {This workbook has # sheet. Choose the one that holds “{tableName}”.} other {This workbook has # sheets. Choose the one that holds “{tableName}”.}}"
 msgstr "{0, plural, one {Este livro tem # folha. Escolha a que contém «{tableName}».} other {Este livro tem # folhas. Escolha a que contém «{tableName}».}}"
 
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "{activeTargets, plural, one {{activePlate}, well {activeCoord}, {activeSampleName}: # target with data.} other {{activePlate}, well {activeCoord}, {activeSampleName}: # targets with data.}}"
+msgstr "{activeTargets, plural, one {{activePlate}, poço {activeCoord}, {activeSampleName}: # alvo com dados.} other {{activePlate}, poço {activeCoord}, {activeSampleName}: # alvos com dados.}}"
+
 #: src/features/review/reviewModel.ts
 msgid "{alleleCalls, plural, one {# allele call} other {# allele calls}} for {samples, plural, one {# sample} other {# samples}} at {targets, plural, one {# target} other {# targets}}, {alleles, plural, one {# distinct allele} other {# distinct alleles}}"
 msgstr "{alleleCalls, plural, one {# identificação de alelo} other {# identificações de alelos}} para {samples, plural, one {# amostra} other {# amostras}} em {targets, plural, one {# alvo} other {# alvos}}, {alleles, plural, one {# alelo distinto} other {# alelos distintos}}"
@@ -550,10 +554,6 @@ msgstr "{hoveredReads} leituras"
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "{hoverName}: {hoverDensity} per µL, {hoverTargets} targets with data."
 msgstr "{hoverName}: {hoverDensity} por µL, {hoverTargets} alvos com dados."
-
-#: src/features/pmo-file/summary/QualityViews.tsx
-msgid "{hoverTargets, plural, one {# target with data} other {# targets with data}}"
-msgstr "{hoverTargets, plural, one {# alvo com dados} other {# alvos com dados}}"
 
 #: src/features/table-import/MatchingParts.tsx
 msgid "{includedCount} of {columnCount} included"
@@ -935,6 +935,10 @@ msgstr "{specimensText} em {pmosText}"
 msgid "{targetCount} before merging"
 msgstr "{targetCount} antes da fusão"
 
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "{targets, plural, one {# target with data} other {# targets with data}}"
+msgstr "{targets, plural, one {# alvo com dados} other {# alvos com dados}}"
+
 #: src/features/panel/PanelEditor.tsx
 msgid "{targets, plural, one {# target, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.} other {# targets, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.}}"
 msgstr "{targets, plural, one {# alvo, guardado em {savedDate}. Os alvos e o genoma vêm da cópia guardada. Para os alterar, adicione a tabela de alvos.} other {# alvos, guardado em {savedDate}. Os alvos e o genoma vêm da cópia guardada. Para os alterar, adicione a tabela de alvos.}}"
@@ -998,6 +1002,10 @@ msgstr "{warnings, plural, one {O seu PMO pode ser transferido, mas não está t
 #: src/features/review/VerdictCard.tsx
 msgid "{warnings, plural, one {Your PMO can be downloaded. There is # warning worth a look below.} other {Your PMO can be downloaded. There are # warnings worth a look below.}}"
 msgstr "{warnings, plural, one {O seu PMO pode ser transferido. Há # aviso a rever abaixo.} other {O seu PMO pode ser transferido. Há # avisos a rever abaixo.}}"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "{wellTargets, plural, one {{coord}, {sampleName}: # target with data} other {{coord}, {sampleName}: # targets with data}}"
+msgstr "{wellTargets, plural, one {{coord}, {sampleName}: # alvo com dados} other {{coord}, {sampleName}: # alvos com dados}}"
 
 #. {where} is a place in the PMO, such as 'Specimen "S1", field "collection_country"'.
 #: src/domain/build/merge.ts
@@ -2245,6 +2253,10 @@ msgstr "Cada valor tem de ser o nome de um método acima."
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "Each well is a library sample, coloured by how many targets have data; a cross marks a sample with none. Patterns along a row, a column or the edge point to a problem with the plate rather than the samples."
 msgstr "Cada poço é uma amostra de biblioteca, colorido pelo número de alvos com dados; uma cruz marca uma amostra sem nenhum. Padrões ao longo de uma linha, de uma coluna ou da margem indicam um problema da placa e não das amostras."
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Empty well"
+msgstr "Poço vazio"
 
 #. Field label: where an allele ends on the chromosome
 #: src/domain/fields/microhaplotypes.ts
@@ -3504,6 +3516,10 @@ msgstr "Publicação mais recente"
 msgid "Next"
 msgstr "Seguinte"
 
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "No data"
+msgstr "Sem dados"
+
 #: src/features/pmo-file/NoAnswer.tsx
 msgid "No file is open"
 msgstr "Nenhum ficheiro está aberto"
@@ -4239,6 +4255,10 @@ msgstr "Placa {plate}: {wellCount} amostras de biblioteca. A tabela de amostras 
 #: src/domain/build/notices.ts
 msgid "Plate columns of the {table} are mapped twice over: give the plate position, or the plate row and column, not both. Unmap one of them."
 msgstr "As colunas de placa da {table} estão associadas em duplicado: indique a posição na placa, ou a linha e a coluna da placa, mas não ambas. Remova a associação de uma delas."
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Plate legend"
+msgstr "Legenda da placa"
 
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "Plate positions are given for {haveCount} of {totalCount} library samples."
@@ -6975,6 +6995,10 @@ msgstr "À espera de que inicie sessão no Zenodo na outra janela."
 #: src/ui/Callout.tsx
 msgid "Warning"
 msgstr "Aviso"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Wells on {plate}"
+msgstr "Poços em {plate}"
 
 #: src/features/review/PmoContents.tsx
 msgid "What is in the PMO"

@@ -211,3 +211,50 @@ test("hovering a well in the last row and last column keeps its details inside t
     "distance between well H12 and tooltip",
   ).toBeLessThanOrEqual(24);
 });
+
+test("plate legend shows scale, no-data and empty-well entries in light and dark themes, and filled wells open on focus and tap", async ({
+  page,
+}) => {
+  const viewport = { width: 390, height: 720 };
+  await page.setViewportSize(viewport);
+  await page.emulateMedia({ colorScheme: "light" });
+  const plates = await openExamplePlates(page);
+
+  const figure = plates.locator("figure").first();
+  await figure.scrollIntoViewIfNeeded();
+
+  const legend = figure.getByRole("list", { name: "Plate legend" });
+  await expect(legend).toBeVisible();
+  await expect(legend).toContainText("1");
+  await expect(legend).toContainText(/\d+ targets? with data/);
+  await expect(legend).toContainText("No data");
+  await expect(legend).toContainText("Empty well");
+
+  const legendBox = await requireBox(legend, "plate legend at 390 px");
+  expectInsideViewport(legendBox, viewport);
+
+  // Switch to dark theme and confirm the legend remains visible with dark palette styling.
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(legend).toBeVisible();
+
+  // Keyboard focus on a filled well opens its details inside the viewport.
+  const wellA1 = figure.getByRole("button", { name: /^A1, example_sample_01:/ });
+  await wellA1.focus();
+  await expect(wellA1).toBeFocused();
+  const focusTooltip = plates.getByText("example_sample_01", { exact: true }).locator("..");
+  await expect(focusTooltip).toBeVisible();
+  expectInsideViewport(await requireBox(focusTooltip, "focus tooltip"), viewport);
+
+  // Tapping/clicking a well in the last column pins its details until Escape dismisses it.
+  const wellD12 = figure.getByRole("button", { name: /^D12, example_sample_48:/ });
+  await wellD12.click();
+  await expect(wellD12).toHaveAttribute("aria-pressed", "true");
+  const tapTooltip = plates.getByText("example_sample_48", { exact: true }).locator("..");
+  await expect(tapTooltip).toBeVisible();
+  expectInsideViewport(await requireBox(tapTooltip, "tap tooltip"), viewport);
+
+  await page.keyboard.press("Escape");
+  await expect(wellD12).toHaveAttribute("aria-pressed", "false");
+  await expect(tapTooltip).not.toBeVisible();
+});
