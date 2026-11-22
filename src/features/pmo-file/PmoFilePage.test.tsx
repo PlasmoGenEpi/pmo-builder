@@ -385,6 +385,192 @@ describe("PmoFilePage: subset", () => {
       .map((line) => Number(line.split(",").at(-1)));
     expect(Math.min(...reads)).toBeGreaterThanOrEqual(100);
   });
+
+  it("names metadata fields in plain words matching Compare, and keeps PMO names for unknown fields", async () => {
+    const base = richPmo();
+    const withFields: PortableMicrohaplotypeObject = {
+      ...base,
+      project_info: [
+        { project_name: "Study A", project_description: "a" },
+        { project_name: "Study B", project_description: "b" },
+      ],
+      specimen_info: [
+        {
+          ...base.specimen_info[0],
+          specimen_name: "spec1",
+          collection_country: "Mozambique",
+          geo_admin1: "Maputo",
+          collection_date: "2019-01-15",
+          project_id: 0,
+          specimen_type: "field_sample",
+          study_arm: "arm_a",
+        },
+        {
+          ...base.specimen_info[1],
+          specimen_name: "spec2",
+          collection_country: "Ghana",
+          geo_admin1: "Gaza",
+          collection_date: "2019-03",
+          project_id: 1,
+          specimen_type: "field_sample",
+          study_arm: "arm_b",
+        },
+        {
+          ...base.specimen_info[2],
+          specimen_name: "neg",
+          collection_country: "Ghana",
+          collection_date: "2020",
+          project_id: 1,
+          specimen_type: "negative_control",
+          study_arm: "arm_b",
+        },
+      ],
+    };
+    const { user } = await open(pmoFile(withFields));
+
+    // Read the plain names Compare offers for shared fields.
+    await user.click(await screen.findByRole("tab", { name: "Compare" }));
+    const compareSelect = await screen.findByRole("combobox", { name: "Group specimens by" });
+    await user.click(compareSelect);
+    const compareLabels = screen
+      .getAllByRole("option")
+      .map((option) => (option.textContent ?? "").replace(/\s*\(\d+ of \d+ specimens\)$/, ""));
+    await user.keyboard("{Escape}");
+
+    await user.click(screen.getByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: /Specimens with certain values/ }));
+    const fieldSelect = screen.getByRole("combobox", { name: "Field" });
+    await user.click(fieldSelect);
+    const subsetLabels = screen.getAllByRole("option").map((option) => option.textContent ?? "");
+    await user.keyboard("{Escape}");
+
+    expect(subsetLabels).toEqual(
+      expect.arrayContaining([
+        "Country",
+        "Administrative area, level 1",
+        "Collection year",
+        "Collection date",
+        "Project",
+        "Specimen type",
+        "study_arm",
+      ]),
+    );
+    // Every field offered by both Compare and Subset uses the exact same plain label.
+    for (const shared of [
+      "Country",
+      "Administrative area, level 1",
+      "Collection year",
+      "Project",
+    ]) {
+      expect(compareLabels).toContain(shared);
+      expect(subsetLabels).toContain(shared);
+    }
+
+    // Accessible legend and remove button use the plain name too.
+    expect(screen.getByRole("group", { name: "Values of Country" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Add a condition" }));
+    expect(
+      screen.getByRole("button", { name: "Remove the condition on Country" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the exact specimens for chosen collection years and previews the right counts", async () => {
+    const { user } = await open(pmoFile(EXAMPLE, "study.json.gz"));
+    await user.click(await screen.findByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: /Specimens with certain values/ }));
+
+    const values = screen.getByRole("group", { name: "Values of Collection year" });
+    await user.click(within(values).getByRole("checkbox", { name: /2015/ }));
+    await user.click(within(values).getByRole("checkbox", { name: /2019/ }));
+
+    expect(screen.getByText("13 of 50 specimens kept.")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /^The subset will keep 13 of 50 specimens and 13 of 50 library samples, with alleles at \d+ of \d+ targets\.$/,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    expect(await screen.findByText("The subset is ready")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /^It keeps 13 of 50 specimens and 13 of 50 library samples, with alleles at \d+ of \d+ targets\.$/,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Download as .json" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    const subset: unknown = JSON.parse((await savedText()).text);
+    const specimens =
+      typeof subset === "object" &&
+      subset !== null &&
+      "specimen_info" in subset &&
+      Array.isArray(subset.specimen_info)
+        ? subset.specimen_info.map((item: unknown) =>
+            typeof item === "object" && item !== null && "specimen_name" in item
+              ? item.specimen_name
+              : null,
+          )
+        : [];
+    expect(specimens).toEqual([
+      "example_specimen_01",
+      "example_specimen_04",
+      "example_specimen_05",
+      "example_specimen_09",
+      "example_specimen_10",
+      "example_specimen_16",
+      "example_specimen_22",
+      "example_specimen_26",
+      "example_specimen_29",
+      "example_specimen_33",
+      "example_specimen_35",
+      "example_specimen_45",
+      "example_specimen_50",
+    ]);
+  });
+
+  it("still keeps specimens by exact collection date", async () => {
+    const { user } = await open(pmoFile(EXAMPLE, "study.json.gz"));
+    await user.click(await screen.findByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: /Specimens with certain values/ }));
+
+    await user.click(screen.getByRole("combobox", { name: "Field" }));
+    await user.click(screen.getByRole("option", { name: "Collection date" }));
+
+    const values = screen.getByRole("group", { name: "Values of Collection date" });
+    await user.click(within(values).getByRole("checkbox", { name: /2019-06/ }));
+
+    expect(screen.getByText("5 of 50 specimens kept.")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /^The subset will keep 5 of 50 specimens and 5 of 50 library samples, with alleles at \d+ of \d+ targets\.$/,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    expect(await screen.findByText("The subset is ready")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Download as .json" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    const subset: unknown = JSON.parse((await savedText()).text);
+    const specimens =
+      typeof subset === "object" &&
+      subset !== null &&
+      "specimen_info" in subset &&
+      Array.isArray(subset.specimen_info)
+        ? subset.specimen_info.map((item: unknown) =>
+            typeof item === "object" && item !== null && "specimen_name" in item
+              ? item.specimen_name
+              : null,
+          )
+        : [];
+    expect(specimens).toEqual([
+      "example_specimen_05",
+      "example_specimen_22",
+      "example_specimen_29",
+      "example_specimen_45",
+      "example_specimen_50",
+    ]);
+  });
 });
 
 /** Makes a subset of the first `count` specimens on the Subset tab. */

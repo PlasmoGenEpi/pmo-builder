@@ -1314,15 +1314,15 @@ msgstr "Add your allele table: the microhaplotypes found in each sample and thei
 msgid "Additional arguments"
 msgstr "Additional arguments"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Administrative area, level 1"
 msgstr "Administrative area, level 1"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Administrative area, level 2"
 msgstr "Administrative area, level 2"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Administrative area, level 3"
 msgstr "Administrative area, level 3"
 
@@ -1522,6 +1522,7 @@ msgid "blank"
 msgstr "blank"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Broad environment"
 msgstr "Broad environment"
 
@@ -1723,6 +1724,7 @@ msgid "Collection"
 msgstr "Collection"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Collection date"
 msgstr "Collection date"
 
@@ -1731,14 +1733,15 @@ msgid "Collection dates that name the day"
 msgstr "Collection dates that name the day"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Collection method"
 msgstr "Collection method"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Collection month"
 msgstr "Collection month"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Collection year"
 msgstr "Collection year"
 
@@ -1875,7 +1878,7 @@ msgstr "Counting"
 
 #. Field label: the country a specimen was collected in
 #: src/domain/fields/samples.ts
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 #: src/features/published/PublishedPage.tsx
 msgid "Country"
 msgstr "Country"
@@ -2159,6 +2162,7 @@ msgid "Enter the record's Zenodo address, such as https://zenodo.org/records/123
 msgstr "Enter the record's Zenodo address, such as https://zenodo.org/records/12345678, or its DOI."
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Environment medium"
 msgstr "Environment medium"
 
@@ -2520,6 +2524,7 @@ msgid "Host"
 msgstr "Host"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Host age"
 msgstr "Host age"
 
@@ -2528,10 +2533,12 @@ msgid "Host ID"
 msgstr "Host ID"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Host sex"
 msgstr "Host sex"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Host taxon ID"
 msgstr "Host taxon ID"
 
@@ -2977,6 +2984,7 @@ msgid "Loading the preview"
 msgstr "Loading the preview"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Local environment"
 msgstr "Local environment"
 
@@ -4077,6 +4085,7 @@ msgstr "Pregnancy"
 
 #. Field label: whether the host was pregnant
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Pregnant"
 msgstr "Pregnant"
 
@@ -4107,6 +4116,7 @@ msgid "Previous and next step"
 msgstr "Previous and next step"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Previous pregnancies"
 msgstr "Previous pregnancies"
 
@@ -4136,7 +4146,7 @@ msgstr "Program link"
 #: src/domain/build/merge.ts
 #: src/domain/fields/samples.ts
 #: src/domain/fields/study.ts
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Project"
 msgstr "Project"
 
@@ -4378,6 +4388,7 @@ msgid "Ready."
 msgstr "Ready."
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Recent blood meal"
 msgstr "Recent blood meal"
 
@@ -5080,6 +5091,7 @@ msgid "Specimen taxon ID"
 msgstr "Specimen taxon ID"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Specimen type"
 msgstr "Specimen type"
 
@@ -5223,6 +5235,7 @@ msgid "Storage plate row"
 msgstr "Storage plate row"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Storage site"
 msgstr "Storage site"
 
@@ -6522,6 +6535,7 @@ msgid "Travel history"
 msgstr "Travel history"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Travelled in last six months"
 msgstr "Travelled in last six months"
 

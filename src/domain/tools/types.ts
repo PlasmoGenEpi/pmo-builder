@@ -74,6 +74,9 @@ export interface PmoChoices {
 /** The most distinct values a metadata field may have to be offered as a choice. */
 export const MAX_META_VALUES = 60;
 
+/** Synthetic metadata field key for choosing specimens by their collection year. */
+export const COLLECTION_YEAR_FIELD = "collection_year";
+
 /** What opening a PMO file gave. */
 export type OpenOutcome =
   | {
@@ -94,8 +97,12 @@ export type OpenOutcome =
 export type SpecimenChoice =
   | { readonly kind: "all" }
   | { readonly kind: "names"; readonly names: readonly string[] }
-  /** Specimens matching every field, each to one of its values. */
-  | { readonly kind: "metadata"; readonly criteria: Readonly<Record<string, readonly string[]>> };
+  /** Specimens matching every field, each to one of its values, and any chosen collection years. */
+  | {
+      readonly kind: "metadata";
+      readonly criteria: Readonly<Record<string, readonly string[]>>;
+      readonly collectionYears?: readonly string[];
+    };
 
 /** Which targets a subset keeps. */
 export type TargetChoice =
