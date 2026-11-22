@@ -57,8 +57,10 @@ describe("loadCatalogue", () => {
 
 describe("isRepositoryIndex", () => {
   it("accepts this version only", () => {
+    expect(catalogue().version).toBe(2);
     expect(isRepositoryIndex(catalogue())).toBe(true);
-    expect(isRepositoryIndex({ ...catalogue(), version: 2 })).toBe(false);
+    expect(isRepositoryIndex({ ...catalogue(), version: 1 })).toBe(false);
+    expect(isRepositoryIndex({ ...catalogue(), version: 3 })).toBe(false);
     expect(isRepositoryIndex({ ...catalogue(), datasets: null })).toBe(false);
     expect(isRepositoryIndex(null)).toBe(false);
   });

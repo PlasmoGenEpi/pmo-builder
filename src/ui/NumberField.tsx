@@ -11,7 +11,7 @@ export interface NumberFieldProps
       InputHTMLAttributes<HTMLInputElement>,
       "children" | "id" | "value" | "defaultValue" | "onChange" | "type" | "min" | "max"
     >,
-    Pick<FieldProps, "label" | "hint" | "error" | "optional" | "hideLabel" | "id"> {
+    Pick<FieldProps, "label" | "hint" | "error" | "optional" | "hideLabel" | "id" | "layout"> {
   /** The number, or `null` when the input is blank. */
   value: number | null;
   /** Called with each valid entry. Not called while the text is not a number. */
@@ -57,6 +57,7 @@ export function NumberField({
   optional,
   hideLabel,
   id,
+  layout,
   value,
   onValueChange,
   integer = false,
@@ -79,6 +80,8 @@ export function NumberField({
   const parsed = parse(text, options);
   const localError = parsed.ok ? undefined : parsed.message;
 
+  const compact = layout === "compact";
+
   return (
     <Field
       label={label}
@@ -88,28 +91,35 @@ export function NumberField({
       optional={optional}
       hideLabel={hideLabel}
       id={id}
+      layout={layout}
       className={className}
     >
-      {(control) => (
-        <input
-          {...input}
-          {...control}
-          type="text"
-          inputMode={integer ? "numeric" : "decimal"}
-          required={required}
-          value={text}
-          onChange={(event) => {
-            const next = event.target.value;
-            setText(next);
-            const result = parse(next, options);
-            if (result.ok) {
-              setLastValue(result.value);
-              onValueChange(result.value);
-            }
-          }}
-          className={cn(inputClassName, "h-control text-base tabular-nums")}
-        />
-      )}
+      {(control) => {
+        const element = (
+          <input
+            {...input}
+            {...control}
+            type="text"
+            inputMode={integer ? "numeric" : "decimal"}
+            required={required}
+            value={text}
+            onChange={(event) => {
+              const next = event.target.value;
+              setText(next);
+              const result = parse(next, options);
+              if (result.ok) {
+                setLastValue(result.value);
+                onValueChange(result.value);
+              }
+            }}
+            className={cn(
+              inputClassName,
+              compact ? "h-control-sm text-sm tabular-nums" : "h-control text-base tabular-nums",
+            )}
+          />
+        );
+        return compact ? <div className="w-24 shrink-0">{element}</div> : element;
+      }}
     </Field>
   );
 }

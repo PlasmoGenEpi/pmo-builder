@@ -1168,7 +1168,7 @@ describe("DatasetPage", () => {
 
     expect(screen.getByRole("link", { name: "See its summary" })).toHaveAttribute(
       "href",
-      "/pmo/published/303/summary",
+      "/published/303/summary",
     );
     const download = screen.getByRole("link", { name: /download from zenodo/i });
     expect(download).toHaveAttribute(

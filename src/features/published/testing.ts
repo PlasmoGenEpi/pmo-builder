@@ -1,6 +1,10 @@
 /** Catalogue entries for tests of the "Published PMOs" pages. */
 import type { MergeSummary } from "@/domain/build";
-import type { PublishedDataset, RepositoryIndex } from "@/domain/repository/types";
+import {
+  INDEX_VERSION,
+  type PublishedDataset,
+  type RepositoryIndex,
+} from "@/domain/repository/types";
 
 const SUMMARY: MergeSummary = {
   specimens: 50,
@@ -32,6 +36,13 @@ export function dataset(
       name: "study.pmo.json.gz",
       size: 21_895,
       url: `https://zenodo.org/api/records/${fields.id}/files/study.pmo.json.gz/content`,
+      fingerprint: JSON.stringify([
+        "checksum",
+        fields.id,
+        "study.pmo.json.gz",
+        21_895,
+        `md5:${fields.id}`,
+      ]),
     },
     summary: SUMMARY,
     panels: ["Mad4hatter"],
@@ -73,7 +84,7 @@ export const DATASETS: readonly PublishedDataset[] = [
 /** A catalogue of {@link DATASETS}, or of the datasets given. */
 export function catalogue(datasets: readonly PublishedDataset[] = DATASETS): RepositoryIndex {
   return {
-    version: 1,
+    version: INDEX_VERSION,
     harvestedAt: "2026-11-15T03:00:00.000Z",
     community: "pmocommunity",
     datasets,
