@@ -499,6 +499,11 @@ msgstr ""
 msgid "{first} to {last}"
 msgstr ""
 
+#. First author followed by et al. when there are more than two authors
+#: src/features/published/catalogue.ts
+msgid "{firstAuthor} et al."
+msgstr ""
+
 #: src/features/published/catalogue.ts
 msgid "{firstYear} to {lastYear}"
 msgstr ""
@@ -1769,6 +1774,10 @@ msgstr ""
 msgid "Collection year"
 msgstr ""
 
+#: src/features/published/PublishedTable.tsx
+msgid "Collection years"
+msgstr ""
+
 #. Names a column of the user's table inside other messages, such as 'is blank in column "SampleID"'. {column} is the column's name in the file. Write it without an article: the message around it adds any article or preposition your language needs.
 #: src/domain/build/notices.ts
 msgid "column \"{column}\""
@@ -1904,6 +1913,7 @@ msgstr ""
 #: src/domain/fields/samples.ts
 #: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/published/PublishedPage.tsx
+#: src/features/published/PublishedTable.tsx
 msgid "Country"
 msgstr ""
 
@@ -2349,6 +2359,10 @@ msgstr ""
 
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Finish the required steps first, so that the PMO can be built."
+msgstr ""
+
+#: src/features/published/PublishedTable.tsx
+msgid "First author"
 msgstr ""
 
 #: src/features/review/ThingsToCheck.tsx
@@ -3006,6 +3020,11 @@ msgstr ""
 
 #: src/features/review/noticeKinds.ts
 msgid "Links that point at nothing"
+msgstr ""
+
+#. Published PMOs compact list view
+#: src/features/published/PublishedPage.tsx
+msgid "List"
 msgstr ""
 
 #: src/app/App.tsx
@@ -3948,6 +3967,7 @@ msgstr ""
 #: src/domain/build/merge.ts
 #: src/domain/fields/samples.ts
 #: src/features/published/PublishedPage.tsx
+#: src/features/published/PublishedTable.tsx
 #: src/features/review/PmoContents.tsx
 msgid "Panel"
 msgstr ""
@@ -4306,6 +4326,10 @@ msgstr ""
 
 #: src/features/published/PublishedPage.tsx
 msgid "Published PMOs"
+msgstr ""
+
+#: src/features/published/PublishedTable.tsx
+msgid "Published PMOs table"
 msgstr ""
 
 #: src/features/records/checks.ts
@@ -5102,11 +5126,13 @@ msgid "Sort by"
 msgstr ""
 
 #: src/features/pmo-file/summary/SortableTable.tsx
+#: src/features/published/PublishedTable.tsx
 msgid "Sort by {columnLabel}"
 msgstr ""
 
 #: src/features/published/DatasetPage.tsx
 #: src/features/published/PublishedPage.tsx
+#: src/features/published/PublishedTable.tsx
 msgid "Species"
 msgstr ""
 
@@ -5158,6 +5184,7 @@ msgstr ""
 #: src/features/pmo-file/SubsetPanel.tsx
 #: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/TablesPanel.tsx
+#: src/features/published/PublishedTable.tsx
 #: src/features/review/PmoContents.tsx
 #: src/features/specimens/SpecimensStep.tsx
 msgid "Specimens"
@@ -5349,6 +5376,11 @@ msgstr ""
 
 #: src/app/OtherTabNotice.tsx
 msgid "Switching to this tab"
+msgstr ""
+
+#. Published PMOs sortable table view
+#: src/features/published/PublishedPage.tsx
+msgid "Table"
 msgstr ""
 
 #: src/features/pmo-file/PmoFilePage.tsx
@@ -6544,6 +6576,7 @@ msgid "Tick all found"
 msgstr ""
 
 #: src/features/published/PublishedPage.tsx
+#: src/features/published/PublishedTable.tsx
 #: src/features/review/PublishToZenodo.tsx
 msgid "Title"
 msgstr ""
@@ -6744,6 +6777,11 @@ msgstr ""
 #: src/domain/fields/records.ts
 #: src/features/published/DatasetPage.tsx
 msgid "Version"
+msgstr ""
+
+#. Accessible label for switching between list and table view
+#: src/features/published/PublishedPage.tsx
+msgid "View"
 msgstr ""
 
 #: src/app/privacy/PrivacyDetails.tsx

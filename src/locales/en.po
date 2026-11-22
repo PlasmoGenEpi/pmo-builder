@@ -499,6 +499,11 @@ msgstr "{first} (or {alternatives})"
 msgid "{first} to {last}"
 msgstr "{first} to {last}"
 
+#. First author followed by et al. when there are more than two authors
+#: src/features/published/catalogue.ts
+msgid "{firstAuthor} et al."
+msgstr "{firstAuthor} et al."
+
 #: src/features/published/catalogue.ts
 msgid "{firstYear} to {lastYear}"
 msgstr "{firstYear} to {lastYear}"
@@ -1769,6 +1774,10 @@ msgstr "Collection month"
 msgid "Collection year"
 msgstr "Collection year"
 
+#: src/features/published/PublishedTable.tsx
+msgid "Collection years"
+msgstr "Collection years"
+
 #. Names a column of the user's table inside other messages, such as 'is blank in column "SampleID"'. {column} is the column's name in the file. Write it without an article: the message around it adds any article or preposition your language needs.
 #: src/domain/build/notices.ts
 msgid "column \"{column}\""
@@ -1904,6 +1913,7 @@ msgstr "Counting"
 #: src/domain/fields/samples.ts
 #: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/published/PublishedPage.tsx
+#: src/features/published/PublishedTable.tsx
 msgid "Country"
 msgstr "Country"
 
@@ -2350,6 +2360,10 @@ msgstr "Finish"
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Finish the required steps first, so that the PMO can be built."
 msgstr "Finish the required steps first, so that the PMO can be built."
+
+#: src/features/published/PublishedTable.tsx
+msgid "First author"
+msgstr "First author"
 
 #: src/features/review/ThingsToCheck.tsx
 msgid "Fix on {stepTitle}"
@@ -3007,6 +3021,11 @@ msgstr "Links that are not whole numbers"
 #: src/features/review/noticeKinds.ts
 msgid "Links that point at nothing"
 msgstr "Links that point at nothing"
+
+#. Published PMOs compact list view
+#: src/features/published/PublishedPage.tsx
+msgid "List"
+msgstr "List"
 
 #: src/app/App.tsx
 #: src/app/privacy/PrivacyIndicator.tsx
@@ -3948,6 +3967,7 @@ msgstr "Page not found"
 #: src/domain/build/merge.ts
 #: src/domain/fields/samples.ts
 #: src/features/published/PublishedPage.tsx
+#: src/features/published/PublishedTable.tsx
 #: src/features/review/PmoContents.tsx
 msgid "Panel"
 msgstr "Panel"
@@ -4307,6 +4327,10 @@ msgstr "Published {publishedDate}"
 #: src/features/published/PublishedPage.tsx
 msgid "Published PMOs"
 msgstr "Published PMOs"
+
+#: src/features/published/PublishedTable.tsx
+msgid "Published PMOs table"
+msgstr "Published PMOs table"
 
 #: src/features/records/checks.ts
 msgid "Put each one on its own line"
@@ -5102,11 +5126,13 @@ msgid "Sort by"
 msgstr "Sort by"
 
 #: src/features/pmo-file/summary/SortableTable.tsx
+#: src/features/published/PublishedTable.tsx
 msgid "Sort by {columnLabel}"
 msgstr "Sort by {columnLabel}"
 
 #: src/features/published/DatasetPage.tsx
 #: src/features/published/PublishedPage.tsx
+#: src/features/published/PublishedTable.tsx
 msgid "Species"
 msgstr "Species"
 
@@ -5158,6 +5184,7 @@ msgstr "Specimen type"
 #: src/features/pmo-file/SubsetPanel.tsx
 #: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/TablesPanel.tsx
+#: src/features/published/PublishedTable.tsx
 #: src/features/review/PmoContents.tsx
 #: src/features/specimens/SpecimensStep.tsx
 msgid "Specimens"
@@ -5350,6 +5377,11 @@ msgstr "Switch to light theme"
 #: src/app/OtherTabNotice.tsx
 msgid "Switching to this tab"
 msgstr "Switching to this tab"
+
+#. Published PMOs sortable table view
+#: src/features/published/PublishedPage.tsx
+msgid "Table"
+msgstr "Table"
 
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Tables"
@@ -6544,6 +6576,7 @@ msgid "Tick all found"
 msgstr "Tick all found"
 
 #: src/features/published/PublishedPage.tsx
+#: src/features/published/PublishedTable.tsx
 #: src/features/review/PublishToZenodo.tsx
 msgid "Title"
 msgstr "Title"
@@ -6745,6 +6778,11 @@ msgstr "Values with characters the PMO format does not allow"
 #: src/features/published/DatasetPage.tsx
 msgid "Version"
 msgstr "Version"
+
+#. Accessible label for switching between list and table view
+#: src/features/published/PublishedPage.tsx
+msgid "View"
+msgstr "View"
 
 #: src/app/privacy/PrivacyDetails.tsx
 msgid "Visit record, not sent"
