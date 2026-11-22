@@ -73,24 +73,29 @@ export function TopBar({ onOpenNav, showPublished = zenodoConfig() !== null }: T
   const building = within(BUILD_PATH)(location);
 
   return (
-    <header className="sticky top-0 z-30 flex h-topbar shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-3 sm:px-4">
+    <header className="sticky top-0 z-30 flex shrink-0 flex-wrap items-center gap-x-2 border-b border-border bg-surface md:h-topbar md:flex-nowrap md:gap-3 md:px-4">
       {building ? (
         <IconButton
           label={t`Open the step list`}
           icon={MenuIcon}
           onClick={onOpenNav}
-          className="lg:hidden"
+          className="my-1.5 ml-3 lg:hidden md:my-0 md:ml-0"
         />
       ) : null}
       <RouterLink
         href="/"
-        className="flex shrink-0 items-center gap-2.5 rounded-md py-1 pr-1.5 text-md font-semibold tracking-tight text-text"
+        className={cn(
+          "my-2 flex shrink-0 items-center gap-2.5 rounded-md py-1 pr-1.5 text-md font-semibold tracking-tight text-text md:my-0",
+          !building && "ml-3 md:ml-0",
+        )}
       >
         <Logo />
-        <span className="hidden sm:inline">PMO Builder</span>
-        <span className="sr-only sm:hidden">{t`PMO Builder home`}</span>
+        <span>PMO Builder</span>
       </RouterLink>
-      <nav aria-label={t`Sections`} className="ml-2 flex items-center gap-1 sm:ml-4">
+      <nav
+        aria-label={t`Sections`}
+        className="order-last flex basis-full items-center gap-1 overflow-x-auto border-t border-border px-2 py-1 md:order-none md:ml-4 md:basis-auto md:overflow-visible md:border-t-0 md:p-0"
+      >
         {sections(showPublished).map((section) => {
           const active = section.matches(location);
           return (
@@ -110,7 +115,7 @@ export function TopBar({ onOpenNav, showPublished = zenodoConfig() !== null }: T
           );
         })}
       </nav>
-      <div className="ml-auto flex min-w-0 items-center gap-1 sm:gap-2">
+      <div className="my-1.5 mr-3 ml-auto flex min-w-0 items-center gap-1 md:my-0 md:mr-0 md:gap-2">
         {building ? <SaveStatus /> : null}
         <PrivacyIndicator />
         <Menu
