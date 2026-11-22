@@ -5,6 +5,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { createTestStore, exampleFile } from "@/features/shared/testing";
 import type { AppStore } from "@/state";
+import { installBlobStream } from "@/test/blobStream";
 import { installDomPolyfills } from "@/ui/testPolyfills";
 
 import { App } from "./App";
@@ -138,5 +139,35 @@ describe("home page actions", () => {
     await user.click(within(dialog).getByRole("button", { name: "Start over" }));
     await waitFor(() => expect(location.history.at(-1)).toBe("/"));
     expect(store.getState().draft.microhaplotypes.table).toBeNull();
+  });
+});
+
+describe("opening the built PMO", () => {
+  it("lands on the Summary tab from the review step", async () => {
+    installBlobStream();
+    const store = createTestStore();
+    await act(() => store.getState().actions.loadExample());
+    await act(() => store.getState().actions.flush());
+    const { location, user } = await renderApp(store, "/build/review");
+    await user.click(await screen.findByRole("link", { name: "Open in My PMO file" }));
+    expect(
+      await screen.findByRole("tab", { name: "Summary", selected: true }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
+    expect(location.history.at(-1)).toBe("/pmo/summary");
+    expect(await screen.findByText("Reads by sample and target")).toBeInTheDocument();
+  });
+
+  it("lands on the Summary tab from the home page", async () => {
+    installBlobStream();
+    const store = createTestStore();
+    await act(() => store.getState().actions.loadExample());
+    await act(() => store.getState().actions.flush());
+    const { location, user } = await renderApp(store, "/");
+    await user.click(await screen.findByRole("link", { name: "Open the PMO you are building" }));
+    expect(
+      await screen.findByRole("tab", { name: "Summary", selected: true }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
+    expect(location.history.at(-1)).toBe("/pmo/summary");
+    expect(await screen.findByText("Reads by sample and target")).toBeInTheDocument();
   });
 });

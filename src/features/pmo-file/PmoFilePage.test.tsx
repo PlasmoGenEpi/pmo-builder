@@ -154,6 +154,27 @@ describe("PmoFilePage: opening", () => {
 });
 
 describe("PmoFilePage: opening the built PMO", () => {
+  it("lands on the Summary tab when opening the built PMO", async () => {
+    installBlobStream();
+    const store = createTestStore();
+    await store.getState().actions.initialise();
+    await act(() => store.getState().actions.loadExample());
+    await act(() => store.getState().actions.flush());
+    const routes = (
+      <Switch>
+        <Route path="/pmo">
+          <PmoFilePage zenodo={ZENODO} />
+        </Route>
+        <Route path="/pmo/:tab">
+          <PmoFileRoute />
+        </Route>
+      </Switch>
+    );
+    await renderWithStore(routes, { store, path: OPEN_BUILT_PATH });
+    expect(await screen.findByRole("tab", { name: "Summary", selected: true })).toBeInTheDocument();
+    expect(await screen.findByText("Reads by sample and target")).toBeInTheDocument();
+  });
+
   it("finishes opening the built PMO when the page is left meanwhile", async () => {
     installBlobStream();
     const store = createTestStore();
