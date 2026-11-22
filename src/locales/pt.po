@@ -988,6 +988,14 @@ msgstr "{total, plural, one {Mais de # método: {methodNames}. As execuções id
 msgid "{total, plural, one {Showing {shownCount} of {totalCount} row} other {Showing {shownCount} of {totalCount} rows}}"
 msgstr "{total, plural, one {A mostrar {shownCount} de {totalCount} linha} other {A mostrar {shownCount} de {totalCount} linhas}}"
 
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "{totalSamples, plural, one {{sampleShare} of {allSamples} library sample} other {{sampleShare} of {allSamples} library samples}}"
+msgstr "{totalSamples, plural, one {{sampleShare} de {allSamples} amostra de biblioteca} other {{sampleShare} de {allSamples} amostras de biblioteca}}"
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "{totalTargets, plural, one {{targetShare} of {allTargets} target} other {{targetShare} of {allTargets} targets}}"
+msgstr "{totalTargets, plural, one {{targetShare} de {allTargets} alvo} other {{targetShare} de {allTargets} alvos}}"
+
 #: src/features/review/SectionChecklist.tsx
 msgid "{warnings, plural, one {{line}. # warning to check.} other {{line}. # warnings to check.}}"
 msgstr "{warnings, plural, one {{line}. # aviso a verificar.} other {{line}. # avisos a verificar.}}"
@@ -1049,6 +1057,10 @@ msgstr "{where} deveria ser de outro tipo, mas tem o valor {value}."
 #: src/domain/build/merge.ts
 msgid "{where}. It {reasonText}."
 msgstr "{where}: {reasonText}."
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "{withData, plural, one {{polyclonalShare} of {samplesWithData} sample with data} other {{polyclonalShare} of {samplesWithData} samples with data}}"
+msgstr "{withData, plural, one {{polyclonalShare} de {samplesWithData} amostra com dados} other {{polyclonalShare} de {samplesWithData} amostras com dados}}"
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "{withoutData, plural, one {# specimen has no library sample, so no data, and is left out of any subset.} other {# specimens have no library sample, so no data, and are left out of any subset.}}"
@@ -3779,14 +3791,6 @@ msgstr "Notificação"
 #: src/ui/Toast.tsx
 msgid "Notifications ({RADIX_HOTKEY})"
 msgstr "Notificações ({RADIX_HOTKEY})"
-
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "of {all}"
-msgstr "de {all}"
-
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "of {targets}"
-msgstr "de {targets}"
 
 #. Name of the jump links to headings in the current view
 #: src/features/pmo-file/summary/ViewToolbar.tsx
