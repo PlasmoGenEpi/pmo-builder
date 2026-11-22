@@ -4330,6 +4330,7 @@ msgstr "Lectures à chaque étape du pipeline"
 msgid "Reads at each stage"
 msgstr "Lectures à chaque étape"
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Reads by sample and target"
 msgstr "Lectures par échantillon et par cible"
