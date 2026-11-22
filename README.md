@@ -81,9 +81,15 @@ holding any such sample cannot be published
 (`src/domain/build/exampleData.ts`).
 
 The deployed app uses the
-[`plasmogenepi`](https://zenodo.org/communities/plasmogenepi/) community,
-where the keyword "Portable Microhaplotype Object" places a record with the
-other PMO files.
+[`pmocommunity`](https://zenodo.org/communities/pmocommunity/) community
+("PMO Community"), with `VITE_ZENODO_COMMUNITY_NAME` set to `PMO`. The app
+adds the word "community" itself. The keyword "Portable Microhaplotype
+Object" marks a record as a PMO file, and the list of published PMOs is built
+from it.
+
+Zenodo lets only its own staff change a community's identifier. To move the
+app to another community, create the new one, add the records to it, then
+change the two repository variables and run the Deploy workflow.
 
 ## Published PMOs
 
@@ -111,7 +117,7 @@ list, remove its record from the community on Zenodo. `specimens.json`, one
 row per specimen, is written beside the index for a later search across
 datasets; no page reads it yet.
 
-Run `pnpm harvest --community plasmogenepi` to try the list locally. The
+Run `pnpm harvest --community pmocommunity` to try the list locally. The
 output folder, `public/repository/`, is not committed.
 
 ## My PMO file

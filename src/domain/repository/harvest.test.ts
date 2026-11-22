@@ -43,7 +43,7 @@ function fakeZenodo(answers: Readonly<Record<string, unknown>>) {
 }
 
 const LISTING =
-  "https://zenodo.org/api/communities/plasmogenepi/records?q=metadata.subjects.subject%3A%22Portable+Microhaplotype+Object%22&size=25&sort=newest";
+  "https://zenodo.org/api/communities/pmocommunity/records?q=metadata.subjects.subject%3A%22Portable+Microhaplotype+Object%22&size=25&sort=newest";
 const file = (id: string, name: string): string =>
   `https://zenodo.org/api/records/${id}/files/${encodeURIComponent(name)}/content`;
 
@@ -55,7 +55,7 @@ describe("harvest", () => {
       [file("101", "study.pmo.json.gz")]: bytes,
     });
     const result = await harvest({
-      community: "plasmogenepi",
+      community: "pmocommunity",
       fetch: send,
       now: new Date("2026-11-15T03:00:00Z"),
     });
@@ -64,7 +64,7 @@ describe("harvest", () => {
     expect(result.index).toMatchObject({
       version: 1,
       harvestedAt: "2026-11-15T03:00:00.000Z",
-      community: "plasmogenepi",
+      community: "pmocommunity",
     });
     expect(result.index.datasets).toEqual([
       {
@@ -98,14 +98,14 @@ describe("harvest", () => {
 
   it("follows the listing to its next page", async () => {
     const bytes = await gzipPmo(examplePmo());
-    const second = "https://zenodo.org/api/communities/plasmogenepi/records?page=2";
+    const second = "https://zenodo.org/api/communities/pmocommunity/records?page=2";
     const { send } = fakeZenodo({
       [LISTING]: { hits: { hits: [record("101", ["a.pmo.json.gz"])] }, links: { next: second } },
       [second]: { hits: { hits: [record("102", ["b.pmo.json.gz"])] }, links: {} },
       [file("101", "a.pmo.json.gz")]: bytes,
       [file("102", "b.pmo.json.gz")]: bytes,
     });
-    const result = await harvest({ community: "plasmogenepi", fetch: send });
+    const result = await harvest({ community: "pmocommunity", fetch: send });
     expect(result.index.datasets.map((dataset) => dataset.id)).toEqual(["101", "102"]);
   });
 
@@ -130,7 +130,7 @@ describe("harvest", () => {
       [file("103", "empty.json")]: text.encode("{}"),
       [file("104", "broken.json.gz")]: Uint8Array.from([0x1f, 0x8b, 1, 2, 3]),
     });
-    const result = await harvest({ community: "plasmogenepi", fetch: send, log });
+    const result = await harvest({ community: "pmocommunity", fetch: send, log });
     expect(result.index.datasets.map((dataset) => dataset.id)).toEqual(["101"]);
     expect(result.specimens.every((row) => row.dataset === "101")).toBe(true);
     expect(result.skipped.map((skip) => [skip.id, skip.title])).toEqual([
@@ -148,23 +148,23 @@ describe("harvest", () => {
 
   it("gives an empty catalogue for a community with no PMO records", async () => {
     const { send } = fakeZenodo({ [LISTING]: { hits: { hits: [] }, links: {} } });
-    const result = await harvest({ community: "plasmogenepi", fetch: send });
+    const result = await harvest({ community: "pmocommunity", fetch: send });
     expect(result.index.datasets).toEqual([]);
     expect(result.specimens).toEqual([]);
   });
 
   it("fails as a whole when the listing cannot be read, so the last catalogue can be kept", async () => {
     await expect(
-      harvest({ community: "plasmogenepi", fetch: fakeZenodo({ [LISTING]: 503 }).send }),
+      harvest({ community: "pmocommunity", fetch: fakeZenodo({ [LISTING]: 503 }).send }),
     ).rejects.toThrow(HarvestError);
     await expect(
       harvest({
-        community: "plasmogenepi",
+        community: "pmocommunity",
         fetch: fakeZenodo({ [LISTING]: { nonsense: true } }).send,
       }),
     ).rejects.toThrow(HarvestError);
     const offline = vi.fn<typeof fetch>(() => Promise.reject(new TypeError("fetch failed")));
-    await expect(harvest({ community: "plasmogenepi", fetch: offline })).rejects.toThrow(
+    await expect(harvest({ community: "pmocommunity", fetch: offline })).rejects.toThrow(
       HarvestError,
     );
   });

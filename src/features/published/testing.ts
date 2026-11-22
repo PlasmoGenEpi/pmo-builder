@@ -75,7 +75,7 @@ export function catalogue(datasets: readonly PublishedDataset[] = DATASETS): Rep
   return {
     version: 1,
     harvestedAt: "2026-11-15T03:00:00.000Z",
-    community: "plasmogenepi",
+    community: "pmocommunity",
     datasets,
   };
 }

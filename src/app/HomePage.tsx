@@ -227,7 +227,7 @@ export function HomePage({
             <JobCard
               icon={LibraryBig}
               title={t`Find published PMOs`}
-              description={t`Datasets shared in the PlasmoGenEpi community on Zenodo, with their countries, years and panels.`}
+              description={t`Datasets published on Zenodo, with their countries, years and panels.`}
             >
               <RouterLink href="/published" className={buttonClassName({ variant: "secondary" })}>
                 {t`Browse published PMOs`}

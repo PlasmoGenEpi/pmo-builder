@@ -45,7 +45,7 @@ const PUBLICATION: PublicationSummary = {
 
 describe("zenodoCommunity", () => {
   it("accepts an identifier and trims it", () => {
-    expect(zenodoCommunity(" plasmogenepi ")).toBe("plasmogenepi");
+    expect(zenodoCommunity(" pmocommunity ")).toBe("pmocommunity");
     expect(zenodoCommunity("pmo-files_2")).toBe("pmo-files_2");
   });
 
@@ -59,7 +59,7 @@ describe("zenodoCommunity", () => {
 
 describe("uploadUrl", () => {
   it("opens a new upload with the community chosen", () => {
-    expect(uploadUrl("plasmogenepi")).toBe("https://zenodo.org/uploads/new?community=plasmogenepi");
+    expect(uploadUrl("pmocommunity")).toBe("https://zenodo.org/uploads/new?community=pmocommunity");
   });
 });
 
