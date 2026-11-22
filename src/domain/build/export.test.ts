@@ -197,5 +197,33 @@ describe("oversized PMO exceeding V8 max string length", () => {
 
     const header = new Uint8Array(await exported.blob.slice(0, 2).arrayBuffer());
     expect([header[0], header[1]]).toEqual([0x1f, 0x8b]);
+
+    const reader = exported.blob.stream().pipeThrough(new DecompressionStream("gzip")).getReader();
+    let decompressedBytes = 0;
+    const headBytes = new Uint8Array(2);
+    let headFilled = 0;
+    let lastByte: number | undefined;
+    try {
+      for (;;) {
+        // oxlint-disable-next-line no-await-in-loop -- draining one ReadableStream sequentially
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        const bytes = chunk.value;
+        decompressedBytes += bytes.byteLength;
+        if (headFilled < headBytes.length && bytes.byteLength > 0) {
+          const take = Math.min(headBytes.length - headFilled, bytes.byteLength);
+          headBytes.set(bytes.subarray(0, take), headFilled);
+          headFilled += take;
+        }
+        if (bytes.byteLength > 0) {
+          lastByte = bytes[bytes.byteLength - 1];
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    expect(decompressedBytes).toBe(plainSize);
+    expect(new TextDecoder().decode(headBytes)).toBe("{\n");
+    expect(lastByte).toBe("}".charCodeAt(0));
   }, 30_000);
 });

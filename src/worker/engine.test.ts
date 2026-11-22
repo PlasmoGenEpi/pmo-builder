@@ -613,21 +613,28 @@ describe("worker protocol", () => {
     stop();
   });
 
-  it("refuses a getPmoText answer whose truncated flag is missing", async () => {
-    const [page, worker] = endpointPair();
-    worker.addEventListener("message", (event) => {
-      const data: unknown = event.data;
-      if (!isCallMessage(data)) return;
-      const result = {
-        type: "result",
-        id: data.id,
-        ok: true,
-        value: { text: "{}", length: null },
-      };
-      // oxlint-disable-next-line unicorn/require-post-message-target-origin -- not a window
-      worker.postMessage(result);
-    });
-    const client = createEngineClient(page);
-    await expect(client.getPmoText()).rejects.toThrow("unexpected answer to getPmoText");
+  it("refuses getPmoText answers that violate the discriminated union shape", async () => {
+    for (const badValue of [
+      { text: "{}", length: null },
+      { text: "x", truncated: true, length: 5 },
+      { text: "x", truncated: false, length: null },
+    ]) {
+      const [page, worker] = endpointPair();
+      worker.addEventListener("message", (event) => {
+        const data: unknown = event.data;
+        if (!isCallMessage(data)) return;
+        const result = {
+          type: "result",
+          id: data.id,
+          ok: true,
+          value: badValue,
+        };
+        // oxlint-disable-next-line unicorn/require-post-message-target-origin -- not a window
+        worker.postMessage(result);
+      });
+      const client = createEngineClient(page);
+      // oxlint-disable-next-line no-await-in-loop -- checking each invalid payload sequentially
+      await expect(client.getPmoText()).rejects.toThrow("unexpected answer to getPmoText");
+    }
   });
 });

@@ -9,6 +9,7 @@ import type {
   MergeSummary,
   PublicationSummary,
   PmoFile,
+  PmoTextPreview,
   SectionSummaries,
   Suggestions,
   BuildDeps,
@@ -18,6 +19,7 @@ import type { WorkingPmoAnswer, WorkingPmoCall, WorkingPmoKind } from "@/domain/
 import type { ImportFailure, parseFile } from "@/domain/import";
 import type { Notice, RawRow, SectionId, SectionStatus } from "@/domain/types";
 
+export type { PmoTextPreview } from "@/domain/build";
 export type { ImportFailure, ImportFailureCode } from "@/domain/import";
 
 /** A file to import. */
@@ -132,14 +134,6 @@ export interface BuildRequestOptions {
    * section objects themselves.
    */
   readonly sectionTokens?: Readonly<Partial<Record<SectionId, string>>>;
-}
-
-/** A preview of the PMO's JSON text. */
-export interface PmoTextPreview {
-  readonly text: string;
-  readonly truncated: boolean;
-  /** Length of the whole text, or `null` when previewing stopped early. */
-  readonly length: number | null;
 }
 
 /**

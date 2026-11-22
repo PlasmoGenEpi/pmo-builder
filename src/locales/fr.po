@@ -5679,10 +5679,6 @@ msgstr "Le fichier n’a pas pu être créé"
 msgid "The file could not be opened. Reload the page and try again."
 msgstr "Le fichier n’a pas pu être ouvert. Rechargez la page et réessayez."
 
-#: src/features/review/PmoPreviewBody.tsx
-msgid "The file is {fileSize}. The first {shownSize} are shown here; the download has all of it."
-msgstr "Le fichier fait {fileSize}. Les {shownSize} premiers sont affichés ici ; le fichier téléchargé est complet."
-
 #: src/features/review/PublishToZenodo.tsx
 msgid "The file is larger than Zenodo accepts."
 msgstr "Le fichier dépasse la taille acceptée par Zenodo."

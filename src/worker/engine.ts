@@ -216,6 +216,43 @@ function cachedTyping(deps: BuildDeps): BuildDeps {
   };
 }
 
+/** A lazy cache keyed by `(pmo, gzip)` for the latest built PMO. */
+interface PmoFormatCache<T> {
+  peek(pmo: PortableMicrohaplotypeObject, gzip: boolean): T | undefined;
+  getOrCreate(pmo: PortableMicrohaplotypeObject, gzip: boolean): T;
+  clearIfNot(pmo: PortableMicrohaplotypeObject | null): void;
+  clear(): void;
+}
+
+/** Caches one value per `(pmo, gzip)` format for the current PMO, clearing when the PMO changes. */
+function createPmoFormatCache<T>(
+  create: (pmo: PortableMicrohaplotypeObject, gzip: boolean) => T,
+): PmoFormatCache<T> {
+  let entry: {
+    readonly pmo: PortableMicrohaplotypeObject;
+    readonly byFormat: Map<boolean, T>;
+  } | null = null;
+  return {
+    peek(pmo, gzip) {
+      return entry !== null && entry.pmo === pmo ? entry.byFormat.get(gzip) : undefined;
+    },
+    getOrCreate(pmo, gzip) {
+      if (entry === null || entry.pmo !== pmo) entry = { pmo, byFormat: new Map() };
+      const existing = entry.byFormat.get(gzip);
+      if (existing !== undefined) return existing;
+      const created = create(pmo, gzip);
+      entry.byFormat.set(gzip, created);
+      return created;
+    },
+    clearIfNot(pmo) {
+      if (entry !== null && entry.pmo !== pmo) entry = null;
+    },
+    clear() {
+      entry = null;
+    },
+  };
+}
+
 /** Creates an engine that runs on the calling thread. */
 export function createInThreadEngine(options: InThreadEngineOptions = {}): Engine {
   const parse = options.parseFile ?? parseFile;
@@ -235,27 +272,14 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
   /** The working PMO: a PMO file opened to look over, subset or export, apart from the draft. */
   let held: WorkingPmoHeld = NOTHING_HELD;
   /** The latest PMO's files, made when first asked for, by format (gzipped or not). */
-  let fileMemo: {
-    readonly pmo: PortableMicrohaplotypeObject;
-    readonly files: Map<boolean, Promise<PmoFile>>;
-  } | null = null;
+  const fileCache = createPmoFormatCache<Promise<PmoFile>>((pmo, gzip) => exportPmo(pmo, { gzip }));
   /** The latest PMO's file sizes, counted from the stream without keeping a Blob. */
-  let sizeMemo: {
-    readonly pmo: PortableMicrohaplotypeObject;
-    readonly sizes: Map<boolean, Promise<{ readonly fileName: string; readonly size: number }>>;
-  } | null = null;
-  /** The latest PMO as a file, made once per build and format. */
-  const pmoFile = (gzip: boolean): Promise<PmoFile> | null => {
-    const pmo = latestPmo;
-    if (pmo === null) return null;
-    if (fileMemo === null || fileMemo.pmo !== pmo) fileMemo = { pmo, files: new Map() };
-    let file = fileMemo.files.get(gzip);
-    if (file === undefined) {
-      file = exportPmo(pmo, { gzip });
-      fileMemo.files.set(gzip, file);
-    }
-    return file;
-  };
+  const sizeCache = createPmoFormatCache<
+    Promise<{ readonly fileName: string; readonly size: number }>
+  >((pmo, gzip) => {
+    const fileName = pmoFileName(pmo, gzip);
+    return measurePmoSize(pmo, { gzip }).then((size) => ({ fileName, size }));
+  });
   /** The last preview, so asking again for the same build does not write the whole PMO again. */
   let previewMemo: {
     readonly pmo: PortableMicrohaplotypeObject;
@@ -457,8 +481,8 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
         reuse && mergeMemo !== null ? mergeMemo.result : mergeSections(sections, { creationDate });
       mergeMemo = { key: creationDate, sections, result: merge };
       latestPmo = merge.outcome.kind === "built" ? merge.outcome.pmo : null;
-      if (fileMemo !== null && fileMemo.pmo !== latestPmo) fileMemo = null;
-      if (sizeMemo !== null && sizeMemo.pmo !== latestPmo) sizeMemo = null;
+      fileCache.clearIfNot(latestPmo);
+      sizeCache.clearIfNot(latestPmo);
       if (previewMemo !== null && previewMemo.pmo !== latestPmo) previewMemo = null;
 
       buildRevision += 1;
@@ -492,28 +516,21 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     },
 
     async getPmoFile(fileOptions = {}) {
-      return pmoFile(fileOptions.gzip ?? true);
+      const pmo = latestPmo;
+      if (pmo === null) return null;
+      return fileCache.getOrCreate(pmo, fileOptions.gzip ?? true);
     },
 
     async getPmoFileSize(fileOptions = {}) {
       const pmo = latestPmo;
       if (pmo === null) return null;
       const gzip = fileOptions.gzip ?? true;
-      if (fileMemo !== null && fileMemo.pmo === pmo) {
-        const existing = fileMemo.files.get(gzip);
-        if (existing !== undefined) {
-          const file = await existing;
-          return { fileName: file.fileName, size: file.blob.size };
-        }
+      const existing = fileCache.peek(pmo, gzip);
+      if (existing !== undefined) {
+        const file = await existing;
+        return { fileName: file.fileName, size: file.blob.size };
       }
-      if (sizeMemo === null || sizeMemo.pmo !== pmo) sizeMemo = { pmo, sizes: new Map() };
-      let entry = sizeMemo.sizes.get(gzip);
-      if (entry === undefined) {
-        const fileName = pmoFileName(pmo, gzip);
-        entry = measurePmoSize(pmo, { gzip }).then((size) => ({ fileName, size }));
-        sizeMemo.sizes.set(gzip, entry);
-      }
-      return entry;
+      return sizeCache.getOrCreate(pmo, gzip);
     },
 
     getPmoText(textOptions = {}) {
@@ -547,8 +564,8 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       memos.clear();
       mergeMemo = null;
       latestPmo = null;
-      fileMemo = null;
-      sizeMemo = null;
+      fileCache.clear();
+      sizeCache.clear();
       previewMemo = null;
       suggestionsMemo = null;
       held = NOTHING_HELD;

@@ -292,7 +292,10 @@ describe("microhaplotypes chunked building", () => {
 
     const chunkSizes = [1, 2, 7, 64, DEFAULT_MHAP_CHUNK_SIZE, exampleAlleles.rows.length + 50];
     for (const chunkSize of chunkSizes) {
-      const mhap = buildMicrohaplotypes(draft.microhaplotypes, context, { chunkSize });
+      const mhap = buildMicrohaplotypes(draft.microhaplotypes, {
+        ...context,
+        mhapChunkSize: chunkSize,
+      });
       expect(mhap.status).toBe("ready");
       const merged = mergeSections(
         { ...baseSections, microhaplotypes: mhap },
@@ -323,7 +326,7 @@ describe("microhaplotypes chunked building", () => {
     expect(codes(baseline)).toEqual(["mhap/duplicate-target-seq"]);
 
     for (const chunkSize of [1, 2, 3, 5, DEFAULT_MHAP_CHUNK_SIZE, 100]) {
-      const result = buildMicrohaplotypes(section, context, { chunkSize });
+      const result = buildMicrohaplotypes(section, { ...context, mhapChunkSize: chunkSize });
       expect(result.status).toBe("ready");
       expect(result.fragment).toEqual(baseline.fragment);
       expect(result.summary).toEqual(baseline.summary);
@@ -339,7 +342,7 @@ describe("microhaplotypes chunked building", () => {
     };
     const context = testContext({ empty: emptyTable });
     for (const chunkSize of [1, DEFAULT_MHAP_CHUNK_SIZE]) {
-      const result = buildMicrohaplotypes(section, context, { chunkSize });
+      const result = buildMicrohaplotypes(section, { ...context, mhapChunkSize: chunkSize });
       expect(result.status).toBe("ready");
       expect(result.summary).toEqual({
         rows: 0,
@@ -355,15 +358,21 @@ describe("microhaplotypes chunked building", () => {
     }
   });
 
-  it("rejects a non-positive or non-integer chunkSize", () => {
+  it("rejects a non-positive or non-integer mhapChunkSize", () => {
     const context = testContext({ alleles: ALLELES });
     const section: Draft["microhaplotypes"] = {
       ...empty.microhaplotypes,
       table: mappedTable("alleles", ALLELES, ALLELE_MAPPING),
     };
-    expect(() => buildMicrohaplotypes(section, context, { chunkSize: 0 })).toThrow(RangeError);
-    expect(() => buildMicrohaplotypes(section, context, { chunkSize: -5 })).toThrow(RangeError);
-    expect(() => buildMicrohaplotypes(section, context, { chunkSize: 2.5 })).toThrow(RangeError);
+    expect(() => buildMicrohaplotypes(section, { ...context, mhapChunkSize: 0 })).toThrow(
+      RangeError,
+    );
+    expect(() => buildMicrohaplotypes(section, { ...context, mhapChunkSize: -5 })).toThrow(
+      RangeError,
+    );
+    expect(() => buildMicrohaplotypes(section, { ...context, mhapChunkSize: 2.5 })).toThrow(
+      RangeError,
+    );
   });
 });
 

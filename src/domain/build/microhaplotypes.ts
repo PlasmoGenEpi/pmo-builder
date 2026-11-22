@@ -60,12 +60,6 @@ const TABLE_LABEL = t({
 /** Default number of rows fed to `createMhapTableBuilder` per chunk. */
 export const DEFAULT_MHAP_CHUNK_SIZE = 50_000;
 
-/** Options for {@link buildMicrohaplotypes}. */
-export interface BuildMicrohaplotypesOptions {
-  /** Rows added per chunk to `createMhapTableBuilder`. Defaults to {@link DEFAULT_MHAP_CHUNK_SIZE}. */
-  readonly chunkSize?: number;
-}
-
 /**
  * Builds the microhaplotypes section.
  *
@@ -76,11 +70,10 @@ export interface BuildMicrohaplotypesOptions {
 export function buildMicrohaplotypes(
   section: MicrohaplotypesDraft,
   context: BuildContext,
-  buildOptions: BuildMicrohaplotypesOptions = {},
 ): SectionResult<"microhaplotypes"> {
-  const chunkSize = buildOptions.chunkSize ?? DEFAULT_MHAP_CHUNK_SIZE;
+  const chunkSize = context.mhapChunkSize ?? DEFAULT_MHAP_CHUNK_SIZE;
   if (!Number.isInteger(chunkSize) || chunkSize < 1) {
-    throw new RangeError(`chunkSize must be a positive integer, got ${chunkSize}`);
+    throw new RangeError(`mhapChunkSize must be a positive integer, got ${chunkSize}`);
   }
   if (section.table === null) {
     return runNameStarted(section.runName) || section.representativeColumns.length > 0

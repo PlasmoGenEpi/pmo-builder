@@ -5685,10 +5685,6 @@ msgstr "The file could not be made"
 msgid "The file could not be opened. Reload the page and try again."
 msgstr "The file could not be opened. Reload the page and try again."
 
-#: src/features/review/PmoPreviewBody.tsx
-msgid "The file is {fileSize}. The first {shownSize} are shown here; the download has all of it."
-msgstr "The file is {fileSize}. The first {shownSize} are shown here; the download has all of it."
-
 #: src/features/review/PublishToZenodo.tsx
 msgid "The file is larger than Zenodo accepts."
 msgstr "The file is larger than Zenodo accepts."
