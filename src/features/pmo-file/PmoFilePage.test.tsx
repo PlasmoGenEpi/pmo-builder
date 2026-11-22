@@ -1206,25 +1206,47 @@ describe("PmoFilePage: summary", () => {
   it("recounts with a read threshold, kept when switching tabs", async () => {
     const { user } = await open(pmoFile(EXAMPLE));
     await user.click(await screen.findByRole("tab", { name: "Summary" }));
-    const samples = await screen.findByRole("table", { name: "Samples" });
-    const readsBefore = within(samples).getAllByRole("row").length;
+    await screen.findByRole("table", { name: "Samples" });
     await user.type(screen.getByLabelText("Minimum reads per microhaplotype"), "100000");
-    // Nothing reaches the threshold: no target has data, but every sample stays listed.
-    await vi.waitFor(
-      () =>
-        expect(
-          within(screen.getByRole("table", { name: "Targets" })).getAllByRole("row"),
-        ).toHaveLength(1),
-      { timeout: 3000 },
-    );
-    expect(within(screen.getByRole("table", { name: "Samples" })).getAllByRole("row")).toHaveLength(
-      readsBefore,
-    );
+    expect(
+      await screen.findByText("No microhaplotype has at least 100,000 reads", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
 
     // The threshold is the session's, so it survives a visit to another tab.
     await user.click(screen.getByRole("tab", { name: "Tables" }));
     await user.click(screen.getByRole("tab", { name: "Summary" }));
     expect(await screen.findByLabelText("Minimum reads per microhaplotype")).toHaveValue("100000");
+  });
+
+  it("explains when the minimum read count leaves nothing and clears it", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Targets" });
+
+    await user.type(screen.getByLabelText("Minimum reads per microhaplotype"), "5000");
+    expect(
+      await screen.findByText("No microhaplotype has at least 5,000 reads", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/1,279 reads/)).toBeInTheDocument();
+
+    expect(screen.queryByRole("region", { name: "Reads by sample and target" })).toBeNull();
+    expect(screen.queryByText(/reads \(log scale\)/)).toBeNull();
+    expect(screen.queryByRole("table", { name: "Targets" })).toBeNull();
+    expect(screen.queryByText(/Microhaplotypes at /)).toBeNull();
+    expect(screen.queryByText(/No microhaplotypes were counted at /)).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Sections" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Clear minimum reads" }));
+    expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("");
+    expect(
+      await screen.findByRole("region", { name: "Reads by sample and target" }, { timeout: 3000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Targets" })).toBeInTheDocument();
+    expect(screen.getByText(/Microhaplotypes at /)).toBeInTheDocument();
   });
 
   it("sorts a table by the chosen column", async () => {
@@ -1236,6 +1258,144 @@ describe("PmoFilePage: summary", () => {
     expect(header).toHaveAttribute("aria-sort", "ascending");
     await user.click(within(samples).getByRole("button", { name: "Sort by Reads" }));
     expect(header).toHaveAttribute("aria-sort", "descending");
+  });
+
+  it("keeps empty targets last when sorting by heterozygosity and announces the chosen target", async () => {
+    const { user } = await open(pmoFile(richPmo()));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Targets" });
+    await user.click(screen.getByRole("switch", { name: "Show targets with no data" }));
+
+    const targets = screen.getByRole("table", { name: "Targets" });
+    const sortByHe = within(targets).getByRole("button", { name: "Sort by Heterozygosity" });
+
+    // Highest to lowest: real values first, empty target (t3) last.
+    await user.click(sortByHe);
+    expect(columnOf(targets, /Target/)).toEqual(["t1", "t2", "t3"]);
+    expect(columnOf(targets, /Heterozygosity/).at(-1)).toBe("–");
+
+    // Lowest to highest: real values first, empty target (t3) still last.
+    await user.click(sortByHe);
+    expect(columnOf(targets, /Target/)).toEqual(["t2", "t1", "t3"]);
+    expect(columnOf(targets, /Heterozygosity/).at(-1)).toBe("–");
+
+    // Chosen target button announces pressed state; plain table rows carry no aria-selected.
+    expect(within(targets).getByRole("button", { name: "t1", pressed: true })).toBeInTheDocument();
+    expect(within(targets).getByRole("button", { name: "t2", pressed: false })).toBeInTheDocument();
+    for (const row of within(targets).getAllByRole("row")) {
+      expect(row).not.toHaveAttribute("aria-selected");
+    }
+    await user.click(within(targets).getByRole("button", { name: "t2" }));
+    expect(within(targets).getByRole("button", { name: "t2", pressed: true })).toBeInTheDocument();
+    expect(within(targets).getByRole("button", { name: "t1", pressed: false })).toBeInTheDocument();
+  });
+
+  it("omits the original file's largest read count when a subset's minimum leaves nothing", async () => {
+    const { user } = await open(pmoFile(richPmo()));
+    await user.click(await screen.findByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: "Specimens I tick" }));
+    // Tick only spec2 (max 50 reads) and neg (max 3 reads); exclude spec1 (90 reads).
+    const specimens = screen.getByRole("group", { name: "Specimens" });
+    await user.click(within(specimens).getByRole("checkbox", { name: /spec2/ }));
+    await user.click(within(specimens).getByRole("checkbox", { name: /neg/ }));
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    await screen.findByText("The subset is ready");
+
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Samples" });
+    await user.type(screen.getByLabelText("Minimum reads per microhaplotype"), "100");
+    expect(
+      await screen.findByText("No microhaplotype has at least 100 reads", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/90 reads/)).toBeNull();
+    expect(
+      screen.getByText("Lower the minimum or clear it to see all microhaplotypes."),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Compare" }));
+    expect(
+      await screen.findByText("No microhaplotype has at least 100 reads", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/90 reads/)).toBeNull();
+    expect(
+      screen.getByText("Lower the minimum or clear it to see all microhaplotypes."),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps missing values last in both directions on the pipeline stage table", async () => {
+    const base = richPmo();
+    const withStages: PortableMicrohaplotypeObject = {
+      ...base,
+      read_counts_by_stage: [
+        {
+          bioinformatics_run_id: 0,
+          read_counts_by_library_sample_by_stage: [
+            {
+              library_sample_id: 0,
+              total_raw_count: 500,
+              read_counts_for_targets: [
+                {
+                  target_id: 0,
+                  stages: [
+                    { stage: "demux", reads: 300 },
+                    { stage: "denoised", reads: 100 },
+                  ],
+                },
+              ],
+            },
+            {
+              library_sample_id: 1,
+              total_raw_count: 200,
+              read_counts_for_targets: [
+                {
+                  target_id: 0,
+                  stages: [
+                    { stage: "demux", reads: 150 },
+                    { stage: "denoised", reads: 80 },
+                  ],
+                },
+              ],
+            },
+            {
+              library_sample_id: 2,
+              total_raw_count: 0,
+              read_counts_for_targets: [
+                {
+                  target_id: 0,
+                  stages: [{ stage: "demux", reads: 40 }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const { user } = await open(pmoFile(withStages));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    const stages = await screen.findByRole("table", { name: "Reads at each pipeline stage" });
+
+    // Initial sort is Kept of raw ascending: S1 (20%), S2 (40%), S3 (–) last.
+    expect(columnOf(stages, /Library sample/)).toEqual(["S1", "S2", "S3"]);
+    expect(columnOf(stages, /Kept of raw/).at(-1)).toBe("–");
+
+    // Flip Kept of raw to descending: S2 (40%), S1 (20%), S3 (–) still last.
+    await user.click(within(stages).getByRole("button", { name: "Sort by Kept of raw" }));
+    expect(columnOf(stages, /Library sample/)).toEqual(["S2", "S1", "S3"]);
+    expect(columnOf(stages, /Kept of raw/).at(-1)).toBe("–");
+
+    // Sort by denoised descending then ascending: S3 (missing denoised) stays last both ways.
+    const sortByDenoised = within(stages).getByRole("button", { name: "Sort by denoised" });
+    await user.click(sortByDenoised);
+    expect(columnOf(stages, /Library sample/)).toEqual(["S1", "S2", "S3"]);
+    expect(columnOf(stages, /denoised/).at(-1)).toBe("–");
+
+    await user.click(sortByDenoised);
+    expect(columnOf(stages, /Library sample/)).toEqual(["S2", "S1", "S3"]);
+    expect(columnOf(stages, /denoised/).at(-1)).toBe("–");
   });
 });
 
@@ -1389,24 +1549,131 @@ describe("PmoFilePage: compare", () => {
     await user.type(await screen.findByLabelText("Minimum reads per microhaplotype"), "1000000");
     await user.click(screen.getByRole("tab", { name: "Compare" }));
     expect(await screen.findByLabelText("Minimum reads per microhaplotype")).toHaveValue("1000000");
-    await vi.waitFor(
-      () =>
-        expect(
-          allZero(columnOf(screen.getByRole("table", { name: "Groups" }), /Samples with data/)),
-        ).toBe(true),
-      { timeout: 3000 },
-    );
+    expect(
+      await screen.findByText("No microhaplotype has at least 1,000,000 reads", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/90 reads/)).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Groups" })).toBeNull();
 
     await user.clear(screen.getByLabelText("Minimum reads per microhaplotype"));
-    await vi.waitFor(
-      () =>
-        expect(
-          allZero(columnOf(screen.getByRole("table", { name: "Groups" }), /Samples with data/)),
-        ).toBe(false),
-      { timeout: 3000 },
-    );
+    const groups = await screen.findByRole("table", { name: "Groups" }, { timeout: 3000 });
+    expect(allZero(columnOf(groups, /Samples with data/))).toBe(false);
     await user.click(screen.getByRole("tab", { name: "Summary" }));
     expect(await screen.findByLabelText("Minimum reads per microhaplotype")).toHaveValue("");
+  });
+
+  it("explains when the minimum read count leaves nothing and clears it", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Compare" }));
+    await screen.findByRole("table", { name: "Groups" });
+
+    await user.type(screen.getByLabelText("Minimum reads per microhaplotype"), "5000");
+    expect(
+      await screen.findByText("No microhaplotype has at least 5,000 reads", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/1,279 reads/)).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Groups" })).toBeNull();
+    expect(screen.queryByRole("table", { name: "Heterozygosity by target" })).toBeNull();
+    expect(screen.queryByRole("table", { name: "Microhaplotype frequencies by group" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "When specimens were collected" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Clear minimum reads" }));
+    expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("");
+    expect(
+      await screen.findByRole("table", { name: "Groups" }, { timeout: 3000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Heterozygosity by target" })).toBeInTheDocument();
+  });
+
+  it("keeps missing values last in both directions on Compare tables", async () => {
+    const pmo: PortableMicrohaplotypeObject = {
+      pmo_header: { pmo_version: "1.1.0" },
+      panel_info: [
+        { panel_name: "p", reactions: [{ reaction_name: "pool1", panel_targets: [0, 1, 2] }] },
+      ],
+      target_info: ["t1", "t2", "t3"].map((target_name) => ({
+        target_name,
+        forward_primer: { seq: "ACGT" },
+        reverse_primer: { seq: "TGCA" },
+      })),
+      specimen_info: [
+        { specimen_name: "spec_k", collection_country: "Kenya" },
+        { specimen_name: "spec_m", collection_country: "Mozambique" },
+        { specimen_name: "spec_u", collection_country: "Uganda" },
+      ],
+      library_sample_info: [
+        { library_sample_name: "L_k", specimen_id: 0, panel_id: 0 },
+        { library_sample_name: "L_m", specimen_id: 1, panel_id: 0 },
+        { library_sample_name: "L_u", specimen_id: 2, panel_id: 0 },
+      ],
+      bioinformatics_methods_info: [{ methods: [{ program: "x", program_version: "1" }] }],
+      bioinformatics_run_info: [{ bioinformatics_run_name: "runA", bioinformatics_methods_id: 0 }],
+      representative_microhaplotypes: {
+        targets: [
+          { target_id: 0, microhaplotypes: [{ seq: "AAAA" }, { seq: "AAAT" }] },
+          { target_id: 1, microhaplotypes: [{ seq: "CCCC" }] },
+          { target_id: 2, microhaplotypes: [{ seq: "GGGG" }] },
+        ],
+      },
+      detected_microhaplotypes: [
+        {
+          bioinformatics_run_id: 0,
+          library_samples: [
+            {
+              library_sample_id: 0,
+              target_results: [
+                {
+                  mhaps_target_id: 0,
+                  mhaps: [
+                    { mhap_id: 0, reads: 50 },
+                    { mhap_id: 1, reads: 50 },
+                  ],
+                },
+                { mhaps_target_id: 1, mhaps: [{ mhap_id: 0, reads: 40 }] },
+              ],
+            },
+            {
+              library_sample_id: 1,
+              target_results: [
+                { mhaps_target_id: 0, mhaps: [{ mhap_id: 0, reads: 30 }] },
+                { mhaps_target_id: 2, mhaps: [{ mhap_id: 0, reads: 20 }] },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const { user } = await open(pmoFile(pmo));
+    await user.click(await screen.findByRole("tab", { name: "Compare" }));
+
+    // Groups table: Uganda has no samples with data so Mean heterozygosity is missing (–).
+    const groups = await screen.findByRole("table", { name: "Groups" });
+    const sortByMeanHe = within(groups).getByRole("button", {
+      name: "Sort by Mean heterozygosity",
+    });
+    await user.click(sortByMeanHe);
+    expect(columnOf(groups, /^Group/)).toEqual(["Kenya", "Mozambique", "Uganda"]);
+    expect(columnOf(groups, /Mean heterozygosity/).at(-1)).toBe("–");
+
+    await user.click(sortByMeanHe);
+    expect(columnOf(groups, /^Group/)).toEqual(["Mozambique", "Kenya", "Uganda"]);
+    expect(columnOf(groups, /Mean heterozygosity/).at(-1)).toBe("–");
+
+    // Heterozygosity by target table: in Kenya, t1 is 0.5, t2 is 0, and t3 is missing (–).
+    const byTarget = screen.getByRole("table", { name: "Heterozygosity by target" });
+    const sortByKenya = within(byTarget).getByRole("button", { name: "Sort by Kenya" });
+    await user.click(sortByKenya);
+    expect(columnOf(byTarget, /^Target/)).toEqual(["t1", "t2", "t3"]);
+    expect(columnOf(byTarget, /Kenya/).at(-1)).toBe("–");
+
+    await user.click(sortByKenya);
+    expect(columnOf(byTarget, /^Target/)).toEqual(["t2", "t1", "t3"]);
+    expect(columnOf(byTarget, /Kenya/).at(-1)).toBe("–");
   });
 
   it("says when the comparison could not be made", async () => {
@@ -1420,7 +1687,12 @@ describe("PmoFilePage: compare", () => {
 
   it("says when no file is open", async () => {
     await renderWithStore(
-      <CompareTab source="original" minReads={null} onMinReadsChange={() => undefined} />,
+      <CompareTab
+        source="original"
+        minReads={null}
+        maxReads={null}
+        onMinReadsChange={() => undefined}
+      />,
     );
     expect(await screen.findByText("No file is open")).toBeInTheDocument();
   });
