@@ -5699,6 +5699,10 @@ msgstr "O ficheiro foi fechado, provavelmente porque o navegador ficou sem memó
 msgid "The files you open and everything in them."
 msgstr "Os ficheiros que abrir e tudo o que contêm."
 
+#: src/features/review/PmoPreviewBody.tsx
+msgid "The first {shownSize} are shown here; the download has all of it."
+msgstr "Mostram-se aqui os primeiros {shownSize}; o ficheiro transferido contém tudo."
+
 #: src/domain/fields/panel.ts
 msgid "The gene the target covers, if any."
 msgstr "O gene abrangido pelo alvo, se houver."

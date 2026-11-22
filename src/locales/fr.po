@@ -5699,6 +5699,10 @@ msgstr "Le fichier a été fermé, probablement parce que le navigateur a manqu�
 msgid "The files you open and everything in them."
 msgstr "Les fichiers que vous ouvrez et tout leur contenu."
 
+#: src/features/review/PmoPreviewBody.tsx
+msgid "The first {shownSize} are shown here; the download has all of it."
+msgstr "Les {shownSize} premiers sont affichés ici ; le fichier téléchargé est complet."
+
 #: src/domain/fields/panel.ts
 msgid "The gene the target covers, if any."
 msgstr "Le gène couvert par la cible, le cas échéant."

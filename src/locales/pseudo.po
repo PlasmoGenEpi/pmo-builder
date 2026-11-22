@@ -5705,6 +5705,10 @@ msgstr ""
 msgid "The files you open and everything in them."
 msgstr ""
 
+#: src/features/review/PmoPreviewBody.tsx
+msgid "The first {shownSize} are shown here; the download has all of it."
+msgstr ""
+
 #: src/domain/fields/panel.ts
 msgid "The gene the target covers, if any."
 msgstr ""

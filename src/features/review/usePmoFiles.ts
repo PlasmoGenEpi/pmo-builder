@@ -35,7 +35,7 @@ function gzipName(jsonName: string): string {
  * Sizes come from `pmoFileSize`, which is not a download and is not counted
  * as one. The plain size comes first. The gzipped size follows, except for a
  * PMO over {@link GZIP_SIZE_LIMIT} of JSON, where it is left until the user
- * downloads; the worker keeps each file it makes, so a download reuses it.
+ * downloads; sizes are counted from the stream without keeping a Blob.
  */
 export function usePmoFiles(): PmoFileInfos {
   const actions = useActions();

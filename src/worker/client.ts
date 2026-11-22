@@ -144,7 +144,10 @@ const RESULT_GUARDS: {
     (isRecord(value) && typeof value["fileName"] === "string" && typeof value["size"] === "number"),
   getPmoText: (value): value is EngineResult<"getPmoText"> =>
     value === null ||
-    (isRecord(value) && typeof value["text"] === "string" && typeof value["length"] === "number"),
+    (isRecord(value) &&
+      typeof value["text"] === "string" &&
+      typeof value["truncated"] === "boolean" &&
+      (value["length"] === null || typeof value["length"] === "number")),
   getPanelFragment: (value): value is EngineResult<"getPanelFragment"> => isJsonValue(value),
   workingPmo: (value): value is EngineResult<"workingPmo"> => isWorkingPmoEnvelope(value),
 };

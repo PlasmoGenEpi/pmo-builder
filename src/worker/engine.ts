@@ -18,7 +18,9 @@ import {
   collectSuggestions,
   distinctValues as columnDistinctValues,
   exportPmo,
+  measurePmoSize,
   mergeSections,
+  pmoFileName,
   previewPmo,
   statusAfterMerge,
   type BuildDeps,
@@ -237,6 +239,11 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     readonly pmo: PortableMicrohaplotypeObject;
     readonly files: Map<boolean, Promise<PmoFile>>;
   } | null = null;
+  /** The latest PMO's file sizes, counted from the stream without keeping a Blob. */
+  let sizeMemo: {
+    readonly pmo: PortableMicrohaplotypeObject;
+    readonly sizes: Map<boolean, Promise<{ readonly fileName: string; readonly size: number }>>;
+  } | null = null;
   /** The latest PMO as a file, made once per build and format. */
   const pmoFile = (gzip: boolean): Promise<PmoFile> | null => {
     const pmo = latestPmo;
@@ -450,6 +457,8 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
         reuse && mergeMemo !== null ? mergeMemo.result : mergeSections(sections, { creationDate });
       mergeMemo = { key: creationDate, sections, result: merge };
       latestPmo = merge.outcome.kind === "built" ? merge.outcome.pmo : null;
+      if (fileMemo !== null && fileMemo.pmo !== latestPmo) fileMemo = null;
+      if (sizeMemo !== null && sizeMemo.pmo !== latestPmo) sizeMemo = null;
       if (previewMemo !== null && previewMemo.pmo !== latestPmo) previewMemo = null;
 
       buildRevision += 1;
@@ -487,8 +496,24 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     },
 
     async getPmoFileSize(fileOptions = {}) {
-      const file = await pmoFile(fileOptions.gzip ?? true);
-      return file === null ? null : { fileName: file.fileName, size: file.blob.size };
+      const pmo = latestPmo;
+      if (pmo === null) return null;
+      const gzip = fileOptions.gzip ?? true;
+      if (fileMemo !== null && fileMemo.pmo === pmo) {
+        const existing = fileMemo.files.get(gzip);
+        if (existing !== undefined) {
+          const file = await existing;
+          return { fileName: file.fileName, size: file.blob.size };
+        }
+      }
+      if (sizeMemo === null || sizeMemo.pmo !== pmo) sizeMemo = { pmo, sizes: new Map() };
+      let entry = sizeMemo.sizes.get(gzip);
+      if (entry === undefined) {
+        const fileName = pmoFileName(pmo, gzip);
+        entry = measurePmoSize(pmo, { gzip }).then((size) => ({ fileName, size }));
+        sizeMemo.sizes.set(gzip, entry);
+      }
+      return entry;
     },
 
     getPmoText(textOptions = {}) {
@@ -522,6 +547,8 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       memos.clear();
       mergeMemo = null;
       latestPmo = null;
+      fileMemo = null;
+      sizeMemo = null;
       previewMemo = null;
       suggestionsMemo = null;
       held = NOTHING_HELD;
