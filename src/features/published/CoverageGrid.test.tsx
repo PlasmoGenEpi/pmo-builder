@@ -82,9 +82,40 @@ describe("CoverageGrid", () => {
       within(grid).getByRole("button", { name: "Uganda, 2021: 150 specimens in 1 published PMO" }),
     ).toBeInTheDocument();
 
-    // Legend shows empty swatch and log-scale upper bound.
+    // Legend shows empty swatch, log-scale upper bound and keyboard hint.
     expect(screen.getByText("0 specimens")).toBeInTheDocument();
     expect(screen.getByText("1,240 specimens (log scale)")).toBeInTheDocument();
+    expect(grid).toHaveAccessibleDescription(
+      "Use arrow keys to move between cells, Enter or Space to filter.",
+    );
+  });
+
+  it("uses singular specimen wording in the legend when the maximum is 1 and supports controlled open state", async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn<(open: boolean) => void>();
+    const singleSpecimen = [
+      dataset({
+        id: "1",
+        countries: ["Kenya"],
+        collectionYears: { first: 2020, last: 2020 },
+        summary: { ...dataset({ id: "0" }).summary, specimens: 1 },
+      }),
+    ];
+    render(
+      <CoverageGrid
+        datasets={singleSpecimen}
+        selectedCountries={[]}
+        selectedYear={null}
+        onSelectCell={vi.fn<(country: string, year: number) => void>()}
+        open
+        onOpenChange={onOpenChange}
+      />,
+      { wrapper },
+    );
+
+    expect(screen.getByText("1 specimen (log scale)")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Coverage by country and year/ }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
   it("updates the readout on hover and focus, marks the active cell, and calls onSelectCell", async () => {

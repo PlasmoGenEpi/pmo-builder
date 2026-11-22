@@ -72,15 +72,20 @@ msgstr "(choix actuel)"
 msgid "(opens in a new tab)"
 msgstr "(s’ouvre dans un nouvel onglet)"
 
+#. placeholder {0}: datasets.length
+#: src/features/published/PublishedPage.tsx
+msgid "{0, plural, one {{matchingCount} of # dataset} other {{matchingCount} of # datasets}}"
+msgstr "{0, plural, one {{matchingCount} sur # jeu de données} other {{matchingCount} sur # jeux de données}}"
+
+#. placeholder {0}: matrix.maxSpecimens
+#: src/features/published/CoverageGrid.tsx
+msgid "{0, plural, one {{maxSpecimensText} specimen (log scale)} other {{maxSpecimensText} specimens (log scale)}}"
+msgstr "{0, plural, one {{maxSpecimensText} spécimen (échelle logarithmique)} other {{maxSpecimensText} spécimens (échelle logarithmique)}}"
+
 #. placeholder {0}: method.steps
 #: src/features/bioinformatics/methodOptions.ts
 msgid "{0, plural, one {{name} (# step)} other {{name} (# steps)}}"
 msgstr "{0, plural, one {{name} (# étape)} other {{name} (# étapes)}}"
-
-#. placeholder {0}: datasets.length
-#: src/features/published/PublishedPage.tsx
-msgid "{0, plural, one {{shownCount} of # dataset} other {{shownCount} of # datasets}}"
-msgstr "{0, plural, one {{shownCount} sur # jeu de données} other {{shownCount} sur # jeux de données}}"
 
 #. placeholder {0}: matrix.countries.length
 #. placeholder {0}: selected.length
@@ -244,8 +249,8 @@ msgstr "{0, plural, one {Run de séquençage} other {Runs de séquençage}}"
 
 #. placeholder {0}: matching.length
 #: src/features/published/PublishedPage.tsx
-msgid "{0, plural, one {Showing {visibleCount} of # published PMO} other {Showing {visibleCount} of # published PMOs}}"
-msgstr "{0, plural, one {Affichage de {visibleCount} sur # PMO publié} other {Affichage de {visibleCount} sur # PMO publiés}}"
+msgid "{0, plural, one {Showing {shownCount} of # published PMO} other {Showing {shownCount} of # published PMOs}}"
+msgstr "{0, plural, one {Affichage de {shownCount} sur # PMO publié} other {Affichage de {shownCount} sur # PMO publiés}}"
 
 #. placeholder {0}: dataset.summary.specimens
 #: src/features/published/PublishedPage.tsx
@@ -435,15 +440,10 @@ msgstr "{countriesLabel}, {yearsRange}"
 msgid "{country} <0>({countText})</0>"
 msgstr "{country} <0>({countText})</0>"
 
-#. Accessible description of a populated cell in the coverage grid
+#. Accessible description of a cell in the coverage grid
 #: src/features/published/CoverageGrid.tsx
-msgid "{country}, {year}: {specimensText} in {pmosText}"
-msgstr "{country}, {year} : {specimensText} dans {pmosText}"
-
-#. Accessible description of an empty cell in the coverage grid
-#: src/features/published/CoverageGrid.tsx
-msgid "{country}, {year}: 0 specimens"
-msgstr "{country}, {year} : 0 spécimen"
+msgid "{country}, {year}: {summary}"
+msgstr "{country}, {year} : {summary}"
 
 #: src/features/pmo-file/summary/CompareTab.tsx
 msgid "{dated} of {all} specimens have a collection date that gives the month."
@@ -528,7 +528,6 @@ msgid "{firstAuthor} et al."
 msgstr "{firstAuthor} et al."
 
 #: src/features/published/catalogue.ts
-#: src/features/published/CoverageGrid.tsx
 msgid "{firstYear} to {lastYear}"
 msgstr "{firstYear} à {lastYear}"
 
@@ -639,10 +638,6 @@ msgstr "{mappedCount, plural, one {{missingCount, plural, one {{mappedFields} es
 #: src/features/pmo-file/summary/ReadsGrid.tsx
 msgid "{maxReads} reads (log scale)"
 msgstr "{maxReads} lectures (échelle logarithmique)"
-
-#: src/features/published/CoverageGrid.tsx
-msgid "{maxSpecimensText} specimens (log scale)"
-msgstr "{maxSpecimensText} spécimens (échelle logarithmique)"
 
 #: src/features/review/VerdictCard.tsx
 msgid "{message} Reload the page to try again."
@@ -923,6 +918,11 @@ msgstr "{specimenCount, plural, one {Le projet « {project} » est attribué �
 msgid "{specimens, plural, one {{fieldLabel}, in # specimen} other {{fieldLabel}, in # specimens}}"
 msgstr "{specimens, plural, one {{fieldLabel}, dans # spécimen} other {{fieldLabel}, dans # spécimens}}"
 
+#. Specimen and published PMO counts for a populated cell in the coverage grid
+#: src/features/published/CoverageGrid.tsx
+msgid "{specimensText} in {pmosText}"
+msgstr "{specimensText} dans {pmosText}"
+
 #: src/features/panel/PanelStep.tsx
 msgid "{targetCount} before merging"
 msgstr "{targetCount} avant fusion"
@@ -1049,12 +1049,8 @@ msgid "<0>. Accepts</0> {fileTypes}"
 msgstr "<0>. Formats acceptés :</0> {fileTypes}"
 
 #: src/features/published/CoverageGrid.tsx
-msgid "<0>{country}, {year}:</0> {specimensText} in {pmosText}"
-msgstr "<0>{country}, {year} :</0> {specimensText} dans {pmosText}"
-
-#: src/features/published/CoverageGrid.tsx
-msgid "<0>{country}, {year}:</0> 0 specimens"
-msgstr "<0>{country}, {year} :</0> 0 spécimen"
+msgid "<0>{country}, {year}:</0> {summary}"
+msgstr "<0>{country}, {year} :</0> {summary}"
 
 #: src/features/records/NameCoverage.tsx
 msgid "<0>{shownNames}</0> and {more} more"
@@ -1089,6 +1085,7 @@ msgstr "<0>Run de séquençage</0>, si vous l’avez, doit correspondre à un ru
 msgid "<0>Specimen name</0> must match a name in the table on the Specimens step."
 msgstr "<0>Nom du spécimen</0> doit correspondre à un nom du tableau de l’étape Spécimens."
 
+#. Specimen count for an empty cell in the coverage grid
 #: src/features/published/CoverageGrid.tsx
 msgid "0 specimens"
 msgstr "0 spécimen"
@@ -6781,6 +6778,10 @@ msgstr "Utiliser un panel enregistré précédemment"
 #: src/features/panel/PanelEditor.tsx
 msgid "Use a saved panel instead"
 msgstr "Utiliser plutôt un panel enregistré"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "Use arrow keys to move between cells, Enter or Space to filter."
+msgstr "Utilisez les touches fléchées pour vous déplacer entre les cellules, Entrée ou Espace pour filtrer."
 
 #: src/app/HomePage.tsx
 msgid "Use the example"

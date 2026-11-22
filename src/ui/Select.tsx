@@ -23,8 +23,6 @@ export interface SelectProps {
   id?: string;
   /** Needed when the select is not inside a `Field` and has no visible `<label>`. */
   "aria-label"?: string;
-  /** Associates an external visible label element when the select is not inside a `Field`. */
-  "aria-labelledby"?: string;
   className?: string;
 }
 
@@ -49,7 +47,6 @@ export function Select({
         {...control}
         id={id ?? control?.id}
         aria-label={aria["aria-label"]}
-        aria-labelledby={aria["aria-labelledby"]}
         className={cn(
           inputClassName,
           "inline-flex h-control cursor-pointer text-base items-center justify-between gap-2 text-left data-placeholder:text-text-subtle",

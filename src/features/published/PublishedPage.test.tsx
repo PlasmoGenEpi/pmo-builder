@@ -11,6 +11,7 @@ import { useHashLocation } from "@/app/hashLocation";
 import type { ZenodoConfig } from "@/features/review/zenodo";
 import { createTestStore } from "@/features/shared/testing";
 import { i18n } from "@/i18n";
+import { formatCount } from "@/ui";
 import { installDomPolyfills } from "@/ui/testPolyfills";
 
 import type { CatalogueLoad } from "./catalogue";
@@ -620,7 +621,7 @@ describe("PublishedPage", () => {
 
     const cellButton = within(grid).getByRole("button", {
       name: new RegExp(
-        `^${targetCountry}, ${targetYear}: ${expectedSpecimens.toLocaleString("en-US")} specimens? in ${expectedMatching.length} published PMOs?$`,
+        `^${targetCountry}, ${targetYear}: ${formatCount(expectedSpecimens)} specimens? in ${expectedMatching.length} published PMOs?$`,
       ),
     });
     await user.click(cellButton);
@@ -1007,6 +1008,148 @@ describe("PublishedPage", () => {
         Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
       }
     }
+  });
+
+  it("restores an expanded coverage grid before restoring scroll position on Back", async () => {
+    const user = userEvent.setup();
+    const bigIndex = largeCatalogue(150);
+    const loadBig = gives({ kind: "ready", index: bigIndex });
+    window.history.replaceState(null, "", "/#/published");
+    const scrollDescriptor = Object.getOwnPropertyDescriptor(window, "scrollY");
+    let currentScrollY = 0;
+    Object.defineProperty(window, "scrollY", {
+      configurable: true,
+      get: () => currentScrollY,
+    });
+    let coverageExpandedAtScroll = false;
+    const scrollToSpy = vi.spyOn(window, "scrollTo").mockImplementation((...args: unknown[]) => {
+      const first = args[0];
+      if (
+        typeof first === "object" &&
+        first !== null &&
+        "top" in first &&
+        typeof first.top === "number"
+      ) {
+        if (first.top === 1_450) {
+          coverageExpandedAtScroll =
+            document.querySelector('[data-testid="coverage-scroll"]') !== null;
+        }
+        currentScrollY = first.top;
+      }
+    });
+
+    try {
+      render(
+        <I18nProvider i18n={i18n}>
+          <Router hook={useHashLocation}>
+            <Switch>
+              <Route path="/published">
+                <PublishedPage load={loadBig} zenodo={ZENODO} />
+              </Route>
+              <Route path="/published/:id">
+                {(params) => <DatasetPage id={params.id} load={loadBig} />}
+              </Route>
+            </Switch>
+          </Router>
+        </I18nProvider>,
+      );
+
+      await screen.findByText("150 datasets");
+      const toggle = screen.getByRole("button", { name: /Coverage by country and year/ });
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      await user.click(toggle);
+      expect(toggle).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByTestId("coverage-scroll")).toBeInTheDocument();
+
+      currentScrollY = 1_450;
+      window.dispatchEvent(new Event("scroll"));
+
+      const targetEntry = bigIndex.datasets[12];
+      if (targetEntry === undefined) throw new Error("missing 13th dataset");
+      await user.click(screen.getByRole("link", { name: targetEntry.title }));
+      expect(
+        await screen.findByRole("heading", { level: 1, name: targetEntry.title }),
+      ).toBeInTheDocument();
+
+      scrollToSpy.mockClear();
+      coverageExpandedAtScroll = false;
+      currentScrollY = 0;
+      window.history.back();
+
+      expect(await screen.findByText("150 datasets")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Coverage by country and year/ })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+      expect(screen.getByTestId("coverage-scroll")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(scrollToSpy).toHaveBeenCalledWith({ top: 1_450 });
+      });
+      expect(coverageExpandedAtScroll).toBe(true);
+    } finally {
+      window.history.replaceState(null, "", "/");
+      if (scrollDescriptor !== undefined) {
+        Object.defineProperty(window, "scrollY", scrollDescriptor);
+      } else {
+        Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
+      }
+    }
+  });
+
+  it("operates CountryFilter and ViewSwitch from the keyboard", async () => {
+    const user = userEvent.setup();
+    const { wrapper: listWrapper, location } = makeWrapper("/published");
+    render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper: listWrapper });
+    await screen.findByText("3 datasets");
+
+    // CountryFilter: open via Enter, filter by typing, select with Tab + Space, close with Escape.
+    const trigger = countryButton();
+    trigger.focus();
+    await user.keyboard("{Enter}");
+
+    const search = await screen.findByRole("searchbox", { name: "Filter countries" });
+    expect(search).toHaveFocus();
+    await user.keyboard("uganda");
+    const ugandaCheckbox = screen.getByRole("checkbox", { name: "Uganda (1)" });
+    await user.tab();
+    expect(ugandaCheckbox).toHaveFocus();
+    await user.keyboard(" ");
+    expect(ugandaCheckbox).toBeChecked();
+    await user.keyboard("{Escape}");
+
+    expect(location.history.at(-1)).toBe("/published?country=Uganda");
+    expect(titles()).toEqual(["Northern Uganda cohort"]);
+    expect(countryButton()).toHaveTextContent("Uganda");
+
+    // Re-open via Space and clear the selected country from the keyboard.
+    countryButton().focus();
+    await user.keyboard(" ");
+    const clearCountries = await screen.findByRole("button", { name: "Clear countries" });
+    clearCountries.focus();
+    await user.keyboard("{Enter}");
+    await user.keyboard("{Escape}");
+    expect(location.history.at(-1)).toBe("/published");
+    expect(titles()).toHaveLength(3);
+
+    // ViewSwitch (SegmentedControl): switch between List and Table with arrow keys and Space/Enter.
+    const listRadio = screen.getByRole("radio", { name: "List" });
+    const tableRadio = screen.getByRole("radio", { name: "Table" });
+    listRadio.focus();
+    expect(listRadio).toHaveFocus();
+    await user.keyboard("{ArrowRight}");
+    expect(tableRadio).toHaveFocus();
+    await user.keyboard(" ");
+
+    expect(tableRadio).toHaveAttribute("aria-checked", "true");
+    expect(location.history.at(-1)).toBe("/published?view=table");
+    expect(screen.getByRole("table")).toBeInTheDocument();
+
+    await user.keyboard("{ArrowLeft}");
+    expect(listRadio).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(listRadio).toHaveAttribute("aria-checked", "true");
+    expect(location.history.at(-1)).toBe("/published");
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 });
 
