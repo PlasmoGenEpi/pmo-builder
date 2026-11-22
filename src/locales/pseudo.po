@@ -993,6 +993,14 @@ msgstr ""
 msgid "{total, plural, one {Showing {shownCount} of {totalCount} row} other {Showing {shownCount} of {totalCount} rows}}"
 msgstr ""
 
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "{totalSamples, plural, one {{sampleShare} of {allSamples} library sample} other {{sampleShare} of {allSamples} library samples}}"
+msgstr ""
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "{totalTargets, plural, one {{targetShare} of {allTargets} target} other {{targetShare} of {allTargets} targets}}"
+msgstr ""
+
 #: src/features/review/SectionChecklist.tsx
 msgid "{warnings, plural, one {{line}. # warning to check.} other {{line}. # warnings to check.}}"
 msgstr ""
@@ -1053,6 +1061,10 @@ msgstr ""
 #. {where} is a place in the PMO, such as 'Specimen "S1"'. {reasonText} says what is wrong: one or more verb phrases joined with ', and it', such as 'is missing specimen_name'.
 #: src/domain/build/merge.ts
 msgid "{where}. It {reasonText}."
+msgstr ""
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "{withData, plural, one {{polyclonalShare} of {samplesWithData} sample with data} other {{polyclonalShare} of {samplesWithData} samples with data}}"
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
@@ -3771,14 +3783,6 @@ msgstr ""
 #. Screen-reader name of the area where messages appear. The placeholder becomes a key such as F8.
 #: src/ui/Toast.tsx
 msgid "Notifications ({RADIX_HOTKEY})"
-msgstr ""
-
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "of {all}"
-msgstr ""
-
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "of {targets}"
 msgstr ""
 
 #. Name of the jump links to headings in the current view
