@@ -29,6 +29,11 @@ function describe(id: TableId): { readonly title: string; readonly body: string 
       return { title: t`Targets`, body: t`One row per target, with its primers and location.` };
     case "panels":
       return { title: t`Panels`, body: t`One row per target of each panel, with its reactions.` };
+    case "readCounts":
+      return {
+        title: t`Read counts by stage`,
+        body: t`One row per library sample, target and pipeline stage, with total raw reads.`,
+      };
     case "travel":
       return { title: t`Travel`, body: t`One row per trip a specimen's host made.` };
     case "projects":

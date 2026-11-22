@@ -6,7 +6,7 @@ import { Route, Switch } from "wouter";
 
 import { readPmoFile } from "@/domain/build/checkFile";
 import { buildExamplePmo } from "@/domain/build/testing";
-import { richPmo } from "@/domain/tools/testing";
+import { examplePmoWithReadCounts, richPmo } from "@/domain/tools/testing";
 import { readZip } from "@/domain/tools/zipTesting";
 import { saveFile } from "@/features/review/saveFile";
 import type { ZenodoConfig } from "@/features/review/zenodo";
@@ -280,6 +280,86 @@ describe("PmoFilePage: tables", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/could not be made/)).not.toBeInTheDocument();
     expect(saveFile).not.toHaveBeenCalled();
+  });
+
+  it("lists and downloads read counts by stage on the example PMO, and includes it in the zip", async () => {
+    const { user } = await open(pmoFile(examplePmoWithReadCounts()));
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+    const downloadButton = screen.getByRole("button", {
+      name: "Download Read counts by stage as csv",
+    });
+    const row = downloadButton.closest("li");
+    if (row === null) throw new Error("expected list item");
+    expect(within(row).getByText("Read counts by stage")).toBeInTheDocument();
+    expect(
+      within(row).getByText(
+        "One row per library sample, target and pipeline stage, with total raw reads.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(row).getByText("8 rows")).toBeInTheDocument();
+
+    await user.click(downloadButton);
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    const csv = await savedText();
+    expect(csv.name).toBe("study-read-counts.csv");
+    expect(csv.text.trimEnd().split("\n")[0]).toBe(
+      "library_sample_name,total_raw_count,target_name,stage,reads",
+    );
+    expect(csv.text.trimEnd().split("\n")).toHaveLength(9);
+
+    vi.mocked(saveFile).mockReset();
+    await user.click(screen.getByRole("radio", { name: "TSV" }));
+    await user.click(screen.getByRole("button", { name: "Download Read counts by stage as tsv" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    const tsv = await savedText();
+    expect(tsv.name).toBe("study-read-counts.tsv");
+    expect(tsv.text.trimEnd().split("\n")[0]).toBe(
+      "library_sample_name\ttotal_raw_count\ttarget_name\tstage\treads",
+    );
+
+    vi.mocked(saveFile).mockReset();
+    await user.click(screen.getByRole("button", { name: "Download all tables (.zip)" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    const [blob] = vi.mocked(saveFile).mock.calls.at(-1) ?? [];
+    if (blob === undefined) throw new Error("nothing saved");
+    const files = await readZip(blob);
+    expect(files.map((file) => file.name)).toContain("study-read-counts.tsv");
+  });
+
+  it("does not list read counts by stage when the PMO has none", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+    expect(screen.queryByText("Read counts by stage")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^Download Read counts by stage/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("updates or hides read counts by stage when switching between original and subset", async () => {
+    const { user } = await open(pmoFile(richPmo()));
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+    expect(screen.getByText("Read counts by stage")).toBeInTheDocument();
+    const originalItem = screen
+      .getByRole("button", { name: "Download Read counts by stage as csv" })
+      .closest("li");
+    if (originalItem === null) throw new Error("expected list item");
+    expect(within(originalItem).getByText("3 rows")).toBeInTheDocument();
+
+    // Subset to spec2, which has no read counts.
+    await user.click(screen.getByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: "Specimens I tick" }));
+    const specimens = screen.getByRole("group", { name: "Specimens" });
+    await user.click(within(specimens).getByRole("checkbox", { name: /spec2/ }));
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    await screen.findByText("The subset is ready");
+
+    await user.click(screen.getByRole("tab", { name: "Tables" }));
+    expect(screen.getByRole("radio", { name: "Subset" })).toBeChecked();
+    expect(screen.queryByText("Read counts by stage")).not.toBeInTheDocument();
+
+    // Switching back to Original brings it back.
+    await user.click(screen.getByRole("radio", { name: "Original" }));
+    expect(screen.getByText("Read counts by stage")).toBeInTheDocument();
   });
 });
 

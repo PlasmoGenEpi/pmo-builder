@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { buildExamplePmo } from "@/domain/build/testing";
-import { richPmo } from "@/domain/tools/testing";
+import { examplePmoWithReadCounts, richPmo } from "@/domain/tools/testing";
 import { createDraftStorage, createMemoryBackend } from "@/domain/draft";
 import type { SubsetRequest, WorkingPmoRequest } from "@/domain/tools/types";
 import type { Engine } from "@/worker";
@@ -336,6 +336,65 @@ describe("working PMO session: tables", () => {
     await session.open(chosen(pmoFile(smallerPmo(3), "second.json")));
     expect(await engine.workingPmo({ generation, request: TABLE })).toEqual({ kind: "stale" });
     expect(await engine.workingPmo({ generation, request: TABLES })).toEqual({ kind: "stale" });
+  });
+
+  it("writes read counts by stage for original and subset, and includes it in the archive", async () => {
+    const { session } = makeSession();
+    const withCounts = examplePmoWithReadCounts();
+    await session.open(chosen(pmoFile(withCounts, "study.json")));
+    const open = session.state.getState().open;
+    expect(open.kind === "opened" && open.opened.tables).toContainEqual({
+      id: "readCounts",
+      rows: 8,
+    });
+
+    const original = await session.query({
+      kind: "table",
+      source: "original",
+      id: "readCounts",
+      format: "csv",
+    });
+    if (original.kind !== "ok") throw new Error(original.kind);
+    expect(original.value.fileName).toBe("study-read-counts.csv");
+    expect(original.value.text.trimEnd().split("\n")).toHaveLength(9);
+
+    const sample01Specimen =
+      withCounts.specimen_info[
+        withCounts.library_sample_info.find(
+          (library) => library.library_sample_name === "example_sample_01",
+        )?.specimen_id ?? -1
+      ]?.specimen_name;
+    if (sample01Specimen === undefined) throw new Error("expected specimen");
+
+    await session.subset({
+      specimens: { kind: "names", names: [sample01Specimen] },
+      targets: { kind: "all" },
+      minReads: 0,
+    });
+    const subset = session.state.getState().subset;
+    expect(subset.kind === "made" && subset.made.tables).toContainEqual({
+      id: "readCounts",
+      rows: 2,
+    });
+
+    const subsetTable = await session.query({
+      kind: "table",
+      source: "subset",
+      id: "readCounts",
+      format: "tsv",
+    });
+    if (subsetTable.kind !== "ok") throw new Error(subsetTable.kind);
+    expect(subsetTable.value.fileName).toBe("study-subset-read-counts.tsv");
+    expect(subsetTable.value.text.trimEnd().split("\n")).toEqual([
+      "library_sample_name\ttotal_raw_count\ttarget_name\tstage\treads",
+      "example_sample_01\t10\tPf3D7_01_v3-145388-145662-1A\tdemux\t10",
+      "example_sample_01\t10\tPf3D7_01_v3-145388-145662-1A\tdada2\t7",
+    ]);
+
+    const archive = await session.query({ kind: "tables", source: "subset", format: "tsv" });
+    if (archive.kind !== "ok") throw new Error(archive.kind);
+    const files = await readZip(archive.value.blob);
+    expect(files.map((file) => file.name)).toContain("study-subset-read-counts.tsv");
   });
 });
 
