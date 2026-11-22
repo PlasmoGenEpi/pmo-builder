@@ -43,7 +43,10 @@ export interface Jump {
 export function SectionJumps({ jumps }: { readonly jumps: readonly Jump[] }) {
   return (
     <nav
-      aria-label={t`Sections`}
+      aria-label={t({
+        message: "On this page",
+        comment: "Name of the jump links to headings in the current view",
+      })}
       className="flex basis-full flex-wrap items-center gap-x-1 gap-y-1"
     >
       <span className="pr-2 text-sm text-text-subtle">
