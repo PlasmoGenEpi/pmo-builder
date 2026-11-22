@@ -11,7 +11,7 @@ import type {
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
 import { usePmoQuery } from "@/state";
-import { Card, SectionHeading, Skeleton, Stat, Switch, formatCount } from "@/ui";
+import { Card, SectionHeading, Skeleton, Stat, Switch, formatCount, jumpToHeading } from "@/ui";
 
 import { AlleleBars } from "./AlleleBars";
 import {
@@ -201,20 +201,52 @@ function targetColumns(): SortableColumn<TargetSummary>[] {
 
 function Headline({ summary }: { readonly summary: PmoSummary }) {
   const { headline } = summary;
-  const all = formatCount(summary.librarySamples);
-  const targets = formatCount(summary.targets.length);
+  const percent = new Intl.NumberFormat(intlLocale(), {
+    style: "percent",
+    maximumFractionDigits: 0,
+  });
+  const totalSamples = summary.librarySamples;
+  const allSamples = formatCount(totalSamples);
+  const sampleShare =
+    totalSamples > 0 ? percent.format(headline.samplesWithData / totalSamples) : null;
+
+  const totalTargets = summary.targets.length;
+  const allTargets = formatCount(totalTargets);
+  const targetShare =
+    totalTargets > 0 ? percent.format(headline.targetsWithData / totalTargets) : null;
+
+  const withData = headline.samplesWithData;
+  const samplesWithData = formatCount(withData);
+  const polyclonalShare = withData > 0 ? percent.format(headline.polyclonal / withData) : null;
+
   const medianReads = formatCount(Math.round(headline.medianReads ?? 0));
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       <Stat
         label={t`Samples with data`}
         value={formatCount(headline.samplesWithData)}
-        hint={t`of ${all}`}
+        hint={
+          sampleShare === null
+            ? undefined
+            : plural(totalSamples, {
+                one: `${sampleShare} of ${allSamples} library sample`,
+                other: `${sampleShare} of ${allSamples} library samples`,
+              })
+        }
+        onClick={() => jumpToHeading(HEADING.samples)}
       />
       <Stat
         label={t`Targets with data`}
         value={formatCount(headline.targetsWithData)}
-        hint={t`of ${targets}`}
+        hint={
+          targetShare === null
+            ? undefined
+            : plural(totalTargets, {
+                one: `${targetShare} of ${allTargets} target`,
+                other: `${targetShare} of ${allTargets} targets`,
+              })
+        }
+        onClick={() => jumpToHeading(HEADING.targets)}
       />
       <Stat
         label={t`Median targets per sample`}
@@ -222,11 +254,20 @@ function Headline({ summary }: { readonly summary: PmoSummary }) {
         hint={
           headline.medianReads === null ? undefined : t`Median reads per sample: ${medianReads}`
         }
+        onClick={() => jumpToHeading(HEADING.reads)}
       />
       <Stat
         label={t`Samples with more than one clone`}
         value={formatCount(headline.polyclonal)}
-        hint={t`Two or more alleles at some target`}
+        hint={
+          polyclonalShare === null
+            ? t`Two or more alleles at some target`
+            : plural(withData, {
+                one: `${polyclonalShare} of ${samplesWithData} sample with data`,
+                other: `${polyclonalShare} of ${samplesWithData} samples with data`,
+              })
+        }
+        onClick={() => jumpToHeading(HEADING.samples)}
       />
     </div>
   );
