@@ -245,9 +245,13 @@ test("at 390 px a 384-well plate scrolls inside its own area without page overfl
 
   // The plate scroll box can be focused and scrolled from the keyboard.
   await scroller.focus();
+  await expect(scroller).toBeFocused();
   await page.keyboard.press("ArrowRight");
-  const scrolledByKey = await scroller.evaluate((element) => element.scrollLeft);
-  expect(scrolledByKey, "keyboard ArrowRight scrolls the 384-well plate").toBeGreaterThan(0);
+  await expect
+    .poll(() => scroller.evaluate((element) => element.scrollLeft), {
+      message: "keyboard ArrowRight scrolls the 384-well plate",
+    })
+    .toBeGreaterThan(0);
 
   // Scroll the plate container to reveal column 24, then hover well P24 and check its tooltip.
   await scroller.evaluate((element) => {
