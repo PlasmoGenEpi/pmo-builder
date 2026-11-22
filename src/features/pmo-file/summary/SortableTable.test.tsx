@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { saveFile } from "@/features/review/saveFile";
 
+import { buttonClassName } from "@/ui";
+
 import { SortableTable, type SortableColumn } from "./SortableTable";
 
 vi.mock("@/features/review/saveFile", () => ({ saveFile: vi.fn<typeof saveFile>() }));
@@ -295,5 +297,28 @@ describe("SortableTable", () => {
     expect(search).toHaveFocus();
     expect(screen.getByText("Showing 6 of 6 rows")).toBeInTheDocument();
     expect(firstColumnValues(table)).toHaveLength(6);
+  });
+
+  it("uses the wrapping button variant for column headings and selectable row labels with sort indicators intact", () => {
+    render(<SelectableTargets />);
+    const table = screen.getByRole("table", { name: "Targets" });
+    const wrappingClasses = buttonClassName({ variant: "ghost", size: "sm", wrap: true }).split(
+      " ",
+    );
+
+    const headingButton = within(table).getByRole("button", { name: "Sort by Heterozygosity" });
+    for (const name of wrappingClasses) {
+      expect(headingButton).toHaveClass(name);
+    }
+    expect(headingButton).not.toHaveClass("h-auto!");
+    expect(headingButton.querySelector("span")).toBeNull();
+    expect(headingButton.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+
+    const rowButton = within(table).getByRole("button", { name: "t-mid" });
+    for (const name of wrappingClasses) {
+      expect(rowButton).toHaveClass(name);
+    }
+    expect(rowButton).not.toHaveClass("h-auto!");
+    expect(rowButton.querySelector("span")).toBeNull();
   });
 });

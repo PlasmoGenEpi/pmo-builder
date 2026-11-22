@@ -1357,7 +1357,7 @@ describe("PmoFilePage: summary", () => {
     expect(within(targets).getByRole("button", { name: "t1", pressed: false })).toBeInTheDocument();
   });
 
-  it("omits the original file's largest read count when a subset's minimum leaves nothing", async () => {
+  it("names the subset's own largest read count when its minimum leaves nothing, and keeps the original's", async () => {
     const { user } = await open(pmoFile(richPmo()));
     await user.click(await screen.findByRole("tab", { name: "Subset" }));
     await user.click(screen.getByRole("radio", { name: "Specimens I tick" }));
@@ -1376,10 +1376,12 @@ describe("PmoFilePage: summary", () => {
         timeout: 3000,
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/90 reads/)).toBeNull();
     expect(
-      screen.getByText("Lower the minimum or clear it to see all microhaplotypes."),
+      screen.getByText(
+        "The most in this file is 50 reads. Lower the minimum or clear it to see all microhaplotypes.",
+      ),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/90 reads/)).toBeNull();
 
     await user.click(screen.getByRole("tab", { name: "Compare" }));
     expect(
@@ -1387,9 +1389,30 @@ describe("PmoFilePage: summary", () => {
         timeout: 3000,
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/90 reads/)).toBeNull();
     expect(
-      screen.getByText("Lower the minimum or clear it to see all microhaplotypes."),
+      screen.getByText(
+        "The most in this file is 50 reads. Lower the minimum or clear it to see all microhaplotypes.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/90 reads/)).toBeNull();
+
+    // Switching back to the original reports the original file's own largest read count.
+    await user.click(screen.getByRole("radio", { name: "Original" }));
+    expect(
+      await screen.findByText(
+        "The most in this file is 90 reads. Lower the minimum or clear it to see all microhaplotypes.",
+        undefined,
+        { timeout: 3000 },
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+    expect(
+      await screen.findByText(
+        "The most in this file is 90 reads. Lower the minimum or clear it to see all microhaplotypes.",
+        undefined,
+        { timeout: 3000 },
+      ),
     ).toBeInTheDocument();
   });
 

@@ -623,6 +623,28 @@ describe("working PMO session: subsets", () => {
       value: { librarySamples: 3 },
     });
   });
+
+  it("reports the subset's own largest read count alongside the original's", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(richPmo(), "rich.json")));
+    const open = session.state.getState().open;
+    if (open.kind !== "opened") throw new Error(open.kind);
+    expect(open.opened.choices.maxReads).toBe(90);
+
+    const request: SubsetRequest = {
+      specimens: { kind: "names", names: ["spec2", "neg"] },
+      targets: { kind: "all" },
+      minReads: 0,
+    };
+    const answer = await session.subset(request);
+    expect(answer).toMatchObject({ kind: "ok", value: { kind: "made", maxReads: 50 } });
+    expect(session.state.getState().subset).toMatchObject({
+      kind: "made",
+      made: { maxReads: 50 },
+    });
+    // The original's own figure is unchanged.
+    expect(open.opened.choices.maxReads).toBe(90);
+  });
 });
 
 describe("working PMO session: replacing subsets", () => {
