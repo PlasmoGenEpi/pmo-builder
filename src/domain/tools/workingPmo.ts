@@ -29,6 +29,7 @@ import {
   validatePmo,
   type ColumnTable,
   type PortableMicrohaplotypeObject,
+  type TableCell,
 } from "pmotools-ts";
 
 import { readPmoFile } from "@/domain/build/checkFile";
@@ -169,6 +170,134 @@ function alleleCount(pmo: Pmo): number {
   return count;
 }
 
+function readCountsRowCount(pmo: Pmo): number {
+  let count = 0;
+  for (const run of pmo.read_counts_by_stage ?? []) {
+    for (const sample of run.read_counts_by_library_sample_by_stage) {
+      const stageRows = (sample.read_counts_for_targets ?? []).reduce(
+        (sum, target) => sum + target.stages.length,
+        0,
+      );
+      count += stageRows > 0 ? stageRows : 1;
+    }
+  }
+  return count;
+}
+
+const READ_COUNTS_BUILTIN_KEYS = new Set([
+  "library_sample_id",
+  "total_raw_count",
+  "read_counts_for_targets",
+  "target_id",
+  "stages",
+  "stage",
+  "reads",
+  "library_sample_name",
+  "bioinformatics_run_name",
+  "target_name",
+]);
+
+function extraCell(value: unknown): TableCell | undefined {
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    value === null
+  ) {
+    return value;
+  }
+  if (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        typeof item === "string" ||
+        typeof item === "number" ||
+        typeof item === "boolean" ||
+        item === null,
+    )
+  ) {
+    return value.map((item) => (item === null ? "" : String(item))).join(",");
+  }
+  return undefined;
+}
+
+function addExtraCells(
+  record: Readonly<Record<string, unknown>>,
+  row: Map<string, TableCell>,
+  extraKeys: Set<string>,
+): void {
+  for (const [key, value] of Object.entries(record)) {
+    if (READ_COUNTS_BUILTIN_KEYS.has(key)) continue;
+    const cell = extraCell(value);
+    if (cell !== undefined) {
+      row.set(key, cell);
+      extraKeys.add(key);
+    }
+  }
+}
+
+function readCountsTable(pmo: Pmo): ColumnTable {
+  const runs = pmo.read_counts_by_stage ?? [];
+  const hasRunName = runs.some(
+    (run) =>
+      run.read_counts_by_library_sample_by_stage.length > 0 &&
+      run.bioinformatics_run_id !== null &&
+      run.bioinformatics_run_id !== undefined,
+  );
+  let hasTargetStages = false;
+  const extraKeys = new Set<string>();
+  const records: Map<string, TableCell>[] = [];
+
+  for (const run of runs) {
+    const runId = run.bioinformatics_run_id;
+    const runName =
+      runId !== null && runId !== undefined
+        ? (pmo.bioinformatics_run_info?.[runId]?.bioinformatics_run_name ?? String(runId))
+        : null;
+    for (const sample of run.read_counts_by_library_sample_by_stage) {
+      const sampleName =
+        pmo.library_sample_info[sample.library_sample_id]?.library_sample_name ??
+        String(sample.library_sample_id);
+      const base = new Map<string, TableCell>([["library_sample_name", sampleName]]);
+      if (hasRunName) base.set("bioinformatics_run_name", runName);
+      base.set("total_raw_count", sample.total_raw_count);
+      addExtraCells(sample, base, extraKeys);
+
+      let emittedForSample = false;
+      for (const target of sample.read_counts_for_targets ?? []) {
+        if (target.stages.length === 0) continue;
+        const targetName =
+          pmo.target_info[target.target_id]?.target_name ?? String(target.target_id);
+        for (const stage of target.stages) {
+          const row = new Map(base);
+          row.set("target_name", targetName);
+          row.set("stage", stage.stage);
+          row.set("reads", stage.reads);
+          addExtraCells(target, row, extraKeys);
+          addExtraCells(stage, row, extraKeys);
+          records.push(row);
+          emittedForSample = true;
+          hasTargetStages = true;
+        }
+      }
+      if (!emittedForSample) records.push(base);
+    }
+  }
+
+  if (records.length === 0) return { columns: [], rows: [] };
+
+  const columns: string[] = ["library_sample_name"];
+  if (hasRunName) columns.push("bioinformatics_run_name");
+  columns.push("total_raw_count");
+  if (hasTargetStages) columns.push("target_name", "stage", "reads");
+  columns.push(...[...extraKeys].toSorted((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
+
+  return {
+    columns,
+    rows: records.map((record) => columns.map((column) => record.get(column) ?? null)),
+  };
+}
+
 /** The tables `pmo` can give, with their row counts. Sections it lacks are left out. */
 export function tablesOf(pmo: Pmo): TableInfo[] {
   const rows: Record<TableId, number | null> = {
@@ -177,6 +306,7 @@ export function tablesOf(pmo: Pmo): TableInfo[] {
     librarySamples: pmo.library_sample_info.length,
     targets: pmo.target_info.length,
     panels: pmo.panel_info.length === 0 ? null : exportPanelInfoMetaTable(pmo).rows.length,
+    readCounts: readCountsRowCount(pmo),
     travel: pmo.specimen_info.reduce(
       (sum, specimen) => sum + (specimen.travel_out_six_month?.length ?? 0),
       0,
@@ -362,6 +492,7 @@ const FILE_PARTS: Readonly<Record<TableId, string>> = {
   librarySamples: "library-samples",
   targets: "targets",
   panels: "panels",
+  readCounts: "read-counts",
   travel: "travel",
   projects: "projects",
   sequencing: "sequencing",
@@ -391,6 +522,8 @@ function tableOf(pmo: Pmo, id: TableId): ColumnTable {
       return exportTargetInfoMetaTable(pmo);
     case "panels":
       return exportPanelInfoMetaTable(pmo);
+    case "readCounts":
+      return readCountsTable(pmo);
     case "travel":
       return exportSpecimenTravelMetaTable(pmo);
     case "projects":

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildExamplePmo } from "@/domain/build/testing";
 
+import { examplePmoWithReadCounts, richPmo } from "./testing";
 import type { SubsetRequest } from "./types";
 import {
   baseNameOf,
@@ -232,6 +233,187 @@ describe("tableFile", () => {
       const file = tableFile(EXAMPLE, { id: table.id, format: "csv", baseName: "x" });
       expect(file.text.trimEnd().split("\n")).toHaveLength(table.rows + 1);
     }
+  });
+});
+
+describe("read counts by stage table", () => {
+  const WITH_COUNTS = examplePmoWithReadCounts();
+
+  it("omits read counts when the PMO has none", async () => {
+    expect(tablesOf(EXAMPLE).map((table) => table.id)).not.toContain("readCounts");
+    const archive = await tablesArchive(EXAMPLE, { format: "csv", baseName: "study" });
+    const files = await readZip(archive.blob);
+    expect(files.map((file) => file.name)).not.toContain("study-read-counts.csv");
+  });
+
+  it("lists read counts right after panels with its row count on the example PMO and includes it in the archive", async () => {
+    const tables = tablesOf(WITH_COUNTS);
+    const ids = tables.map((table) => table.id);
+    expect(ids.indexOf("readCounts")).toBe(ids.indexOf("panels") + 1);
+    expect(tables.find((table) => table.id === "readCounts")).toEqual({
+      id: "readCounts",
+      rows: 8,
+    });
+
+    const csv = tableFile(WITH_COUNTS, { id: "readCounts", format: "csv", baseName: "study" });
+    expect(csv.fileName).toBe("study-read-counts.csv");
+    expect(csv.text.trimEnd().split("\n")).toEqual([
+      "library_sample_name,total_raw_count,target_name,stage,reads",
+      "example_sample_01,10,Pf3D7_01_v3-145388-145662-1A,demux,10",
+      "example_sample_01,10,Pf3D7_01_v3-145388-145662-1A,dada2,7",
+      "example_sample_02,7,Pf3D7_01_v3-145388-145662-1A,demux,6",
+      "example_sample_02,7,Pf3D7_01_v3-145388-145662-1A,dada2,4",
+      "example_sample_03,25,Pf3D7_01_v3-145388-145662-1A,demux,10",
+      "example_sample_03,25,Pf3D7_01_v3-145388-145662-1A,dada2,8",
+      "example_sample_03,25,Pf3D7_14_v3-288429-288696-1B,demux,15",
+      "example_sample_03,25,Pf3D7_14_v3-288429-288696-1B,dada2,15",
+    ]);
+
+    const archive = await tablesArchive(WITH_COUNTS, { format: "tsv", baseName: "study" });
+    const files = await readZip(archive.blob);
+    const entry = files.find((file) => file.name === "study-read-counts.tsv");
+    expect(entry?.text).toBe(
+      tableFile(WITH_COUNTS, { id: "readCounts", format: "tsv", baseName: "study" }).text,
+    );
+  });
+
+  it("includes bioinformatics_run_name when a run names one, in TSV format", () => {
+    const rich = richPmo();
+    expect(tablesOf(rich).find((table) => table.id === "readCounts")).toEqual({
+      id: "readCounts",
+      rows: 3,
+    });
+    const tsv = tableFile(rich, { id: "readCounts", format: "tsv", baseName: "rich" });
+    expect(tsv.fileName).toBe("rich-read-counts.tsv");
+    expect(tsv.text.trimEnd().split("\n")).toEqual([
+      "library_sample_name\tbioinformatics_run_name\ttotal_raw_count\ttarget_name\tstage\treads",
+      "S1\trunA\t500\tt1\tdemux\t300",
+      "S1\trunA\t500\tt1\tdenoised\t100",
+      "S1\trunA\t500\tt2\tdemux\t50",
+    ]);
+  });
+
+  it("writes one row per sample without target columns when only total raw counts are given", () => {
+    const rich = richPmo();
+    const totalsOnly: PortableMicrohaplotypeObject = {
+      ...rich,
+      read_counts_by_stage: [
+        {
+          read_counts_by_library_sample_by_stage: [
+            { library_sample_id: 0, total_raw_count: 500 },
+            { library_sample_id: 1, total_raw_count: 250, read_counts_for_targets: [] },
+          ],
+        },
+      ],
+    };
+    expect(tablesOf(totalsOnly).find((table) => table.id === "readCounts")).toEqual({
+      id: "readCounts",
+      rows: 2,
+    });
+    const csv = tableFile(totalsOnly, { id: "readCounts", format: "csv", baseName: "totals" });
+    expect(csv.text.trimEnd().split("\n")).toEqual([
+      "library_sample_name,total_raw_count",
+      "S1,500",
+      "S2,250",
+    ]);
+  });
+
+  it("keeps a total-only sample alongside staged samples and appends sorted extra primitive columns", () => {
+    const rich = richPmo();
+    const mixed: PortableMicrohaplotypeObject = {
+      ...rich,
+      read_counts_by_stage: [
+        {
+          bioinformatics_run_id: 0,
+          read_counts_by_library_sample_by_stage: [
+            {
+              library_sample_id: 0,
+              total_raw_count: 500,
+              batch: "B1",
+              ignored_obj: { nested: true },
+              read_counts_for_targets: [
+                {
+                  target_id: 0,
+                  pool_tags: ["p1", "p2"],
+                  stages: [{ stage: "demux", reads: 300, note: "ok" }],
+                },
+              ],
+            },
+            {
+              library_sample_id: 1,
+              total_raw_count: 250,
+              batch: "B2",
+            },
+          ],
+        },
+      ],
+    };
+    expect(tablesOf(mixed).find((table) => table.id === "readCounts")).toEqual({
+      id: "readCounts",
+      rows: 2,
+    });
+    const csv = tableFile(mixed, { id: "readCounts", format: "csv", baseName: "mixed" });
+    expect(csv.text.trimEnd().split("\n")).toEqual([
+      "library_sample_name,bioinformatics_run_name,total_raw_count,target_name,stage,reads,batch,note,pool_tags",
+      'S1,runA,500,t1,demux,300,B1,ok,"p1,p2"',
+      "S2,runA,250,,,,B2,,",
+    ]);
+  });
+
+  it("follows subsets: narrows rows to kept specimens and omits read counts when none remain", () => {
+    const sample01Specimen =
+      WITH_COUNTS.specimen_info[
+        WITH_COUNTS.library_sample_info.find(
+          (library) => library.library_sample_name === "example_sample_01",
+        )?.specimen_id ?? -1
+      ]?.specimen_name;
+    const sample10Specimen =
+      WITH_COUNTS.specimen_info[
+        WITH_COUNTS.library_sample_info.find(
+          (library) => library.library_sample_name === "example_sample_10",
+        )?.specimen_id ?? -1
+      ]?.specimen_name;
+    if (sample01Specimen === undefined || sample10Specimen === undefined) {
+      throw new Error("expected example specimens");
+    }
+
+    const oneSample = makeSubset(
+      WITH_COUNTS,
+      {
+        specimens: { kind: "names", names: [sample01Specimen] },
+        targets: { kind: "all" },
+        minReads: 0,
+      },
+      "study.json",
+    );
+    if (oneSample.outcome.kind !== "made" || oneSample.subset === null) {
+      throw new Error(oneSample.outcome.kind);
+    }
+    expect(oneSample.outcome.tables.find((table) => table.id === "readCounts")).toEqual({
+      id: "readCounts",
+      rows: 2,
+    });
+    expect(
+      tableFile(oneSample.subset, { id: "readCounts", format: "csv", baseName: "study-subset" })
+        .text.trimEnd()
+        .split("\n"),
+    ).toEqual([
+      "library_sample_name,total_raw_count,target_name,stage,reads",
+      "example_sample_01,10,Pf3D7_01_v3-145388-145662-1A,demux,10",
+      "example_sample_01,10,Pf3D7_01_v3-145388-145662-1A,dada2,7",
+    ]);
+
+    const noCounts = makeSubset(
+      WITH_COUNTS,
+      {
+        specimens: { kind: "names", names: [sample10Specimen] },
+        targets: { kind: "all" },
+        minReads: 0,
+      },
+      "study.json",
+    );
+    if (noCounts.outcome.kind !== "made") throw new Error(noCounts.outcome.kind);
+    expect(noCounts.outcome.tables.map((table) => table.id)).not.toContain("readCounts");
   });
 });
 

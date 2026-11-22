@@ -16,6 +16,7 @@ export const TABLE_IDS = [
   "librarySamples",
   "targets",
   "panels",
+  "readCounts",
   "travel",
   "projects",
   "sequencing",

@@ -3652,6 +3652,10 @@ msgid "One row per bioinformatics run."
 msgstr "Uma linha por execução bioinformática."
 
 #: src/features/pmo-file/TablesPanel.tsx
+msgid "One row per library sample, target and pipeline stage, with total raw reads."
+msgstr "Uma linha por amostra de biblioteca, alvo e etapa do pipeline, com o total de leituras brutas."
+
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "One row per library sample, with its specimen, panel and sequencing run."
 msgstr "Uma linha por amostra de biblioteca, com o seu espécime, painel e corrida de sequenciação."
 
@@ -4269,6 +4273,7 @@ msgstr "Número de leituras"
 #. Step title, shown in the sidebar and as the page heading
 #: src/app/HomePage.tsx
 #: src/app/steps.ts
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "Read counts by stage"
 msgstr "Número de leituras por etapa"
 
