@@ -42,7 +42,13 @@ export interface Jump {
 /** Links to the sections of a long view, each scrolling to its heading. */
 export function SectionJumps({ jumps }: { readonly jumps: readonly Jump[] }) {
   return (
-    <nav aria-label={t`Sections`} className="flex flex-wrap items-center gap-x-1 gap-y-1">
+    <nav
+      aria-label={t({
+        message: "On this page",
+        comment: "Name of the jump links to headings in the current view",
+      })}
+      className="flex flex-wrap items-center gap-x-1 gap-y-1"
+    >
       <span className="pr-1.5 text-sm text-text-subtle">
         {t({ message: "Jump to", comment: "Followed by links to the sections of the page" })}
       </span>

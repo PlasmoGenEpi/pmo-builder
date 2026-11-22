@@ -43,10 +43,6 @@ test("at 1280x800 the Summary headline is on the first screen, toolbar is one ro
 
   await openExamplePmo(page);
 
-  // Save a copy of the built PMO from Overview so Replace can load a real file.
-  const download = await downloadFrom(page, page.getByRole("button", { name: "Download" }));
-  const savedBytes = await readFile(await download.path());
-
   // Full drop area is gone; compact bar holds file name, size, Replace and Remove on one row.
   await expect(
     page.getByRole("button", { name: /PMO: Drag a file here or choose a file/ }),
@@ -71,7 +67,7 @@ test("at 1280x800 the Summary headline is on the first screen, toolbar is one ro
   expect(firstStatBox.y + firstStatBox.height).toBeLessThanOrEqual(800);
 
   const minReadsInput = page.getByLabel("Minimum reads per microhaplotype");
-  const jumpsNav = page.getByRole("navigation", { name: "Sections" });
+  const jumpsNav = page.getByRole("navigation", { name: "On this page" });
   const jumpButtons = jumpsNav.getByRole("button");
   const inputBox = await boxOf(minReadsInput);
   const firstJumpBox = await boxOf(jumpButtons.first());
@@ -115,6 +111,11 @@ test("at 1280x800 the Summary headline is on the first screen, toolbar is one ro
   await sourceSwitch.getByRole("radio", { name: "Original" }).click();
   await expect(sourceSwitch.getByRole("radio", { name: "Original" })).toBeChecked();
   await expect(firstStat).not.toHaveText(subsetText, { timeout: BUILD_TIMEOUT });
+
+  // Save a copy of the built PMO from Overview so Replace can load a real file.
+  await page.getByRole("tab", { name: "Overview" }).click();
+  const download = await downloadFrom(page, page.getByRole("button", { name: "Download" }));
+  const savedBytes = await readFile(await download.path());
 
   // Replace via the Replace button's file chooser replaces the working PMO.
   const [chooser] = await Promise.all([page.waitForEvent("filechooser"), replaceButton.click()]);
