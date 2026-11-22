@@ -4040,10 +4040,6 @@ msgstr "Plaques"
 msgid "Platform"
 msgstr "Plateforme"
 
-#: src/app/TopBar.tsx
-msgid "PMO Builder home"
-msgstr "Accueil de PMO Builder"
-
 #: src/app/privacy/PrivacyDetails.tsx
 msgid "PMO Builder runs entirely in your browser. Your files, tables, sample names, sequences and metadata stay on this device. They are never uploaded, and the app has no server to upload them to."
 msgstr "PMO Builder fonctionne entièrement dans votre navigateur. Vos fichiers, tableaux, noms d’échantillons, séquences et métadonnées restent sur cet appareil. Ils ne sont jamais envoyés ailleurs, et l’application n’a aucun serveur où les envoyer."
