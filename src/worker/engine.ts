@@ -14,6 +14,7 @@ import type { PortableMicrohaplotypeObject, Table } from "pmotools-ts";
 import {
   DEFAULT_BUILD_DEPS,
   NO_SUGGESTIONS,
+  buildMicrohaplotypesStream,
   buildSection,
   collectSuggestions,
   distinctValues as columnDistinctValues,
@@ -42,8 +43,12 @@ import {
 import { describeError } from "@/domain/errors";
 import {
   importFailureMessage,
+  inspectDelimitedStream,
   isImportError,
   parseFile,
+  streamDelimitedChunks,
+  streamDistinctValues,
+  type DelimitedStreamMeta,
   type ImportFailure,
 } from "@/domain/import";
 import {
@@ -52,10 +57,11 @@ import {
   settleWorkingPmo,
   type WorkingPmoHeld,
 } from "@/domain/tools/workingPmoHandlers";
-import type { Notice, ParsedFile, RawTable, SectionId } from "@/domain/types";
+import type { Notice, ParsedFile, RawRow, RawTable, SectionId } from "@/domain/types";
 import { SECTION_IDS } from "@/domain/types";
 
 import type {
+  BuildProgress,
   BuildRequestOptions,
   Engine,
   ImportOutcome,
@@ -70,12 +76,19 @@ type TableState =
   | { readonly kind: "pending" }
   | { readonly kind: "parsing"; readonly promise: Promise<void> }
   | { readonly kind: "ready"; readonly parsed: ParsedFile }
+  | {
+      readonly kind: "streamed";
+      readonly meta: DelimitedStreamMeta;
+      exactRowCount: number | null;
+      runNameValues: { readonly column: string; readonly values: readonly string[] } | null;
+    }
   | { readonly kind: "failed"; readonly message: string };
 
 interface TableEntry {
   readonly id: string;
   readonly fileName: string;
   readonly source: Blob;
+  readonly stream: boolean;
   sheetName: string | null;
   /** Counts up whenever the table's rows change, so memoised builds notice. */
   revision: number;
@@ -163,6 +176,19 @@ function toRef(entry: TableEntry, parsed: ParsedFile): TableRef {
     sheetName: parsed.sheetName,
     columns: parsed.table.columns,
     rowCount: parsed.table.rows.length,
+  };
+}
+
+function toStreamedRef(entry: TableEntry, meta: DelimitedStreamMeta): TableRef {
+  return {
+    id: entry.id,
+    fileName: entry.fileName,
+    fileSize: entry.source.size,
+    format: "delimited",
+    sheetNames: null,
+    sheetName: null,
+    columns: meta.columns,
+    rowCount: meta.exactRowCount,
   };
 }
 
@@ -257,6 +283,10 @@ function createPmoFormatCache<T>(
 export function createInThreadEngine(options: InThreadEngineOptions = {}): Engine {
   const parse = options.parseFile ?? parseFile;
   const deps = cachedTyping(options.deps ?? DEFAULT_BUILD_DEPS);
+  // Only stream when using the real parser and build deps (injected test doubles keep whole-table mode).
+  const allowStreaming = options.parseFile === undefined && options.deps === undefined;
+  const shouldStream = (stream: boolean | undefined, source: Blob): boolean =>
+    allowStreaming && stream === true && typeof source.stream === "function";
   const yieldToQueue =
     options.yieldToQueue ?? (() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
   const tables = new Map<string, TableEntry>();
@@ -268,6 +298,7 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
   } | null = null;
   let latestRequest = 0;
   let buildRevision = 0;
+  let progressActive = false;
   let latestPmo: PortableMicrohaplotypeObject | null = null;
   /** The working PMO: a PMO file opened to look over, subset or export, apart from the draft. */
   let held: WorkingPmoHeld = NOTHING_HELD;
@@ -308,8 +339,25 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     if (entry.state.kind !== "pending") return;
     const promise = (async () => {
       try {
-        const parsed = await parseEntry(entry);
-        entry.state = { kind: "ready", parsed };
+        if (entry.stream) {
+          const inspection = await inspectDelimitedStream(entry.source, {
+            fileName: entry.fileName,
+          });
+          if (inspection.kind === "delimited") {
+            entry.state = {
+              kind: "streamed",
+              meta: inspection.meta,
+              exactRowCount: inspection.meta.exactRowCount,
+              runNameValues: null,
+            };
+          } else {
+            const parsed = await parseEntry(entry);
+            entry.state = { kind: "ready", parsed };
+          }
+        } else {
+          const parsed = await parseEntry(entry);
+          entry.state = { kind: "ready", parsed };
+        }
       } catch (error) {
         entry.state = {
           kind: "failed",
@@ -334,6 +382,7 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
         return { kind: "failed", message: entry.state.message };
       case "pending":
       case "parsing":
+      case "streamed":
         return { kind: "missing" };
       default:
         return { kind: "missing" };
@@ -343,11 +392,6 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
   const tableKey = (id: string): string => {
     const entry = tables.get(id);
     return entry === undefined ? `${id}:missing` : `${id}@${entry.revision}:${entry.state.kind}`;
-  };
-
-  const readTable = async (id: string): Promise<TableLookupResult> => {
-    await ensureParsed(id);
-    return lookup(id);
   };
 
   /**
@@ -365,7 +409,19 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     ) {
       return suggestionsMemo.value;
     }
-    const value = draftSuggestions(draft, lookup);
+    let value = draftSuggestions(draft, lookup);
+    const mhap = draft.microhaplotypes;
+    if (mhap.runName.mode === "column" && mhap.runName.column !== null && mhap.table !== null) {
+      const entry = tables.get(mhap.table.table.id);
+      if (
+        entry !== undefined &&
+        entry.state.kind === "streamed" &&
+        entry.state.runNameValues !== null &&
+        entry.state.runNameValues.column === mhap.runName.column
+      ) {
+        value = { ...value, runNames: entry.state.runNameValues.values };
+      }
+    }
     suggestionsMemo = { sources, value };
     return value;
   };
@@ -376,11 +432,28 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
         id: newId(),
         fileName: input.fileName,
         source: input.file,
+        stream: shouldStream(input.stream, input.file),
         sheetName: input.sheetName ?? null,
         revision: 0,
         state: { kind: "pending" },
       };
       try {
+        if (entry.stream) {
+          const inspection = await inspectDelimitedStream(entry.source, {
+            fileName: entry.fileName,
+          });
+          if (inspection.kind === "delimited") {
+            entry.state = {
+              kind: "streamed",
+              meta: inspection.meta,
+              exactRowCount: inspection.meta.exactRowCount,
+              runNameValues: null,
+            };
+            entry.sheetName = null;
+            tables.set(entry.id, entry);
+            return { kind: "imported", table: toStreamedRef(entry, inspection.meta) };
+          }
+        }
         const parsed = await parseEntry(entry);
         entry.state = { kind: "ready", parsed };
         entry.sheetName = parsed.sheetName;
@@ -397,6 +470,7 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
         id: input.tableId,
         fileName: input.fileName,
         source: input.file,
+        stream: shouldStream(input.stream, input.file),
         sheetName: input.sheetName,
         revision: (previous?.revision ?? 0) + 1,
         state: { kind: "pending" },
@@ -424,10 +498,63 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     },
 
     async previewRows(request) {
-      const found = await readTable(request.tableId);
-      if (found.kind !== "ready") return found;
+      await ensureParsed(request.tableId);
+      const entry = tables.get(request.tableId);
+      if (entry === undefined) return { kind: "missing" };
       const offset = Math.max(0, request.offset ?? 0);
       const limit = Math.max(0, request.limit ?? 50);
+      if (entry.state.kind === "streamed") {
+        const { meta } = entry.state;
+        const allCached =
+          meta.exactRowCount !== null && meta.previewRows.length >= meta.exactRowCount;
+        if (limit === 0 || allCached || offset + limit <= meta.previewRows.length) {
+          return {
+            kind: "ready",
+            columns: meta.columns,
+            rows: meta.previewRows.slice(offset, offset + limit),
+            offset,
+            totalRows: entry.state.exactRowCount,
+          };
+        }
+        const rows: RawRow[] = [];
+        let seen = 0;
+        try {
+          for await (const chunk of streamDelimitedChunks(entry.source, {
+            fileName: entry.fileName,
+            delimiter: meta.delimiter,
+            encoding: meta.encoding,
+            columns: meta.columns,
+            chunkSize: Math.max(limit, 1_000),
+          })) {
+            const chunkEnd = seen + chunk.length;
+            if (chunkEnd > offset) {
+              const start = Math.max(0, offset - seen);
+              for (let i = start; i < chunk.length && rows.length < limit; i += 1) {
+                const row = chunk[i];
+                if (row !== undefined) rows.push(row);
+              }
+            }
+            seen = chunkEnd;
+            if (rows.length >= limit) break;
+          }
+        } catch (error) {
+          return {
+            kind: "failed",
+            message: isImportError(error)
+              ? importFailureMessage(failureOf(error))
+              : describeError(error),
+          };
+        }
+        return {
+          kind: "ready",
+          columns: meta.columns,
+          rows,
+          offset,
+          totalRows: entry.state.exactRowCount,
+        };
+      }
+      const found = lookup(request.tableId);
+      if (found.kind !== "ready") return found;
       return {
         kind: "ready",
         columns: found.table.columns,
@@ -438,7 +565,24 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     },
 
     async distinctValues(request) {
-      const found = await readTable(request.tableId);
+      await ensureParsed(request.tableId);
+      const entry = tables.get(request.tableId);
+      if (entry === undefined) return null;
+      if (entry.state.kind === "streamed") {
+        if (!entry.state.meta.columns.includes(request.column)) return null;
+        try {
+          return await streamDistinctValues(entry.source, {
+            fileName: entry.fileName,
+            delimiter: entry.state.meta.delimiter,
+            encoding: entry.state.meta.encoding,
+            column: request.column,
+            limit: request.limit ?? 200,
+          });
+        } catch {
+          return null;
+        }
+      }
+      const found = lookup(request.tableId);
       if (found.kind !== "ready" || !found.table.columns.includes(request.column)) return null;
       return columnDistinctValues(found.table, request.column, request.limit ?? 200);
     },
@@ -447,72 +591,148 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       latestRequest += 1;
       const request = latestRequest;
       const superseded = (): boolean => request !== latestRequest;
-
-      await Promise.all(referencedTableIds(draft).map((id) => ensureParsed(id)));
-      await yieldToQueue();
-      if (superseded()) return { kind: "superseded" };
-
-      const context = { tables: lookup, deps };
-      const rebuilt: SectionId[] = [];
-      const results = new Map<SectionId, SectionResult<SectionId>>();
-      for (const section of SECTION_IDS) {
-        const input = sectionInput(draft, section, buildOptions);
-        const tableKeys = sectionTableIds(draft, section).map(tableKey).join(",");
-        const memo = memos.get(section);
-        if (memo !== undefined && memo.tables === tableKeys && sameInput(memo.input, input)) {
-          results.set(section, memo.result);
-          continue;
-        }
-        const result = buildSection(section, draft, context);
-        memos.set(section, { input, tables: tableKeys, result });
-        results.set(section, result);
-        rebuilt.push(section);
-      }
-      const sections = collect(results);
-      await yieldToQueue();
-      if (superseded()) return { kind: "superseded" };
-
-      const creationDate = buildOptions.creationDate ?? today();
-      const reuse =
-        mergeMemo !== null &&
-        mergeMemo.key === creationDate &&
-        SECTION_IDS.every((id) => mergeMemo?.sections[id] === sections[id]);
-      const merge =
-        reuse && mergeMemo !== null ? mergeMemo.result : mergeSections(sections, { creationDate });
-      mergeMemo = { key: creationDate, sections, result: merge };
-      latestPmo = merge.outcome.kind === "built" ? merge.outcome.pmo : null;
-      fileCache.clearIfNot(latestPmo);
-      sizeCache.clearIfNot(latestPmo);
-      if (previewMemo !== null && previewMemo.pmo !== latestPmo) previewMemo = null;
-
-      buildRevision += 1;
-      return {
-        kind: "built",
-        view: {
-          revision: buildRevision,
-          sections: {
-            microhaplotypes: view(sections.microhaplotypes, merge.notices),
-            panel: view(sections.panel, merge.notices),
-            specimens: view(sections.specimens, merge.notices),
-            librarySamples: view(sections.librarySamples, merge.notices),
-            project: view(sections.project, merge.notices),
-            sequencing: view(sections.sequencing, merge.notices),
-            bioinformatics: view(sections.bioinformatics, merge.notices),
-            readCounts: view(sections.readCounts, merge.notices),
-          },
-          overall: {
-            status: merge.status,
-            notices: merge.notices,
-            summary: merge.outcome.kind === "built" ? merge.outcome.summary : null,
-            publication: merge.outcome.kind === "built" ? merge.outcome.publication : null,
-            pmo:
-              merge.outcome.kind === "built" ? (merge.outcome.valid ? "valid" : "invalid") : "none",
-            schemaErrors: merge.outcome.kind === "built" ? merge.outcome.schemaErrors : 0,
-          },
-          suggestions: suggestionsFor(draft, results),
-          rebuilt,
-        },
+      const reportProgress = (progress: BuildProgress): void => {
+        if (superseded()) return;
+        progressActive = progress.phase !== "idle";
+        options.onProgress?.(progress);
       };
+
+      try {
+        await Promise.all(referencedTableIds(draft).map((id) => ensureParsed(id)));
+        await yieldToQueue();
+        if (superseded()) return { kind: "superseded" };
+
+        const context = { tables: lookup, deps };
+        const rebuilt: SectionId[] = [];
+        const results = new Map<SectionId, SectionResult<SectionId>>();
+        for (const section of SECTION_IDS) {
+          const input = sectionInput(draft, section, buildOptions);
+          const tableKeys = sectionTableIds(draft, section).map(tableKey).join(",");
+          const memo = memos.get(section);
+          if (memo !== undefined && memo.tables === tableKeys && sameInput(memo.input, input)) {
+            results.set(section, memo.result);
+            continue;
+          }
+          if (section === "microhaplotypes" && draft.microhaplotypes.table !== null) {
+            const entry = tables.get(draft.microhaplotypes.table.table.id);
+            if (entry !== undefined && entry.state.kind === "streamed") {
+              const streamedState = entry.state;
+              // oxlint-disable-next-line no-await-in-loop -- sections build in order; only a streamed allele table is async
+              const streamed = await buildMicrohaplotypesStream({
+                section: draft.microhaplotypes,
+                source: { kind: "ready", blob: entry.source, meta: streamedState.meta },
+                deps,
+                onProgress: (progress) => reportProgress({ phase: "reading", ...progress }),
+                isSuperseded: superseded,
+              });
+              if (streamed.kind === "superseded" || superseded()) return { kind: "superseded" };
+              if (streamed.totalRows > 0) {
+                streamedState.exactRowCount = streamed.totalRows;
+                if (
+                  draft.microhaplotypes.runName.mode === "column" &&
+                  draft.microhaplotypes.runName.column !== null
+                ) {
+                  streamedState.runNameValues = {
+                    column: draft.microhaplotypes.runName.column,
+                    values: streamed.runNameValues,
+                  };
+                }
+              }
+              memos.set(section, { input, tables: tableKeys, result: streamed.result });
+              results.set(section, streamed.result);
+              rebuilt.push(section);
+              continue;
+            }
+          }
+          const result = buildSection(section, draft, context);
+          memos.set(section, { input, tables: tableKeys, result });
+          results.set(section, result);
+          rebuilt.push(section);
+        }
+        const sections = collect(results);
+        await yieldToQueue();
+        if (superseded()) return { kind: "superseded" };
+
+        // If Pass 1 was skipped on a header-only mapping error, still gather run-name suggestions by streaming.
+        const mhap = draft.microhaplotypes;
+        if (mhap.runName.mode === "column" && mhap.runName.column !== null && mhap.table !== null) {
+          const entry = tables.get(mhap.table.table.id);
+          const runColumn = mhap.runName.column;
+          if (
+            entry !== undefined &&
+            entry.state.kind === "streamed" &&
+            entry.state.meta.columns.includes(runColumn) &&
+            entry.state.runNameValues?.column !== runColumn
+          ) {
+            try {
+              const distinct = await streamDistinctValues(entry.source, {
+                fileName: entry.fileName,
+                delimiter: entry.state.meta.delimiter,
+                encoding: entry.state.meta.encoding,
+                column: runColumn,
+                isSuperseded: superseded,
+              });
+              if (superseded()) return { kind: "superseded" };
+              entry.state.runNameValues = { column: runColumn, values: distinct.values };
+            } catch {
+              // Ignore suggestion-read failures; the section already reports any file error.
+            }
+          }
+        }
+
+        const creationDate = buildOptions.creationDate ?? today();
+        const reuse =
+          mergeMemo !== null &&
+          mergeMemo.key === creationDate &&
+          SECTION_IDS.every((id) => mergeMemo?.sections[id] === sections[id]);
+        const merge =
+          reuse && mergeMemo !== null
+            ? mergeMemo.result
+            : mergeSections(sections, { creationDate });
+        mergeMemo = { key: creationDate, sections, result: merge };
+        latestPmo = merge.outcome.kind === "built" ? merge.outcome.pmo : null;
+        fileCache.clearIfNot(latestPmo);
+        sizeCache.clearIfNot(latestPmo);
+        if (previewMemo !== null && previewMemo.pmo !== latestPmo) previewMemo = null;
+
+        buildRevision += 1;
+        return {
+          kind: "built",
+          view: {
+            revision: buildRevision,
+            sections: {
+              microhaplotypes: view(sections.microhaplotypes, merge.notices),
+              panel: view(sections.panel, merge.notices),
+              specimens: view(sections.specimens, merge.notices),
+              librarySamples: view(sections.librarySamples, merge.notices),
+              project: view(sections.project, merge.notices),
+              sequencing: view(sections.sequencing, merge.notices),
+              bioinformatics: view(sections.bioinformatics, merge.notices),
+              readCounts: view(sections.readCounts, merge.notices),
+            },
+            overall: {
+              status: merge.status,
+              notices: merge.notices,
+              summary: merge.outcome.kind === "built" ? merge.outcome.summary : null,
+              publication: merge.outcome.kind === "built" ? merge.outcome.publication : null,
+              pmo:
+                merge.outcome.kind === "built"
+                  ? merge.outcome.valid
+                    ? "valid"
+                    : "invalid"
+                  : "none",
+              schemaErrors: merge.outcome.kind === "built" ? merge.outcome.schemaErrors : 0,
+            },
+            suggestions: suggestionsFor(draft, results),
+            rebuilt,
+          },
+        };
+      } finally {
+        if (!superseded() && progressActive) {
+          progressActive = false;
+          options.onProgress?.({ phase: "idle" });
+        }
+      }
     },
 
     async getPmoFile(fileOptions = {}) {
@@ -569,6 +789,10 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       previewMemo = null;
       suggestionsMemo = null;
       held = NOTHING_HELD;
+      if (progressActive) {
+        progressActive = false;
+        options.onProgress?.({ phase: "idle" });
+      }
       return Promise.resolve();
     },
   };

@@ -52,6 +52,7 @@ import type {
 } from "@/domain/types";
 import {
   isEngineStoppedError,
+  type BuildProgress,
   type BuildView,
   type DistinctValuesRequest,
   type Engine,
@@ -336,6 +337,8 @@ export interface AppActions {
 export interface AppState {
   readonly draft: Draft;
   readonly build: BuildState;
+  /** Live reading/building progress reported while streaming a large allele table. */
+  readonly progress: BuildProgress;
   readonly persistence: PersistenceState;
   readonly restore: RestoreReport;
   /** Imports in progress or failed, keyed by `slotKey`. */
@@ -374,6 +377,7 @@ export interface AppStoreOptions {
 }
 
 const EMPTY_MAPPING: ColumnMapping = { fields: {}, additionalColumns: [] };
+const IDLE_PROGRESS: BuildProgress = { phase: "idle" };
 
 async function fetchFromOrigin(path: string): Promise<Blob> {
   const response = await fetch(path);
@@ -627,6 +631,7 @@ export function createAppStore(options: AppStoreOptions): AppStore {
                   file,
                   fileName: ref.fileName,
                   sheetName: ref.sheetName,
+                  stream: draft.microhaplotypes.table?.table.id === id,
                 })
                 .catch(engineFailed);
           }),
@@ -666,7 +671,11 @@ export function createAppStore(options: AppStoreOptions): AppStore {
       latestImport.set(slotKey(slot), ticket);
       let outcome: ImportOutcome;
       try {
-        outcome = await engine.importFile({ file, fileName: name });
+        outcome = await engine.importFile({
+          file,
+          fileName: name,
+          stream: slot.section === "microhaplotypes",
+        });
       } catch (error) {
         outcome = stoppedOutcome(error, name);
       }
@@ -1037,6 +1046,7 @@ export function createAppStore(options: AppStoreOptions): AppStore {
     return {
       draft: createEmptyDraft(),
       build: { phase: "idle", view: null },
+      progress: IDLE_PROGRESS,
       persistence: { kind: "saved", savedAt: null },
       restore: { kind: "pending" },
       imports: {},
@@ -1063,11 +1073,13 @@ export function createAppStore(options: AppStoreOptions): AppStore {
         if (outcome.kind === "superseded" || ticket < buildShown) return;
         buildShown = ticket;
         const current = store.getState();
+        const settled = current.draft === draft && ticket === buildCount;
         store.setState({
           build: {
-            phase: current.draft === draft && ticket === buildCount ? "idle" : "pending",
+            phase: settled ? "idle" : "pending",
             view: outcome.view,
           },
+          ...(settled && current.progress.phase !== "idle" ? { progress: IDLE_PROGRESS } : {}),
           ...(current.engine.kind === "stopped" ? { engine: { kind: "running" } } : {}),
         });
       } catch (error) {
@@ -1084,6 +1096,7 @@ export function createAppStore(options: AppStoreOptions): AppStore {
               ? message
               : t`Something went wrong while working out the PMO: ${message}`,
           },
+          progress: IDLE_PROGRESS,
         });
       }
     })();

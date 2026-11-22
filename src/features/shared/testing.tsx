@@ -36,14 +36,23 @@ export function textFile(name: string, text: string): File {
  * Examples are read from `public/examples`. Pass options to override.
  */
 export function createTestStore(options: Partial<AppStoreOptions> = {}): AppStore {
-  return createAppStore({
-    engine: createInThreadEngine(),
+  let store: AppStore | null = null;
+  const engine =
+    options.engine ??
+    createInThreadEngine({
+      onProgress: (progress) => {
+        store?.setState({ progress });
+      },
+    });
+  store = createAppStore({
+    engine,
     storage: createDraftStorage({ openBackend: () => createMemoryBackend() }),
     rebuildDelayMs: 1,
     saveDelayMs: 1,
     fetchExample: (path) => Promise.resolve(exampleFile(path.replace("examples/", ""))),
     ...options,
   });
+  return store;
 }
 
 /** What {@link renderWithStore} returns. */

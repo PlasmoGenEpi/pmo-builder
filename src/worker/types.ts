@@ -28,6 +28,8 @@ export interface ImportFileInput {
   readonly fileName: string;
   /** Which sheet of a workbook to read. Defaults to the first. */
   readonly sheetName?: string;
+  /** Read delimited files as a stream instead of loading all rows into memory. */
+  readonly stream?: boolean;
 }
 
 /** What importing a file gives: its metadata for the draft, or why it could not be read. */
@@ -47,6 +49,8 @@ export interface RestoreFileInput {
   readonly file: Blob;
   readonly fileName: string;
   readonly sheetName: string | null;
+  /** Read delimited files as a stream instead of loading all rows into memory. */
+  readonly stream?: boolean;
 }
 
 /** Which rows of a table to preview. */
@@ -65,10 +69,22 @@ export type TablePreview =
       readonly columns: readonly string[];
       readonly rows: readonly RawRow[];
       readonly offset: number;
-      readonly totalRows: number;
+      /** Total rows in the file, or `null` when a large streamed file has not been counted yet. */
+      readonly totalRows: number | null;
     }
   | { readonly kind: "missing" }
   | { readonly kind: "failed"; readonly message: string };
+
+/** Live progress reported while streaming and building the allele table. */
+export type BuildProgress =
+  | { readonly phase: "idle" }
+  | {
+      readonly phase: "reading";
+      readonly stage: "checking" | "building";
+      readonly bytesRead: number;
+      readonly totalBytes: number;
+      readonly rowsRead: number;
+    };
 
 /** Which column's values to list. */
 export interface DistinctValuesRequest {
@@ -192,4 +208,6 @@ export interface InThreadEngineOptions {
   readonly deps?: BuildDeps;
   /** Lets queued messages run between build stages, so a newer build can supersede. Default: a zero timeout. */
   readonly yieldToQueue?: () => Promise<void>;
+  /** Called with progress updates while streaming and building a table. */
+  readonly onProgress?: (progress: BuildProgress) => void;
 }

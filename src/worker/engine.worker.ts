@@ -10,7 +10,7 @@
 import { activateLocale, isLocale } from "@/i18n";
 
 import { createLazyEngine } from "./client";
-import { serveEngine } from "./protocol";
+import { serveEngine, type ProgressMessage } from "./protocol";
 
 const ready = (isLocale(self.name) ? activateLocale(self.name) : Promise.resolve()).catch(
   () => undefined,
@@ -20,7 +20,13 @@ serveEngine(
   createLazyEngine(async () => {
     await ready;
     const { createInThreadEngine } = await import("./engine");
-    return createInThreadEngine();
+    return createInThreadEngine({
+      onProgress: (progress) => {
+        const message: ProgressMessage = { type: "progress", progress };
+        // oxlint-disable-next-line unicorn/require-post-message-target-origin -- workers take no target origin
+        self.postMessage(message);
+      },
+    });
   }),
   self,
 );

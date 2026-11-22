@@ -10,15 +10,22 @@ function isWideScreen(): boolean {
   return typeof window.matchMedia === "function" && window.matchMedia("(min-width: 64rem)").matches;
 }
 
-/** "First 50 of 1,200 rows", or "12 rows" when every row is shown. */
+/** "First 50 of 1,200 rows", "First 50 rows", or "12 rows" when every row is shown. */
 function previewSummary(preview: {
   readonly rows: readonly unknown[];
-  readonly totalRows: number;
+  readonly totalRows: number | null;
 }): string {
+  const shownCount = preview.rows.length;
+  const shownRows = formatCount(shownCount);
+  if (preview.totalRows === null) {
+    return plural(shownCount, {
+      one: `First ${shownRows} row`,
+      other: `First ${shownRows} rows`,
+    });
+  }
   const rowCount = preview.totalRows;
-  const shownRows = formatCount(preview.rows.length);
   const totalRows = formatCount(rowCount);
-  return rowCount > preview.rows.length
+  return rowCount > shownCount
     ? plural(rowCount, {
         one: `First ${shownRows} of ${totalRows} row`,
         other: `First ${shownRows} of ${totalRows} rows`,
@@ -80,7 +87,7 @@ export function TablePreviewPanel({ matching, label: tableName }: TablePreviewPa
           })}
           columns={preview.columns}
           rows={preview.rows}
-          totalRows={preview.totalRows}
+          totalRows={preview.totalRows ?? undefined}
           highlightedColumns={highlights}
           height="sm"
           caption={t`${rowSummary}. Highlighted columns are matched to a field.`}
