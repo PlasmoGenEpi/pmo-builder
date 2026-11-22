@@ -80,14 +80,17 @@ export function SortableTable<Row>({
                   scope="col"
                   aria-sort={!active ? "none" : sort.descending ? "descending" : "ascending"}
                   className={cn(
-                    "border-b border-border px-3 py-2 font-medium text-text-muted",
+                    "border-b border-border px-3 py-2 align-bottom font-medium text-text-muted",
                     column.numeric ? "text-right" : "text-left",
                   )}
                 >
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="-mx-2 h-auto px-2 py-0.5 font-medium"
+                    className={cn(
+                      "-mx-2.5 h-auto! max-w-full py-1 font-medium",
+                      column.numeric ? "justify-end text-right" : "justify-start text-left",
+                    )}
                     aria-label={t`Sort by ${columnLabel}`}
                     onClick={() =>
                       setSort((before) => ({
@@ -97,8 +100,8 @@ export function SortableTable<Row>({
                       }))
                     }
                   >
-                    {column.label}
-                    <Icon aria-hidden="true" className="size-3.5" />
+                    <span className="whitespace-normal">{column.label}</span>
+                    <Icon aria-hidden="true" className="size-3.5 shrink-0" />
                   </Button>
                 </th>
               );
@@ -132,13 +135,15 @@ export function SortableTable<Row>({
                         variant="ghost"
                         size="sm"
                         aria-pressed={selected}
-                        className="-mx-2 h-auto px-2 py-0.5 text-left font-medium whitespace-normal text-accent-text"
+                        className="-mx-2.5 h-auto! max-w-full justify-start py-0.5 text-left font-medium text-accent-text"
                         onClick={(event) => {
                           event.stopPropagation();
                           onRowSelect(row);
                         }}
                       >
-                        {column.render?.(row) ?? column.value(row)}
+                        <span className="whitespace-normal">
+                          {column.render?.(row) ?? column.value(row)}
+                        </span>
                       </Button>
                     ) : (
                       (column.render?.(row) ?? column.value(row) ?? "–")
