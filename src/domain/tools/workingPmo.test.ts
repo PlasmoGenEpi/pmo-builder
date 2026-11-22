@@ -362,6 +362,33 @@ describe("makeSubset", () => {
     expect(subset).toBeNull();
   });
 
+  it("reports the largest read count of a single microhaplotype in the subset", () => {
+    const rich = richPmo();
+    expect(choicesOf(rich).maxReads).toBe(90);
+
+    const lower = makeSubset(
+      rich,
+      {
+        specimens: { kind: "names", names: ["spec2", "neg"] },
+        targets: { kind: "all" },
+        minReads: 0,
+      },
+      "rich.json",
+    );
+    if (lower.outcome.kind !== "made" || lower.subset === null) throw new Error(lower.outcome.kind);
+    expect(lower.outcome.maxReads).toBe(50);
+
+    const targetFiltered = makeSubset(
+      rich,
+      { specimens: { kind: "all" }, targets: { kind: "names", names: ["t2"] }, minReads: 0 },
+      "rich.json",
+    );
+    if (targetFiltered.outcome.kind !== "made" || targetFiltered.subset === null) {
+      throw new Error(targetFiltered.outcome.kind);
+    }
+    expect(targetFiltered.outcome.maxReads).toBe(5);
+  });
+
   it("reports what pmotools-ts refuses, such as an unknown name", () => {
     const { outcome } = makeSubset(
       EXAMPLE,

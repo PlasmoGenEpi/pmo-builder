@@ -144,6 +144,8 @@ export type SubsetOutcome =
       /** What a Zenodo record of the subset would say. */
       readonly publication: PublicationSummary;
       readonly tables: readonly TableInfo[];
+      /** The most reads any detected microhaplotype has in the subset. */
+      readonly maxReads: number;
       /** Problems found when checking the subset. Empty when it is a valid PMO. */
       readonly problems: readonly string[];
     }
