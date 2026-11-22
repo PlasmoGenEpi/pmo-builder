@@ -2,12 +2,26 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { stringifyPmo, type PortableMicrohaplotypeObject } from "pmotools-ts";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { createStore } from "zustand/vanilla";
 
 import { resetThemeForTests, setThemePreference } from "@/app/theme";
 import { buildExamplePmo } from "@/domain/build/testing";
 import { richPmo } from "@/domain/tools/testing";
+import type {
+  GroupComparison,
+  GroupField,
+  WorkingPmoAnswer,
+  WorkingPmoQuery,
+  WorkingPmoQueryKind,
+  WorkingPmoValues,
+} from "@/domain/tools/types";
 import { createTestStore, renderWithStore } from "@/features/shared/testing";
-import { workingPmoSessionOf } from "@/state";
+import {
+  PmoSessionProvider,
+  workingPmoSessionOf,
+  type WorkingPmoSession,
+  type WorkingPmoState,
+} from "@/state";
 import { installDomPolyfills } from "@/ui/testPolyfills";
 
 import { CompareTab } from "./CompareTab";
@@ -718,5 +732,343 @@ describe("CompareTab: jump links and compact toolbar", () => {
     expect(groupSelect.isConnected).toBe(true);
     expect(minReadsInput.isConnected).toBe(true);
     expect(screen.getByRole("combobox", { name: "Group specimens by" })).toBe(groupSelect);
+  });
+});
+
+type ComparisonHandlers = {
+  readonly [P in WorkingPmoQueryKind]?: () => WorkingPmoValues[P];
+};
+
+function answerComparisonQuery<K extends WorkingPmoQueryKind>(
+  handlers: ComparisonHandlers,
+  request: WorkingPmoQuery<K>,
+): WorkingPmoAnswer<K> {
+  const respond = handlers[request.kind];
+  if (respond === undefined) return { kind: "not-open" };
+  return { kind: "ok", value: respond() };
+}
+
+function readBarWidth(cell: HTMLElement): string | null {
+  const bar = cell.querySelector<HTMLElement>('[aria-hidden="true"]');
+  return bar?.style.width ?? null;
+}
+
+/** Renders `CompareTab` backed by a fixed `GroupComparison` through `PmoSessionProvider`. */
+async function renderWithComparison(options: {
+  readonly fields: readonly GroupField[];
+  readonly comparison: GroupComparison;
+}) {
+  const { fields, comparison } = options;
+  const handlers: ComparisonHandlers = {
+    groupFields: () => fields,
+    groups: () => comparison,
+  };
+  const sessionState = createStore<WorkingPmoState>(() => ({
+    generation: 1,
+    open: { kind: "none" },
+    minReads: null,
+    subset: { kind: "none" },
+    source: "original",
+  }));
+  const session: WorkingPmoSession = {
+    state: sessionState,
+    open: () => Promise.resolve({ kind: "failed" }),
+    close: () => Promise.resolve(),
+    query: <K extends WorkingPmoQueryKind>(
+      request: WorkingPmoQuery<K>,
+    ): Promise<WorkingPmoAnswer<K>> => Promise.resolve(answerComparisonQuery(handlers, request)),
+    subset: () => Promise.resolve({ kind: "not-open" }),
+    isPublishedOpen: () => false,
+    setMinReads: () => undefined,
+    setSource: () => undefined,
+  };
+  return renderWithStore(
+    <PmoSessionProvider session={session}>
+      <CompareTab source="original" minReads={null} maxReads={null} onMinReadsChange={() => {}} />
+    </PmoSessionProvider>,
+  );
+}
+
+describe("CompareTab: Microhaplotypes by group readability", () => {
+  it("hides microhaplotypes absent from every group shown by default and reveals them when toggled", async () => {
+    const user = userEvent.setup();
+    await renderWithComparison({
+      fields: [{ key: "collection_country", present: 24, total: 24, distinct: 2 }],
+      comparison: {
+        key: "collection_country",
+        groups: [
+          {
+            name: "Kenya",
+            specimens: 12,
+            librarySamples: 12,
+            withData: 12,
+            polyclonal: 2,
+            meanHeterozygosity: 0.5,
+            alleles: 2,
+          },
+          {
+            name: "Uganda",
+            specimens: 12,
+            librarySamples: 12,
+            withData: 12,
+            polyclonal: 1,
+            meanHeterozygosity: 0.4,
+            alleles: 2,
+          },
+        ],
+        targets: [
+          {
+            name: "pfama1",
+            heterozygosity: [0.5, 0.4],
+            alleles: [
+              {
+                mhapId: 0,
+                seq: "AAAAAA",
+                label: { label: "most common", source: "alignment", note: null },
+                freqs: [0.6, 0.4],
+              },
+              {
+                mhapId: 1,
+                seq: "AAAAAT",
+                label: { label: "A6T", source: "alignment", note: null },
+                freqs: [0.4, 0],
+              },
+              {
+                mhapId: 2,
+                seq: "AAAAAG",
+                label: { label: "A6G", source: "alignment", note: null },
+                freqs: [0, 0],
+              },
+              {
+                mhapId: 3,
+                seq: "AAAAAC",
+                label: { label: "A6C", source: "alignment", note: null },
+                freqs: [null, 0],
+              },
+            ],
+          },
+        ],
+        timeline: [],
+        timelineUnit: null,
+        dated: 0,
+      },
+    });
+
+    const table = await screen.findByRole("table", { name: "Microhaplotype frequencies by group" });
+    // Only the two microhaplotypes present in at least one group appear by default.
+    expect(within(table).getByRole("rowheader", { name: "most common" })).toBeInTheDocument();
+    expect(within(table).getByRole("rowheader", { name: "A6T" })).toBeInTheDocument();
+    expect(within(table).queryByRole("rowheader", { name: "A6G" })).not.toBeInTheDocument();
+    expect(within(table).queryByRole("rowheader", { name: "A6C" })).not.toBeInTheDocument();
+
+    // A switch lets the scientist show the absent microhaplotypes.
+    const toggle = screen.getByRole("switch", {
+      name: /Show microhaplotypes absent from every group/i,
+    });
+    expect(toggle).not.toBeChecked();
+
+    await user.click(toggle);
+    expect(toggle).toBeChecked();
+    expect(within(table).getByRole("rowheader", { name: "A6G" })).toBeInTheDocument();
+    expect(within(table).getByRole("rowheader", { name: "A6C" })).toBeInTheDocument();
+  });
+
+  it("omits the absent-microhaplotypes switch when every microhaplotype appears in at least one group", async () => {
+    await openAndRenderCompare(richPmo());
+    await screen.findByRole("table", { name: "Microhaplotype frequencies by group" });
+    expect(
+      screen.queryByRole("switch", { name: /Show microhaplotypes absent from every group/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("cuts off at 20 microhaplotypes and states how many rarer ones are not shown", async () => {
+    const user = userEvent.setup();
+    const alleles = Array.from({ length: 23 }, (_, index) => ({
+      mhapId: index,
+      seq: `AAA${String(index).padStart(3, "A")}`,
+      label: {
+        label: index === 0 ? "most common" : `A${index + 1}T`,
+        source: "alignment" as const,
+        note: null,
+      },
+      // 21 present microhaplotypes + 2 absent from every group.
+      freqs: index < 21 ? [0.05, index === 0 ? 0.5 : 0.01] : [0, 0],
+    }));
+
+    await renderWithComparison({
+      fields: [{ key: "collection_country", present: 24, total: 24, distinct: 2 }],
+      comparison: {
+        key: "collection_country",
+        groups: [
+          {
+            name: "Kenya",
+            specimens: 12,
+            librarySamples: 12,
+            withData: 12,
+            polyclonal: 2,
+            meanHeterozygosity: 0.9,
+            alleles: 21,
+          },
+          {
+            name: "Uganda",
+            specimens: 12,
+            librarySamples: 12,
+            withData: 12,
+            polyclonal: 2,
+            meanHeterozygosity: 0.8,
+            alleles: 21,
+          },
+        ],
+        targets: [{ name: "pfama1", heterozygosity: [0.9, 0.8], alleles }],
+        timeline: [],
+        timelineUnit: null,
+        dated: 0,
+      },
+    });
+
+    const table = await screen.findByRole("table", { name: "Microhaplotype frequencies by group" });
+    // Header row + 20 visible microhaplotype rows.
+    expect(within(table).getAllByRole("row")).toHaveLength(21);
+    expect(screen.getByText("1 rarer microhaplotype is not shown.")).toBeInTheDocument();
+
+    // Turning on the switch adds the 2 absent microhaplotypes to the pool (23 total -> 3 not shown).
+    await user.click(
+      screen.getByRole("switch", { name: /Show microhaplotypes absent from every group/i }),
+    );
+    expect(within(table).getAllByRole("row")).toHaveLength(21);
+    expect(screen.getByText("3 rarer microhaplotypes are not shown.")).toBeInTheDocument();
+  });
+
+  it("omits the rarer-microhaplotypes cut-off line when 20 or fewer microhaplotypes are visible", async () => {
+    const alleles = Array.from({ length: 20 }, (_, index) => ({
+      mhapId: index,
+      seq: `CCC${String(index).padStart(3, "A")}`,
+      label: {
+        label: index === 0 ? "most common" : `C${index + 1}G`,
+        source: "alignment" as const,
+        note: null,
+      },
+      freqs: [0.05, 0.05],
+    }));
+
+    await renderWithComparison({
+      fields: [{ key: "collection_country", present: 24, total: 24, distinct: 2 }],
+      comparison: {
+        key: "collection_country",
+        groups: [
+          {
+            name: "Kenya",
+            specimens: 12,
+            librarySamples: 12,
+            withData: 12,
+            polyclonal: 2,
+            meanHeterozygosity: 0.9,
+            alleles: 20,
+          },
+          {
+            name: "Uganda",
+            specimens: 12,
+            librarySamples: 12,
+            withData: 12,
+            polyclonal: 2,
+            meanHeterozygosity: 0.9,
+            alleles: 20,
+          },
+        ],
+        targets: [{ name: "pfama1", heterozygosity: [0.9, 0.9], alleles }],
+        timeline: [],
+        timelineUnit: null,
+        dated: 0,
+      },
+    });
+
+    const table = await screen.findByRole("table", { name: "Microhaplotype frequencies by group" });
+    expect(within(table).getAllByRole("row")).toHaveLength(21);
+    expect(screen.queryByText(/rarer microhaplotype/i)).not.toBeInTheDocument();
+  });
+
+  it("scales each microhaplotype bar proportionally to the largest share in the table", async () => {
+    await renderWithComparison({
+      fields: [{ key: "collection_country", present: 24, total: 24, distinct: 2 }],
+      comparison: {
+        key: "collection_country",
+        groups: [
+          {
+            name: "Kenya",
+            specimens: 12,
+            librarySamples: 12,
+            withData: 12,
+            polyclonal: 2,
+            meanHeterozygosity: 0.7,
+            alleles: 2,
+          },
+          {
+            name: "Uganda",
+            specimens: 12,
+            librarySamples: 12,
+            withData: 12,
+            polyclonal: 2,
+            meanHeterozygosity: 0.7,
+            alleles: 2,
+          },
+        ],
+        targets: [
+          {
+            name: "pfama1",
+            heterozygosity: [0.7, 0.7],
+            alleles: [
+              {
+                mhapId: 0,
+                seq: "AAAAAA",
+                label: { label: "most common", source: "alignment", note: null },
+                freqs: [0.5, 0.25],
+              },
+              {
+                mhapId: 1,
+                seq: "AAAAAT",
+                label: { label: "A6T", source: "alignment", note: null },
+                freqs: [0.1, 0],
+              },
+            ],
+          },
+        ],
+        timeline: [],
+        timelineUnit: null,
+        dated: 0,
+      },
+    });
+
+    const table = await screen.findByRole("table", { name: "Microhaplotype frequencies by group" });
+    const rows = within(table).getAllByRole("row").slice(1);
+    const firstRow = rows[0];
+    const secondRow = rows[1];
+    if (firstRow === undefined || secondRow === undefined) throw new Error("Expected two rows");
+
+    // Keep row header simple with full sequence in title (Spec #4 coordination).
+    const firstHeader = within(firstRow).getByRole("rowheader");
+    expect(firstHeader).toHaveTextContent("most common");
+    expect(firstHeader).toHaveAttribute("title", "AAAAAA");
+
+    const [kenyaTop, ugandaHalf] = within(firstRow).getAllByRole("cell");
+    const [kenyaTenth, ugandaZero] = within(secondRow).getAllByRole("cell");
+    if (
+      kenyaTop === undefined ||
+      ugandaHalf === undefined ||
+      kenyaTenth === undefined ||
+      ugandaZero === undefined
+    ) {
+      throw new Error("Expected frequency cells");
+    }
+
+    expect(kenyaTop).toHaveTextContent("50%");
+    expect(ugandaHalf).toHaveTextContent("25%");
+    expect(kenyaTenth).toHaveTextContent("10%");
+    expect(ugandaZero).toHaveTextContent("0%");
+
+    // Largest share (50%) fills 100% of its track; 25% is 50%, 10% is 20%, and 0% has no bar.
+    expect(readBarWidth(kenyaTop)).toBe("100%");
+    expect(readBarWidth(ugandaHalf)).toBe("50%");
+    expect(readBarWidth(kenyaTenth)).toBe("20%");
+    expect(readBarWidth(ugandaZero)).toBeNull();
   });
 });

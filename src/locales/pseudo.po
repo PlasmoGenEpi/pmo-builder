@@ -284,6 +284,10 @@ msgstr ""
 msgid "{0, plural, one {This workbook has # sheet. Choose the one that holds “{tableName}”.} other {This workbook has # sheets. Choose the one that holds “{tableName}”.}}"
 msgstr ""
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{absentCount, plural, one {# microhaplotype is absent from every group shown.} other {# microhaplotypes are absent from every group shown.}}"
+msgstr ""
+
 #: src/features/review/reviewModel.ts
 msgid "{alleleCalls, plural, one {# allele call} other {# allele calls}} for {samples, plural, one {# sample} other {# samples}} at {targets, plural, one {# target} other {# targets}}, {alleles, plural, one {# distinct allele} other {# distinct alleles}}"
 msgstr ""
@@ -539,6 +543,10 @@ msgstr ""
 
 #: src/features/review/ThingsToCheck.tsx
 msgid "{hidden, plural, one {and # more like this.} other {and # more like these.}}"
+msgstr ""
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{hiddenByLimit, plural, one {# rarer microhaplotype is not shown.} other {# rarer microhaplotypes are not shown.}}"
 msgstr ""
 
 #: src/ui/CodeBlock.tsx
@@ -3567,6 +3575,10 @@ msgstr ""
 msgid "No methods yet"
 msgstr ""
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "No microhaplotypes of this target were seen in the groups shown."
+msgstr ""
+
 #: src/features/pmo-file/summary/AlleleBars.tsx
 msgid "No microhaplotypes were counted at {targetName}."
 msgstr ""
@@ -5224,6 +5236,10 @@ msgstr ""
 #: src/features/review/ThingsToCheck.tsx
 #: src/features/shared/SectionResult.tsx
 msgid "Show fewer"
+msgstr ""
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Show microhaplotypes absent from every group"
 msgstr ""
 
 #: src/features/published/PublishedPage.tsx

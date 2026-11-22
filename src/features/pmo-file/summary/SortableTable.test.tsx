@@ -50,6 +50,21 @@ function SelectableTargets() {
   );
 }
 
+function SelectableStickyTargets() {
+  const [selected, setSelected] = useState<string>("t-mid");
+  return (
+    <SortableTable
+      label="Sticky targets"
+      columns={TARGET_COLUMNS}
+      rows={TARGET_ROWS}
+      rowKey={(row) => row.name}
+      onRowSelect={(row) => setSelected(row.name)}
+      selectedKey={selected}
+      stickyFirstColumn
+    />
+  );
+}
+
 describe("SortableTable", () => {
   it("keeps rows with missing numeric values last when sorting descending and ascending", async () => {
     const user = userEvent.setup();
@@ -274,5 +289,21 @@ describe("SortableTable", () => {
     await user.click(within(table).getByText("0.50"));
     expect(within(table).getByRole("button", { name: "t-mid", pressed: true })).toBeInTheDocument();
     expect(highRow).not.toHaveAttribute("data-selected");
+  });
+
+  it("supports stickyFirstColumn without breaking sorting or row selection", async () => {
+    const user = userEvent.setup();
+    render(<SelectableStickyTargets />);
+    const table = screen.getByRole("table", { name: "Sticky targets" });
+    const firstHeader = within(table).getByRole("columnheader", { name: /Target/ });
+    expect(firstHeader).toHaveClass("sticky", "left-0");
+
+    await user.click(within(table).getByRole("button", { name: "Sort by Heterozygosity" }));
+    expect(firstColumnValues(table)[0]).toBe("t-high");
+
+    await user.click(within(table).getByRole("button", { name: "t-high" }));
+    expect(
+      within(table).getByRole("button", { name: "t-high", pressed: true }),
+    ).toBeInTheDocument();
   });
 });
