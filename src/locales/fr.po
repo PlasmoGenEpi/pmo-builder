@@ -1552,6 +1552,10 @@ msgstr "Auteurs"
 msgid "Back"
 msgstr "Précédent"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Back to heterozygosity"
+msgstr "Retour à l’hétérozygotie"
+
 #: src/domain/fields/microhaplotypes.ts
 msgid "Base quality"
 msgstr "Qualité des bases"
@@ -1839,6 +1843,11 @@ msgstr "Méthode de prélèvement"
 #: src/features/pmo-file/specimenFieldNames.ts
 msgid "Collection month"
 msgstr "Mois de collecte"
+
+#. Short name of the section 'When specimens were collected'
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Collection timeline"
+msgstr "Chronologie des collectes"
 
 #: src/features/pmo-file/specimenFieldNames.ts
 msgid "Collection year"
