@@ -30,9 +30,7 @@ export interface SortableTableProps<Row> {
   readonly initialSort?: { readonly key: string; readonly descending: boolean };
 }
 
-function compare(a: string | number | null, b: string | number | null): number {
-  if (a === null) return b === null ? 0 : 1;
-  if (b === null) return -1;
+function compareValues(a: string | number, b: string | number): number {
   if (typeof a === "number" && typeof b === "number") return a - b;
   return String(a).localeCompare(String(b), undefined, { numeric: true });
 }
@@ -52,13 +50,23 @@ export function SortableTable<Row>({
     const column = columns.find((candidate) => candidate.key === sort?.key);
     if (column === undefined || sort === null) return rows;
     return rows.toSorted((a, b) => {
-      const order = compare(column.value(a), column.value(b));
+      const left = column.value(a);
+      const right = column.value(b);
+      if (left === null) return right === null ? 0 : 1;
+      if (right === null) return -1;
+      const order = compareValues(left, right);
       return sort.descending ? -order : order;
     });
   }, [rows, columns, sort]);
 
   return (
-    <div className="max-h-[28rem] overflow-auto rounded-lg border border-border">
+    <section
+      aria-label={label}
+      // Focusable so keyboard users can scroll it.
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+      tabIndex={0}
+      className="max-h-[28rem] overflow-auto rounded-lg border border-border focus-visible:outline-offset-0"
+    >
       <table className="w-full border-collapse text-sm" aria-label={label}>
         <thead className="sticky top-0 z-10 bg-surface-subtle">
           <tr>
@@ -104,7 +112,6 @@ export function SortableTable<Row>({
             return (
               <tr
                 key={key}
-                aria-selected={onRowSelect === undefined ? undefined : selected}
                 onClick={onRowSelect === undefined ? undefined : () => onRowSelect(row)}
                 className={cn(
                   "border-b border-border last:border-b-0",
@@ -124,6 +131,7 @@ export function SortableTable<Row>({
                       <Button
                         variant="ghost"
                         size="sm"
+                        aria-pressed={selected}
                         className="-mx-2 h-auto px-2 py-0.5 text-left font-medium whitespace-normal text-accent-text"
                         onClick={(event) => {
                           event.stopPropagation();
@@ -142,6 +150,6 @@ export function SortableTable<Row>({
           })}
         </tbody>
       </table>
-    </div>
+    </section>
   );
 }
