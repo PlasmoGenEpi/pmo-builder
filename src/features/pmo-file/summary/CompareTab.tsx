@@ -6,7 +6,7 @@
  */
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useTheme } from "@/app/theme";
@@ -22,6 +22,7 @@ import type {
 import { intlLocale } from "@/i18n/languages";
 import { usePmoQuery } from "@/state";
 import {
+  Button,
   Callout,
   Combobox,
   Field,
@@ -30,6 +31,7 @@ import {
   SERIES,
   Skeleton,
   formatCount,
+  jumpToHeading,
 } from "@/ui";
 
 import { NoAnswer, type NoAnswerReason } from "../NoAnswer";
@@ -37,7 +39,41 @@ import { specimenFieldLabel } from "../specimenFieldNames";
 import { useSettled } from "../useSettled";
 
 import { SortableTable, type SortableColumn } from "./SortableTable";
-import { MinReadsField, NoReadsAboveMinimum, ViewToolbar } from "./ViewToolbar";
+import {
+  MinReadsField,
+  NoReadsAboveMinimum,
+  SectionJumps,
+  ViewToolbar,
+  type Jump,
+} from "./ViewToolbar";
+
+/** The ids of the Compare tab's section headings. */
+const HEADING = {
+  groups: "compare-groups",
+  heterozygosity: "compare-heterozygosity",
+  alleles: "compare-alleles",
+  timeline: "compare-timeline",
+} as const;
+
+/** The sections this comparison shows, to jump to. */
+function jumpsOf(comparison: GroupComparison, hasTarget: boolean): Jump[] {
+  return [
+    { id: HEADING.groups, label: t`Groups` },
+    { id: HEADING.heterozygosity, label: t`Heterozygosity by target` },
+    ...(hasTarget ? [{ id: HEADING.alleles, label: t`Microhaplotypes by group` }] : []),
+    ...(comparison.timeline.length > 0
+      ? [
+          {
+            id: HEADING.timeline,
+            label: t({
+              message: "Collection timeline",
+              comment: "Short name of the section 'When specimens were collected'",
+            }),
+          },
+        ]
+      : []),
+  ];
+}
 
 function groupName(row: { readonly name: string | null }): string {
   return (
@@ -181,9 +217,11 @@ function timelineBarPath(options: {
 function Timeline({
   comparison,
   total,
+  headingId,
 }: {
   readonly comparison: GroupComparison;
   readonly total: number;
+  readonly headingId?: string;
 }) {
   const { resolved } = useTheme();
   const [hover, setHover] = useState<number | null>(null);
@@ -256,6 +294,7 @@ function Timeline({
   return (
     <section className="flex min-w-0 flex-col gap-4">
       <SectionHeading
+        id={headingId}
         title={t`When specimens were collected`}
         description={
           comparison.timelineUnit === "month"
@@ -394,16 +433,22 @@ function NoComparison({ reason }: { readonly reason: NoAnswerReason }) {
 /** The groups of one field, side by side, counted in the worker. */
 function Comparison({
   source,
+  fields,
   field,
+  onFieldChange,
   minReads,
+  minReadsInput,
+  onMinReadsChange,
   maxReads,
-  onClearMinReads,
 }: {
   readonly source: WorkingSource;
+  readonly fields: readonly GroupField[];
   readonly field: GroupField;
+  readonly onFieldChange: (key: GroupKey | null) => void;
   readonly minReads: number;
+  readonly minReadsInput: number | null;
+  readonly onMinReadsChange: (value: number | null) => void;
   readonly maxReads: number | null;
-  readonly onClearMinReads: () => void;
 }) {
   const [target, setTarget] = useState<string | null>(null);
   const request = useMemo(
@@ -420,92 +465,145 @@ function Comparison({
     [comparison, target],
   );
   const decimal = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 2 });
-
-  if (loaded.kind === "loading") return <Skeleton className="h-64 w-full" />;
-  if (loaded.kind !== "ok") return <NoComparison reason={loaded.kind} />;
-  const shown = loaded.value;
-  if (minReads > 0 && shown.targets.length === 0) {
-    return (
-      <NoReadsAboveMinimum minReads={minReads} maxReads={maxReads} onClear={onClearMinReads} />
-    );
-  }
+  const nothingPasses = comparison !== null && minReads > 0 && comparison.targets.length === 0;
   const present = formatCount(field.present);
   const total = formatCount(field.total);
   const name = specimenFieldLabel(field.key);
+
   return (
-    <>
-      {field.present < field.total ? (
-        <p className="text-sm text-text-muted">
-          {t`${present} of ${total} specimens have a value for ${name}. The others are grouped as Not recorded.`}
-        </p>
-      ) : null}
-
-      <section className="flex flex-col gap-4">
-        <SectionHeading
-          title={t`Groups`}
-          description={t`More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group.`}
-        />
-        <SortableTable
-          label={t`Groups`}
-          columns={groupColumns()}
-          rows={shown.groups}
-          rowKey={(row) => row.name ?? "\u0000"}
-        />
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <SectionHeading
-          title={t`Heterozygosity by target`}
-          description={t`Expected heterozygosity of each target in each group: 1 minus the sum of squared allele frequencies.`}
-        />
-        <SortableTable
-          label={t`Heterozygosity by target`}
-          columns={[
-            { key: "target", label: t`Target`, value: (row: TargetAcrossGroups) => row.name },
-            ...shown.groups.map((group, index): SortableColumn<TargetAcrossGroups> => ({
-              key: `g${index}`,
-              label: groupName(group),
-              value: (row) => row.heterozygosity[index] ?? null,
-              render: (row) => {
-                const value = row.heterozygosity[index];
-                return value === null || value === undefined ? "–" : decimal.format(value);
-              },
-              numeric: true,
-            })),
-          ]}
-          rows={shown.targets}
-          rowKey={(row) => row.name}
-          onRowSelect={(row) => setTarget(row.name)}
-          selectedKey={shownTarget?.name ?? null}
-        />
-      </section>
-
-      {shownTarget === null ? null : (
-        <section className="flex flex-col gap-4">
-          <SectionHeading
-            title={t`Microhaplotypes by group`}
-            description={t`How often each microhaplotype of the chosen target is seen in each group. Choose a target in the table above, or here.`}
-          />
-          <Field label={t`Target`} className="max-w-md">
-            {(control) => (
-              <Combobox
+    <div className="flex flex-col gap-6">
+      <ViewToolbar>
+        <Field label={t`Group specimens by`} layout="compact" className="min-w-0 max-w-full">
+          {(control) => (
+            <div className="w-full min-w-0 sm:w-72">
+              <Select
                 {...control}
-                options={shown.targets.map((item) => ({
-                  value: item.name,
-                  label: item.name,
-                }))}
-                value={shownTarget.name}
-                onChange={(value) => setTarget(value)}
-                noneLabel={false}
+                size="sm"
+                options={fields.map((candidate) => {
+                  const fieldPresent = formatCount(candidate.present);
+                  const fieldTotal = formatCount(candidate.total);
+                  const label = specimenFieldLabel(candidate.key);
+                  return {
+                    value: candidate.key,
+                    label: t`${label} (${fieldPresent} of ${fieldTotal} specimens)`,
+                  };
+                })}
+                value={field.key}
+                onValueChange={(value) =>
+                  onFieldChange(fields.find((candidate) => candidate.key === value)?.key ?? null)
+                }
               />
-            )}
-          </Field>
-          <AllelesByGroup target={shownTarget} groups={shown.groups} />
-        </section>
-      )}
+            </div>
+          )}
+        </Field>
+        <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
+        {comparison === null || nothingPasses ? null : (
+          <SectionJumps jumps={jumpsOf(comparison, shownTarget !== null)} />
+        )}
+      </ViewToolbar>
 
-      <Timeline comparison={shown} total={field.total} />
-    </>
+      {loaded.kind === "loading" ? (
+        <Skeleton className="h-64 w-full" />
+      ) : loaded.kind !== "ok" ? (
+        <NoComparison reason={loaded.kind} />
+      ) : nothingPasses ? (
+        <NoReadsAboveMinimum
+          minReads={minReads}
+          maxReads={maxReads}
+          onClear={() => onMinReadsChange(null)}
+        />
+      ) : (
+        <>
+          {field.present < field.total ? (
+            <p className="text-sm text-text-muted">
+              {t`${present} of ${total} specimens have a value for ${name}. The others are grouped as Not recorded.`}
+            </p>
+          ) : null}
+
+          <section className="flex flex-col gap-4">
+            <SectionHeading
+              id={HEADING.groups}
+              title={t`Groups`}
+              description={t`More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group.`}
+            />
+            <SortableTable
+              label={t`Groups`}
+              columns={groupColumns()}
+              rows={loaded.value.groups}
+              rowKey={(row) => row.name ?? "\u0000"}
+            />
+          </section>
+
+          <section className="flex flex-col gap-4">
+            <SectionHeading
+              id={HEADING.heterozygosity}
+              title={t`Heterozygosity by target`}
+              description={t`Expected heterozygosity of each target in each group: 1 minus the sum of squared allele frequencies.`}
+            />
+            <SortableTable
+              label={t`Heterozygosity by target`}
+              columns={[
+                { key: "target", label: t`Target`, value: (row: TargetAcrossGroups) => row.name },
+                ...loaded.value.groups.map((group, index): SortableColumn<TargetAcrossGroups> => ({
+                  key: `g${index}`,
+                  label: groupName(group),
+                  value: (row) => row.heterozygosity[index] ?? null,
+                  render: (row) => {
+                    const value = row.heterozygosity[index];
+                    return value === null || value === undefined ? "–" : decimal.format(value);
+                  },
+                  numeric: true,
+                })),
+              ]}
+              rows={loaded.value.targets}
+              rowKey={(row) => row.name}
+              onRowSelect={(row) => {
+                setTarget(row.name);
+                jumpToHeading(HEADING.alleles);
+              }}
+              selectedKey={shownTarget?.name ?? null}
+            />
+          </section>
+
+          {shownTarget === null ? null : (
+            <section className="flex flex-col gap-4">
+              <SectionHeading
+                id={HEADING.alleles}
+                title={t`Microhaplotypes by group`}
+                description={t`How often each microhaplotype of the chosen target is seen in each group. Choose a target in the table above, or here.`}
+                actions={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={ArrowUp}
+                    onClick={() => jumpToHeading(HEADING.heterozygosity)}
+                  >
+                    {t`Back to heterozygosity`}
+                  </Button>
+                }
+              />
+              <Field label={t`Target`} className="max-w-md">
+                {(control) => (
+                  <Combobox
+                    {...control}
+                    options={loaded.value.targets.map((item) => ({
+                      value: item.name,
+                      label: item.name,
+                    }))}
+                    value={shownTarget.name}
+                    onChange={(value) => setTarget(value)}
+                    noneLabel={false}
+                  />
+                )}
+              </Field>
+              <AllelesByGroup target={shownTarget} groups={loaded.value.groups} />
+            </section>
+          )}
+
+          <Timeline comparison={loaded.value} total={field.total} headingId={HEADING.timeline} />
+        </>
+      )}
+    </div>
   );
 }
 
@@ -551,40 +649,15 @@ export function CompareTab({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <ViewToolbar>
-        <Field label={t`Group specimens by`} layout="compact" className="min-w-0 max-w-full">
-          {(control) => (
-            <div className="w-full min-w-0 sm:w-72">
-              <Select
-                {...control}
-                options={usable.map((field) => {
-                  const fieldPresent = formatCount(field.present);
-                  const fieldTotal = formatCount(field.total);
-                  const label = specimenFieldLabel(field.key);
-                  return {
-                    value: field.key,
-                    label: t`${label} (${fieldPresent} of ${fieldTotal} specimens)`,
-                  };
-                })}
-                value={chosen.key}
-                onValueChange={(value) =>
-                  setKey(usable.find((field) => field.key === value)?.key ?? null)
-                }
-              />
-            </div>
-          )}
-        </Field>
-        <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
-      </ViewToolbar>
-
-      <Comparison
-        source={source}
-        field={chosen}
-        minReads={minReads}
-        maxReads={maxReads}
-        onClearMinReads={() => onMinReadsChange(null)}
-      />
-    </div>
+    <Comparison
+      source={source}
+      fields={usable}
+      field={chosen}
+      onFieldChange={setKey}
+      minReads={minReads}
+      minReadsInput={minReadsInput}
+      onMinReadsChange={onMinReadsChange}
+      maxReads={maxReads}
+    />
   );
 }

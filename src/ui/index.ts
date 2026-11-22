@@ -61,7 +61,7 @@ export { ProgressBar, type ProgressBarProps } from "./ProgressBar";
 export { RadioGroup, type RadioGroupProps, type RadioOption } from "./RadioGroup";
 export { SectionHeading, jumpToHeading, type SectionHeadingProps } from "./SectionHeading";
 export { SegmentedControl, type Segment, type SegmentedControlProps } from "./SegmentedControl";
-export { Select, type SelectOption, type SelectProps } from "./Select";
+export { Select, type SelectOption, type SelectProps, type SelectSize } from "./Select";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
 export { Spinner, type SpinnerProps } from "./Spinner";
 export { Stat, type StatProps } from "./Stat";

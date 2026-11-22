@@ -55,7 +55,12 @@ export function SectionHeading({
 export function jumpToHeading(id: string): void {
   const heading = document.getElementById(id);
   if (heading === null) return;
+  const reduce =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   // jsdom has no scrollIntoView.
-  if (typeof heading.scrollIntoView === "function") heading.scrollIntoView({ block: "start" });
+  if (typeof heading.scrollIntoView === "function") {
+    heading.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+  }
   heading.focus({ preventScroll: true });
 }
