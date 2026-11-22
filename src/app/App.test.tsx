@@ -3,11 +3,13 @@ import userEvent from "@testing-library/user-event";
 import { memoryLocation } from "wouter/memory-location";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { catalogue } from "@/features/published/testing";
 import { createTestStore } from "@/features/shared/testing";
+import type { EditorLock } from "@/state";
 import { installDomPolyfills } from "@/ui/testPolyfills";
 
 import { App } from "./App";
-import { getStep, page } from "./steps";
+import { STEPS, getStep, page } from "./steps";
 
 beforeAll(installDomPolyfills);
 afterEach(() => {
@@ -149,5 +151,46 @@ describe("addresses from before the sections", () => {
   ])("sends %s to %s", async (from, to) => {
     const { location } = renderAt(from);
     await waitFor(() => expect(location.history.at(-1)).toBe(to));
+  });
+});
+
+async function createOtherTabStore() {
+  const editorLock: EditorLock = {
+    claim: () => Promise.resolve("elsewhere"),
+    takeOver: () => Promise.resolve(),
+    onStepBack: () => {},
+  };
+  const store = createTestStore({ editorLock });
+  await store.getState().actions.initialise();
+  return store;
+}
+
+describe("other-tab draft notice", () => {
+  it.each(STEPS.map((step) => [step.path, step.title] as const))(
+    "shows on Build step %s",
+    async (path, heading) => {
+      const store = await createOtherTabStore();
+      render(<App locationHook={memoryLocation({ path }).hook} store={store} />);
+      expect(await screen.findByRole("heading", { level: 1, name: heading })).toBeInTheDocument();
+      expect(screen.getByText("This draft is open in another tab")).toBeInTheDocument();
+    },
+  );
+
+  it.each([
+    ["/", "PMO Builder"],
+    ["/pmo", "My PMO file"],
+    ["/published", "Published PMOs"],
+    ["/published/301", "Maputo surveillance 2015 to 2019"],
+  ])("does not show on %s", async (path, heading) => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(catalogue()), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    const store = await createOtherTabStore();
+    render(<App locationHook={memoryLocation({ path }).hook} store={store} />);
+    expect(await screen.findByRole("heading", { level: 1, name: heading })).toBeInTheDocument();
+    expect(screen.queryByText("This draft is open in another tab")).not.toBeInTheDocument();
   });
 });
