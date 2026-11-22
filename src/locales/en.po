@@ -5705,6 +5705,10 @@ msgstr "The file was closed, probably because the browser ran out of memory. Ope
 msgid "The files you open and everything in them."
 msgstr "The files you open and everything in them."
 
+#: src/features/review/PmoPreviewBody.tsx
+msgid "The first {shownSize} are shown here; the download has all of it."
+msgstr "The first {shownSize} are shown here; the download has all of it."
+
 #: src/domain/fields/panel.ts
 msgid "The gene the target covers, if any."
 msgstr "The gene the target covers, if any."

@@ -138,8 +138,8 @@ export interface BuildRequestOptions {
 export interface PmoTextPreview {
   readonly text: string;
   readonly truncated: boolean;
-  /** Length of the whole text. */
-  readonly length: number;
+  /** Length of the whole text, or `null` when previewing stopped early. */
+  readonly length: number | null;
 }
 
 /**
@@ -168,8 +168,9 @@ export interface Engine {
   getPmoFile(options?: { readonly gzip?: boolean }): Promise<PmoFile | null>;
   /**
    * The name and size in bytes of the file {@link Engine.getPmoFile} would
-   * give, or `null` when no PMO was built. The file is made once per build and
-   * format and kept, so a download after this reuses it.
+   * give, or `null` when no PMO was built. Counted from the stream without
+   * keeping a copy of the file, or taken from a file already made for this
+   * build.
    */
   getPmoFileSize(options?: {
     readonly gzip?: boolean;

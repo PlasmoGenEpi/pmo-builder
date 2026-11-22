@@ -446,6 +446,51 @@ describe("engine", () => {
           : [],
     });
   });
+
+  it("counts stream sizes matching the downloaded files and refreshes memos after a rebuild", async () => {
+    const engine = testEngine();
+    const draft = await importExample(engine);
+    await engine.build(draft, { creationDate: "2026-01-01" });
+
+    const [plainSize, gzSize] = await Promise.all([
+      engine.getPmoFileSize({ gzip: false }),
+      engine.getPmoFileSize({ gzip: true }),
+    ]);
+    const [plainFile, gzFile] = await Promise.all([
+      engine.getPmoFile({ gzip: false }),
+      engine.getPmoFile({ gzip: true }),
+    ]);
+    if (plainFile === null || gzFile === null) throw new Error("missing exported PMO files");
+    expect(plainSize).toEqual({ fileName: plainFile.fileName, size: plainFile.blob.size });
+    expect(gzSize).toEqual({ fileName: gzFile.fileName, size: gzFile.blob.size });
+    // Calling getPmoFileSize after getPmoFile reuses the file size consistently.
+    expect(await engine.getPmoFileSize({ gzip: true })).toEqual(gzSize);
+
+    const firstPreview = await engine.getPmoText({ maxLength: 40 });
+    expect(firstPreview).toEqual({
+      text: expect.any(String),
+      truncated: true,
+      length: null,
+    });
+    expect(firstPreview?.text).toHaveLength(40);
+
+    const updated: Draft = {
+      ...draft,
+      project: {
+        ...draft.project,
+        records: [
+          createProjectRecord({ project_name: "PRJNA1040019", project_description: "Example" }),
+        ],
+      },
+    };
+    await engine.build(updated, { creationDate: "2026-01-01" });
+
+    const nextSize = await engine.getPmoFileSize({ gzip: true });
+    const nextFile = await engine.getPmoFile({ gzip: true });
+    expect(nextFile?.fileName).toBe("PRJNA1040019.pmo.json.gz");
+    expect(nextSize).toEqual({ fileName: "PRJNA1040019.pmo.json.gz", size: nextFile?.blob.size });
+    expect(nextFile).not.toBe(gzFile);
+  });
 });
 
 describe("worker protocol", () => {
@@ -545,6 +590,42 @@ describe("worker protocol", () => {
       if (!isCallMessage(data)) return;
       // oxlint-disable-next-line unicorn/require-post-message-target-origin -- not a window
       worker.postMessage({ type: "result", id: data.id, ok: true, value: { text: 1 } });
+    });
+    const client = createEngineClient(page);
+    await expect(client.getPmoText()).rejects.toThrow("unexpected answer to getPmoText");
+  });
+
+  it("carries truncated previews with null length across the worker boundary", async () => {
+    const [page, worker] = endpointPair();
+    const stop = serveEngine(testEngine(), worker);
+    const client = createEngineClient(page);
+    const draft = await importExample(client);
+    await client.build(draft, { creationDate: "2026-01-01" });
+
+    const cut = await client.getPmoText({ maxLength: 40 });
+    expect(cut?.truncated).toBe(true);
+    expect(cut?.length).toBeNull();
+    expect(cut?.text).toHaveLength(40);
+
+    const full = await client.getPmoText({ maxLength: 1_000_000 });
+    expect(full?.truncated).toBe(false);
+    expect(full?.length).toBe(full?.text.length);
+    stop();
+  });
+
+  it("refuses a getPmoText answer whose truncated flag is missing", async () => {
+    const [page, worker] = endpointPair();
+    worker.addEventListener("message", (event) => {
+      const data: unknown = event.data;
+      if (!isCallMessage(data)) return;
+      const result = {
+        type: "result",
+        id: data.id,
+        ok: true,
+        value: { text: "{}", length: null },
+      };
+      // oxlint-disable-next-line unicorn/require-post-message-target-origin -- not a window
+      worker.postMessage(result);
     });
     const client = createEngineClient(page);
     await expect(client.getPmoText()).rejects.toThrow("unexpected answer to getPmoText");

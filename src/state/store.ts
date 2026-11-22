@@ -308,7 +308,8 @@ export interface AppActions {
   /**
    * Builds now if needed, then gives the name and size of the PMO file in
    * one format, or `null` when there is no PMO. It is not a download and is
-   * not counted as one; a download of the same build reuses the file.
+   * not counted as one; sizes are counted from the stream without keeping a
+   * copy of the file.
    */
   pmoFileSize(options?: {
     readonly gzip?: boolean;
