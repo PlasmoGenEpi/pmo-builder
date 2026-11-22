@@ -89,9 +89,7 @@ export function SaveStatus() {
               view.icon === LoaderCircle && "motion-safe:animate-spin",
             )}
           />
-          <span className={view.warning ? "sr-only sm:not-sr-only" : "sr-only lg:not-sr-only"}>
-            {view.label}
-          </span>
+          <span className="sr-only lg:not-sr-only">{view.label}</span>
         </button>
       }
     >
