@@ -572,6 +572,115 @@ describe("PublishedPage", () => {
       window.history.replaceState(null, "", "/");
     }
   });
+
+  it("hides the coverage grid when the catalogue has fewer than 5 entries", async () => {
+    render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
+    await screen.findByText("3 datasets");
+    expect(
+      screen.queryByRole("button", { name: /Coverage by country and year/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the collapsible coverage grid for a large catalogue, filters on cell choice, and follows other filters", async () => {
+    const user = userEvent.setup();
+    const bigIndex = largeCatalogue(150);
+    const { wrapper: listWrapper, location } = makeWrapper("/published");
+    render(<PublishedPage load={gives({ kind: "ready", index: bigIndex })} zenodo={ZENODO} />, {
+      wrapper: listWrapper,
+    });
+    await screen.findByText("150 datasets");
+
+    const toggle = screen.getByRole("button", { name: /Coverage by country and year/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveTextContent("26 countries, 2008 to 2026");
+
+    await user.click(toggle);
+    const grid = screen.getByRole("table", { name: "Specimens by country and collection year" });
+
+    // Pick a populated cell directly from the made-up catalogue.
+    const sampleEntry = bigIndex.datasets.find(
+      (entry) => entry.countries.length > 0 && entry.collectionYears !== null,
+    );
+    if (sampleEntry === undefined || sampleEntry.collectionYears === null) {
+      throw new Error("no sample entry with country and year");
+    }
+    const targetCountry = sampleEntry.countries[0] ?? "";
+    const targetYear = sampleEntry.collectionYears.first;
+    const expectedMatching = bigIndex.datasets.filter(
+      (entry) =>
+        entry.countries.includes(targetCountry) &&
+        entry.collectionYears !== null &&
+        targetYear >= entry.collectionYears.first &&
+        targetYear <= entry.collectionYears.last,
+    );
+    const expectedSpecimens = expectedMatching.reduce(
+      (sum, entry) => sum + entry.summary.specimens,
+      0,
+    );
+
+    const cellButton = within(grid).getByRole("button", {
+      name: new RegExp(
+        `^${targetCountry}, ${targetYear}: ${expectedSpecimens.toLocaleString("en-US")} specimens? in ${expectedMatching.length} published PMOs?$`,
+      ),
+    });
+    await user.click(cellButton);
+
+    expect(location.history.at(-1)).toBe(
+      `/published?${new URLSearchParams({ country: targetCountry, year: String(targetYear) }).toString()}`,
+    );
+    expect(countryButton()).toHaveTextContent(targetCountry);
+    expect(screen.getByRole("combobox", { name: "Collected in" })).toHaveTextContent(
+      String(targetYear),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      `${expectedMatching.length} of 150 datasets`,
+    );
+    expect(cellButton).toHaveAttribute("aria-pressed", "true");
+
+    // Choosing the same selected cell again clears country and year.
+    await user.click(cellButton);
+    expect(location.history.at(-1)).toBe("/published");
+    expect(screen.getByRole("status")).toHaveTextContent("150 datasets");
+
+    // Filtering by species updates the coverage grid figures while preserving the grid for country/year choice.
+    await choose(user, "Species", /^Plasmodium vivax \(\d+\)$/);
+    const vivaxDatasets = bigIndex.datasets.filter((entry) => entry.taxa.includes(5855));
+    const vivaxCountries = new Set(vivaxDatasets.flatMap((entry) => entry.countries));
+    expect(within(grid).getAllByRole("rowheader")).toHaveLength(vivaxCountries.size);
+
+    const vivaxEntry = vivaxDatasets.find(
+      (entry) => entry.countries.length > 0 && entry.collectionYears !== null,
+    );
+    if (vivaxEntry === undefined || vivaxEntry.collectionYears === null) {
+      throw new Error("no vivax entry");
+    }
+    const vivaxCountry = vivaxEntry.countries[0] ?? "";
+    const vivaxYear = vivaxEntry.collectionYears.first;
+    const vivaxCell = within(grid).getByRole("button", {
+      name: new RegExp(`^${vivaxCountry}, ${vivaxYear}:`),
+    });
+    vivaxCell.focus();
+    await user.keyboard("{Enter}");
+    expect(location.history.at(-1)).toBe(
+      `/published?${new URLSearchParams({
+        country: vivaxCountry,
+        species: "5855",
+        year: String(vivaxYear),
+      }).toString()}`,
+    );
+
+    // Search and panel filters also narrow the coverage grid.
+    await user.click(screen.getByRole("button", { name: "Clear the filters" }));
+    await choose(user, "Panel", /^PvGT-Seq \(\d+\)$/);
+    const pvgtDatasets = bigIndex.datasets.filter((entry) => entry.panels.includes("PvGT-Seq"));
+    const pvgtCountries = new Set(pvgtDatasets.flatMap((entry) => entry.countries));
+    expect(within(grid).getAllByRole("rowheader")).toHaveLength(pvgtCountries.size);
+
+    await user.type(screen.getByRole("searchbox", { name: "Search" }), "nothing matches this");
+    expect(
+      screen.getByText("No matching published PMOs have both a country and a collection year."),
+    ).toBeInTheDocument();
+  });
 });
 
 describe("DatasetPage", () => {

@@ -50,6 +50,8 @@ import {
 } from "./catalogue";
 import { CatalogueProblem } from "./CatalogueProblem";
 import { CountryFilter } from "./CountryFilter";
+import { MIN_DATASETS_FOR_COVERAGE } from "./coverage";
+import { CoverageGrid } from "./CoverageGrid";
 import { loadSharedCatalogue, useCatalogue, type CatalogueLoader } from "./useCatalogue";
 
 /** The `Select` value that stands for "no limit". Radix does not allow an empty one. */
@@ -412,6 +414,17 @@ function Catalogue({
     () => sortDatasets(filterDatasets(datasets, listState), listState.sort),
     [datasets, listState],
   );
+  const showCoverage = useMemo(
+    () =>
+      datasets.length >= MIN_DATASETS_FOR_COVERAGE &&
+      datasets.some((entry) => entry.countries.length > 0 && entry.collectionYears !== null),
+    [datasets],
+  );
+  const coverageDatasets = useMemo(
+    () =>
+      showCoverage ? filterDatasets(datasets, { ...listState, countries: [], year: null }) : [],
+    [datasets, listState, showCoverage],
+  );
   const filtered = isFiltered(listState);
   const shownCount = formatCount(shown.length);
 
@@ -423,6 +436,18 @@ function Catalogue({
     const currentHref = search === "" ? "/published" : `/published?${search}`;
     if (nextHref === currentHref) return;
     navigate(nextHref, { replace: options.replace === true });
+  };
+
+  const handleSelectCoverageCell = (country: string, year: number) => {
+    const alreadySelected =
+      listState.countries.length === 1 &&
+      listState.countries[0] === country &&
+      listState.year === year;
+    updateListState({
+      ...listState,
+      countries: alreadySelected ? [] : [country],
+      year: alreadySelected ? null : year,
+    });
   };
 
   if (datasets.length === 0) {
@@ -446,9 +471,9 @@ function Catalogue({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6">
       <Totals datasets={shown} filtered={filtered} />
-      <section aria-labelledby="published-list-heading" className="flex flex-col gap-3">
+      <section aria-labelledby="published-list-heading" className="flex min-w-0 flex-col gap-3">
         <h2 id="published-list-heading" className="sr-only">
           <Trans>Datasets</Trans>
         </h2>
@@ -460,6 +485,14 @@ function Catalogue({
             onChange={(nextFilters, options) =>
               updateListState({ ...listState, ...nextFilters }, options)
             }
+          />
+        ) : null}
+        {showCoverage ? (
+          <CoverageGrid
+            datasets={coverageDatasets}
+            selectedCountries={listState.countries}
+            selectedYear={listState.year}
+            onSelectCell={handleSelectCoverageCell}
           />
         ) : null}
         {datasets.length > 1 ? (
@@ -608,7 +641,7 @@ export function PublishedPage({
 
   return (
     <PageContainer>
-      <div className="flex flex-col gap-6">
+      <div className="flex min-w-0 flex-col gap-6">
         <header className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight text-text">
             <Trans>Published PMOs</Trans>
