@@ -87,8 +87,9 @@ export function SortableTable<Row>({
                   <Button
                     variant="ghost"
                     size="sm"
+                    wrap
                     className={cn(
-                      "-mx-2.5 h-auto! max-w-full py-1 font-medium",
+                      "-mx-2.5",
                       column.numeric ? "justify-end text-right" : "justify-start text-left",
                     )}
                     aria-label={t`Sort by ${columnLabel}`}
@@ -100,7 +101,7 @@ export function SortableTable<Row>({
                       }))
                     }
                   >
-                    <span className="whitespace-normal">{column.label}</span>
+                    {column.label}
                     <Icon aria-hidden="true" className="size-3.5 shrink-0" />
                   </Button>
                 </th>
@@ -134,16 +135,15 @@ export function SortableTable<Row>({
                       <Button
                         variant="ghost"
                         size="sm"
+                        wrap
                         aria-pressed={selected}
-                        className="-mx-2.5 h-auto! max-w-full justify-start py-0.5 text-left font-medium text-accent-text"
+                        className="-mx-2.5 justify-start text-left text-accent-text"
                         onClick={(event) => {
                           event.stopPropagation();
                           onRowSelect(row);
                         }}
                       >
-                        <span className="whitespace-normal">
-                          {column.render?.(row) ?? column.value(row)}
-                        </span>
+                        {column.render?.(row) ?? column.value(row)}
                       </Button>
                     ) : (
                       (column.render?.(row) ?? column.value(row) ?? "–")

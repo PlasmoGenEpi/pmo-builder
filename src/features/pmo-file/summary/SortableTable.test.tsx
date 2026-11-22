@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
+import { buttonClassName } from "@/ui";
+
 import { SortableTable, type SortableColumn } from "./SortableTable";
 
 interface TargetRow {
@@ -179,5 +181,28 @@ describe("SortableTable", () => {
 
     await user.click(within(table).getByText("0.10"));
     expect(within(table).getByRole("button", { name: "t-low", pressed: true })).toBeInTheDocument();
+  });
+
+  it("uses the wrapping button variant for column headings and selectable row labels with sort indicators intact", () => {
+    render(<SelectableTargets />);
+    const table = screen.getByRole("table", { name: "Targets" });
+    const wrappingClasses = buttonClassName({ variant: "ghost", size: "sm", wrap: true }).split(
+      " ",
+    );
+
+    const headingButton = within(table).getByRole("button", { name: "Sort by Heterozygosity" });
+    for (const name of wrappingClasses) {
+      expect(headingButton).toHaveClass(name);
+    }
+    expect(headingButton).not.toHaveClass("h-auto!");
+    expect(headingButton.querySelector("span")).toBeNull();
+    expect(headingButton.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+
+    const rowButton = within(table).getByRole("button", { name: "t-mid" });
+    for (const name of wrappingClasses) {
+      expect(rowButton).toHaveClass(name);
+    }
+    expect(rowButton).not.toHaveClass("h-auto!");
+    expect(rowButton.querySelector("span")).toBeNull();
   });
 });
