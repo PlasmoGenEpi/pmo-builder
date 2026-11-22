@@ -877,6 +877,8 @@
               "code": {
                 "type": "string",
                 "enum": [
+                  "infer/non-text-cell",
+                  "infer/typer-finished",
                   "integrity/duplicate-library-sample-result",
                   "integrity/duplicate-mhap-id",
                   "integrity/duplicate-name",
@@ -1031,6 +1033,7 @@
                   "table/typing-failed",
                   "table/unreadable",
                   "worker/crashed",
+                  "infer/other",
                   "integrity/other",
                   "io/other",
                   "merge/other",

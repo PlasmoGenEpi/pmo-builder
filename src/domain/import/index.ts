@@ -26,6 +26,23 @@ export {
   type ImportErrorDetail,
 } from "./errors";
 export { importFailureMessage, type ImportFailure, type ImportFailureCode } from "./messages";
+export { uniqueHeaders } from "./rawTable";
+export {
+  DEFAULT_STREAM_CHUNK_SIZE,
+  PREVIEW_KEEP_ROWS,
+  PREVIEW_SCAN_ROWS,
+  inspectDelimitedStream,
+  streamDelimitedChunks,
+  streamDistinctValues,
+  type DelimitedStreamInspection,
+  type DelimitedStreamMeta,
+  type InspectStreamOptions,
+  type StreamChunksOptions,
+  type StreamDistinctValuesOptions,
+  type StreamDistinctValuesResult,
+  type StreamReadProgress,
+  type StreamTextEncoding,
+} from "./stream";
 export { excelCellToText, formatExcelDate } from "./xlsx";
 
 const DELIMITED_EXTENSIONS = new Set(["csv", "tsv", "txt", "tab"]);
