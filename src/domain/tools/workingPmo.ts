@@ -22,6 +22,7 @@ import {
   exportSpecimenTravelMetaTable,
   exportTargetedGenomesMetaTable,
   exportTargetInfoMetaTable,
+  filterPmoBySpecimenIds,
   filterPmoBySpecimenNames,
   filterPmoByTargetNames,
   formatDelimited,
@@ -38,7 +39,9 @@ import { exportPmo, type PmoFile } from "@/domain/build/export";
 import { summarisePmo } from "@/domain/build/merge";
 import { summarisePublication } from "@/domain/build/publication";
 
+import { groupValue } from "./sampleDetails";
 import {
+  COLLECTION_YEAR_FIELD,
   MAX_META_VALUES,
   TABLE_IDS,
   TABLE_PREVIEW_LIMIT,
@@ -78,13 +81,27 @@ function isPrimitive(value: unknown): boolean {
   );
 }
 
+/** Derived collection year field, when between 2 and {@link MAX_META_VALUES} years exist. */
+function collectionYearField(pmo: Pmo): MetaField | null {
+  const counts = new Map<string, number>();
+  pmo.specimen_info.forEach((_, index) => {
+    const year = groupValue(pmo, index, "collection_year");
+    if (year !== null) counts.set(year, (counts.get(year) ?? 0) + 1);
+  });
+  if (counts.size < 2 || counts.size > MAX_META_VALUES) return null;
+  const values = [...counts.entries()]
+    .toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([value, count]) => ({ value, label: value, count }));
+  return { field: COLLECTION_YEAR_FIELD, values };
+}
+
 /** The metadata fields specimens can be chosen by, with their values. */
 function metadataChoices(pmo: Pmo): MetaField[] {
   const projects = pmo.project_info ?? [];
   const fields = countSpecimenPerMetaFields(pmo).rows.flatMap((row) =>
     typeof row[0] === "string" ? [row[0]] : [],
   );
-  return fields.flatMap((field): MetaField[] => {
+  const raw = fields.flatMap((field): MetaField[] => {
     if (NOT_CHOSEN_BY.has(field)) return [];
     const simple = pmo.specimen_info.every((specimen) => {
       const record: Readonly<Record<string, unknown>> = specimen;
@@ -109,6 +126,13 @@ function metadataChoices(pmo: Pmo): MetaField[] {
       },
     ];
   });
+  if (fields.includes(COLLECTION_YEAR_FIELD)) return raw;
+  const years = collectionYearField(pmo);
+  if (years === null) return raw;
+  const dateIndex = raw.findIndex((item) => item.field === "collection_date");
+  return dateIndex === -1
+    ? [...raw, years]
+    : [...raw.slice(0, dateIndex), years, ...raw.slice(dateIndex)];
 }
 
 /** A primitive written as Python's `str()` writes it, as the metadata filter compares. */
@@ -147,9 +171,13 @@ export function choicesOf(pmo: Pmo): PmoChoices {
         name: specimen.specimen_name,
         librarySamples: librariesPerSpecimen.get(index) ?? 0,
         values: Object.fromEntries(
-          metadata.flatMap(({ field }) =>
-            field in record ? [[field, asText(record[field])]] : [],
-          ),
+          metadata.flatMap(({ field }): readonly [string, string][] => {
+            if (field === COLLECTION_YEAR_FIELD && !(field in record)) {
+              const year = groupValue(pmo, index, "collection_year");
+              return year === null ? [] : [[field, year]];
+            }
+            return field in record ? [[field, asText(record[field])]] : [];
+          }),
         ),
       };
     }),
@@ -374,9 +402,20 @@ export function subsetOf(pmo: Pmo, request: SubsetRequest): Pmo {
   if (request.specimens.kind === "names") {
     out = filterPmoBySpecimenNames(out, request.specimens.names);
   } else if (request.specimens.kind === "metadata") {
-    out = extractFromPmoSamplesWithMetaGroupings(out, [
-      { criteria: request.specimens.criteria },
-    ]).pmo;
+    if (Object.keys(request.specimens.criteria).length > 0) {
+      out = extractFromPmoSamplesWithMetaGroupings(out, [
+        { criteria: request.specimens.criteria },
+      ]).pmo;
+    }
+    const years = request.specimens.collectionYears;
+    if (years !== undefined && years.length > 0) {
+      const wanted = new Set(years);
+      const ids = out.specimen_info.flatMap((_, index) => {
+        const year = groupValue(out, index, "collection_year");
+        return year !== null && wanted.has(year) ? [index] : [];
+      });
+      out = filterPmoBySpecimenIds(out, ids);
+    }
   }
   if (request.targets.kind === "names") out = filterPmoByTargetNames(out, request.targets.names);
   if (request.minReads > 0) out = extractFromPmoWithReadFilter(out, request.minReads);
@@ -395,12 +434,22 @@ function chosenSpecimens(pmo: Pmo, choice: SubsetRequest["specimens"]): Set<numb
     return chosen;
   }
   const criteria = Object.entries(choice.criteria);
+  const years =
+    choice.collectionYears !== undefined && choice.collectionYears.length > 0
+      ? new Set(choice.collectionYears)
+      : null;
+  if (criteria.length === 0 && years === null) return null;
   pmo.specimen_info.forEach((specimen, index) => {
     const record: Readonly<Record<string, unknown>> = specimen;
-    const matches = criteria.every(
+    const matchesCriteria = criteria.every(
       ([field, values]) => field in record && values.includes(asText(record[field])),
     );
-    if (matches) chosen.add(index);
+    if (!matchesCriteria) return;
+    if (years !== null) {
+      const year = groupValue(pmo, index, "collection_year");
+      if (year === null || !years.has(year)) return;
+    }
+    chosen.add(index);
   });
   return chosen;
 }

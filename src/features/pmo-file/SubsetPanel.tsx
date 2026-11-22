@@ -30,6 +30,7 @@ import {
 import { NameChecklist } from "./NameChecklist";
 import { NoAnswer, type NoAnswerReason } from "./NoAnswer";
 import { settleAnswer } from "./settleAnswer";
+import { specimenFieldLabel } from "./specimenFieldNames";
 import {
   formProblem,
   initialForm,
@@ -84,8 +85,8 @@ function Conditions({
         const field = choices.metadata.find((item) => item.field === condition.field);
         const fieldOptions = choices.metadata
           .filter((item) => item.field === condition.field || !used.has(item.field))
-          .map((item) => ({ value: item.field, label: item.field }));
-        const fieldName = condition.field;
+          .map((item) => ({ value: item.field, label: specimenFieldLabel(item.field) }));
+        const fieldName = specimenFieldLabel(condition.field);
         return (
           <Card key={condition.field} padding="sm" className="flex flex-col gap-3">
             <div className="flex items-end gap-2">
