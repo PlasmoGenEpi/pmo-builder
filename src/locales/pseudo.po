@@ -887,6 +887,10 @@ msgstr ""
 msgid "{runCount, plural, one {There is # sequencing run, so each library sample needs to name its run. Choose the sequencing run name column of the library sample table, and fill it in for every library sample.} other {There are # sequencing runs, so each library sample needs to name its run. Choose the sequencing run name column of the library sample table, and fill it in for every library sample.}}"
 msgstr ""
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{sampleCount, plural, one {# sample with data} other {# samples with data}}"
+msgstr ""
+
 #: src/features/pmo-file/summary/AlleleBars.tsx
 msgid "{sampleCount, plural, one {Microhaplotypes at {targetName}, seen in # sample} other {Microhaplotypes at {targetName}, seen in # samples}}"
 msgstr ""
@@ -2619,6 +2623,11 @@ msgstr ""
 msgid "Groups"
 msgstr ""
 
+#. {threshold} is a number of samples, such as 10
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Groups marked with a warning have fewer than {threshold} samples with data. Read their percentages with care."
+msgstr ""
+
 #. Part of a sentence: a verb phrase that follows 'It', as in 'It has characters ...'. Several such phrases may be joined with ', and it'.
 #: src/domain/build/merge.ts
 msgid "has characters the PMO format does not allow there"
@@ -3432,7 +3441,7 @@ msgid "More than one clone"
 msgstr ""
 
 #: src/features/pmo-file/summary/CompareTab.tsx
-msgid "More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group."
+msgid "More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group. Alleles seen is the number of distinct alleles found in the group across targets."
 msgstr ""
 
 #. {field} is a PMO field name. {columns} is a list of quoted column names.
@@ -3469,6 +3478,11 @@ msgstr ""
 #: src/app/TopBar.tsx
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "My PMO file"
+msgstr ""
+
+#. Compact sample count in a table column heading, e.g. n = 14
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "n = {count}"
 msgstr ""
 
 #: src/features/records/ExtraDetails.tsx
@@ -5235,6 +5249,11 @@ msgstr ""
 
 #: src/app/Layout.tsx
 msgid "Skip to content"
+msgstr ""
+
+#. Accessible explanation on a warning mark next to a small group; {threshold} is a sample count such as 10
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Small group (fewer than {threshold} samples with data)"
 msgstr ""
 
 #: src/features/review/zenodo.ts
