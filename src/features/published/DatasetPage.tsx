@@ -97,9 +97,9 @@ function Dataset({ dataset }: { readonly dataset: PublishedDataset }) {
           </Link>
         </p>
         <div className="flex flex-wrap items-start gap-x-3 gap-y-3 pt-2">
-          {/* The summary opens the file in My PMO file, whose other tabs are a click away. */}
+          {/* Opens the read-only published view at its own address, leaving the working PMO alone. */}
           <RouterLink
-            href={`/pmo/published/${dataset.id}/summary`}
+            href={`/published/${dataset.id}/summary`}
             className={buttonClassName({ variant: "primary", size: "lg" })}
           >
             <ChartColumn aria-hidden="true" className="size-4.5" />

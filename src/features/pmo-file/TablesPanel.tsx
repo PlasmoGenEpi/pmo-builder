@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import type { TableFormat, TableId, TableInfo, WorkingSource } from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
-import { useWorkingPmoSession } from "@/state";
+import { usePmoSession } from "@/state";
 import { Button, SegmentedControl } from "@/ui";
 
 import { NoAnswer, type NoAnswerReason } from "./NoAnswer";
@@ -68,7 +68,7 @@ export interface TablesPanelProps {
 
 /** The tables in a PMO, each to download as CSV or TSV. */
 export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) {
-  const session = useWorkingPmoSession();
+  const session = usePmoSession();
   const [format, setFormat] = useState<TableFormat>("csv");
   const [saving, setSaving] = useState<TableId | "all" | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);

@@ -731,7 +731,7 @@ msgstr "{rest, plural, one {{shown} and # more} other {{shown} and # more}}"
 msgid "{rest, plural, one {{shownNames} and # more} other {{shownNames} and # more}}"
 msgstr "{rest, plural, one {{shownNames} and # more} other {{shownNames} and # more}}"
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/FileRefusal.tsx
 msgid "{rest, plural, one {# more problem is not listed.} other {# more problems are not listed.}}"
 msgstr "{rest, plural, one {# more problem is not listed.} other {# more problems are not listed.}}"
 
@@ -1537,7 +1537,7 @@ msgstr "Build"
 
 #: src/app/HomePage.tsx
 #: src/app/StepNav.tsx
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/FileRefusal.tsx
 #: src/features/published/PublishedPage.tsx
 msgid "Build a PMO"
 msgstr "Build a PMO"
@@ -1797,6 +1797,7 @@ msgstr "Column \"{runLike}\" tells them apart, so the table probably holds sever
 msgid "Comments"
 msgstr "Comments"
 
+#: src/features/pmo-file/OpenPublished.tsx
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Compare"
 msgstr "Compare"
@@ -1897,6 +1898,10 @@ msgstr "CSV"
 #: src/app/TopBar.tsx
 msgid "Dark"
 msgstr "Dark"
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Dataset page"
+msgstr "Dataset page"
 
 #: src/features/published/PublishedPage.tsx
 msgid "Datasets"
@@ -2020,7 +2025,7 @@ msgstr "Don't send"
 msgid "Done"
 msgstr "Done"
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoOverview.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Download"
 msgstr "Download"
@@ -2361,7 +2366,7 @@ msgstr "From the Bioinformatics step:"
 msgid "From the library sample table:"
 msgstr "From the library sample table:"
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoOverview.tsx
 msgid "From the Zenodo record <0>{recordTitle}</0>. It matches PMO version {version} and its tables link up."
 msgstr "From the Zenodo record <0>{recordTitle}</0>. It matches PMO version {version} and its tables link up."
 
@@ -2707,7 +2712,11 @@ msgstr "is missing {field}"
 msgid "is missing a required field"
 msgstr "is missing a required field"
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "It cannot be opened in this browser as it is."
+msgstr "It cannot be opened in this browser as it is."
+
+#: src/features/pmo-file/FileRefusal.tsx
 msgid "It cannot be used as it is. Build the PMO again from your tables in PMO Builder, which checks it as you go."
 msgstr "It cannot be used as it is. Build the PMO again from your tables in PMO Builder, which checks it as you go."
 
@@ -2728,13 +2737,9 @@ msgstr "It is the file of the Zenodo record <0>{recordTitle}</0>. To publish par
 msgid "It keeps {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
 msgstr "It keeps {specimens} of {allSpecimens} specimens and {librarySamples} of {allLibrarySamples} library samples, with alleles at {targets} of {allTargets} targets."
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoOverview.tsx
 msgid "It matches PMO version {version} and its tables link up."
 msgstr "It matches PMO version {version} and its tables link up."
-
-#: src/features/pmo-file/OpenPublished.tsx
-msgid "It may be in another PMO version. My PMO file says what is wrong with it."
-msgstr "It may be in another PMO version. My PMO file says what is wrong with it."
 
 #: src/features/published/DatasetPage.tsx
 msgid "It may have been withdrawn from the community, or the address may be mistyped."
@@ -3268,7 +3273,6 @@ msgstr "Move {name} up"
 
 #. Top bar section: working with a PMO file the user has
 #: src/app/TopBar.tsx
-#: src/features/pmo-file/OpenPublished.tsx
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "My PMO file"
 msgstr "My PMO file"
@@ -3877,6 +3881,7 @@ msgstr "Other names for the specimen, separated by commas."
 msgid "Other specimen identifiers"
 msgstr "Other specimen identifiers"
 
+#: src/features/pmo-file/OpenPublished.tsx
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Overview"
 msgstr "Overview"
@@ -4244,6 +4249,14 @@ msgstr "Published"
 #: src/features/published/DatasetPage.tsx
 msgid "Published {publishedDate}"
 msgstr "Published {publishedDate}"
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Published PMO"
+msgstr "Published PMO"
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Published PMO views"
+msgstr "Published PMO views"
 
 #: src/features/published/PublishedPage.tsx
 msgid "Published PMOs"
@@ -4785,10 +4798,6 @@ msgstr "See what is ready, fix what is missing, and download your PMO file."
 msgid "See what the draft will say"
 msgstr "See what the draft will say"
 
-#: src/features/pmo-file/OpenPublished.tsx
-msgid "See why"
-msgstr "See why"
-
 #: src/features/review/PublishToZenodo.tsx
 msgid "Select a keyword to copy it. Keep the first one as it is written: it places the record with the other PMO files."
 msgstr "Select a keyword to copy it. Keep the first one as it is written: it places the record with the other PMO files."
@@ -5261,6 +5270,7 @@ msgstr "Subset"
 msgid "Such as the country or year of collection."
 msgstr "Such as the country or year of collection."
 
+#: src/features/pmo-file/OpenPublished.tsx
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Summary"
 msgstr "Summary"
@@ -5285,6 +5295,7 @@ msgstr "Switch to light theme"
 msgid "Switching to this tab"
 msgstr "Switching to this tab"
 
+#: src/features/pmo-file/OpenPublished.tsx
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Tables"
 msgstr "Tables"
@@ -5677,7 +5688,7 @@ msgstr "The file could not be downloaded from Zenodo"
 msgid "The file could not be made"
 msgstr "The file could not be made"
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/FileRefusal.tsx
 msgid "The file could not be opened. Reload the page and try again."
 msgstr "The file could not be opened. Reload the page and try again."
 
@@ -5693,7 +5704,7 @@ msgstr "The file is larger than Zenodo accepts."
 msgid "The file is no longer loaded. Import it again."
 msgstr "The file is no longer loaded. Import it again."
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/FileRefusal.tsx
 msgid "The file was closed, probably because the browser ran out of memory. Open the file again."
 msgstr "The file was closed, probably because the browser ran out of memory. Open the file again."
 
@@ -6191,7 +6202,7 @@ msgstr "There is no PMO to download"
 msgid "There is nothing to group the specimens by"
 msgstr "There is nothing to group the specimens by"
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoOverview.tsx
 msgid "There may be more."
 msgstr "There may be more."
 
@@ -6327,11 +6338,11 @@ msgstr "This file could not be read."
 msgid "This file could not be read. Check that it is a table saved as .csv, .tsv, .txt or .xlsx, and try again."
 msgstr "This file could not be read. Check that it is a table saved as .csv, .tsv, .txt or .xlsx, and try again."
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/FileRefusal.tsx
 msgid "This file does not match the PMO format"
 msgstr "This file does not match the PMO format"
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/FileRefusal.tsx
 msgid "This file does not say which PMO version it is. Only version {version} files can be opened here. Build it again from your tables to get a {version} file."
 msgstr "This file does not say which PMO version it is. Only version {version} files can be opened here. Build it again from your tables to get a {version} file."
 
@@ -6343,7 +6354,7 @@ msgstr "This file has a header row but no rows of data. Add the data below the h
 msgid "This file has no field with a few distinct values to choose by."
 msgstr "This file has no field with a few distinct values to choose by."
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoOverview.tsx
 msgid "This file is a valid PMO"
 msgstr "This file is a valid PMO"
 
@@ -6368,11 +6379,11 @@ msgstr "This file is built from the example data, so it cannot be published. Wit
 msgid "This file is empty. Choose a file with a header row and at least one row of data."
 msgstr "This file is empty. Choose a file with a header row and at least one row of data."
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/FileRefusal.tsx
 msgid "This file is in PMO version {declared}. Only version {version} files can be opened here. Build it again from your tables to get a {version} file."
 msgstr "This file is in PMO version {declared}. Only version {version} files can be opened here. Build it again from your tables to get a {version} file."
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/FileRefusal.tsx
 msgid "This file is larger than {sizeLimit}, more than this browser can open."
 msgstr "This file is larger than {sizeLimit}, more than this browser can open."
 
@@ -6397,23 +6408,23 @@ msgstr "This file is too large to open in the browser. Split it into smaller fil
 msgid "This file looks compressed but could not be unpacked, so it may be damaged or incomplete. Download or copy it again, or add it uncompressed."
 msgstr "This file looks compressed but could not be unpacked, so it may be damaged or incomplete. Download or copy it again, or add it uncompressed."
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/FileRefusal.tsx
 msgid "This file looks gzipped but could not be unpacked. Check that it downloaded completely."
 msgstr "This file looks gzipped but could not be unpacked. Check that it downloaded completely."
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoOverview.tsx
 msgid "This is a published PMO"
 msgstr "This is a published PMO"
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/FileRefusal.tsx
 msgid "This is not a PMO file. A PMO file holds JSON and is saved as .json or .json.gz."
 msgstr "This is not a PMO file. A PMO file holds JSON and is saved as .json or .json.gz."
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoOverview.tsx
 msgid "This is the PMO built from your draft"
 msgstr "This is the PMO built from your draft"
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/FileRefusal.tsx
 msgid "This JSON file is not a PMO: it has no PMO header."
 msgstr "This JSON file is not a PMO: it has no PMO header."
 
@@ -6902,7 +6913,7 @@ msgstr "Working out where this step stands."
 msgid "Working out whether a PMO can be built from what you added."
 msgstr "Working out whether a PMO can be built from what you added."
 
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoOverview.tsx
 msgid "Worth a look"
 msgstr "Worth a look"
 
@@ -7053,3 +7064,7 @@ msgstr "Zenodo is a free research archive. Add your PMO to the <0>{communityName
 #: src/features/review/PublishToZenodo.tsx
 msgid "Zenodo no longer accepts the sign-in. Try again to sign in once more."
 msgstr "Zenodo no longer accepts the sign-in. Try again to sign in once more."
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Zenodo record"
+msgstr "Zenodo record"
