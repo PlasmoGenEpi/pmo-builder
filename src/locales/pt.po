@@ -282,6 +282,10 @@ msgstr "{0, plural, one {Este livro tem # folha. Escolha a que contém «{tableN
 msgid "{alleleCalls, plural, one {# allele call} other {# allele calls}} for {samples, plural, one {# sample} other {# samples}} at {targets, plural, one {# target} other {# targets}}, {alleles, plural, one {# distinct allele} other {# distinct alleles}}"
 msgstr "{alleleCalls, plural, one {# identificação de alelo} other {# identificações de alelos}} para {samples, plural, one {# amostra} other {# amostras}} em {targets, plural, one {# alvo} other {# alvos}}, {alleles, plural, one {# alelo distinto} other {# alelos distintos}}"
 
+#: src/features/pmo-file/summary/SequenceLabel.tsx
+msgid "{baseCount, plural, one {# base} other {# bases}}"
+msgstr "{baseCount, plural, one {# base} other {# bases}}"
+
 #. {column} starts the sentence and names a column, with any article, such as 'Column "Host taxon"'. {row} is one row without an article, such as 'row 5'.
 #: src/domain/build/notices.ts
 msgid "{column} must hold NCBI taxonomy numbers such as 5833, separated by commas, but {row} holds \"{value}\". Correct it, or unmap the column if the field is optional."
@@ -1731,6 +1735,10 @@ msgstr "Escolha uma coluna"
 msgid "Choose a column. This field is needed to build the table."
 msgstr "Escolha uma coluna. Este campo é necessário para criar a tabela."
 
+#: src/features/pmo-file/summary/AlleleBars.tsx
+msgid "Choose a label to open and copy the whole sequence. Each bar is a share of the target's detections: a sample with two microhaplotypes here counts once for each."
+msgstr "Escolha uma etiqueta para abrir e copiar a sequência completa. Cada barra é uma parte das deteções do alvo: uma amostra com dois micro-haplótipos aqui conta uma vez para cada um."
+
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "Choose a method"
 msgstr "Escolha um método"
@@ -1952,6 +1960,8 @@ msgstr "Coordenadas"
 
 #. After a keyword was copied to the clipboard
 #. Button, after the value was copied to the clipboard
+#. Button, after the value was copied to the clipboard
+#: src/features/pmo-file/summary/SequenceLabel.tsx
 #: src/features/review/PublishToZenodo.tsx
 #: src/features/shared/CopyValue.tsx
 #: src/ui/CodeBlock.tsx
@@ -1959,6 +1969,8 @@ msgid "Copied"
 msgstr "Copiado"
 
 #. Button: copy the value to the clipboard
+#. Button: copy the value to the clipboard
+#: src/features/pmo-file/summary/SequenceLabel.tsx
 #: src/features/shared/CopyValue.tsx
 #: src/ui/CodeBlock.tsx
 msgid "Copy"
@@ -1986,6 +1998,10 @@ msgstr "Copiar a palavra-chave {keyword}"
 #: src/features/review/PublishToZenodo.tsx
 msgid "Copy title"
 msgstr "Copiar o título"
+
+#: src/features/pmo-file/summary/SequenceLabel.tsx
+msgid "Could not copy. Select the sequence to copy it."
+msgstr "Não foi possível copiar. Selecione a sequência para a copiar."
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Counting"
@@ -2703,10 +2719,6 @@ msgstr "Passe o cursor sobre uma barra para ver a sua contagem."
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "Hover over a dot to see its sample."
 msgstr "Passe o cursor sobre um ponto para ver a sua amostra."
-
-#: src/features/pmo-file/summary/AlleleBars.tsx
-msgid "Hover over a label to see the whole sequence. Each bar is a share of the target's detections: a sample with two microhaplotypes here counts once for each."
-msgstr "Passe o cursor sobre uma etiqueta para ver a sequência completa. Cada barra é uma parte das deteções do alvo: uma amostra com dois micro-haplótipos aqui conta uma vez para cada um."
 
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "How is the method given?"
@@ -5060,6 +5072,14 @@ msgstr "Enviar estatísticas de utilização"
 #: src/domain/fields/microhaplotypes.ts
 msgid "Sequence"
 msgstr "Sequência"
+
+#: src/features/pmo-file/summary/SequenceLabel.tsx
+msgid "Sequence copied to clipboard."
+msgstr "Sequência copiada para a área de transferência."
+
+#: src/features/pmo-file/summary/SequenceLabel.tsx
+msgid "Sequence for {label}"
+msgstr "Sequência de {label}"
 
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
