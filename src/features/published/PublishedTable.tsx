@@ -150,6 +150,7 @@ export function PublishedTable({
             return (
               <tr
                 key={dataset.id}
+                data-dataset-id={dataset.id}
                 className="transition-colors duration-100 hover:bg-surface-subtle"
               >
                 <th

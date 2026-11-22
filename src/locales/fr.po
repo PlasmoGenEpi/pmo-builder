@@ -242,6 +242,11 @@ msgstr "{0, plural, one {Run} other {Runs}}"
 msgid "{0, plural, one {Sequencing run} other {Sequencing runs}}"
 msgstr "{0, plural, one {Run de séquençage} other {Runs de séquençage}}"
 
+#. placeholder {0}: matching.length
+#: src/features/published/PublishedPage.tsx
+msgid "{0, plural, one {Showing {visibleCount} of # published PMO} other {Showing {visibleCount} of # published PMOs}}"
+msgstr "{0, plural, one {Affichage de {visibleCount} sur # PMO publié} other {Affichage de {visibleCount} sur # PMO publiés}}"
+
 #. placeholder {0}: dataset.summary.specimens
 #: src/features/published/PublishedPage.tsx
 msgid "{0, plural, one {specimen} other {specimens}}"
@@ -5081,6 +5086,7 @@ msgstr "Tout afficher ({total})"
 msgid "Show fewer"
 msgstr "Afficher moins"
 
+#: src/features/published/PublishedPage.tsx
 #: src/ui/CodeBlock.tsx
 msgid "Show more"
 msgstr "Afficher plus"

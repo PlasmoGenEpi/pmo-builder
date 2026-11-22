@@ -796,6 +796,218 @@ describe("PublishedPage", () => {
       window.history.replaceState(null, "", "/");
     }
   });
+
+  it("renders 50 entries at first, adds 50 with focus on the first new entry, and hides Show more for 50 or fewer", async () => {
+    const user = userEvent.setup();
+    const bigIndex = largeCatalogue(150);
+    const { wrapper: listWrapper, location } = makeWrapper("/published");
+    const { unmount } = render(
+      <PublishedPage load={gives({ kind: "ready", index: bigIndex })} zenodo={ZENODO} />,
+      { wrapper: listWrapper },
+    );
+    await screen.findByText("150 datasets");
+
+    expect(screen.getAllByRole("article")).toHaveLength(50);
+    expect(screen.getByText("Showing 50 of 150 published PMOs")).toBeInTheDocument();
+    // Totals still count all 150 matching entries, not only the 50 rendered.
+    const totals = screen.getByRole("region", { name: "Totals" });
+    expect(within(totals).getAllByRole("definition")[0]?.textContent).toBe("150");
+
+    const showMore = screen.getByRole("button", { name: "Show more" });
+    await user.click(showMore);
+
+    expect(screen.getAllByRole("article")).toHaveLength(100);
+    expect(screen.getByText("Showing 100 of 150 published PMOs")).toBeInTheDocument();
+    expect(location.history.at(-1)).toBe("/published?shown=100");
+    const entry51 = bigIndex.datasets[50];
+    if (entry51 === undefined) throw new Error("missing 51st dataset");
+    expect(document.activeElement).toBe(screen.getByRole("link", { name: entry51.title }));
+
+    await user.click(screen.getByRole("button", { name: "Show more" }));
+
+    expect(screen.getAllByRole("article")).toHaveLength(150);
+    expect(screen.getByText("Showing 150 of 150 published PMOs")).toBeInTheDocument();
+    expect(location.history.at(-1)).toBe("/published?shown=150");
+    const entry101 = bigIndex.datasets[100];
+    if (entry101 === undefined) throw new Error("missing 101st dataset");
+    expect(document.activeElement).toBe(screen.getByRole("link", { name: entry101.title }));
+    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+
+    // With 50 or fewer entries there is no Show more button.
+    unmount();
+    const { unmount: unmountFifty } = render(
+      <PublishedPage load={gives({ kind: "ready", index: largeCatalogue(50) })} zenodo={ZENODO} />,
+      { wrapper },
+    );
+    await screen.findByText("50 datasets");
+    expect(screen.getAllByRole("article")).toHaveLength(50);
+    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+
+    unmountFifty();
+    render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
+    await screen.findByText("3 datasets");
+    expect(screen.getAllByRole("article")).toHaveLength(3);
+    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+  });
+
+  it("paginates table view by 50, moves focus to the first newly revealed row, and resets on column sort", async () => {
+    const user = userEvent.setup();
+    const bigIndex = largeCatalogue(150);
+    const { wrapper: tableWrapper, location } = makeWrapper("/published?view=table");
+    render(<PublishedPage load={gives({ kind: "ready", index: bigIndex })} zenodo={ZENODO} />, {
+      wrapper: tableWrapper,
+    });
+    await screen.findByText("150 datasets");
+
+    const table = screen.getByRole("table");
+    const bodyRows = () => within(table).getAllByRole("row").slice(1);
+    expect(bodyRows()).toHaveLength(50);
+    expect(screen.getByText("Showing 50 of 150 published PMOs")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Show more" }));
+
+    expect(bodyRows()).toHaveLength(100);
+    expect(screen.getByText("Showing 100 of 150 published PMOs")).toBeInTheDocument();
+    expect(location.history.at(-1)).toBe("/published?view=table&shown=100");
+    const entry51 = bigIndex.datasets[50];
+    if (entry51 === undefined) throw new Error("missing 51st dataset");
+    expect(document.activeElement).toBe(within(table).getByRole("link", { name: entry51.title }));
+
+    const specimensHeader = within(table).getByRole("columnheader", { name: /Specimens/ });
+    await user.click(within(specimensHeader).getByRole("button"));
+    expect(bodyRows()).toHaveLength(50);
+    expect(location.history.at(-1)).toBe("/published?sort=specimens&view=table");
+  });
+
+  it("starts again from 50 when a filter, coverage cell or sort changes", async () => {
+    const user = userEvent.setup();
+    const bigIndex = largeCatalogue(150);
+    const { wrapper: listWrapper, location } = makeWrapper("/published");
+    render(<PublishedPage load={gives({ kind: "ready", index: bigIndex })} zenodo={ZENODO} />, {
+      wrapper: listWrapper,
+    });
+    await screen.findByText("150 datasets");
+
+    await user.click(screen.getByRole("button", { name: "Show more" }));
+    expect(screen.getAllByRole("article")).toHaveLength(100);
+    expect(location.history.at(-1)).toBe("/published?shown=100");
+
+    // Changing sort resets shown to 50.
+    await choose(user, "Sort by", "Most specimens");
+    expect(screen.getAllByRole("article")).toHaveLength(50);
+    expect(location.history.at(-1)).toBe("/published?sort=specimens");
+
+    // Expanding then filtering by species resets shown to 50 while Totals keep counting all matches.
+    await user.click(screen.getByRole("button", { name: "Show more" }));
+    expect(screen.getAllByRole("article")).toHaveLength(100);
+    await choose(user, "Species", /^Plasmodium falciparum \(\d+\)$/);
+    const falciparumCount = bigIndex.datasets.filter((entry) => entry.taxa.includes(5833)).length;
+    expect(falciparumCount).toBeGreaterThan(50);
+    expect(screen.getAllByRole("article")).toHaveLength(50);
+    expect(location.history.at(-1)).toBe("/published?species=5833&sort=specimens");
+    expect(screen.getByText(`Showing 50 of ${falciparumCount} published PMOs`)).toBeInTheDocument();
+    const totals = screen.getByRole("region", { name: "Totals" });
+    expect(within(totals).getAllByRole("definition")[0]?.textContent).toBe(String(falciparumCount));
+
+    // Expanding then typing in Search resets shown to 50.
+    await user.click(screen.getByRole("button", { name: "Show more" }));
+    expect(screen.getAllByRole("article")).toHaveLength(100);
+    await user.type(screen.getByRole("searchbox", { name: "Search" }), "20");
+    expect(screen.getAllByRole("article")).toHaveLength(50);
+    expect(location.history.at(-1)).toBe("/published?q=20&species=5833&sort=specimens");
+
+    // Expanding then clearing filters resets shown to 50.
+    await user.click(screen.getByRole("button", { name: "Show more" }));
+    expect(screen.getAllByRole("article")).toHaveLength(100);
+    await user.click(screen.getByRole("button", { name: "Clear the filters" }));
+    expect(screen.getAllByRole("article")).toHaveLength(50);
+    expect(location.history.at(-1)).toBe("/published?sort=specimens");
+
+    // Expanding then selecting a coverage cell resets shown to 50.
+    await user.click(screen.getByRole("button", { name: "Show more" }));
+    expect(screen.getAllByRole("article")).toHaveLength(100);
+    await user.click(screen.getByRole("button", { name: /Coverage by country and year/ }));
+    const grid = screen.getByRole("table", { name: "Specimens by country and collection year" });
+    const populatedCell = within(grid).getByRole("button", {
+      name: /^Angola, 2008: .+ in \d+ published PMOs?$/,
+    });
+    await user.click(populatedCell);
+    expect(location.history.at(-1)).not.toContain("shown=");
+  });
+
+  it("restores how many entries were shown and scroll position when going Back from a dataset beyond 50", async () => {
+    const user = userEvent.setup();
+    const bigIndex = largeCatalogue(150);
+    const loadBig = gives({ kind: "ready", index: bigIndex });
+    window.history.replaceState(null, "", "/#/published");
+    const scrollDescriptor = Object.getOwnPropertyDescriptor(window, "scrollY");
+    let currentScrollY = 0;
+    Object.defineProperty(window, "scrollY", {
+      configurable: true,
+      get: () => currentScrollY,
+    });
+    const scrollToSpy = vi.spyOn(window, "scrollTo").mockImplementation((...args: unknown[]) => {
+      const first = args[0];
+      if (
+        typeof first === "object" &&
+        first !== null &&
+        "top" in first &&
+        typeof first.top === "number"
+      ) {
+        currentScrollY = first.top;
+      }
+    });
+
+    try {
+      render(
+        <I18nProvider i18n={i18n}>
+          <Router hook={useHashLocation}>
+            <Switch>
+              <Route path="/published">
+                <PublishedPage load={loadBig} zenodo={ZENODO} />
+              </Route>
+              <Route path="/published/:id">
+                {(params) => <DatasetPage id={params.id} load={loadBig} />}
+              </Route>
+            </Switch>
+          </Router>
+        </I18nProvider>,
+      );
+
+      await screen.findByText("150 datasets");
+      await user.click(screen.getByRole("button", { name: "Show more" }));
+      expect(window.location.hash).toBe("#/published?shown=100");
+      expect(screen.getAllByRole("article")).toHaveLength(100);
+
+      currentScrollY = 3_200;
+      window.dispatchEvent(new Event("scroll"));
+
+      const entry60 = bigIndex.datasets[59];
+      if (entry60 === undefined) throw new Error("missing 60th dataset");
+      await user.click(screen.getByRole("link", { name: entry60.title }));
+      expect(
+        await screen.findByRole("heading", { level: 1, name: entry60.title }),
+      ).toBeInTheDocument();
+
+      scrollToSpy.mockClear();
+      currentScrollY = 0;
+      window.history.back();
+
+      expect(await screen.findByText("Showing 100 of 150 published PMOs")).toBeInTheDocument();
+      expect(window.location.hash).toBe("#/published?shown=100");
+      expect(screen.getAllByRole("article")).toHaveLength(100);
+      await waitFor(() => {
+        expect(scrollToSpy).toHaveBeenCalledWith({ top: 3_200 });
+      });
+    } finally {
+      window.history.replaceState(null, "", "/");
+      if (scrollDescriptor !== undefined) {
+        Object.defineProperty(window, "scrollY", scrollDescriptor);
+      } else {
+        Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
+      }
+    }
+  });
 });
 
 describe("DatasetPage", () => {

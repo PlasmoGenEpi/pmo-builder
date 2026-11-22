@@ -1,16 +1,24 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_LIST_STATE, publishedHref, readListState, writeListState } from "./address";
+import {
+  DEFAULT_LIST_STATE,
+  PAGE_SIZE,
+  publishedHref,
+  readListState,
+  writeListState,
+} from "./address";
 
 describe("published list address", () => {
   it("writes the default state as an empty query and a clean path", () => {
+    expect(PAGE_SIZE).toBe(50);
+    expect(DEFAULT_LIST_STATE.shown).toBe(50);
     expect(writeListState(DEFAULT_LIST_STATE)).toBe("");
     expect(publishedHref(DEFAULT_LIST_STATE)).toBe("/published");
     expect(readListState("")).toEqual(DEFAULT_LIST_STATE);
     expect(readListState("?")).toEqual(DEFAULT_LIST_STATE);
   });
 
-  it("round-trips search, countries, panel, species, collection year, sort and view", () => {
+  it("round-trips search, countries, panel, species, collection year, sort, view and shown", () => {
     const state = {
       search: "maputo surveillance",
       countries: ["Mozambique", "Uganda"],
@@ -19,14 +27,35 @@ describe("published list address", () => {
       year: 2017,
       sort: "specimens" as const,
       view: "table" as const,
+      shown: 100,
     };
     const query = writeListState(state);
     expect(query).toBe(
-      "q=maputo+surveillance&country=Mozambique&country=Uganda&panel=Mad4hatter&species=5855&year=2017&sort=specimens&view=table",
+      "q=maputo+surveillance&country=Mozambique&country=Uganda&panel=Mad4hatter&species=5855&year=2017&sort=specimens&view=table&shown=100",
     );
     expect(publishedHref(state)).toBe(`/published?${query}`);
     expect(readListState(query)).toEqual(state);
     expect(readListState(`?${query}`)).toEqual(state);
+  });
+
+  it("writes shown above 50 and omits or clamps values of 50 or less", () => {
+    expect(writeListState({ ...DEFAULT_LIST_STATE, shown: 50 })).toBe("");
+    expect(writeListState({ ...DEFAULT_LIST_STATE, shown: 25 })).toBe("");
+    expect(writeListState({ ...DEFAULT_LIST_STATE, shown: 0 })).toBe("");
+    expect(writeListState({ ...DEFAULT_LIST_STATE, shown: -10 })).toBe("");
+    expect(writeListState({ ...DEFAULT_LIST_STATE, shown: 100.5 })).toBe("");
+
+    const expanded = { ...DEFAULT_LIST_STATE, shown: 150 };
+    expect(writeListState(expanded)).toBe("shown=150");
+    expect(readListState("shown=150")).toEqual(expanded);
+
+    expect(readListState("shown=50")).toEqual(DEFAULT_LIST_STATE);
+    expect(readListState("shown=10")).toEqual(DEFAULT_LIST_STATE);
+    expect(readListState("shown=0")).toEqual(DEFAULT_LIST_STATE);
+    expect(readListState("shown=-50")).toEqual(DEFAULT_LIST_STATE);
+    expect(readListState("shown=100.5")).toEqual(DEFAULT_LIST_STATE);
+    expect(readListState("shown=many")).toEqual(DEFAULT_LIST_STATE);
+    expect(readListState("shown=")).toEqual(DEFAULT_LIST_STATE);
   });
 
   it("writes the table view and omits the default list view", () => {
