@@ -8,6 +8,7 @@ import {
   loadCatalogue,
   longDate,
   NO_FILTERS,
+  sortDatasets,
   taxonName,
   totalsOf,
   yearsText,
@@ -94,6 +95,152 @@ describe("filterDatasets", () => {
     expect(search("zenodo.303")).toEqual(["303"]);
     expect(search("  ")).toEqual(["301", "302", "303"]);
     expect(search("uganda mozambique")).toEqual([]);
+  });
+});
+
+describe("sortDatasets", () => {
+  const baseSummary = dataset({ id: "base" }).summary;
+  const sample = [
+    dataset({
+      id: "oldest-big",
+      title: "Zambia sentinel cohort",
+      published: "2024-03-10",
+      collectionYears: { first: 2018, last: 2022 },
+      summary: { ...baseSummary, specimens: 900 },
+    }),
+    dataset({
+      id: "newest-small",
+      title: "Angola resistance study",
+      published: "2026-10-01",
+      collectionYears: { first: 2019, last: 2020 },
+      summary: { ...baseSummary, specimens: 40 },
+    }),
+    dataset({
+      id: "mid-latest-year",
+      title: "Kenya border survey",
+      published: "2025-07-15",
+      collectionYears: { first: 2020, last: 2025 },
+      summary: { ...baseSummary, specimens: 300 },
+    }),
+    dataset({
+      id: "no-years",
+      title: "Benin archive",
+      published: "2026-01-20",
+      collectionYears: null,
+      summary: { ...baseSummary, specimens: 120 },
+    }),
+  ];
+
+  it("orders by newest published, most specimens, latest collection year or title without mutating input", () => {
+    const originalIds = ids(sample);
+    expect(ids(sortDatasets(sample, "newest"))).toEqual([
+      "newest-small",
+      "no-years",
+      "mid-latest-year",
+      "oldest-big",
+    ]);
+    expect(ids(sortDatasets(sample, "specimens"))).toEqual([
+      "oldest-big",
+      "mid-latest-year",
+      "no-years",
+      "newest-small",
+    ]);
+    expect(ids(sortDatasets(sample, "year"))).toEqual([
+      "mid-latest-year",
+      "oldest-big",
+      "newest-small",
+      "no-years",
+    ]);
+    expect(ids(sortDatasets(sample, "title"))).toEqual([
+      "newest-small",
+      "no-years",
+      "mid-latest-year",
+      "oldest-big",
+    ]);
+    expect(ids(sample)).toEqual(originalIds);
+  });
+
+  it("falls back to newest published when specimens, collection year or title tie", () => {
+    const tiedSpecimens = [
+      dataset({
+        id: "older",
+        published: "2024-05-01",
+        summary: { ...baseSummary, specimens: 500 },
+      }),
+      dataset({
+        id: "newer",
+        published: "2026-02-01",
+        summary: { ...baseSummary, specimens: 500 },
+      }),
+    ];
+    expect(ids(sortDatasets(tiedSpecimens, "specimens"))).toEqual(["newer", "older"]);
+
+    const tiedYear = [
+      dataset({
+        id: "older-2024",
+        published: "2024-11-01",
+        collectionYears: { first: 2022, last: 2024 },
+      }),
+      dataset({
+        id: "newer-2024",
+        published: "2026-04-12",
+        collectionYears: { first: 2020, last: 2024 },
+      }),
+      dataset({
+        id: "older-null",
+        published: "2024-01-01",
+        collectionYears: null,
+      }),
+      dataset({
+        id: "newer-null",
+        published: "2025-09-01",
+        collectionYears: null,
+      }),
+    ];
+    expect(ids(sortDatasets(tiedYear, "year"))).toEqual([
+      "newer-2024",
+      "older-2024",
+      "newer-null",
+      "older-null",
+    ]);
+
+    const tiedTitle = [
+      dataset({ id: "older-title", title: "Maputo cohort", published: "2023-08-01" }),
+      dataset({ id: "newer-title", title: "maputo cohort", published: "2026-06-01" }),
+    ];
+    expect(ids(sortDatasets(tiedTitle, "title"))).toEqual(["newer-title", "older-title"]);
+  });
+
+  it("puts the expected first entries at the top of the made-up 150-entry catalogue", () => {
+    const entries = largeCatalogue(150).datasets;
+
+    const byNewest = sortDatasets(entries, "newest");
+    expect(byNewest[0]?.id).toBe("10001");
+    expect(byNewest[0]?.published).toBe("2026-11-14");
+    expect(byNewest[1]?.id).toBe("10002");
+
+    const bySpecimens = sortDatasets(entries, "specimens");
+    const maxSpecimens = Math.max(...entries.map((entry) => entry.summary.specimens));
+    expect(bySpecimens[0]?.summary.specimens).toBe(maxSpecimens);
+    expect(bySpecimens[0]?.summary.specimens).toBeGreaterThanOrEqual(
+      bySpecimens[1]?.summary.specimens ?? 0,
+    );
+
+    const byYear = sortDatasets(entries, "year");
+    expect(byYear[0]?.collectionYears?.last).toBe(2026);
+    expect(byYear[1]?.collectionYears?.last).toBe(2026);
+    expect((byYear[0]?.published ?? "") >= (byYear[1]?.published ?? "")).toBe(true);
+    const first2026 = entries.find((entry) => entry.collectionYears?.last === 2026);
+    expect(byYear[0]?.id).toBe(first2026?.id);
+
+    const byTitle = sortDatasets(entries, "title");
+    expect(byTitle[0]?.title.startsWith("Angola ")).toBe(true);
+    expect(
+      (byTitle[0]?.title ?? "").localeCompare(byTitle[1]?.title ?? "", "en", {
+        sensitivity: "base",
+        numeric: true,
+      }),
+    ).toBeLessThanOrEqual(0);
   });
 });
 

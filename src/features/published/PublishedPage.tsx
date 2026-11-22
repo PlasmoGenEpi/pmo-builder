@@ -10,7 +10,7 @@ import {
   Search,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useId, useMemo, useRef } from "react";
 import { Link as RouterLink, useLocation, useSearch } from "wouter";
 
 import { lastNavigationKind } from "@/app/hashLocation";
@@ -29,14 +29,22 @@ import {
   Select,
 } from "@/ui";
 
-import { DEFAULT_LIST_STATE, publishedHref, readListState } from "./address";
+import {
+  DEFAULT_LIST_STATE,
+  publishedHref,
+  readListState,
+  type PublishedListState,
+} from "./address";
 import {
   facetsOf,
   filterDatasets,
+  isSortOrder,
   longDate,
+  sortDatasets,
   totalsOf,
   yearsText,
   type CatalogueFilters,
+  type SortOrder,
 } from "./catalogue";
 import { CatalogueProblem } from "./CatalogueProblem";
 import { loadSharedCatalogue, useCatalogue, type CatalogueLoader } from "./useCatalogue";
@@ -292,6 +300,39 @@ function isFiltered(filters: CatalogueFilters): boolean {
   );
 }
 
+/** Order menu for the published PMOs list, with a visible label. */
+function SortControl({
+  sort,
+  onChange,
+}: {
+  readonly sort: SortOrder;
+  readonly onChange: (sort: SortOrder) => void;
+}) {
+  const id = useId();
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <label htmlFor={id} className="text-sm font-medium whitespace-nowrap text-text-muted">
+        {t({ message: "Sort by", comment: "Label for the published list order menu" })}
+      </label>
+      <div className="min-w-48 max-w-full">
+        <Select
+          id={id}
+          value={sort}
+          onValueChange={(value) => {
+            if (isSortOrder(value)) onChange(value);
+          }}
+          options={[
+            { value: "newest", label: t`Newest published` },
+            { value: "specimens", label: t`Most specimens` },
+            { value: "year", label: t`Latest collection year` },
+            { value: "title", label: t`Title` },
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
+
 /** An invitation to add to the list, under it. */
 function AddYours() {
   return (
@@ -330,12 +371,18 @@ function Catalogue({
   readonly onOpenDataset: () => void;
 }) {
   const [, navigate] = useLocation();
-  const filters = useMemo(() => readListState(search), [search]);
-  const shown = useMemo(() => filterDatasets(datasets, filters), [datasets, filters]);
-  const filtered = isFiltered(filters);
+  const listState = useMemo(() => readListState(search), [search]);
+  const shown = useMemo(
+    () => sortDatasets(filterDatasets(datasets, listState), listState.sort),
+    [datasets, listState],
+  );
+  const filtered = isFiltered(listState);
   const shownCount = formatCount(shown.length);
 
-  const updateFilters = (next: CatalogueFilters, options: { readonly replace?: boolean } = {}) => {
+  const updateListState = (
+    next: PublishedListState,
+    options: { readonly replace?: boolean } = {},
+  ) => {
     const nextHref = publishedHref(next);
     const currentHref = search === "" ? "/published" : `/published?${search}`;
     if (nextHref === currentHref) return;
@@ -371,27 +418,39 @@ function Catalogue({
         </h2>
         {/* With a single dataset there is nothing to narrow down. */}
         {datasets.length > 1 ? (
-          <Filters datasets={datasets} filters={filters} onChange={updateFilters} />
+          <Filters
+            datasets={datasets}
+            filters={listState}
+            onChange={(nextFilters, options) =>
+              updateListState({ ...listState, ...nextFilters }, options)
+            }
+          />
         ) : null}
         {datasets.length > 1 ? (
-          <div className="flex min-h-6 items-center justify-between gap-4 px-1">
-            <p className="text-sm text-text-muted" aria-live="polite">
-              {filtered
-                ? plural(datasets.length, {
-                    one: `${shownCount} of # dataset`,
-                    other: `${shownCount} of # datasets`,
-                  })
-                : plural(datasets.length, { one: "# dataset", other: "# datasets" })}
-            </p>
-            {filtered ? (
-              <button
-                type="button"
-                onClick={() => updateFilters(DEFAULT_LIST_STATE)}
-                className="cursor-pointer rounded-sm text-sm font-medium text-accent-text underline-offset-2 hover:underline"
-              >
-                <Trans>Clear the filters</Trans>
-              </button>
-            ) : null}
+          <div className="flex min-h-6 flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <p className="text-sm text-text-muted" aria-live="polite">
+                {filtered
+                  ? plural(datasets.length, {
+                      one: `${shownCount} of # dataset`,
+                      other: `${shownCount} of # datasets`,
+                    })
+                  : plural(datasets.length, { one: "# dataset", other: "# datasets" })}
+              </p>
+              {filtered ? (
+                <button
+                  type="button"
+                  onClick={() => updateListState({ ...DEFAULT_LIST_STATE, sort: listState.sort })}
+                  className="cursor-pointer rounded-sm text-sm font-medium text-accent-text underline-offset-2 hover:underline"
+                >
+                  <Trans>Clear the filters</Trans>
+                </button>
+              ) : null}
+            </div>
+            <SortControl
+              sort={listState.sort}
+              onChange={(sort) => updateListState({ ...listState, sort })}
+            />
           </div>
         ) : null}
         {shown.length === 0 ? (

@@ -10,18 +10,33 @@ describe("published list address", () => {
     expect(readListState("?")).toEqual(DEFAULT_LIST_STATE);
   });
 
-  it("round-trips search, country, panel and collection year", () => {
+  it("round-trips search, country, panel, collection year and sort", () => {
     const state = {
       search: "maputo surveillance",
       country: "Mozambique",
       panel: "Mad4hatter",
       year: 2017,
+      sort: "specimens" as const,
     };
     const query = writeListState(state);
-    expect(query).toBe("q=maputo+surveillance&country=Mozambique&panel=Mad4hatter&year=2017");
+    expect(query).toBe(
+      "q=maputo+surveillance&country=Mozambique&panel=Mad4hatter&year=2017&sort=specimens",
+    );
     expect(publishedHref(state)).toBe(`/published?${query}`);
     expect(readListState(query)).toEqual(state);
     expect(readListState(`?${query}`)).toEqual(state);
+  });
+
+  it("writes non-default sort orders and omits the default newest sort", () => {
+    expect(DEFAULT_LIST_STATE.sort).toBe("newest");
+    expect(writeListState({ ...DEFAULT_LIST_STATE, sort: "newest" })).toBe("");
+
+    for (const sort of ["specimens", "year", "title"] as const) {
+      const state = { ...DEFAULT_LIST_STATE, sort };
+      const query = writeListState(state);
+      expect(query).toBe(`sort=${sort}`);
+      expect(readListState(query)).toEqual(state);
+    }
   });
 
   it("omits blank search text while preserving spaces inside or at the end of a typed query", () => {
@@ -40,7 +55,11 @@ describe("published list address", () => {
   });
 
   it("ignores malformed, empty and unknown query parameters", () => {
-    expect(readListState("country=&panel=&year=not-a-year&extra=1")).toEqual(DEFAULT_LIST_STATE);
+    expect(readListState("country=&panel=&year=not-a-year&sort=oldest&extra=1")).toEqual(
+      DEFAULT_LIST_STATE,
+    );
+    expect(readListState("sort=")).toEqual(DEFAULT_LIST_STATE);
+    expect(readListState("sort=newest")).toEqual(DEFAULT_LIST_STATE);
     expect(readListState("year=0")).toEqual(DEFAULT_LIST_STATE);
     expect(readListState("year=-2020")).toEqual(DEFAULT_LIST_STATE);
     expect(readListState("year=2019.5")).toEqual(DEFAULT_LIST_STATE);

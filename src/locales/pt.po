@@ -2796,6 +2796,10 @@ msgstr "As etiquetas com uma posição cromossómica são as variantes que o PMO
 msgid "Language"
 msgstr "Idioma"
 
+#: src/features/published/PublishedPage.tsx
+msgid "Latest collection year"
+msgstr "Ano de recolha mais recente"
+
 #: src/domain/fields/samples.ts
 msgid "Latitude and longitude"
 msgstr "Latitude e longitude"
@@ -3256,6 +3260,10 @@ msgstr "Máximo de alelos num alvo"
 msgid "most common"
 msgstr "mais frequente"
 
+#: src/features/published/PublishedPage.tsx
+msgid "Most specimens"
+msgstr "Mais espécimes"
+
 #: src/features/records/RecordList.tsx
 msgid "Move {name} down"
 msgstr "Mover {name} para baixo"
@@ -3315,6 +3323,10 @@ msgstr "Necessária para esta etapa. Uma linha por amostra, com o nome da amostr
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Negative"
 msgstr "Negativo"
+
+#: src/features/published/PublishedPage.tsx
+msgid "Newest published"
+msgstr "Publicação mais recente"
 
 #: src/app/StepPage.tsx
 msgid "Next"
@@ -5034,6 +5046,11 @@ msgstr "Ocorreu um erro ao ler a {table}. Verifique a associação das colunas e
 msgid "Something went wrong while working out the PMO: {message}"
 msgstr "Ocorreu um erro ao determinar o PMO: {message}"
 
+#. Label for the published list order menu
+#: src/features/published/PublishedPage.tsx
+msgid "Sort by"
+msgstr "Ordenar por"
+
 #: src/features/pmo-file/summary/SortableTable.tsx
 msgid "Sort by {columnLabel}"
 msgstr "Ordenar por {columnLabel}"
@@ -6475,6 +6492,7 @@ msgstr "Assinalar todos"
 msgid "Tick all found"
 msgstr "Assinalar todos os encontrados"
 
+#: src/features/published/PublishedPage.tsx
 #: src/features/review/PublishToZenodo.tsx
 msgid "Title"
 msgstr "Título"

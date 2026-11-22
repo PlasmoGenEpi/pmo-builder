@@ -1,7 +1,8 @@
 /**
  * Pure conversion between the published PMOs list's view state and the query
- * string kept inside the hash route (`#/published?q=...&country=...`).
+ * string kept inside the hash route (`#/published?q=...&country=...&sort=...`).
  */
+import { DEFAULT_SORT, isSortOrder, type SortOrder } from "./catalogue";
 
 /** View state of the published PMOs list. */
 export interface PublishedListState {
@@ -13,6 +14,8 @@ export interface PublishedListState {
   readonly panel: string | null;
   /** Chosen collection year, or `null` for any year. */
   readonly year: number | null;
+  /** Order of entries in the list. */
+  readonly sort: SortOrder;
 }
 
 /** The default, unfiltered list state. Serializes to an empty query string. */
@@ -21,6 +24,7 @@ export const DEFAULT_LIST_STATE: PublishedListState = {
   country: null,
   panel: null,
   year: null,
+  sort: DEFAULT_SORT,
 };
 
 function nonEmpty(value: string | null): string | null {
@@ -33,6 +37,10 @@ function parseYear(raw: string | null): number | null {
   return Number.isSafeInteger(year) && year > 0 ? year : null;
 }
 
+function parseSort(raw: string | null): SortOrder {
+  return raw !== null && isSortOrder(raw) ? raw : DEFAULT_SORT;
+}
+
 /** Reads the list's view state from a query string (with or without a leading `?`). */
 export function readListState(search: string): PublishedListState {
   const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
@@ -42,6 +50,7 @@ export function readListState(search: string): PublishedListState {
     country: nonEmpty(params.get("country")),
     panel: nonEmpty(params.get("panel")),
     year: parseYear(params.get("year")),
+    sort: parseSort(params.get("sort")),
   };
 }
 
@@ -54,6 +63,7 @@ export function writeListState(state: PublishedListState): string {
   if (state.year !== null && Number.isSafeInteger(state.year) && state.year > 0) {
     params.set("year", String(state.year));
   }
+  if (state.sort !== DEFAULT_SORT) params.set("sort", state.sort);
   return params.toString();
 }
 
