@@ -134,6 +134,96 @@ describe("choicesOf", () => {
       { value: "2019", label: "2019", count: 30 },
     ]);
   });
+
+  it("offers a raw custom collection_year field with source 'specimen' and does not synthesize missing values", () => {
+    const base = richPmo();
+    const withRawYear: PortableMicrohaplotypeObject = {
+      ...base,
+      specimen_info: [
+        { ...base.specimen_info[0], specimen_name: "spec1", collection_year: "FY20" },
+        { ...base.specimen_info[1], specimen_name: "spec2", collection_year: "FY21" },
+        { ...base.specimen_info[2], specimen_name: "neg" },
+      ],
+    };
+    const rawChoices = choicesOf(withRawYear);
+    const yearField = rawChoices.metadata.find((field) => field.field === COLLECTION_YEAR_FIELD);
+    expect(yearField).toEqual({
+      field: COLLECTION_YEAR_FIELD,
+      source: "specimen",
+      values: [
+        { value: "FY20", label: "FY20", count: 1 },
+        { value: "FY21", label: "FY21", count: 1 },
+      ],
+    });
+    expect(
+      rawChoices.specimens.find((s) => s.name === "spec1")?.values[COLLECTION_YEAR_FIELD],
+    ).toBe("FY20");
+    expect(
+      rawChoices.specimens.find((s) => s.name === "spec2")?.values[COLLECTION_YEAR_FIELD],
+    ).toBe("FY21");
+    expect(rawChoices.specimens.find((s) => s.name === "neg")?.values[COLLECTION_YEAR_FIELD]).toBe(
+      undefined,
+    );
+
+    const request: SubsetRequest = {
+      specimens: { kind: "metadata", criteria: { [COLLECTION_YEAR_FIELD]: ["FY20"] } },
+      targets: { kind: "all" },
+      minReads: 0,
+    };
+    const preview = previewSubset(withRawYear, request);
+    const { outcome, subset } = makeSubset(withRawYear, request, "study.json");
+    if (outcome.kind !== "made" || subset === null) throw new Error(outcome.kind);
+    expect(subset.specimen_info.map((s) => s.specimen_name)).toEqual(["spec1"]);
+    expect(preview).toEqual({
+      specimens: outcome.summary.specimens,
+      librarySamples: outcome.summary.librarySamples,
+      librarySamplesWithData: outcome.summary.librarySamplesWithDetections,
+      targetsWithCalls: outcome.summary.targetsWithCalls,
+    });
+  });
+
+  it("drops a single-value raw collection_year field and still offers derived collection_year from collection_date", () => {
+    const base = richPmo();
+    const withSingleRawYear: PortableMicrohaplotypeObject = {
+      ...base,
+      specimen_info: base.specimen_info.map((specimen) =>
+        Object.assign({}, specimen, { collection_year: "legacy" }),
+      ),
+    };
+    const derivedChoices = choicesOf(withSingleRawYear);
+    const yearField = derivedChoices.metadata.find(
+      (field) => field.field === COLLECTION_YEAR_FIELD,
+    );
+    expect(yearField).toEqual({
+      field: COLLECTION_YEAR_FIELD,
+      source: "collectionYear",
+      values: [
+        { value: "2019", label: "2019", count: 2 },
+        { value: "2020", label: "2020", count: 1 },
+      ],
+    });
+    expect(derivedChoices.specimens.map((s) => [s.name, s.values[COLLECTION_YEAR_FIELD]])).toEqual([
+      ["spec1", "2019"],
+      ["spec2", "2019"],
+      ["neg", "2020"],
+    ]);
+
+    const request: SubsetRequest = {
+      specimens: { kind: "metadata", criteria: {}, collectionYears: ["2019"] },
+      targets: { kind: "all" },
+      minReads: 0,
+    };
+    const preview = previewSubset(withSingleRawYear, request);
+    const { outcome, subset } = makeSubset(withSingleRawYear, request, "study.json");
+    if (outcome.kind !== "made" || subset === null) throw new Error(outcome.kind);
+    expect(subset.specimen_info.map((s) => s.specimen_name)).toEqual(["spec1", "spec2"]);
+    expect(preview).toEqual({
+      specimens: outcome.summary.specimens,
+      librarySamples: outcome.summary.librarySamples,
+      librarySamplesWithData: outcome.summary.librarySamplesWithDetections,
+      targetsWithCalls: outcome.summary.targetsWithCalls,
+    });
+  });
 });
 
 describe("makeSubset", () => {

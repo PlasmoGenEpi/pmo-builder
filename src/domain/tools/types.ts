@@ -45,9 +45,13 @@ export interface MetaValue {
   readonly count: number;
 }
 
+/** Where a specimen metadata field's values come from: a raw specimen property, or the derived collection year. */
+export type MetaFieldSource = "specimen" | "collectionYear";
+
 /** A specimen metadata field that specimens can be chosen by. */
 export interface MetaField {
   readonly field: string;
+  readonly source: MetaFieldSource;
   readonly values: readonly MetaValue[];
 }
 

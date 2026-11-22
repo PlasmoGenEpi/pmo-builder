@@ -96,7 +96,14 @@ function Conditions({
                     {...control}
                     options={fieldOptions}
                     value={condition.field}
-                    onValueChange={(value) => update(index, { field: value, values: [] })}
+                    onValueChange={(value) => {
+                      const chosen = choices.metadata.find((item) => item.field === value);
+                      update(index, {
+                        field: value,
+                        source: chosen?.source ?? "specimen",
+                        values: [],
+                      });
+                    }}
                   />
                 )}
               </Field>
@@ -121,6 +128,7 @@ function Conditions({
                     onCheckedChange={(on) =>
                       update(index, {
                         field: condition.field,
+                        source: condition.source,
                         values: on
                           ? [...condition.values, value.value]
                           : condition.values.filter((item) => item !== value.value),
@@ -139,9 +147,15 @@ function Conditions({
           variant="secondary"
           icon={Plus}
           className="self-start"
-          onClick={() =>
-            onChange([...form.conditions, { field: unused[0]?.field ?? "", values: [] }])
-          }
+          onClick={() => {
+            const next = unused[0];
+            if (next !== undefined) {
+              onChange([
+                ...form.conditions,
+                { field: next.field, source: next.source, values: [] },
+              ]);
+            }
+          }}
         >
           {t`Add a condition`}
         </Button>

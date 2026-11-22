@@ -99,6 +99,23 @@ async function savedText(): Promise<{ readonly name: string; readonly text: stri
   return { name, text: await blob.text() };
 }
 
+async function savedSpecimenNames(): Promise<unknown[]> {
+  const parsed: unknown = JSON.parse((await savedText()).text);
+  if (
+    typeof parsed !== "object" ||
+    parsed === null ||
+    !("specimen_info" in parsed) ||
+    !Array.isArray(parsed.specimen_info)
+  ) {
+    return [];
+  }
+  return parsed.specimen_info.map((item: unknown) =>
+    typeof item === "object" && item !== null && "specimen_name" in item
+      ? item.specimen_name
+      : null,
+  );
+}
+
 beforeEach(() => {
   vi.mocked(saveFile).mockReset();
   vi.mocked(signIn).mockReset();
@@ -493,6 +510,44 @@ describe("PmoFilePage: tables", () => {
     expect(await screen.findByText("The preview could not be loaded")).toBeInTheDocument();
     expect(screen.queryByText(/out of memory/)).not.toBeInTheDocument();
   });
+
+  it("formats boolean cells in table previews as True/False to match the downloaded CSV", async () => {
+    const base = richPmo();
+    const withBooleans: PortableMicrohaplotypeObject = {
+      ...base,
+      specimen_info: [
+        { ...base.specimen_info[0], specimen_name: "spec1", has_symptoms: true },
+        { ...base.specimen_info[1], specimen_name: "spec2", has_symptoms: false },
+        { ...base.specimen_info[2], specimen_name: "neg" },
+      ],
+    };
+    const { user } = await open(pmoFile(withBooleans));
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+
+    await user.click(screen.getByRole("button", { name: "Preview Specimens" }));
+    const previewRegion = await screen.findByRole("region", { name: "Preview of Specimens" });
+    const table = within(previewRegion).getByRole("table");
+    const headers = within(table)
+      .getAllByRole("columnheader")
+      .map((cell) => cell.textContent);
+    // Subtract 1 because the first columnheader is the sticky row-number column (`Row#`).
+    const boolIndex = headers.indexOf("has_symptoms") - 1;
+    expect(boolIndex).toBeGreaterThanOrEqual(0);
+    const previewBooleans = within(table)
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => within(row).getAllByRole("cell")[boolIndex]?.textContent);
+    expect(previewBooleans).toEqual(["True", "False", "blank"]);
+    expect(screen.getByText("Showing 3 of 3 rows")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Download Specimens as csv" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    const { text } = await savedText();
+    const [headerLine, ...dataLines] = text.trimEnd().split("\n");
+    const csvBoolIndex = (headerLine ?? "").split(",").indexOf("has_symptoms");
+    expect(csvBoolIndex).toBeGreaterThanOrEqual(0);
+    expect(dataLines.map((line) => line.split(",")[csvBoolIndex])).toEqual(["True", "False", ""]);
+  });
 });
 
 describe("PmoFilePage: subset", () => {
@@ -712,19 +767,7 @@ describe("PmoFilePage: subset", () => {
 
     await user.click(screen.getByRole("button", { name: "Download as .json" }));
     await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
-    const subset: unknown = JSON.parse((await savedText()).text);
-    const specimens =
-      typeof subset === "object" &&
-      subset !== null &&
-      "specimen_info" in subset &&
-      Array.isArray(subset.specimen_info)
-        ? subset.specimen_info.map((item: unknown) =>
-            typeof item === "object" && item !== null && "specimen_name" in item
-              ? item.specimen_name
-              : null,
-          )
-        : [];
-    expect(specimens).toEqual([
+    expect(await savedSpecimenNames()).toEqual([
       "example_specimen_01",
       "example_specimen_04",
       "example_specimen_05",
@@ -763,25 +806,47 @@ describe("PmoFilePage: subset", () => {
     expect(await screen.findByText("The subset is ready")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Download as .json" }));
     await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
-    const subset: unknown = JSON.parse((await savedText()).text);
-    const specimens =
-      typeof subset === "object" &&
-      subset !== null &&
-      "specimen_info" in subset &&
-      Array.isArray(subset.specimen_info)
-        ? subset.specimen_info.map((item: unknown) =>
-            typeof item === "object" && item !== null && "specimen_name" in item
-              ? item.specimen_name
-              : null,
-          )
-        : [];
-    expect(specimens).toEqual([
+    expect(await savedSpecimenNames()).toEqual([
       "example_specimen_05",
       "example_specimen_22",
       "example_specimen_29",
       "example_specimen_45",
       "example_specimen_50",
     ]);
+  });
+
+  it("subsets by a raw custom collection_year field using its raw values instead of collection_date", async () => {
+    const base = richPmo();
+    const withRawYear: PortableMicrohaplotypeObject = {
+      ...base,
+      specimen_info: [
+        { ...base.specimen_info[0], specimen_name: "spec1", collection_year: "FY20" },
+        { ...base.specimen_info[1], specimen_name: "spec2", collection_year: "FY21" },
+        { ...base.specimen_info[2], specimen_name: "neg" },
+      ],
+    };
+    const { user } = await open(pmoFile(withRawYear, "study.json.gz"));
+    await user.click(await screen.findByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: /Specimens with certain values/ }));
+
+    await user.click(screen.getByRole("combobox", { name: "Field" }));
+    await user.click(screen.getByRole("option", { name: "Collection year" }));
+
+    const values = screen.getByRole("group", { name: "Values of Collection year" });
+    await user.click(within(values).getByRole("checkbox", { name: /FY20/ }));
+
+    expect(screen.getByText("1 of 3 specimens kept.")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /^The subset will keep 1 of 3 specimens and 1 of 3 library samples, with alleles at \d+ of \d+ targets\.$/,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    expect(await screen.findByText("The subset is ready")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Download as .json" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    expect(await savedSpecimenNames()).toEqual(["spec1"]);
   });
 });
 
