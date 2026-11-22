@@ -12,7 +12,12 @@ import {
   type PortableMicrohaplotypeObject,
 } from "pmotools-ts";
 
-import { summarisePmo, summarisePublication } from "@/domain/build";
+import {
+  summarisePmo,
+  summarisePublication,
+  type MergeSummary,
+  type YearRange,
+} from "@/domain/build";
 
 import {
   INDEX_VERSION,
@@ -38,6 +43,12 @@ const PAGE_SIZE = 25;
 /** A guard against a listing that never ends. */
 const MAX_PAGES = 1_000;
 
+/** A previous catalogue and its per-specimen rows, passed in for carry-over. */
+export interface PreviousCatalogue {
+  readonly index: unknown;
+  readonly specimens: unknown;
+}
+
 /** What a harvest needs. */
 export interface HarvestOptions {
   /** The community's identifier. */
@@ -48,6 +59,8 @@ export interface HarvestOptions {
   readonly now?: Date;
   /** Told about each record as it is read or left out. */
   readonly log?: (message: string) => void;
+  /** The previous catalogue and specimen rows to carry unchanged records over from. */
+  readonly previous?: PreviousCatalogue;
 }
 
 /** Raised when the community's listing cannot be read to its end, as opposed to one record being left out. */
@@ -74,7 +87,7 @@ function field(value: unknown, ...path: readonly string[]): unknown {
 }
 
 function text(value: unknown): string | null {
-  if (typeof value === "number") return String(value);
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : null;
   return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 }
 
@@ -82,17 +95,29 @@ function list(value: unknown): readonly unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
+/** The PMO file found in a Zenodo listing hit. */
+export interface ListedPmoFile {
+  readonly name: string;
+  readonly size: number;
+  readonly checksum: string | null;
+}
+
 /** The record's PMO file: a `.json` or `.json.gz` file, a `.pmo.` name first. */
-export function pmoFileOf(
-  record: unknown,
-): { readonly name: string; readonly size: number } | null {
+export function pmoFileOf(record: unknown): ListedPmoFile | null {
   const entries = field(record, "files", "entries");
   if (!isRecord(entries)) return null;
   const files = Object.values(entries)
-    .map((entry) => ({ name: text(field(entry, "key")), size: field(entry, "size") }))
+    .map((entry) => ({
+      name: text(field(entry, "key")),
+      size: field(entry, "size"),
+      checksum: text(field(entry, "checksum")),
+    }))
     .filter(
-      (file): file is { name: string; size: number } =>
-        file.name !== null && typeof file.size === "number" && /\.json(\.gz)?$/i.test(file.name),
+      (file): file is ListedPmoFile =>
+        file.name !== null &&
+        typeof file.size === "number" &&
+        Number.isFinite(file.size) &&
+        /\.json(\.gz)?$/i.test(file.name),
     )
     .toSorted(
       (a, b) =>
@@ -100,6 +125,23 @@ export function pmoFileOf(
         a.name.localeCompare(b.name),
     );
   return files[0] ?? null;
+}
+
+function fileFingerprintOf(
+  recordId: string | null,
+  record: unknown,
+  found: ListedPmoFile,
+): string | null {
+  if (recordId === null) return null;
+  if (found.checksum !== null) {
+    return JSON.stringify(["checksum", recordId, found.name, found.size, found.checksum]);
+  }
+  const updated = text(field(record, "updated"));
+  const revision = text(field(record, "revision_id"));
+  if (updated !== null || revision !== null) {
+    return JSON.stringify(["revision", recordId, found.name, found.size, updated, revision]);
+  }
+  return null;
 }
 
 function licenceOf(record: unknown): PublishedLicence | null {
@@ -160,16 +202,183 @@ export function latestVersions(records: readonly unknown[]): unknown[] {
   return order.map((key) => best.get(key)?.record);
 }
 
-/** The catalogue entry for one record and the PMO read from its file. */
-export function datasetFrom(
-  record: unknown,
-  file: PublishedFile,
-  pmo: PortableMicrohaplotypeObject,
-): PublishedDataset | null {
+interface ListingDetails {
+  readonly id: string;
+  readonly title: string;
+  readonly creators: readonly string[];
+  readonly published: string;
+  readonly version: string | null;
+  readonly licence: PublishedLicence | null;
+  readonly doi: string | null;
+  readonly zenodoUrl: string;
+  readonly file: PublishedFile;
+}
+
+interface CarryOverFields {
+  readonly fingerprint: string | null;
+  readonly summary: MergeSummary;
+  readonly panels: readonly string[];
+  readonly countries: readonly string[];
+  readonly collectionYears: YearRange | null;
+  readonly taxa: readonly number[];
+  readonly bioProjects: readonly string[];
+}
+
+interface PreviousLookup {
+  readonly datasets: ReadonlyMap<string, CarryOverFields>;
+  readonly specimens: ReadonlyMap<string, readonly SpecimenRow[]>;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isStringArray(value: unknown): value is readonly string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isIntegerArray(value: unknown): value is readonly number[] {
+  return (
+    Array.isArray(value) &&
+    value.every((item) => typeof item === "number" && Number.isInteger(item))
+  );
+}
+
+function parseYearRange(value: unknown): YearRange | null | undefined {
+  if (value === null) return null;
+  if (!isRecord(value)) return undefined;
+  const first = value["first"];
+  const last = value["last"];
+  if (!isFiniteNumber(first) || !isFiniteNumber(last)) return undefined;
+  return { first, last };
+}
+
+function parseMergeSummary(value: unknown): MergeSummary | null {
+  if (!isRecord(value)) return null;
+  const specimens = value["specimens"];
+  const librarySamples = value["librarySamples"];
+  const librarySamplesWithDetections = value["librarySamplesWithDetections"];
+  const panels = value["panels"];
+  const targets = value["targets"];
+  const targetsWithCalls = value["targetsWithCalls"];
+  const genomes = value["genomes"];
+  const sequencingRuns = value["sequencingRuns"];
+  const projects = value["projects"];
+  const bioinformaticsRuns = value["bioinformaticsRuns"];
+  const librarySamplesWithReadCounts = value["librarySamplesWithReadCounts"];
+  if (
+    !isFiniteNumber(specimens) ||
+    !isFiniteNumber(librarySamples) ||
+    !isFiniteNumber(librarySamplesWithDetections) ||
+    !isFiniteNumber(panels) ||
+    !isFiniteNumber(targets) ||
+    !isFiniteNumber(targetsWithCalls) ||
+    !isFiniteNumber(genomes) ||
+    !isFiniteNumber(sequencingRuns) ||
+    !isFiniteNumber(projects) ||
+    !isFiniteNumber(bioinformaticsRuns) ||
+    !isFiniteNumber(librarySamplesWithReadCounts)
+  ) {
+    return null;
+  }
+  return {
+    specimens,
+    librarySamples,
+    librarySamplesWithDetections,
+    panels,
+    targets,
+    targetsWithCalls,
+    genomes,
+    sequencingRuns,
+    projects,
+    bioinformaticsRuns,
+    librarySamplesWithReadCounts,
+  };
+}
+
+function parseSpecimenRow(value: unknown): SpecimenRow | null {
+  if (!isRecord(value)) return null;
+  const dataset = value["dataset"];
+  const specimen = value["specimen"];
+  const country = value["country"];
+  const date = value["date"];
+  const taxa = value["taxa"];
+  const librarySamples = value["librarySamples"];
+  if (
+    typeof dataset !== "string" ||
+    typeof specimen !== "string" ||
+    (country !== null && typeof country !== "string") ||
+    (date !== null && typeof date !== "string") ||
+    !isIntegerArray(taxa) ||
+    !isFiniteNumber(librarySamples)
+  ) {
+    return null;
+  }
+  return { dataset, specimen, country, date, taxa, librarySamples };
+}
+
+function parsePrevious(
+  previous: PreviousCatalogue | undefined,
+  community: string,
+): PreviousLookup | null {
+  if (previous === undefined) return null;
+  if (!isRecord(previous.index)) return null;
+  if (previous.index["version"] !== INDEX_VERSION) return null;
+  if (previous.index["community"] !== community) return null;
+  const rawDatasets = previous.index["datasets"];
+  if (!Array.isArray(rawDatasets) || !Array.isArray(previous.specimens)) return null;
+
+  const datasets = new Map<string, CarryOverFields>();
+  for (const entry of rawDatasets) {
+    if (!isRecord(entry)) return null;
+    const id = entry["id"];
+    const fileEntry = entry["file"];
+    if (typeof id !== "string" || !isRecord(fileEntry)) return null;
+    const rawFingerprint = fileEntry["fingerprint"];
+    if (rawFingerprint !== null && typeof rawFingerprint !== "string") return null;
+    const summary = parseMergeSummary(entry["summary"]);
+    const panels = entry["panels"];
+    const countries = entry["countries"];
+    const collectionYears = parseYearRange(entry["collectionYears"]);
+    const taxa = entry["taxa"];
+    const bioProjects = entry["bioProjects"];
+    if (
+      summary === null ||
+      !isStringArray(panels) ||
+      !isStringArray(countries) ||
+      collectionYears === undefined ||
+      !isIntegerArray(taxa) ||
+      !isStringArray(bioProjects)
+    ) {
+      return null;
+    }
+    datasets.set(id, {
+      fingerprint: rawFingerprint,
+      summary,
+      panels,
+      countries,
+      collectionYears,
+      taxa,
+      bioProjects,
+    });
+  }
+
+  const specimens = new Map<string, SpecimenRow[]>();
+  for (const rawRow of previous.specimens) {
+    const row = parseSpecimenRow(rawRow);
+    if (row === null) return null;
+    const rows = specimens.get(row.dataset);
+    if (rows === undefined) specimens.set(row.dataset, [row]);
+    else rows.push(row);
+  }
+
+  return { datasets, specimens };
+}
+
+function listingDetailsFrom(record: unknown, file: PublishedFile): ListingDetails | null {
   const id = text(field(record, "id"));
   const title = text(field(record, "metadata", "title"));
   if (id === null || title === null) return null;
-  const publication = summarisePublication(pmo);
   return {
     id,
     title,
@@ -182,6 +391,20 @@ export function datasetFrom(
     doi: text(field(record, "pids", "doi", "identifier")),
     zenodoUrl: text(field(record, "links", "self_html")) ?? `${ZENODO}/records/${id}`,
     file,
+  };
+}
+
+/** The catalogue entry for one record and the PMO read from its file. */
+export function datasetFrom(
+  record: unknown,
+  file: PublishedFile,
+  pmo: PortableMicrohaplotypeObject,
+): PublishedDataset | null {
+  const details = listingDetailsFrom(record, file);
+  if (details === null) return null;
+  const publication = summarisePublication(pmo);
+  return {
+    ...details,
     summary: summarisePmo(pmo),
     panels: publication.panels,
     countries: publication.countries,
@@ -242,11 +465,15 @@ export async function harvest(options: HarvestOptions): Promise<HarvestResult> {
     );
   }
 
+  const previous = parsePrevious(options.previous, options.community);
   const datasets: PublishedDataset[] = [];
   const specimens: SpecimenRow[] = [];
   const skipped: SkippedRecord[] = [];
+  let carriedOver = 0;
+  let downloaded = 0;
   for (const record of latestVersions(records)) {
-    const id = text(field(record, "id")) ?? "unknown";
+    const recordId = text(field(record, "id"));
+    const id = recordId ?? "unknown";
     const title = text(field(record, "metadata", "title")) ?? "(no title)";
     const skip = (reason: string): void => {
       skipped.push({ id, title, reason });
@@ -262,6 +489,38 @@ export async function harvest(options: HarvestOptions): Promise<HarvestResult> {
       continue;
     }
     const url = `${ZENODO}/api/records/${encodeURIComponent(id)}/files/${encodeURIComponent(found.name)}/content`;
+    const fingerprint = fileFingerprintOf(recordId, record, found);
+    const publishedFile: PublishedFile = { name: found.name, size: found.size, url, fingerprint };
+
+    const prior = recordId === null ? undefined : previous?.datasets.get(recordId);
+    const priorSpecimens = recordId === null ? [] : (previous?.specimens.get(recordId) ?? []);
+    if (
+      prior !== undefined &&
+      fingerprint !== null &&
+      fingerprint !== "" &&
+      prior.fingerprint === fingerprint &&
+      priorSpecimens.length === prior.summary.specimens
+    ) {
+      const details = listingDetailsFrom(record, publishedFile);
+      if (details === null) {
+        skip("the record has no title");
+        continue;
+      }
+      datasets.push({
+        ...details,
+        summary: prior.summary,
+        panels: prior.panels,
+        countries: prior.countries,
+        collectionYears: prior.collectionYears,
+        taxa: prior.taxa,
+        bioProjects: prior.bioProjects,
+      });
+      specimens.push(...priorSpecimens);
+      carriedOver += 1;
+      log(`carried over ${id} "${title}": ${prior.summary.specimens} specimens`);
+      continue;
+    }
+
     let data: unknown;
     try {
       // oxlint-disable-next-line no-await-in-loop -- one file at a time, to go easy on Zenodo
@@ -288,13 +547,14 @@ export async function harvest(options: HarvestOptions): Promise<HarvestResult> {
       skip(`${found.name} has ${broken.length} broken links between its tables`);
       continue;
     }
-    const dataset = datasetFrom(record, { name: found.name, size: found.size, url }, checked.pmo);
+    const dataset = datasetFrom(record, publishedFile, checked.pmo);
     if (dataset === null) {
       skip("the record has no title");
       continue;
     }
     datasets.push(dataset);
     specimens.push(...specimenRows(dataset.id, checked.pmo));
+    downloaded += 1;
     log(`read ${id} "${title}": ${dataset.summary.specimens} specimens`);
   }
 
@@ -307,5 +567,7 @@ export async function harvest(options: HarvestOptions): Promise<HarvestResult> {
     },
     specimens,
     skipped,
+    carriedOver,
+    downloaded,
   };
 }

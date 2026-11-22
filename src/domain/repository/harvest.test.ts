@@ -42,24 +42,57 @@ function minimalPmoBytes(): Uint8Array {
   return new TextEncoder().encode(JSON.stringify(merge.outcome.pmo));
 }
 
-function record(id: string, files: readonly string[], title = `Dataset ${id}`): unknown {
+interface RecordOverrides {
+  readonly title?: string | null;
+  readonly checksums?: Readonly<Record<string, string | null>>;
+  readonly sizes?: Readonly<Record<string, number>>;
+  readonly updated?: string;
+  readonly revisionId?: number;
+  readonly creators?: readonly string[];
+  readonly doi?: string | null;
+  readonly published?: string;
+  readonly version?: string;
+  readonly licence?: { readonly id: string; readonly title: string } | null;
+}
+
+function record(
+  id: string,
+  files: readonly string[],
+  titleOrOverrides: string | RecordOverrides = `Dataset ${id}`,
+): unknown {
+  const overrides: RecordOverrides =
+    typeof titleOrOverrides === "string" ? { title: titleOrOverrides } : titleOrOverrides;
+  const title = overrides.title === undefined ? `Dataset ${id}` : overrides.title;
+  const creators = overrides.creators ?? ["Okello, Grace", "PlasmoGenEpi"];
+  const doi = overrides.doi === undefined ? `10.5281/zenodo.${id}` : overrides.doi;
+  const licence =
+    overrides.licence === undefined
+      ? { id: "cc-by-4.0", title: "Creative Commons Attribution 4.0 International" }
+      : overrides.licence;
   return {
     id,
-    pids: { doi: { identifier: `10.5281/zenodo.${id}` } },
+    ...(overrides.updated === undefined ? {} : { updated: overrides.updated }),
+    ...(overrides.revisionId === undefined ? {} : { revision_id: overrides.revisionId }),
+    pids: doi === null ? {} : { doi: { identifier: doi } },
     links: { self_html: `https://zenodo.org/records/${id}` },
     metadata: {
-      title,
-      publication_date: "2026-11-14",
-      creators: [
-        { person_or_org: { type: "personal", name: "Okello, Grace" } },
-        { person_or_org: { type: "organizational", name: "PlasmoGenEpi" } },
-      ],
-      rights: [
-        { id: "cc-by-4.0", title: { en: "Creative Commons Attribution 4.0 International" } },
-      ],
+      ...(title === null ? {} : { title }),
+      publication_date: overrides.published ?? "2026-11-14",
+      ...(overrides.version === undefined ? {} : { version: overrides.version }),
+      creators: creators.map((name) => ({ person_or_org: { type: "personal", name } })),
+      rights: licence === null ? [] : [{ id: licence.id, title: { en: licence.title } }],
     },
     files: {
-      entries: Object.fromEntries(files.map((key) => [key, { key, size: 1234 }])),
+      entries: Object.fromEntries(
+        files.map((key) => {
+          const checksum =
+            overrides.checksums !== undefined && key in overrides.checksums
+              ? overrides.checksums[key]
+              : `md5:${id}-${key}`;
+          const size = overrides.sizes?.[key] ?? 1234;
+          return [key, { key, size, ...(checksum === null ? {} : { checksum }) }];
+        }),
+      ),
     },
   };
 }
@@ -100,8 +133,10 @@ describe("harvest", () => {
     });
     expect(asked).toEqual([LISTING, file("101", "study.pmo.json.gz")]);
     expect(result.skipped).toEqual([]);
+    expect(result.carriedOver).toBe(0);
+    expect(result.downloaded).toBe(1);
     expect(result.index).toMatchObject({
-      version: 1,
+      version: 2,
       harvestedAt: "2026-11-15T03:00:00.000Z",
       community: "pmocommunity",
     });
@@ -115,7 +150,12 @@ describe("harvest", () => {
         licence: { id: "cc-by-4.0", title: "Creative Commons Attribution 4.0 International" },
         doi: "10.5281/zenodo.101",
         zenodoUrl: "https://zenodo.org/records/101",
-        file: { name: "study.pmo.json.gz", size: 1234, url: file("101", "study.pmo.json.gz") },
+        file: {
+          name: "study.pmo.json.gz",
+          size: 1234,
+          url: file("101", "study.pmo.json.gz"),
+          fingerprint: expect.any(String),
+        },
         summary: expect.objectContaining({ specimens: 50, librarySamples: 50, targets: 276 }),
         panels: ["Mad4hatter"],
         countries: ["Mozambique"],
@@ -278,6 +318,279 @@ describe("harvest", () => {
     );
     expect(endless.mock.calls.length).toBeGreaterThan(50);
   });
+
+  it("carries unchanged records over without downloading them and drops removed ones", async () => {
+    const bytes = await gzipPmo(examplePmo());
+    const kept = record("101", ["kept.pmo.json.gz"]);
+    const removed = record("102", ["removed.pmo.json.gz"]);
+    const first = await harvest({
+      community: "pmocommunity",
+      fetch: fakeZenodo({
+        [LISTING]: { hits: { hits: [kept, removed], total: 2 }, links: {} },
+        [file("101", "kept.pmo.json.gz")]: bytes,
+        [file("102", "removed.pmo.json.gz")]: bytes,
+      }).send,
+      now: new Date("2026-11-15T03:00:00Z"),
+    });
+
+    const added = record("103", ["added.pmo.json.gz"]);
+    const secondZenodo = fakeZenodo({
+      [LISTING]: { hits: { hits: [kept, added], total: 2 }, links: {} },
+      [file("103", "added.pmo.json.gz")]: bytes,
+    });
+    const second = await harvest({
+      community: "pmocommunity",
+      fetch: secondZenodo.send,
+      now: new Date("2026-11-16T03:00:00Z"),
+      previous: { index: first.index, specimens: first.specimens },
+    });
+
+    expect(secondZenodo.asked).toEqual([LISTING, file("103", "added.pmo.json.gz")]);
+    expect(second.carriedOver).toBe(1);
+    expect(second.downloaded).toBe(1);
+    expect(second.skipped).toEqual([]);
+    expect(second.index.datasets.map((dataset) => dataset.id)).toEqual(["101", "103"]);
+    expect(second.index.datasets[0]).toEqual(first.index.datasets[0]);
+    expect(second.specimens.filter((row) => row.dataset === "101")).toEqual(
+      first.specimens.filter((row) => row.dataset === "101"),
+    );
+    expect(second.specimens.some((row) => row.dataset === "102")).toBe(false);
+    expect(second.specimens.filter((row) => row.dataset === "103")).toHaveLength(50);
+  });
+
+  it("downloads and checks a record again when its file checksum changes", async () => {
+    const firstBytes = await gzipPmo(examplePmo());
+    const updatedBytes = minimalPmoBytes();
+    const first = await harvest({
+      community: "pmocommunity",
+      fetch: fakeZenodo({
+        [LISTING]: {
+          hits: {
+            hits: [
+              record("101", ["study.pmo.json.gz"], {
+                checksums: { "study.pmo.json.gz": "md5:aaa" },
+              }),
+            ],
+            total: 1,
+          },
+          links: {},
+        },
+        [file("101", "study.pmo.json.gz")]: firstBytes,
+      }).send,
+    });
+
+    const changedZenodo = fakeZenodo({
+      [LISTING]: {
+        hits: {
+          hits: [
+            record("101", ["study.pmo.json.gz"], {
+              checksums: { "study.pmo.json.gz": "md5:bbb" },
+            }),
+          ],
+          total: 1,
+        },
+        links: {},
+      },
+      [file("101", "study.pmo.json.gz")]: updatedBytes,
+    });
+    const second = await harvest({
+      community: "pmocommunity",
+      fetch: changedZenodo.send,
+      previous: { index: first.index, specimens: first.specimens },
+    });
+
+    expect(changedZenodo.asked).toEqual([LISTING, file("101", "study.pmo.json.gz")]);
+    expect(second.carriedOver).toBe(0);
+    expect(second.downloaded).toBe(1);
+    expect(second.index.datasets[0]?.summary.specimens).toBe(1);
+    expect(second.specimens).toHaveLength(1);
+    expect(second.index.datasets[0]?.file.fingerprint).not.toBe(
+      first.index.datasets[0]?.file.fingerprint,
+    );
+  });
+
+  it("refreshes changed title, authors and details from the listing without downloading", async () => {
+    const bytes = await gzipPmo(examplePmo());
+    const first = await harvest({
+      community: "pmocommunity",
+      fetch: fakeZenodo({
+        [LISTING]: { hits: { hits: [record("101", ["study.pmo.json.gz"])], total: 1 }, links: {} },
+        [file("101", "study.pmo.json.gz")]: bytes,
+      }).send,
+    });
+
+    const updatedRecord = record("101", ["study.pmo.json.gz"], {
+      title: "Maputo surveillance (corrected)",
+      creators: ["Achan, Sarah", "Mensah, Kofi"],
+      published: "2026-11-20",
+      version: "1.1",
+      licence: { id: "cc0-1.0", title: "Creative Commons Zero v1.0 Universal" },
+      doi: "10.5281/zenodo.101.v2",
+    });
+    const carriedZenodo = fakeZenodo({
+      [LISTING]: { hits: { hits: [updatedRecord], total: 1 }, links: {} },
+    });
+    const carried = await harvest({
+      community: "pmocommunity",
+      fetch: carriedZenodo.send,
+      now: new Date("2026-11-20T03:00:00Z"),
+      previous: { index: first.index, specimens: first.specimens },
+    });
+    const fresh = await harvest({
+      community: "pmocommunity",
+      fetch: fakeZenodo({
+        [LISTING]: { hits: { hits: [updatedRecord], total: 1 }, links: {} },
+        [file("101", "study.pmo.json.gz")]: bytes,
+      }).send,
+      now: new Date("2026-11-20T03:00:00Z"),
+    });
+
+    expect(carriedZenodo.asked).toEqual([LISTING]);
+    expect(carried.carriedOver).toBe(1);
+    expect(carried.downloaded).toBe(0);
+    expect(carried.index).toEqual(fresh.index);
+    expect(carried.specimens).toEqual(fresh.specimens);
+
+    // If a carried-over record now has no title, it is skipped rather than carried over.
+    const untitledZenodo = fakeZenodo({
+      [LISTING]: {
+        hits: {
+          hits: [record("101", ["study.pmo.json.gz"], { title: null })],
+          total: 1,
+        },
+        links: {},
+      },
+    });
+    const untitled = await harvest({
+      community: "pmocommunity",
+      fetch: untitledZenodo.send,
+      previous: { index: first.index, specimens: first.specimens },
+    });
+    expect(untitledZenodo.asked).toEqual([LISTING]);
+    expect(untitled.index.datasets).toEqual([]);
+    expect(untitled.carriedOver).toBe(0);
+    expect(untitled.skipped).toEqual([
+      { id: "101", title: "(no title)", reason: "the record has no title" },
+    ]);
+  });
+
+  it("falls back to record revision when checksum is absent, and never matches missing markers", async () => {
+    const bytes = minimalPmoBytes();
+    const withRevision = record("101", ["study.pmo.json"], {
+      checksums: { "study.pmo.json": null },
+      updated: "2026-11-15T03:09:59Z",
+      revisionId: 4,
+    });
+    const withoutMarkers = record("102", ["plain.pmo.json"], {
+      checksums: { "plain.pmo.json": null },
+    });
+    const first = await harvest({
+      community: "pmocommunity",
+      fetch: fakeZenodo({
+        [LISTING]: { hits: { hits: [withRevision, withoutMarkers], total: 2 }, links: {} },
+        [file("101", "study.pmo.json")]: bytes,
+        [file("102", "plain.pmo.json")]: bytes,
+      }).send,
+    });
+    expect(first.index.datasets[0]?.file.fingerprint).toEqual(expect.any(String));
+    expect(first.index.datasets[1]?.file.fingerprint).toBeNull();
+
+    // Unchanged revision carries 101 over; 102 has null fingerprint and is downloaded again.
+    const secondZenodo = fakeZenodo({
+      [LISTING]: { hits: { hits: [withRevision, withoutMarkers], total: 2 }, links: {} },
+      [file("102", "plain.pmo.json")]: bytes,
+    });
+    const second = await harvest({
+      community: "pmocommunity",
+      fetch: secondZenodo.send,
+      previous: { index: first.index, specimens: first.specimens },
+    });
+    expect(secondZenodo.asked).toEqual([LISTING, file("102", "plain.pmo.json")]);
+    expect(second.carriedOver).toBe(1);
+    expect(second.downloaded).toBe(1);
+
+    // A new revision on 101 downloads it again.
+    const bumpedRevision = record("101", ["study.pmo.json"], {
+      checksums: { "study.pmo.json": null },
+      updated: "2026-11-16T03:09:59Z",
+      revisionId: 5,
+    });
+    const thirdZenodo = fakeZenodo({
+      [LISTING]: { hits: { hits: [bumpedRevision], total: 1 }, links: {} },
+      [file("101", "study.pmo.json")]: bytes,
+    });
+    const third = await harvest({
+      community: "pmocommunity",
+      fetch: thirdZenodo.send,
+      previous: { index: second.index, specimens: second.specimens },
+    });
+    expect(thirdZenodo.asked).toEqual([LISTING, file("101", "study.pmo.json")]);
+    expect(third.carriedOver).toBe(0);
+    expect(third.downloaded).toBe(1);
+  });
+
+  it("ignores a previous catalogue of another version, community or invalid shape", async () => {
+    const bytes = minimalPmoBytes();
+    const hit = record("101", ["study.pmo.json"]);
+    const first = await harvest({
+      community: "pmocommunity",
+      fetch: fakeZenodo({
+        [LISTING]: { hits: { hits: [hit], total: 1 }, links: {} },
+        [file("101", "study.pmo.json")]: bytes,
+      }).send,
+    });
+
+    const unusable = [
+      { index: { ...first.index, version: 1 }, specimens: first.specimens },
+      { index: { ...first.index, community: "other" }, specimens: first.specimens },
+      { index: "not an object", specimens: first.specimens },
+      { index: first.index, specimens: "not an array" },
+      { index: first.index, specimens: [] },
+    ];
+    for (const previous of unusable) {
+      const zenodo = fakeZenodo({
+        [LISTING]: { hits: { hits: [hit], total: 1 }, links: {} },
+        [file("101", "study.pmo.json")]: bytes,
+      });
+      // oxlint-disable-next-line no-await-in-loop -- sequential test cases
+      const result = await harvest({
+        community: "pmocommunity",
+        fetch: zenodo.send,
+        previous,
+      });
+      expect(zenodo.asked).toEqual([LISTING, file("101", "study.pmo.json")]);
+      expect(result.carriedOver).toBe(0);
+      expect(result.downloaded).toBe(1);
+    }
+  });
+
+  it("retries a record that was left out on the previous run", async () => {
+    const bytes = minimalPmoBytes();
+    const first = await harvest({
+      community: "pmocommunity",
+      fetch: fakeZenodo({
+        [LISTING]: { hits: { hits: [record("101", ["study.pmo.json"])], total: 1 }, links: {} },
+        [file("101", "study.pmo.json")]: 503,
+      }).send,
+    });
+    expect(first.skipped).toHaveLength(1);
+    expect(first.index.datasets).toEqual([]);
+
+    const secondZenodo = fakeZenodo({
+      [LISTING]: { hits: { hits: [record("101", ["study.pmo.json"])], total: 1 }, links: {} },
+      [file("101", "study.pmo.json")]: bytes,
+    });
+    const second = await harvest({
+      community: "pmocommunity",
+      fetch: secondZenodo.send,
+      previous: { index: first.index, specimens: first.specimens },
+    });
+    expect(secondZenodo.asked).toEqual([LISTING, file("101", "study.pmo.json")]);
+    expect(second.carriedOver).toBe(0);
+    expect(second.downloaded).toBe(1);
+    expect(second.skipped).toEqual([]);
+    expect(second.index.datasets.map((dataset) => dataset.id)).toEqual(["101"]);
+  });
 });
 
 describe("pmoFileOf", () => {
@@ -285,6 +598,7 @@ describe("pmoFileOf", () => {
     expect(pmoFileOf(record("1", ["a.json", "z.pmo.json.gz", "readme.txt"]))).toEqual({
       name: "z.pmo.json.gz",
       size: 1234,
+      checksum: "md5:1-z.pmo.json.gz",
     });
     expect(pmoFileOf(record("1", ["b.json", "a.json.gz"]))?.name).toBe("a.json.gz");
   });
