@@ -264,6 +264,7 @@ export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) 
                       ? t`Hide preview`
                       : t({
                           message: "Preview",
+                          context: "verb",
                           comment: "Verb: open a preview of a table's first rows",
                         })}
                   </Button>

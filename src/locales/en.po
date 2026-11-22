@@ -922,6 +922,7 @@ msgstr "{total, plural, one {More than # method: {methodNames}, and more. Runs r
 msgid "{total, plural, one {More than # method: {methodNames}. Runs refer to a method by this name.} other {More than # methods: {methodNames}. Runs refer to a method by this name.}}"
 msgstr "{total, plural, one {More than # method: {methodNames}. Runs refer to a method by this name.} other {More than # methods: {methodNames}. Runs refer to a method by this name.}}"
 
+#: src/features/pmo-file/TablesPanel.tsx
 #: src/ui/DataTable.tsx
 msgid "{total, plural, one {Showing {shownCount} of {totalCount} row} other {Showing {shownCount} of {totalCount} rows}}"
 msgstr "{total, plural, one {Showing {shownCount} of {totalCount} row} other {Showing {shownCount} of {totalCount} rows}}"
@@ -1697,6 +1698,10 @@ msgstr "Clear the filters"
 #: src/ui/Dialog.tsx
 msgid "Close"
 msgstr "Close"
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Close and open the preview again. If it fails again, open the file again."
+msgstr "Close and open the preview again. If it fails again, open the file again."
 
 #: src/app/Layout.tsx
 msgid "Close the step list"
@@ -2505,6 +2510,14 @@ msgstr "Heterozygosity"
 msgid "Heterozygosity by target"
 msgstr "Heterozygosity by target"
 
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Hide preview"
+msgstr "Hide preview"
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Hide preview of {title}"
+msgstr "Hide preview of {title}"
+
 #: src/app/StepPage.tsx
 msgid "Home"
 msgstr "Home"
@@ -2974,6 +2987,10 @@ msgstr "Links that point at nothing"
 msgid "Loading"
 msgstr "Loading"
 
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Loading preview"
+msgstr "Loading preview"
+
 #: src/app/HomePage.tsx
 msgid "Loading the example tables"
 msgstr "Loading the example tables"
@@ -3042,6 +3059,10 @@ msgstr "Make one on the Subset tab. Until then, only the original can be summed 
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Make one on the Subset tab. Until then, only the original's tables can be downloaded."
 msgstr "Make one on the Subset tab. Until then, only the original's tables can be downloaded."
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Make one on the Subset tab. Until then, only the original's tables can be previewed."
+msgstr "Make one on the Subset tab. Until then, only the original's tables can be previewed."
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Make the subset"
@@ -3741,6 +3762,10 @@ msgstr "Open a PMO file to compare groups of its specimens."
 msgid "Open a PMO file to download its tables."
 msgstr "Open a PMO file to download its tables."
 
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Open a PMO file to preview its tables."
+msgstr "Open a PMO file to preview its tables."
+
 #: src/features/pmo-file/PublishPanel.tsx
 msgid "Open a PMO file to publish it."
 msgstr "Open a PMO file to publish it."
@@ -4106,10 +4131,25 @@ msgstr "Preparing the subset"
 msgid "Preview"
 msgstr "Preview"
 
+#. Verb: open a preview of a table's first rows
+#: src/features/pmo-file/TablesPanel.tsx
+msgctxt "verb"
+msgid "Preview"
+msgstr "Preview"
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Preview {title}"
+msgstr "Preview {title}"
+
 #. {tableName} is the table's name as shown in its heading, such as Allele table
 #: src/features/table-import/TablePreviewPanel.tsx
 msgid "Preview of “{tableName}”"
 msgstr "Preview of “{tableName}”"
+
+#. {title} is a table name such as Allele table
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Preview of {title}"
+msgstr "Preview of {title}"
 
 #: src/features/review/PmoPreview.tsx
 msgid "Preview the PMO"
@@ -5946,6 +5986,10 @@ msgstr "The PMO has a problem in how its parts refer to each other."
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "The PMO version and how the file was made."
 msgstr "The PMO version and how the file was made."
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "The preview could not be loaded"
+msgstr "The preview could not be loaded"
 
 #: src/features/table-import/TablePreviewPanel.tsx
 msgid "The preview could not be shown"
