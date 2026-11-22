@@ -384,7 +384,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                     key={generation}
                     source={source}
                     minReads={minReads}
-                    maxReads={file.opened.choices.maxReads}
+                    maxReads={source === "original" ? file.opened.choices.maxReads : null}
                     onMinReadsChange={(next) => session.setMinReads(next)}
                   />
                 ),
@@ -397,7 +397,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                     key={generation}
                     source={source}
                     minReads={minReads}
-                    maxReads={file.opened.choices.maxReads}
+                    maxReads={source === "original" ? file.opened.choices.maxReads : null}
                     onMinReadsChange={(next) => session.setMinReads(next)}
                   />
                 ),

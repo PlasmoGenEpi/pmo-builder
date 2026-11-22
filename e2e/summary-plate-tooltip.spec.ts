@@ -7,56 +7,23 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { expect, test } from "./fixtures/privacy";
-import { BUILD_TIMEOUT, loadExample } from "./support/review";
-
-interface Box {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-}
-
-/** Shortest Euclidean distance in pixels between two axis-aligned boxes. */
-function boxDistance(a: Box, b: Box): number {
-  const dx = Math.max(0, a.x - (b.x + b.width), b.x - (a.x + a.width));
-  const dy = Math.max(0, a.y - (b.y + b.height), b.y - (a.y + a.height));
-  return Math.hypot(dx, dy);
-}
-
-/** Asserts that `box` lies completely inside the current viewport. */
-function expectInsideViewport(
-  box: Box,
-  viewport: { readonly width: number; readonly height: number },
-): void {
-  expect(box.x, "tooltip left inside viewport").toBeGreaterThanOrEqual(0);
-  expect(box.y, "tooltip top inside viewport").toBeGreaterThanOrEqual(0);
-  expect(box.x + box.width, "tooltip right inside viewport").toBeLessThanOrEqual(viewport.width);
-  expect(box.y + box.height, "tooltip bottom inside viewport").toBeLessThanOrEqual(viewport.height);
-}
+import {
+  boxDistance,
+  expectInsideViewport,
+  openBuiltExample,
+  openSyntheticPmo,
+  requireBox,
+} from "./support/pmoFile";
+import { BUILD_TIMEOUT } from "./support/review";
 
 /** Opens the built example on the Summary tab and returns the Plates section. */
 async function openExamplePlates(page: Page): Promise<Locator> {
-  await loadExample(page);
-  await page.evaluate(() => {
-    globalThis.location.hash = "/pmo/open-built";
-  });
-  await expect(page.getByText("This is the PMO built from your draft")).toBeVisible({
-    timeout: BUILD_TIMEOUT,
-  });
-  await page.getByRole("tab", { name: "Summary" }).click();
+  await openBuiltExample({ page, tab: "summary" });
   const plates = page.locator("section", {
     has: page.getByRole("heading", { name: "Plates", exact: true }),
   });
   await expect(plates).toBeVisible({ timeout: BUILD_TIMEOUT });
   return plates;
-}
-
-/** Reads a locator's bounding box, failing clearly if it is absent. */
-async function requireBox(locator: Locator, label: string): Promise<Box> {
-  const box = await locator.boundingBox();
-  expect(box, `${label} bounding box`).not.toBeNull();
-  if (box === null) throw new Error(`Missing bounding box for ${label}`);
-  return box;
 }
 
 /**
@@ -202,14 +169,12 @@ test("hovering a well in the last row and last column keeps its details inside t
 }) => {
   const viewport = { width: 390, height: 600 };
   await page.setViewportSize(viewport);
-  await page.goto("/#/pmo");
-  await page.getByLabel("Choose pmo file").setInputFiles({
-    name: "corner-wells.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify(cornerWellsPmo())),
+  await openSyntheticPmo({
+    page,
+    fileName: "corner-wells.json",
+    pmo: cornerWellsPmo(),
+    tab: "summary",
   });
-  await expect(page.getByText("This file is a valid PMO")).toBeVisible({ timeout: BUILD_TIMEOUT });
-  await page.getByRole("tab", { name: "Summary" }).click();
 
   const plates = page.locator("section", {
     has: page.getByRole("heading", { name: "Plates", exact: true }),

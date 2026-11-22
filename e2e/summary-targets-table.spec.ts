@@ -7,14 +7,8 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { expect, test } from "./fixtures/privacy";
-import { BUILD_TIMEOUT, loadExample } from "./support/review";
-
-interface Box {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-}
+import { openBuiltExample, requireBox } from "./support/pmoFile";
+import { BUILD_TIMEOUT } from "./support/review";
 
 interface ScrollMetrics {
   readonly scrollWidth: number;
@@ -27,13 +21,6 @@ interface TargetsLayout {
   readonly alleleFigure: Locator;
 }
 
-async function requireBox(locator: Locator, label: string): Promise<Box> {
-  const box = await locator.boundingBox();
-  expect(box, `${label} bounding box`).not.toBeNull();
-  if (box === null) throw new Error(`Missing bounding box for ${label}`);
-  return box;
-}
-
 async function scrollMetrics(locator: Locator): Promise<ScrollMetrics> {
   return locator.evaluate((element) => ({
     scrollWidth: element.scrollWidth,
@@ -41,43 +28,13 @@ async function scrollMetrics(locator: Locator): Promise<ScrollMetrics> {
   }));
 }
 
-async function openEnglishSummaryTargets(page: Page): Promise<TargetsLayout> {
-  await loadExample(page);
-  await page.evaluate(() => {
-    globalThis.location.hash = "/pmo/open-built";
-  });
-  await expect(page.getByText("This is the PMO built from your draft")).toBeVisible({
-    timeout: BUILD_TIMEOUT,
-  });
-  await page.getByRole("tab", { name: "Summary" }).click();
-  const tableRegion = page.getByRole("region", { name: "Targets" });
+async function openSummaryTargets(page: Page, lang: "en" | "fr"): Promise<TargetsLayout> {
+  await openBuiltExample({ page, lang, tab: "summary" });
+  const heading = lang === "en" ? "Targets" : "Cibles";
+  const tableRegion = page.getByRole("region", { name: heading });
   await expect(tableRegion).toBeVisible({ timeout: BUILD_TIMEOUT });
   const section = page.locator("section", {
-    has: page.getByRole("heading", { name: "Targets", exact: true }),
-  });
-  const alleleFigure = section.locator("figure");
-  await expect(alleleFigure).toBeVisible();
-  return { section, tableRegion, alleleFigure };
-}
-
-async function openFrenchSummaryTargets(page: Page): Promise<TargetsLayout> {
-  await page.goto("/?lang=fr");
-  await page.getByRole("button", { name: "Essayer avec des données d’exemple" }).click();
-  await expect(page).toHaveURL(/#\/build\/microhaplotypes$/, { timeout: BUILD_TIMEOUT });
-  await expect(page.getByRole("region", { name: "Résultat" }).getByText(/^Prête?$/)).toBeVisible({
-    timeout: BUILD_TIMEOUT,
-  });
-  await page.evaluate(() => {
-    globalThis.location.hash = "/pmo/open-built";
-  });
-  await expect(page.getByText("Voici le PMO créé à partir de votre brouillon")).toBeVisible({
-    timeout: BUILD_TIMEOUT,
-  });
-  await page.getByRole("tab", { name: "Résumé" }).click();
-  const tableRegion = page.getByRole("region", { name: "Cibles" });
-  await expect(tableRegion).toBeVisible({ timeout: BUILD_TIMEOUT });
-  const section = page.locator("section", {
-    has: page.getByRole("heading", { name: "Cibles", exact: true }),
+    has: page.getByRole("heading", { name: heading, exact: true }),
   });
   const alleleFigure = section.locator("figure");
   await expect(alleleFigure).toBeVisible();
@@ -169,7 +126,7 @@ test("at 1280 px in English the Targets table fits without sideways scrolling, s
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  const { tableRegion, alleleFigure } = await openEnglishSummaryTargets(page);
+  const { tableRegion, alleleFigure } = await openSummaryTargets(page, "en");
 
   await expectAllColumnsFitWithoutHorizontalScroll({
     tableRegion,
@@ -191,11 +148,58 @@ test("at 1280 px in French the Targets table fits without sideways scrolling bes
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  const { tableRegion, alleleFigure } = await openFrenchSummaryTargets(page);
+  const { tableRegion, alleleFigure } = await openSummaryTargets(page, "fr");
 
   await expectAllColumnsFitWithoutHorizontalScroll({
     tableRegion,
     expectedColumns: ["Cible", "Échantillons avec des données", "Allèles", "Hétérozygotie"],
   });
   await expectAlleleCardReadableBeside({ tableRegion, alleleFigure });
+});
+
+test("a sortable table scroll region can be focused with the keyboard, shows a focus ring, and scrolls vertically via ArrowDown", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await openBuiltExample({ page, tab: "summary" });
+
+  const samplesRegion = page.getByRole("region", { name: "Samples" });
+  await expect(samplesRegion).toBeVisible({ timeout: BUILD_TIMEOUT });
+
+  // Jump to the Samples heading, then Tab once into the Samples table's scroll region.
+  await page
+    .getByRole("navigation", { name: "Sections" })
+    .getByRole("button", { name: "Samples" })
+    .click();
+  await expect(page.getByRole("heading", { name: "Samples", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(samplesRegion).toBeFocused();
+
+  const state = await samplesRegion.evaluate((element) => {
+    const computed = getComputedStyle(element);
+    return {
+      focusVisible: element.matches(":focus-visible"),
+      outlineStyle: computed.outlineStyle,
+      outlineWidth: Number.parseFloat(computed.outlineWidth),
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight,
+      scrollTop: element.scrollTop,
+    };
+  });
+  expect(state.focusVisible, "Samples scroll region matches :focus-visible").toBe(true);
+  expect(state.outlineStyle, "Samples scroll region shows a visible focus ring").not.toBe("none");
+  expect(state.outlineWidth, "Samples scroll region focus ring has non-zero width").toBeGreaterThan(
+    0,
+  );
+  expect(state.scrollHeight, "Samples table overflows vertically").toBeGreaterThan(
+    state.clientHeight,
+  );
+  expect(state.scrollTop, "Samples table starts at the top").toBe(0);
+
+  await page.keyboard.press("ArrowDown");
+  await expect
+    .poll(() => samplesRegion.evaluate((element) => element.scrollTop), {
+      message: "ArrowDown scrolls the focused Samples table vertically",
+    })
+    .toBeGreaterThan(0);
 });

@@ -7,56 +7,19 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { expect, test } from "./fixtures/privacy";
-import { BUILD_TIMEOUT, loadExample } from "./support/review";
+import { openBuiltExample, requireBox, type Box } from "./support/pmoFile";
+import { BUILD_TIMEOUT } from "./support/review";
 
 interface MeasuredRow {
   readonly share: number;
-  readonly labelBox: {
-    readonly x: number;
-    readonly y: number;
-    readonly width: number;
-    readonly height: number;
-  };
-  readonly trackBox: {
-    readonly x: number;
-    readonly y: number;
-    readonly width: number;
-    readonly height: number;
-  };
-  readonly barBox: {
-    readonly x: number;
-    readonly y: number;
-    readonly width: number;
-    readonly height: number;
-  };
+  readonly labelBox: Box;
+  readonly trackBox: Box;
+  readonly barBox: Box;
 }
 
 /** Opens the example PMO on the Summary tab in English or French. */
 async function openExampleSummary(page: Page, language: "en" | "fr"): Promise<void> {
-  if (language === "en") {
-    await loadExample(page);
-    await page.evaluate(() => {
-      globalThis.location.hash = "/pmo/open-built";
-    });
-    await expect(page.getByText("This is the PMO built from your draft")).toBeVisible({
-      timeout: BUILD_TIMEOUT,
-    });
-    await page.getByRole("tab", { name: "Summary" }).click();
-  } else {
-    await page.goto("/?lang=fr");
-    await page.getByRole("button", { name: "Essayer avec des données d’exemple" }).click();
-    await expect(page).toHaveURL(/#\/build\/microhaplotypes$/, { timeout: BUILD_TIMEOUT });
-    await expect(page.getByRole("region", { name: "Résultat" }).getByText(/^Prête?$/)).toBeVisible({
-      timeout: BUILD_TIMEOUT,
-    });
-    await page.evaluate(() => {
-      globalThis.location.hash = "/pmo/open-built";
-    });
-    await expect(page.getByText("Voici le PMO créé à partir de votre brouillon")).toBeVisible({
-      timeout: BUILD_TIMEOUT,
-    });
-    await page.getByRole("tab", { name: "Résumé" }).click();
-  }
+  await openBuiltExample({ page, lang: language, tab: "summary" });
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: BUILD_TIMEOUT });
 }
 
@@ -80,13 +43,10 @@ async function measureAlleleRows(figure: Locator): Promise<readonly MeasuredRow[
       const bar = item.locator('[aria-hidden="true"]').first();
       const track = bar.locator("..");
       const [labelBox, trackBox, barBox] = await Promise.all([
-        label.boundingBox(),
-        track.boundingBox(),
-        bar.boundingBox(),
+        requireBox(label, `row ${index} label`),
+        requireBox(track, `row ${index} track`),
+        requireBox(bar, `row ${index} bar`),
       ]);
-      if (labelBox === null || trackBox === null || barBox === null) {
-        throw new Error(`Missing layout box on row ${index}`);
-      }
       return { share, labelBox, trackBox, barBox };
     }),
   );
@@ -170,14 +130,11 @@ test("keeps microhaplotype bars visible and to scale with labels above at 390 px
   const rows = await measureAlleleRows(figure);
   expectBarsToScale(rows);
 
-  const figureBox = await figure.boundingBox();
-  expect(figureBox).not.toBeNull();
-  if (figureBox !== null) {
-    expect(
-      figureBox.x + figureBox.width,
-      "figure fits inside the 390 px viewport",
-    ).toBeLessThanOrEqual(391);
-  }
+  const figureBox = await requireBox(figure, "allele figure");
+  expect(
+    figureBox.x + figureBox.width,
+    "figure fits inside the 390 px viewport",
+  ).toBeLessThanOrEqual(391);
 
   for (const [index, row] of rows.entries()) {
     expect(

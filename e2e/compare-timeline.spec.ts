@@ -9,18 +9,12 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { expect, test } from "./fixtures/privacy";
-import { BUILD_TIMEOUT, loadExample } from "./support/review";
+import { openBuiltExample, openSyntheticPmo } from "./support/pmoFile";
+import { BUILD_TIMEOUT } from "./support/review";
 
 /** Opens the built example on the Compare tab and waits for the timeline to appear. */
 async function openExampleCompare(page: Page): Promise<Locator> {
-  await loadExample(page);
-  await page.evaluate(() => {
-    globalThis.location.hash = "/pmo/open-built";
-  });
-  await expect(page.getByText("This is the PMO built from your draft")).toBeVisible({
-    timeout: BUILD_TIMEOUT,
-  });
-  await page.getByRole("tab", { name: "Compare" }).click();
+  await openBuiltExample({ page, tab: "compare" });
   const timeline = page.getByRole("region", { name: "When specimens were collected" });
   await expect(timeline).toBeVisible({ timeout: BUILD_TIMEOUT });
   return timeline;
@@ -197,14 +191,12 @@ test("a long timeline with a >40 peak scrolls with cue and keeps its 1-specimen 
 }) => {
   test.setTimeout(60_000);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto("/#/pmo");
-  await page.getByLabel("Choose pmo file").setInputFiles({
-    name: "skewed.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify(longSkewedPmo())),
+  await openSyntheticPmo({
+    page,
+    fileName: "skewed.json",
+    pmo: longSkewedPmo(),
+    tab: "compare",
   });
-  await expect(page.getByText("This file is a valid PMO")).toBeVisible({ timeout: BUILD_TIMEOUT });
-  await page.getByRole("tab", { name: "Compare" }).click();
   const timeline = page.getByRole("region", { name: "When specimens were collected" });
   await expect(timeline).toBeVisible({ timeout: BUILD_TIMEOUT });
   await timeline.scrollIntoViewIfNeeded();

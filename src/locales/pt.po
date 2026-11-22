@@ -587,8 +587,7 @@ msgstr "{librarySamples, plural, one {# amostra de biblioteca} other {# amostras
 msgid "{mappedCount, plural, one {{missingCount, plural, one {{mappedFields} is mapped, but {missingFields} is not.} other {{mappedFields} is mapped, but {missingFields} are not.}}} other {{missingCount, plural, one {{mappedFields} are mapped, but {missingFields} is not.} other {{mappedFields} are mapped, but {missingFields} are not.}}}}"
 msgstr "{mappedCount, plural, one {{missingCount, plural, one {{mappedFields} está associado, mas {missingFields} não está.} other {{mappedFields} está associado, mas {missingFields} não estão.}}} other {{missingCount, plural, one {{mappedFields} estão associados, mas {missingFields} não está.} other {{mappedFields} estão associados, mas {missingFields} não estão.}}}}"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "{maxReads, plural, one {The most in this file is {mostReads} read. Lower the minimum or clear it to see all microhaplotypes.} other {The most in this file is {mostReads} reads. Lower the minimum or clear it to see all microhaplotypes.}}"
 msgstr "{maxReads, plural, one {O máximo neste ficheiro é {mostReads} leitura. Reduza o mínimo ou limpe-o para ver todos os micro-haplótipos.} other {O máximo neste ficheiro é {mostReads} leituras. Reduza o mínimo ou limpe-o para ver todos os micro-haplótipos.}}"
 
@@ -604,8 +603,7 @@ msgstr "{message} Recarregue a página para tentar novamente."
 msgid "{methods, plural, one {# method} other {# methods}}, {runs, plural, one {# run} other {# runs}}"
 msgstr "{methods, plural, one {# método} other {# métodos}}, {runs, plural, one {# execução} other {# execuções}}"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "{minReads, plural, one {No microhaplotype has at least {minimum} read} other {No microhaplotype has at least {minimum} reads}}"
 msgstr "{minReads, plural, one {Nenhum micro-haplótipo tem pelo menos {minimum} leitura} other {Nenhum micro-haplótipo tem pelo menos {minimum} leituras}}"
 
@@ -1693,8 +1691,7 @@ msgstr "Cromossoma"
 msgid "Chromosomes"
 msgstr "Cromossomas"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Clear minimum reads"
 msgstr "Limpar o mínimo de leituras"
 
@@ -3028,8 +3025,7 @@ msgstr "Localizações que terminam antes de começar"
 msgid "Look into your PMO"
 msgstr "Explorar o seu PMO"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Lower the minimum or clear it to see all microhaplotypes."
 msgstr "Reduza o mínimo ou limpe-o para ver todos os micro-haplótipos."
 

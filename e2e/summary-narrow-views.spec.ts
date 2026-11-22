@@ -8,43 +8,9 @@
  *   the well and inside the viewport.
  * - At 1280 px both keep their natural sizes.
  */
-import type { Locator, Page } from "@playwright/test";
-
 import { expect, test } from "./fixtures/privacy";
+import { boxDistance, expectInsideViewport, openSyntheticPmo, requireBox } from "./support/pmoFile";
 import { BUILD_TIMEOUT } from "./support/review";
-
-interface Box {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-}
-
-/** Shortest Euclidean distance in pixels between two axis-aligned boxes. */
-function boxDistance(a: Box, b: Box): number {
-  const dx = Math.max(0, a.x - (b.x + b.width), b.x - (a.x + a.width));
-  const dy = Math.max(0, a.y - (b.y + b.height), b.y - (a.y + a.height));
-  return Math.hypot(dx, dy);
-}
-
-/** Reads a locator's bounding box, failing clearly if it is absent. */
-async function requireBox(locator: Locator, label: string): Promise<Box> {
-  const box = await locator.boundingBox();
-  expect(box, `${label} bounding box`).not.toBeNull();
-  if (box === null) throw new Error(`Missing bounding box for ${label}`);
-  return box;
-}
-
-/** Asserts that `box` lies completely inside the current viewport. */
-function expectInsideViewport(
-  box: Box,
-  viewport: { readonly width: number; readonly height: number },
-): void {
-  expect(box.x, "left inside viewport").toBeGreaterThanOrEqual(0);
-  expect(box.y, "top inside viewport").toBeGreaterThanOrEqual(0);
-  expect(box.x + box.width, "right inside viewport").toBeLessThanOrEqual(viewport.width);
-  expect(box.y + box.height, "bottom inside viewport").toBeLessThanOrEqual(viewport.height);
-}
 
 interface SyntheticSample {
   readonly name: string;
@@ -140,28 +106,17 @@ const BOTH_SAMPLES: readonly SyntheticSample[] = [
   { name: "both_p24", targets: 4, density: 10000, plate: { row: "P", col: 24 } },
 ];
 
-/** Uploads a synthetic PMO JSON and opens the Summary tab. */
-async function openSyntheticSummary(
-  page: Page,
-  fileName: string,
-  pmo: Record<string, unknown>,
-): Promise<void> {
-  await page.goto("/#/pmo");
-  await page.getByLabel("Choose pmo file").setInputFiles({
-    name: fileName,
-    mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify(pmo)),
-  });
-  await expect(page.getByText("This file is a valid PMO")).toBeVisible({ timeout: BUILD_TIMEOUT });
-  await page.getByRole("tab", { name: "Summary" }).click();
-}
-
 test("at 390 px the density plot fits the page and hover names the right sample", async ({
   page,
 }) => {
   const viewport = { width: 390, height: 720 };
   await page.setViewportSize(viewport);
-  await openSyntheticSummary(page, "density-only.json", buildSyntheticPmo(DENSITY_SAMPLES));
+  await openSyntheticPmo({
+    page,
+    fileName: "density-only.json",
+    pmo: buildSyntheticPmo(DENSITY_SAMPLES),
+    tab: "summary",
+  });
 
   const densitySection = page.locator("section", {
     has: page.getByRole("heading", { name: "Parasite density and targets with data", exact: true }),
@@ -206,7 +161,12 @@ test("at 390 px a 384-well plate scrolls inside its own area without page overfl
 }) => {
   const viewport = { width: 390, height: 720 };
   await page.setViewportSize(viewport);
-  await openSyntheticSummary(page, "plate-384.json", buildSyntheticPmo(PLATE_384_SAMPLES));
+  await openSyntheticPmo({
+    page,
+    fileName: "plate-384.json",
+    pmo: buildSyntheticPmo(PLATE_384_SAMPLES),
+    tab: "summary",
+  });
 
   const platesSection = page.locator("section", {
     has: page.getByRole("heading", { name: "Plates", exact: true }),
@@ -279,7 +239,12 @@ test("at 1280 px the density plot and 384-well plate keep their natural sizes", 
 }) => {
   const viewport = { width: 1280, height: 800 };
   await page.setViewportSize(viewport);
-  await openSyntheticSummary(page, "density-and-384.json", buildSyntheticPmo(BOTH_SAMPLES));
+  await openSyntheticPmo({
+    page,
+    fileName: "density-and-384.json",
+    pmo: buildSyntheticPmo(BOTH_SAMPLES),
+    tab: "summary",
+  });
 
   const platesSection = page.locator("section", {
     has: page.getByRole("heading", { name: "Plates", exact: true }),
