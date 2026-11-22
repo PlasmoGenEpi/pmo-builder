@@ -7,6 +7,7 @@ import {
   type TableFormat,
   type TableId,
   type TableInfo,
+  type TablePreviewCell,
   type WorkingPmoQuery,
   type WorkingSource,
 } from "@/domain/tools/types";
@@ -76,6 +77,13 @@ interface TablePreviewSectionProps {
   readonly source: WorkingSource;
 }
 
+/** Formats a table preview cell to match pmotools-ts's `formatDelimited` output. */
+function previewCell(value: TablePreviewCell | undefined): CellValue {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "boolean") return value ? "True" : "False";
+  return value;
+}
+
 /** Loads and shows the first rows of one table when its preview is open. */
 function TablePreviewSection({ id, title, source }: TablePreviewSectionProps) {
   const request = useMemo<WorkingPmoQuery<"tablePreview">>(
@@ -88,7 +96,7 @@ function TablePreviewSection({ id, title, source }: TablePreviewSectionProps) {
     if (answer.kind !== "ok") return [];
     const { columns, rows } = answer.value;
     return rows.map((row) =>
-      Object.fromEntries(columns.map((column, index) => [column, row[index] ?? null])),
+      Object.fromEntries(columns.map((column, index) => [column, previewCell(row[index])])),
     );
   }, [answer]);
 
