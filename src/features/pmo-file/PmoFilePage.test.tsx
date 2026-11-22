@@ -361,6 +361,138 @@ describe("PmoFilePage: tables", () => {
     await user.click(screen.getByRole("radio", { name: "Original" }));
     expect(screen.getByText("Read counts by stage")).toBeInTheDocument();
   });
+
+  it("loads a table preview only when opened, shows a loading state, then renders the first 20 rows and toggles from the keyboard", async () => {
+    const engine = createInThreadEngine();
+    const held = new Gate();
+    const kinds: string[] = [];
+    const { user } = await openWithEngine(pmoFile(EXAMPLE), {
+      ...engine,
+      workingPmo: async (call) => {
+        kinds.push(call.request.kind);
+        if (call.request.kind === "tablePreview") await held.promise;
+        return engine.workingPmo(call);
+      },
+    });
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+
+    // Opening the tab does not request any table preview yet.
+    expect(kinds).not.toContain("tablePreview");
+
+    const toggle = screen.getByRole("button", { name: "Preview Allele table" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    toggle.focus();
+    await user.keyboard("{Enter}");
+
+    expect(kinds).toContain("tablePreview");
+    expect(await screen.findByText("Loading preview")).toBeInTheDocument();
+    const hideToggle = screen.getByRole("button", { name: "Hide preview of Allele table" });
+    expect(hideToggle).toHaveAttribute("aria-expanded", "true");
+
+    await act(async () => held.open());
+
+    const previewRegion = await screen.findByRole("region", { name: "Preview of Allele table" });
+    expect(previewRegion).toHaveAttribute("tabindex", "0");
+    const table = within(previewRegion).getByRole("table");
+    const headers = within(table)
+      .getAllByRole("columnheader")
+      .map((cell) => cell.textContent);
+    expect(headers).toEqual([
+      "Row#",
+      "library_sample_name",
+      "target_name",
+      "seq",
+      "bioinformatics_run_name",
+      "reads",
+    ]);
+    // 1 header row + 20 preview rows.
+    const rows = within(table).getAllByRole("row");
+    expect(rows).toHaveLength(21);
+
+    // Count line matches the whole allele table's row count.
+    const alleleRowCount = EXAMPLE.detected_microhaplotypes.reduce(
+      (sum, run) =>
+        sum +
+        run.library_samples.reduce(
+          (sSum, sample) =>
+            sSum + sample.target_results.reduce((tSum, result) => tSum + result.mhaps.length, 0),
+          0,
+        ),
+      0,
+    );
+    expect(
+      screen.getByText(`Showing 20 of ${alleleRowCount.toLocaleString("en")} rows`),
+    ).toBeInTheDocument();
+
+    // Closing from the keyboard removes the preview.
+    hideToggle.focus();
+    await user.keyboard(" ");
+    expect(
+      screen.queryByRole("region", { name: "Preview of Allele table" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Preview Allele table" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+  });
+
+  it("previews read counts by stage and single-row tables with their exact row count line", async () => {
+    const { user } = await open(pmoFile(examplePmoWithReadCounts()));
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+
+    await user.click(screen.getByRole("button", { name: "Preview Read counts by stage" }));
+    const countsRegion = await screen.findByRole("region", {
+      name: "Preview of Read counts by stage",
+    });
+    const countsTable = within(countsRegion).getByRole("table");
+    const countRows = within(countsTable).getAllByRole("row");
+    expect(countRows).toHaveLength(9);
+    const firstRow = countRows[1];
+    if (firstRow === undefined) throw new Error("expected data row");
+    expect(
+      within(firstRow)
+        .getAllByRole("cell")
+        .map((cell) => cell.textContent),
+    ).toEqual(["example_sample_01", "10", "Pf3D7_01_v3-145388-145662-1A", "demux", "10"]);
+    expect(screen.getByText("Showing 8 of 8 rows")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Preview File header" }));
+    expect(
+      await screen.findByRole("region", { name: "Preview of File header" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Showing 1 of 1 row")).toBeInTheDocument();
+  });
+
+  it("updates an open preview when switching between Original and Subset", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await makeSubset(user, 3);
+    await user.click(screen.getByRole("tab", { name: "Tables" }));
+    expect(screen.getByRole("radio", { name: "Subset" })).toBeChecked();
+
+    await user.click(screen.getByRole("button", { name: "Preview Specimens" }));
+    const subsetRegion = await screen.findByRole("region", { name: "Preview of Specimens" });
+    expect(within(subsetRegion).getAllByRole("row")).toHaveLength(4);
+    expect(screen.getByText("Showing 3 of 3 rows")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: "Original" }));
+    expect(
+      await screen.findByText(`Showing 20 of ${EXAMPLE.specimen_info.length} rows`),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("region", { name: "Preview of Specimens" })).getAllByRole("row"),
+    ).toHaveLength(21);
+  });
+
+  it("shows an accessible notice when a table preview fails", async () => {
+    const { engine } = watchedEngine((kind) =>
+      kind === "tablePreview" ? { kind: "failed", message: "out of memory" } : null,
+    );
+    const { user } = await openWithEngine(pmoFile(EXAMPLE), engine);
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+    await user.click(screen.getByRole("button", { name: "Preview Allele table" }));
+    expect(await screen.findByText("The preview could not be loaded")).toBeInTheDocument();
+    expect(screen.queryByText(/out of memory/)).not.toBeInTheDocument();
+  });
 });
 
 describe("PmoFilePage: subset", () => {

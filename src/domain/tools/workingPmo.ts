@@ -41,6 +41,7 @@ import { summarisePublication } from "@/domain/build/publication";
 import {
   MAX_META_VALUES,
   TABLE_IDS,
+  TABLE_PREVIEW_LIMIT,
   type MetaField,
   type OpenOutcome,
   type PmoChoices,
@@ -51,6 +52,7 @@ import {
   type TableFormat,
   type TableId,
   type TableInfo,
+  type TablePreview,
   type TablesArchive,
 } from "./types";
 import { zipFiles } from "./zip";
@@ -552,6 +554,20 @@ export function tableFile(
     delimiter: options.format === "tsv" ? "\t" : ",",
   });
   return { fileName: `${options.baseName}-${FILE_PARTS[options.id]}.${options.format}`, text };
+}
+
+/** The column names and first rows of one table of `pmo`, matching {@link tableFile}. */
+export function tablePreview(
+  pmo: Pmo,
+  options: { readonly id: TableId; readonly limit?: number },
+): TablePreview {
+  const table = tableOf(pmo, options.id);
+  const limit = Math.max(0, options.limit ?? TABLE_PREVIEW_LIMIT);
+  return {
+    columns: table.columns,
+    rows: table.rows.slice(0, limit),
+    totalRows: table.rows.length,
+  };
 }
 
 /** Every table of `pmo`, as {@link tableFile} writes them, in one zip named after `baseName`. */

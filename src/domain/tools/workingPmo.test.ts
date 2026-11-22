@@ -12,6 +12,7 @@ import {
   openPmo,
   previewSubset,
   tableFile,
+  tablePreview,
   tablesArchive,
   tablesOf,
 } from "./workingPmo";
@@ -414,6 +415,50 @@ describe("read counts by stage table", () => {
     );
     if (noCounts.outcome.kind !== "made") throw new Error(noCounts.outcome.kind);
     expect(noCounts.outcome.tables.map((table) => table.id)).not.toContain("readCounts");
+  });
+});
+
+describe("tablePreview", () => {
+  it("returns the column names, first 20 rows, and total row count matching tableFile", () => {
+    const preview = tablePreview(EXAMPLE, { id: "alleles" });
+    const file = tableFile(EXAMPLE, { id: "alleles", format: "tsv", baseName: "study" });
+    const lines = file.text.trimEnd().split("\n");
+    const [header, ...dataLines] = lines;
+
+    expect(preview.columns).toEqual(header?.split("\t"));
+    expect(preview.totalRows).toBe(dataLines.length);
+    expect(preview.totalRows).toBeGreaterThan(20);
+    expect(preview.rows).toHaveLength(20);
+    expect(
+      preview.rows.map((row) => row.map((cell) => (cell === null ? "" : String(cell))).join("\t")),
+    ).toEqual(dataLines.slice(0, 20));
+  });
+
+  it("returns all rows when the table has fewer than 20 rows, including read counts by stage", () => {
+    const withCounts = examplePmoWithReadCounts();
+    const preview = tablePreview(withCounts, { id: "readCounts" });
+    expect(preview.columns).toEqual([
+      "library_sample_name",
+      "total_raw_count",
+      "target_name",
+      "stage",
+      "reads",
+    ]);
+    expect(preview.totalRows).toBe(8);
+    expect(preview.rows).toHaveLength(8);
+    expect(preview.rows[0]).toEqual([
+      "example_sample_01",
+      10,
+      "Pf3D7_01_v3-145388-145662-1A",
+      "demux",
+      10,
+    ]);
+  });
+
+  it("honours an explicit row limit", () => {
+    const preview = tablePreview(EXAMPLE, { id: "specimens", limit: 5 });
+    expect(preview.totalRows).toBe(EXAMPLE.specimen_info.length);
+    expect(preview.rows).toHaveLength(5);
   });
 });
 
