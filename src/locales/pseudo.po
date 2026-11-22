@@ -288,6 +288,10 @@ msgstr ""
 msgid "{alleleCalls, plural, one {# allele call} other {# allele calls}} for {samples, plural, one {# sample} other {# samples}} at {targets, plural, one {# target} other {# targets}}, {alleles, plural, one {# distinct allele} other {# distinct alleles}}"
 msgstr ""
 
+#: src/features/pmo-file/summary/SequenceLabel.tsx
+msgid "{baseCount, plural, one {# base} other {# bases}}"
+msgstr ""
+
 #. {column} starts the sentence and names a column, with any article, such as 'Column "Host taxon"'. {row} is one row without an article, such as 'row 5'.
 #: src/domain/build/notices.ts
 msgid "{column} must hold NCBI taxonomy numbers such as 5833, separated by commas, but {row} holds \"{value}\". Correct it, or unmap the column if the field is optional."
@@ -1725,6 +1729,10 @@ msgstr ""
 msgid "Choose a column. This field is needed to build the table."
 msgstr ""
 
+#: src/features/pmo-file/summary/AlleleBars.tsx
+msgid "Choose a label to open and copy the whole sequence. Each bar is a share of the target's detections: a sample with two microhaplotypes here counts once for each."
+msgstr ""
+
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "Choose a method"
 msgstr ""
@@ -1946,6 +1954,8 @@ msgstr ""
 
 #. After a keyword was copied to the clipboard
 #. Button, after the value was copied to the clipboard
+#. Button, after the value was copied to the clipboard
+#: src/features/pmo-file/summary/SequenceLabel.tsx
 #: src/features/review/PublishToZenodo.tsx
 #: src/features/shared/CopyValue.tsx
 #: src/ui/CodeBlock.tsx
@@ -1953,6 +1963,8 @@ msgid "Copied"
 msgstr ""
 
 #. Button: copy the value to the clipboard
+#. Button: copy the value to the clipboard
+#: src/features/pmo-file/summary/SequenceLabel.tsx
 #: src/features/shared/CopyValue.tsx
 #: src/ui/CodeBlock.tsx
 msgid "Copy"
@@ -1979,6 +1991,10 @@ msgstr ""
 #. Button: copy the Zenodo record's title to the clipboard
 #: src/features/review/PublishToZenodo.tsx
 msgid "Copy title"
+msgstr ""
+
+#: src/features/pmo-file/summary/SequenceLabel.tsx
+msgid "Could not copy. Select the sequence to copy it."
 msgstr ""
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
@@ -2696,10 +2712,6 @@ msgstr ""
 
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "Hover over a dot to see its sample."
-msgstr ""
-
-#: src/features/pmo-file/summary/AlleleBars.tsx
-msgid "Hover over a label to see the whole sequence. Each bar is a share of the target's detections: a sample with two microhaplotypes here counts once for each."
 msgstr ""
 
 #: src/features/bioinformatics/RunsPart.tsx
@@ -5061,6 +5073,14 @@ msgstr ""
 #. Field label: an allele's DNA sequence
 #: src/domain/fields/microhaplotypes.ts
 msgid "Sequence"
+msgstr ""
+
+#: src/features/pmo-file/summary/SequenceLabel.tsx
+msgid "Sequence copied to clipboard."
+msgstr ""
+
+#: src/features/pmo-file/summary/SequenceLabel.tsx
+msgid "Sequence for {label}"
 msgstr ""
 
 #. Heading for a group of optional fields in the column-matching editor
