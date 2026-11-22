@@ -1,8 +1,11 @@
 /**
  * Pure conversion between the published PMOs list's view state and the query
- * string kept inside the hash route (`#/published?q=...&country=...&sort=...&view=...`).
+ * string kept inside the hash route (`#/published?q=...&country=...&sort=...&view=...&shown=...`).
  */
 import { DEFAULT_SORT, isSortOrder, type SortOrder } from "./catalogue";
+
+/** Number of published PMOs rendered at first and added by each "Show more" step. */
+export const PAGE_SIZE = 50;
 
 /** The supported layouts for the published PMOs list. */
 export const LIST_VIEWS = ["list", "table"] as const;
@@ -34,6 +37,8 @@ export interface PublishedListState {
   readonly sort: SortOrder;
   /** Layout of entries: compact list or sortable table. */
   readonly view: ListView;
+  /** Maximum number of matching entries currently shown (at least {@link PAGE_SIZE}). */
+  readonly shown: number;
 }
 
 /** The default, unfiltered list state. Serializes to an empty query string. */
@@ -45,6 +50,7 @@ export const DEFAULT_LIST_STATE: PublishedListState = {
   year: null,
   sort: DEFAULT_SORT,
   view: DEFAULT_VIEW,
+  shown: PAGE_SIZE,
 };
 
 function nonEmpty(value: string | null): string | null {
@@ -76,6 +82,11 @@ function parseView(raw: string | null): ListView {
   return raw !== null && isListView(raw) ? raw : DEFAULT_VIEW;
 }
 
+function parseShown(raw: string | null): number {
+  const parsed = parsePositiveInt(raw);
+  return parsed !== null && parsed > PAGE_SIZE ? parsed : PAGE_SIZE;
+}
+
 /** Reads the list's view state from a query string (with or without a leading `?`). */
 export function readListState(search: string): PublishedListState {
   const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
@@ -88,6 +99,7 @@ export function readListState(search: string): PublishedListState {
     year: parsePositiveInt(params.get("year")),
     sort: parseSort(params.get("sort")),
     view: parseView(params.get("view")),
+    shown: parseShown(params.get("shown")),
   };
 }
 
@@ -107,6 +119,9 @@ export function writeListState(state: PublishedListState): string {
   }
   if (state.sort !== DEFAULT_SORT) params.set("sort", state.sort);
   if (state.view !== DEFAULT_VIEW) params.set("view", state.view);
+  if (Number.isSafeInteger(state.shown) && state.shown > PAGE_SIZE) {
+    params.set("shown", String(state.shown));
+  }
   return params.toString();
 }
 

@@ -22,6 +22,7 @@ import type { PublishedDataset } from "@/domain/repository/types";
 import { communityUrl, zenodoConfig, type ZenodoConfig } from "@/features/review/zenodo";
 import {
   Badge,
+  Button,
   buttonClassName,
   cn,
   EmptyState,
@@ -34,6 +35,7 @@ import {
 
 import {
   DEFAULT_LIST_STATE,
+  PAGE_SIZE,
   publishedHref,
   readListState,
   type ListView,
@@ -111,7 +113,10 @@ function DatasetRow({
     .join(" · ");
   const allAuthors = dataset.creators.length > 2 ? dataset.creators.join("; ") : undefined;
   return (
-    <article className="group relative flex items-center gap-4 px-4 py-2 transition-colors duration-100 hover:bg-surface-subtle sm:px-5 sm:py-2">
+    <article
+      data-dataset-id={dataset.id}
+      className="group relative flex items-center gap-4 px-4 py-2 transition-colors duration-100 hover:bg-surface-subtle sm:px-5 sm:py-2"
+    >
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <h3 className="text-base font-semibold text-pretty text-text">
           <RouterLink
@@ -453,10 +458,11 @@ function Catalogue({
 }) {
   const [, navigate] = useLocation();
   const listState = useMemo(() => readListState(search), [search]);
-  const shown = useMemo(
+  const matching = useMemo(
     () => sortDatasets(filterDatasets(datasets, listState), listState.sort),
     [datasets, listState],
   );
+  const visible = useMemo(() => matching.slice(0, listState.shown), [matching, listState.shown]);
   const showCoverage = useMemo(
     () =>
       datasets.length >= MIN_DATASETS_FOR_COVERAGE &&
@@ -468,17 +474,43 @@ function Catalogue({
       showCoverage ? filterDatasets(datasets, { ...listState, countries: [], year: null }) : [],
     [datasets, listState, showCoverage],
   );
+  const entriesRef = useRef<HTMLElement | null>(null);
+  const pendingFocusIdRef = useRef<string | null>(null);
   const filtered = isFiltered(listState);
-  const shownCount = formatCount(shown.length);
+  const shownCount = formatCount(matching.length);
+  const visibleCount = formatCount(visible.length);
+
+  useEffect(() => {
+    const targetId = pendingFocusIdRef.current;
+    if (targetId === null || !visible.some((entry) => entry.id === targetId)) return;
+    const container = entriesRef.current;
+    if (container === null) return;
+    for (const item of container.querySelectorAll<HTMLElement>("[data-dataset-id]")) {
+      if (item.dataset.datasetId === targetId) {
+        const link = item.querySelector("a");
+        if (link !== null) {
+          pendingFocusIdRef.current = null;
+          link.focus();
+        }
+        return;
+      }
+    }
+  }, [visible]);
 
   const updateListState = (
     next: PublishedListState,
-    options: { readonly replace?: boolean } = {},
+    options: { readonly replace?: boolean; readonly focusDatasetId?: string | null } = {},
   ) => {
     const nextHref = publishedHref(next);
     const currentHref = search === "" ? "/published" : `/published?${search}`;
     if (nextHref === currentHref) return;
+    pendingFocusIdRef.current = options.focusDatasetId ?? null;
     navigate(nextHref, { replace: options.replace === true });
+  };
+
+  const handleSortChange = (sort: SortOrder) => {
+    if (sort === listState.sort) return;
+    updateListState({ ...listState, sort, shown: PAGE_SIZE });
   };
 
   const handleSelectCoverageCell = (country: string, year: number) => {
@@ -490,7 +522,19 @@ function Catalogue({
       ...listState,
       countries: alreadySelected ? [] : [country],
       year: alreadySelected ? null : year,
+      shown: PAGE_SIZE,
     });
+  };
+
+  const handleShowMore = () => {
+    const firstNew = matching[visible.length];
+    updateListState(
+      {
+        ...listState,
+        shown: Math.min(matching.length, listState.shown + PAGE_SIZE),
+      },
+      { focusDatasetId: firstNew?.id ?? null },
+    );
   };
 
   if (datasets.length === 0) {
@@ -515,8 +559,12 @@ function Catalogue({
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
-      <Totals datasets={shown} filtered={filtered} />
-      <section aria-labelledby="published-list-heading" className="flex min-w-0 flex-col gap-3">
+      <Totals datasets={matching} filtered={filtered} />
+      <section
+        ref={entriesRef}
+        aria-labelledby="published-list-heading"
+        className="flex min-w-0 flex-col gap-3"
+      >
         <h2 id="published-list-heading" className="sr-only">
           <Trans>Datasets</Trans>
         </h2>
@@ -526,7 +574,7 @@ function Catalogue({
             datasets={datasets}
             filters={listState}
             onChange={(nextFilters, options) =>
-              updateListState({ ...listState, ...nextFilters }, options)
+              updateListState({ ...listState, ...nextFilters, shown: PAGE_SIZE }, options)
             }
           />
         ) : null}
@@ -566,10 +614,7 @@ function Catalogue({
               ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <SortControl
-                sort={listState.sort}
-                onChange={(sort) => updateListState({ ...listState, sort })}
-              />
+              <SortControl sort={listState.sort} onChange={handleSortChange} />
               <ViewSwitch
                 view={listState.view}
                 onChange={(view) => updateListState({ ...listState, view })}
@@ -577,7 +622,7 @@ function Catalogue({
             </div>
           </div>
         ) : null}
-        {shown.length === 0 ? (
+        {matching.length === 0 ? (
           <EmptyState
             icon={Search}
             title={t`No published PMO matches`}
@@ -585,20 +630,35 @@ function Catalogue({
           />
         ) : listState.view === "table" ? (
           <PublishedTable
-            datasets={shown}
+            datasets={visible}
             sort={listState.sort}
-            onSortChange={(sort) => updateListState({ ...listState, sort })}
+            onSortChange={handleSortChange}
             onOpenDataset={onOpenDataset}
           />
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface shadow-xs">
-            {shown.map((dataset) => (
+            {visible.map((dataset) => (
               <li key={dataset.id}>
                 <DatasetRow dataset={dataset} onOpen={onOpenDataset} />
               </li>
             ))}
           </ul>
         )}
+        {matching.length > PAGE_SIZE ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+            <p className="text-sm text-text-muted tabular-nums">
+              {plural(matching.length, {
+                one: `Showing ${visibleCount} of # published PMO`,
+                other: `Showing ${visibleCount} of # published PMOs`,
+              })}
+            </p>
+            {visible.length < matching.length ? (
+              <Button variant="secondary" onClick={handleShowMore}>
+                <Trans>Show more</Trans>
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </section>
       <AddYours />
     </div>

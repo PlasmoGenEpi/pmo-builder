@@ -445,7 +445,7 @@ test("shows at least ten compact rows per screen at 1280 by 800, clamps long tit
   await expect(page.getByText("150 datasets")).toBeVisible();
 
   const list = page.locator("article");
-  await expect(list).toHaveCount(150);
+  await expect(list).toHaveCount(50);
 
   // Scroll the start of the list below the sticky top bar and count how many entries fit on one 1280x800 screen.
   const visibleOnScreen = await page.evaluate(() => {
@@ -605,4 +605,85 @@ test("keeps both list and table views usable at 390 px without horizontal page s
   const title = (await firstLink.textContent()) ?? "";
   await firstLink.click();
   await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+});
+
+test("renders 50 entries at first, adds 50 with focus on the first new entry, resets on filter or sort, and restores shown on Back", async ({
+  page,
+}) => {
+  await serveLargeCatalogue(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/#/published");
+  await expect(page.getByText("150 datasets")).toBeVisible();
+
+  const articles = page.locator("article");
+  await expect(articles).toHaveCount(50);
+  await expect(page.getByText("Showing 50 of 150 published PMOs")).toBeVisible();
+
+  const showMore = page.getByRole("button", { name: "Show more" });
+  await expect(showMore).toBeVisible();
+  await showMore.click();
+
+  await expect(articles).toHaveCount(100);
+  await expect(page.getByText("Showing 100 of 150 published PMOs")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#/published?shown=100");
+  const entry51 = LARGE_CATALOGUE.datasets[50];
+  expect(entry51).toBeDefined();
+  if (entry51 === undefined) return;
+  await expect(page.getByRole("link", { name: entry51.title })).toBeFocused();
+
+  // Open an entry beyond the 50th, then press Back: both shown count and scroll position restore.
+  const entry60 = LARGE_CATALOGUE.datasets[59];
+  expect(entry60).toBeDefined();
+  if (entry60 === undefined) return;
+  const targetRow = articles.nth(59);
+  await targetRow.scrollIntoViewIfNeeded();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(2000);
+  const scrollBeforeOpen = await page.evaluate(() => window.scrollY);
+
+  await targetRow.getByRole("link").click();
+  await expect(page.getByRole("heading", { level: 1, name: entry60.title })).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByRole("heading", { level: 1, name: "Published PMOs" })).toBeVisible();
+  await expect(articles).toHaveCount(100);
+  await expect(page.getByText("Showing 100 of 150 published PMOs")).toBeVisible();
+  expect(await page.evaluate(() => window.location.hash)).toBe("#/published?shown=100");
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThanOrEqual(scrollBeforeOpen - 20);
+  const scrollAfterBack = await page.evaluate(() => window.scrollY);
+  expect(Math.abs(scrollAfterBack - scrollBeforeOpen)).toBeLessThanOrEqual(20);
+
+  // Switch to table view, click Show more to reach 150, verify focus on the 101st row and button disappears.
+  await page.getByRole("radio", { name: "Table" }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.location.hash))
+    .toBe("#/published?view=table&shown=100");
+  const tableRows = page.locator("table tbody tr");
+  await expect(tableRows).toHaveCount(100);
+
+  await page.getByRole("button", { name: "Show more" }).click();
+  await expect(tableRows).toHaveCount(150);
+  await expect(page.getByText("Showing 150 of 150 published PMOs")).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => window.location.hash))
+    .toBe("#/published?view=table&shown=150");
+  const entry101 = LARGE_CATALOGUE.datasets[100];
+  expect(entry101).toBeDefined();
+  if (entry101 === undefined) return;
+  await expect(page.locator("table").getByRole("link", { name: entry101.title })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Show more" })).toBeHidden();
+
+  // Changing sort resets back to 50.
+  await chooseOption(page, "Sort by", "Most specimens");
+  await expect(tableRows).toHaveCount(50);
+  await expect
+    .poll(() => page.evaluate(() => window.location.hash))
+    .toBe("#/published?sort=specimens&view=table");
+  await expect(page.getByRole("button", { name: "Show more" })).toBeVisible();
+
+  // Filtering down to 50 or fewer entries hides Show more.
+  await chooseOption(page, "Species", /^Plasmodium vivax \(\d+\)$/);
+  expect(await tableRows.count()).toBeLessThanOrEqual(50);
+  await expect(page.getByRole("button", { name: "Show more" })).toBeHidden();
 });
