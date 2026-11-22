@@ -12,7 +12,7 @@ import {
   totalsOf,
   yearsText,
 } from "./catalogue";
-import { catalogue, dataset, DATASETS } from "./testing";
+import { catalogue, dataset, DATASETS, largeCatalogue } from "./testing";
 
 const ids = (datasets: readonly { readonly id: string }[]): string[] =>
   datasets.map((entry) => entry.id);
@@ -142,5 +142,30 @@ describe("wording", () => {
     expect(citationOf(dataset({ id: "5", title: "Done?", creators: [], doi: null }))).toBe(
       "(2026). Done? Zenodo. https://zenodo.org/records/5",
     );
+  });
+});
+
+describe("largeCatalogue", () => {
+  it("produces a deterministic 150-entry catalogue covering the expected distributions", () => {
+    const first = largeCatalogue();
+    const second = largeCatalogue();
+    expect(first).toEqual(second);
+    expect(first.datasets).toHaveLength(150);
+
+    const facets = facetsOf(first.datasets);
+    expect(facets.countries).toHaveLength(26);
+    expect(facets.panels).toHaveLength(8);
+    expect(facets.years[0]).toBe(2026);
+    expect(facets.years.at(-1)).toBe(2008);
+
+    const totals = totalsOf(first.datasets);
+    expect(totals.specimens).toBeGreaterThan(100_000);
+    expect(first.datasets.some((entry) => entry.title.length > 120)).toBe(true);
+    expect(first.datasets.some((entry) => entry.countries.length === 5)).toBe(true);
+    expect(first.datasets.some((entry) => entry.creators.length === 1)).toBe(true);
+    expect(first.datasets.some((entry) => entry.creators.length === 2)).toBe(true);
+    expect(first.datasets.some((entry) => entry.creators.length >= 10)).toBe(true);
+    expect(first.datasets.some((entry) => entry.taxa.includes(5855))).toBe(true);
+    expect(first.datasets.some((entry) => entry.taxa.includes(5833))).toBe(true);
   });
 });

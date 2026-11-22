@@ -9,20 +9,21 @@ import {
   Search,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Link as RouterLink } from "wouter";
+import { useEffect, useMemo, useRef } from "react";
+import { Link as RouterLink, useLocation, useSearch } from "wouter";
 
+import { lastNavigationKind } from "@/app/hashLocation";
 import { PageContainer } from "@/app/PageContainer";
 import { BUILD_PATH } from "@/app/steps";
 import type { PublishedDataset } from "@/domain/repository/types";
 import { communityUrl, zenodoConfig, type ZenodoConfig } from "@/features/review/zenodo";
 import { buttonClassName, cn, EmptyState, formatCount, inputClassName, Link, Select } from "@/ui";
 
+import { DEFAULT_LIST_STATE, publishedHref, readListState } from "./address";
 import {
   facetsOf,
   filterDatasets,
   longDate,
-  NO_FILTERS,
   totalsOf,
   yearsText,
   type CatalogueFilters,
@@ -32,6 +33,14 @@ import { loadSharedCatalogue, useCatalogue, type CatalogueLoader } from "./useCa
 
 /** The `Select` value that stands for "no limit". Radix does not allow an empty one. */
 const ANY = "any";
+
+/** Scroll offset of the list per query string, kept for the current visit so Back returns to the same row. */
+const scrollPositions = new Map<string, number>();
+
+/** Clears saved scroll positions. Intended for tests. */
+export function clearScrollPositionsForTests(): void {
+  scrollPositions.clear();
+}
 
 /** A fact about a dataset with the icon that says what kind it is. */
 function Fact({
@@ -59,7 +68,13 @@ function Fact({
 }
 
 /** One dataset in the list. The whole row opens its page. */
-function DatasetRow({ dataset }: { readonly dataset: PublishedDataset }) {
+function DatasetRow({
+  dataset,
+  onOpen,
+}: {
+  readonly dataset: PublishedDataset;
+  readonly onOpen: () => void;
+}) {
   const years = yearsText(dataset);
   const year = /^\d{4}/.exec(dataset.published)?.[0];
   return (
@@ -68,6 +83,7 @@ function DatasetRow({ dataset }: { readonly dataset: PublishedDataset }) {
         <h3 className="text-md font-semibold text-pretty text-text">
           <RouterLink
             href={`/published/${dataset.id}`}
+            onClick={onOpen}
             className="rounded-sm underline-offset-2 group-hover:text-accent-text after:absolute after:inset-0"
           >
             {dataset.title}
@@ -161,9 +177,21 @@ function Filters({
 }: {
   readonly datasets: readonly PublishedDataset[];
   readonly filters: CatalogueFilters;
-  readonly onChange: (filters: CatalogueFilters) => void;
+  readonly onChange: (filters: CatalogueFilters, options?: { readonly replace?: boolean }) => void;
 }) {
   const facets = useMemo(() => facetsOf(datasets), [datasets]);
+  const countries =
+    filters.country !== null && !facets.countries.includes(filters.country)
+      ? [filters.country, ...facets.countries]
+      : facets.countries;
+  const panels =
+    filters.panel !== null && !facets.panels.includes(filters.panel)
+      ? [filters.panel, ...facets.panels]
+      : facets.panels;
+  const years =
+    filters.year !== null && !facets.years.includes(filters.year)
+      ? [filters.year, ...facets.years]
+      : facets.years;
   return (
     <div className="flex flex-wrap items-center gap-2.5">
       <div className="relative min-w-0 flex-1 basis-48 max-sm:basis-full">
@@ -176,7 +204,9 @@ function Filters({
           aria-label={t`Search`}
           placeholder={t`Search datasets`}
           value={filters.search}
-          onChange={(event) => onChange({ ...filters, search: event.target.value })}
+          onChange={(event) =>
+            onChange({ ...filters, search: event.target.value }, { replace: true })
+          }
           className={cn(inputClassName, "h-control pl-9 text-base")}
         />
       </div>
@@ -187,7 +217,7 @@ function Filters({
           onValueChange={(value) => onChange({ ...filters, country: value === ANY ? null : value })}
           options={[
             { value: ANY, label: t`Any country` },
-            ...facets.countries.map((country) => ({ value: country, label: country })),
+            ...countries.map((country) => ({ value: country, label: country })),
           ]}
         />
       </div>
@@ -198,7 +228,7 @@ function Filters({
           onValueChange={(value) => onChange({ ...filters, panel: value === ANY ? null : value })}
           options={[
             { value: ANY, label: t`Any panel` },
-            ...facets.panels.map((panel) => ({ value: panel, label: panel })),
+            ...panels.map((panel) => ({ value: panel, label: panel })),
           ]}
         />
       </div>
@@ -211,7 +241,7 @@ function Filters({
           }
           options={[
             { value: ANY, label: t`Any year` },
-            ...facets.years.map((year) => ({ value: String(year), label: String(year) })),
+            ...years.map((year) => ({ value: String(year), label: String(year) })),
           ]}
         />
       </div>
@@ -256,11 +286,27 @@ function AddYours() {
   );
 }
 
-function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[] }) {
-  const [filters, setFilters] = useState<CatalogueFilters>(NO_FILTERS);
+function Catalogue({
+  datasets,
+  search,
+  onOpenDataset,
+}: {
+  readonly datasets: readonly PublishedDataset[];
+  readonly search: string;
+  readonly onOpenDataset: () => void;
+}) {
+  const [, navigate] = useLocation();
+  const filters = useMemo(() => readListState(search), [search]);
   const shown = useMemo(() => filterDatasets(datasets, filters), [datasets, filters]);
   const filtered = isFiltered(filters);
   const shownCount = formatCount(shown.length);
+
+  const updateFilters = (next: CatalogueFilters, options: { readonly replace?: boolean } = {}) => {
+    const nextHref = publishedHref(next);
+    const currentHref = search === "" ? "/published" : `/published?${search}`;
+    if (nextHref === currentHref) return;
+    navigate(nextHref, { replace: options.replace === true });
+  };
 
   if (datasets.length === 0) {
     return (
@@ -291,7 +337,7 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
         </h2>
         {/* With a single dataset there is nothing to narrow down. */}
         {datasets.length > 1 ? (
-          <Filters datasets={datasets} filters={filters} onChange={setFilters} />
+          <Filters datasets={datasets} filters={filters} onChange={updateFilters} />
         ) : null}
         {datasets.length > 1 ? (
           <div className="flex min-h-6 items-center justify-between gap-4 px-1">
@@ -306,7 +352,7 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
             {filtered ? (
               <button
                 type="button"
-                onClick={() => setFilters(NO_FILTERS)}
+                onClick={() => updateFilters(DEFAULT_LIST_STATE)}
                 className="cursor-pointer rounded-sm text-sm font-medium text-accent-text underline-offset-2 hover:underline"
               >
                 <Trans>Clear the filters</Trans>
@@ -324,7 +370,7 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
           <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface shadow-xs">
             {shown.map((dataset) => (
               <li key={dataset.id}>
-                <DatasetRow dataset={dataset} />
+                <DatasetRow dataset={dataset} onOpen={onOpenDataset} />
               </li>
             ))}
           </ul>
@@ -371,6 +417,51 @@ export interface PublishedPageProps {
 }
 
 /**
+ * Remembers the list's scroll offset by query string and restores it once the
+ * catalogue has rendered after a browser Back or Forward navigation.
+ */
+function useListScrollRestoration(ready: boolean, search: string): () => void {
+  const restoredKeyRef = useRef<string | null>(null);
+  const restoringRef = useRef(false);
+
+  useEffect(() => {
+    if (!ready || restoredKeyRef.current === search) return undefined;
+    restoredKeyRef.current = search;
+    if (lastNavigationKind() !== "pop") return undefined;
+    const savedY = scrollPositions.get(search);
+    if (savedY === undefined || savedY <= 0) return undefined;
+
+    restoringRef.current = true;
+    if (typeof window.scrollTo === "function") window.scrollTo({ top: savedY });
+    const frameId = window.requestAnimationFrame(() => {
+      if (window.scrollY !== savedY && typeof window.scrollTo === "function") {
+        window.scrollTo({ top: savedY });
+      }
+      restoringRef.current = false;
+    });
+    return () => {
+      restoringRef.current = false;
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [ready, search]);
+
+  useEffect(() => {
+    if (!ready) return undefined;
+    const onScroll = () => {
+      if (!restoringRef.current) scrollPositions.set(search, window.scrollY);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [ready, search]);
+
+  return () => {
+    scrollPositions.set(search, window.scrollY);
+  };
+}
+
+/**
  * The list of PMOs published in the Zenodo community, with totals and
  * filters. It reads a file on this site that is rebuilt from Zenodo, so
  * browsing it contacts nothing else.
@@ -380,6 +471,8 @@ export function PublishedPage({
   zenodo = zenodoConfig(),
 }: PublishedPageProps = {}) {
   const state = useCatalogue(load);
+  const search = useSearch();
+  const recordScrollPosition = useListScrollRestoration(state.kind === "ready", search);
   const community =
     state.kind === "ready" ? (zenodo?.community ?? state.index.community) : zenodo?.community;
   const name = zenodo?.communityName ?? community ?? "Zenodo";
@@ -404,7 +497,11 @@ export function PublishedPage({
         </header>
         {state.kind === "ready" ? (
           <>
-            <Catalogue datasets={state.index.datasets} />
+            <Catalogue
+              datasets={state.index.datasets}
+              search={search}
+              onOpenDataset={recordScrollPosition}
+            />
             <HarvestNote harvestedAt={state.index.harvestedAt} />
           </>
         ) : (

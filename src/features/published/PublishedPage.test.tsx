@@ -1,11 +1,13 @@
 import { I18nProvider } from "@lingui/react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { Route, Router, Switch } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 
 import { App } from "@/app/App";
+import { useHashLocation } from "@/app/hashLocation";
 import type { ZenodoConfig } from "@/features/review/zenodo";
 import { createTestStore } from "@/features/shared/testing";
 import { i18n } from "@/i18n";
@@ -13,18 +15,39 @@ import { installDomPolyfills } from "@/ui/testPolyfills";
 
 import type { CatalogueLoad } from "./catalogue";
 import { DatasetPage } from "./DatasetPage";
-import { PublishedPage } from "./PublishedPage";
+import { clearScrollPositionsForTests, PublishedPage } from "./PublishedPage";
 import { catalogue, DATASETS } from "./testing";
 
 beforeAll(installDomPolyfills);
+
 afterEach(() => {
+  clearScrollPositionsForTests();
   vi.restoreAllMocks();
 });
 
-/** `<Trans>` needs the i18n context, as in the app. */
-function wrapper({ children }: { children: ReactNode }) {
-  return <I18nProvider i18n={i18n}>{children}</I18nProvider>;
+/** `<Trans>` and an isolated memory router, as in the app. */
+function makeWrapper(path = "/published") {
+  const location = memoryLocation({ path, record: true });
+  function Wrapper({ children }: { children: ReactNode }) {
+    return (
+      <I18nProvider i18n={i18n}>
+        <Router hook={location.hook}>{children}</Router>
+      </I18nProvider>
+    );
+  }
+  return { wrapper: Wrapper, location };
 }
+
+function DefaultWrapper({ children }: { children: ReactNode }) {
+  const [location] = useState(() => memoryLocation({ path: "/published", record: true }));
+  return (
+    <I18nProvider i18n={i18n}>
+      <Router hook={location.hook}>{children}</Router>
+    </I18nProvider>
+  );
+}
+
+const wrapper = DefaultWrapper;
 
 const ZENODO: ZenodoConfig = {
   community: "pmocommunity",
@@ -167,6 +190,127 @@ describe("PublishedPage", () => {
     expect(
       await screen.findByText("The list of published PMOs could not be loaded"),
     ).toBeInTheDocument();
+  });
+
+  it("keeps search and filters in the address without pushing a history entry per letter, and clears them", async () => {
+    const user = userEvent.setup();
+    const { wrapper: listWrapper, location } = makeWrapper("/published");
+    const { unmount } = render(<PublishedPage load={READY} zenodo={ZENODO} />, {
+      wrapper: listWrapper,
+    });
+    await screen.findByText("3 datasets");
+    expect(location.history).toEqual(["/published"]);
+
+    await user.type(screen.getByRole("searchbox", { name: "Search" }), "maputo");
+    expect(location.history).toEqual(["/published?q=maputo"]);
+
+    await choose(user, "Country", "Mozambique");
+    expect(location.history).toEqual([
+      "/published?q=maputo",
+      "/published?q=maputo&country=Mozambique",
+    ]);
+    expect(titles()).toEqual(["Maputo surveillance 2015 to 2019"]);
+
+    // Loading the copied address shows the same filtered list.
+    const copiedAddress = location.history.at(-1);
+    unmount();
+    const { wrapper: copiedWrapper } = makeWrapper(copiedAddress);
+    render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper: copiedWrapper });
+    expect(await screen.findByText("1 of 3 datasets")).toBeInTheDocument();
+    expect(titles()).toEqual(["Maputo surveillance 2015 to 2019"]);
+    expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("maputo");
+
+    await user.click(screen.getByRole("button", { name: "Clear the filters" }));
+    expect(titles()).toHaveLength(3);
+    expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("");
+  });
+
+  it("clears the address when clicking Clear the filters", async () => {
+    const user = userEvent.setup();
+    const { wrapper: listWrapper, location } = makeWrapper(
+      "/published?q=maputo&country=Mozambique",
+    );
+    render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper: listWrapper });
+    await screen.findByText("1 of 3 datasets");
+
+    await user.click(screen.getByRole("button", { name: "Clear the filters" }));
+    expect(location.history.at(-1)).toBe("/published");
+    expect(titles()).toHaveLength(3);
+  });
+
+  it("restores search, filters and scroll position when going Back from a dataset", async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, "", "/#/published");
+    const scrollDescriptor = Object.getOwnPropertyDescriptor(window, "scrollY");
+    let currentScrollY = 0;
+    Object.defineProperty(window, "scrollY", {
+      configurable: true,
+      get: () => currentScrollY,
+    });
+    const scrollToSpy = vi.spyOn(window, "scrollTo").mockImplementation((...args: unknown[]) => {
+      const first = args[0];
+      if (
+        typeof first === "object" &&
+        first !== null &&
+        "top" in first &&
+        typeof first.top === "number"
+      ) {
+        currentScrollY = first.top;
+      }
+    });
+
+    try {
+      render(
+        <I18nProvider i18n={i18n}>
+          <Router hook={useHashLocation}>
+            <Switch>
+              <Route path="/published">
+                <PublishedPage load={READY} zenodo={ZENODO} />
+              </Route>
+              <Route path="/published/:id">
+                {(params) => <DatasetPage id={params.id} load={READY} />}
+              </Route>
+            </Switch>
+          </Router>
+        </I18nProvider>,
+      );
+
+      await screen.findByText("3 datasets");
+      await user.type(screen.getByRole("searchbox", { name: "Search" }), "mozambique");
+      await choose(user, "Panel", "Mad4hatter");
+      expect(window.location.hash).toBe("#/published?q=mozambique&panel=Mad4hatter");
+
+      currentScrollY = 640;
+      window.dispatchEvent(new Event("scroll"));
+
+      await user.click(screen.getByRole("link", { name: "Maputo surveillance 2015 to 2019" }));
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "Maputo surveillance 2015 to 2019" }),
+      ).toBeInTheDocument();
+      expect(window.location.hash).toBe("#/published/301");
+
+      scrollToSpy.mockClear();
+      currentScrollY = 0;
+      window.history.back();
+
+      expect(await screen.findByText("2 of 3 datasets")).toBeInTheDocument();
+      expect(window.location.hash).toBe("#/published?q=mozambique&panel=Mad4hatter");
+      expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("mozambique");
+      expect(titles()).toEqual([
+        "Maputo surveillance 2015 to 2019",
+        "Border travellers, Mozambique and Eswatini",
+      ]);
+      await waitFor(() => {
+        expect(scrollToSpy).toHaveBeenCalledWith({ top: 640 });
+      });
+    } finally {
+      window.history.replaceState(null, "", "/");
+      if (scrollDescriptor !== undefined) {
+        Object.defineProperty(window, "scrollY", scrollDescriptor);
+      } else {
+        Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
+      }
+    }
   });
 });
 
