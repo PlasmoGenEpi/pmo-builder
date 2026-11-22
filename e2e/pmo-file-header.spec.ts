@@ -148,6 +148,16 @@ test("at 390x844 visible data appears on the first screen of Summary and Compare
   const firstStatBox = await boxOf(firstStat);
   expect(firstStatBox.y + firstStatBox.height).toBeLessThanOrEqual(844);
 
+  // Clicking a Summary jump link lands the heading below the sticky two-row top bar.
+  const jumpsNav = page.getByRole("navigation", { name: "On this page" });
+  await jumpsNav.getByRole("button", { name: "Samples" }).click();
+  const topBarBox = await boxOf(page.getByRole("banner"));
+  const samplesHeadingBox = await boxOf(page.getByRole("heading", { level: 2, name: "Samples" }));
+  expect(samplesHeadingBox.y).toBeGreaterThanOrEqual(topBarBox.y + topBarBox.height - 0.5);
+
+  // Scroll back up so the tab strip is reachable before switching to Compare.
+  await page.evaluate(() => window.scrollTo(0, 0));
+
   // Compare: at least the first row of the Groups table is within the first screen,
   // and the group selector fits inside the 390px viewport.
   await page.getByRole("tab", { name: "Compare" }).click();

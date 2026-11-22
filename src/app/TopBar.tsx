@@ -94,7 +94,7 @@ export function TopBar({ onOpenNav, showPublished = zenodoConfig() !== null }: T
       </RouterLink>
       <nav
         aria-label={t`Sections`}
-        className="order-last flex basis-full items-center gap-1 overflow-x-auto border-t border-border px-2 py-1 md:order-none md:ml-4 md:basis-auto md:overflow-visible md:border-t-0 md:p-0"
+        className="order-last flex basis-full items-center gap-1 overflow-x-auto border-t border-border px-2 py-1 md:order-none md:ml-4 md:shrink-0 md:basis-auto md:overflow-visible md:border-t-0 md:p-0"
       >
         {sections(showPublished).map((section) => {
           const active = section.matches(location);

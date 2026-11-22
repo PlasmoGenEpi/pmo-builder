@@ -1,7 +1,7 @@
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { FileSpreadsheet, Hammer } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Link as RouterLink, useLocation, useParams } from "wouter";
 
 import { PageContainer } from "@/app/PageContainer";
@@ -28,12 +28,9 @@ import {
 
 import { Invalid, refusal } from "./FileRefusal";
 import { PmoHeaderBar } from "./PmoHeaderBar";
-import { PmoOverview } from "./PmoOverview";
+import { PmoReading, readOnlyPmoTabs } from "./PmoReading";
 import { PublishPanel } from "./PublishPanel";
-import { CompareTab } from "./summary/CompareTab";
-import { SummaryPanel } from "./summary/SummaryPanel";
 import { SubsetPanel } from "./SubsetPanel";
-import { TablesPanel } from "./TablesPanel";
 
 /** My PMO file's tabs, which are also the last part of its address (`#/pmo/tables`). */
 export const PMO_TABS = ["overview", "summary", "compare", "tables", "subset", "publish"] as const;
@@ -46,11 +43,6 @@ export const OPEN_BUILT_PATH = "/pmo/open-built";
 
 function isTab(value: string | undefined): value is PmoTab {
   return PMO_TABS.some((tab) => tab === value);
-}
-
-/** A tab's content at reading width, under the page's full-width tabs. */
-function Reading({ children }: { readonly children: ReactNode }) {
-  return <div className="max-w-reading">{children}</div>;
 }
 
 /**
@@ -240,61 +232,21 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
             value={zenodo === null && tab === "publish" ? "overview" : tab}
             onValueChange={(next) => navigate(`/pmo/${next}`)}
             tabs={[
-              {
-                value: "overview",
-                label: t`Overview`,
-                content: (
-                  <Reading>
-                    <PmoOverview
-                      opened={file.opened}
-                      origin={file.origin}
-                      onDownload={() => saveFile(file.file, file.name)}
-                    />
-                  </Reading>
-                ),
-              },
-              {
-                value: "summary",
-                label: t`Summary`,
-                content: (
-                  <SummaryPanel
-                    key={generation}
-                    source={source}
-                    minReads={minReads}
-                    onMinReadsChange={(next) => session.setMinReads(next)}
-                  />
-                ),
-              },
-              {
-                value: "compare",
-                label: t`Compare`,
-                content: (
-                  <CompareTab
-                    key={generation}
-                    source={source}
-                    minReads={minReads}
-                    onMinReadsChange={(next) => session.setMinReads(next)}
-                  />
-                ),
-              },
-              {
-                value: "tables",
-                label: t`Tables`,
-                content: (
-                  <Reading>
-                    <TablesPanel
-                      tables={file.opened.tables}
-                      subsetTables={made?.tables ?? null}
-                      source={source}
-                    />
-                  </Reading>
-                ),
-              },
+              ...readOnlyPmoTabs({
+                opened: file.opened,
+                origin: file.origin,
+                onDownload: () => saveFile(file.file, file.name),
+                generation,
+                source,
+                minReads,
+                onMinReadsChange: (next) => session.setMinReads(next),
+                subsetTables: made?.tables ?? null,
+              }),
               {
                 value: "subset",
                 label: t`Subset`,
                 content: (
-                  <Reading>
+                  <PmoReading>
                     <SubsetPanel
                       key={generation}
                       choices={file.opened.choices}
@@ -316,7 +268,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                             }
                       }
                     />
-                  </Reading>
+                  </PmoReading>
                 ),
               },
               ...(zenodo === null
@@ -326,9 +278,9 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                       value: "publish" as const,
                       label: t`Publish to Zenodo`,
                       content: (
-                        <Reading>
+                        <PmoReading>
                           <PublishPanel zenodo={zenodo} file={file} subset={made} source={source} />
-                        </Reading>
+                        </PmoReading>
                       ),
                     },
                   ]),

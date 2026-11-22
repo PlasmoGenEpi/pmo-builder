@@ -8,6 +8,8 @@ import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./fixtures/privacy";
 
 const PHONE = { width: 390, height: 844 } as const;
+const TABLET_SM = { width: 640, height: 800 } as const;
+const TABLET_MD = { width: 768, height: 800 } as const;
 const DESKTOP = { width: 1280, height: 800 } as const;
 
 type RouteKey = "build" | "pmo" | "published";
@@ -18,6 +20,7 @@ interface LocaleCase {
   readonly moreOptions: string;
   readonly startOver: string;
   readonly saveStatus: string;
+  readonly saveWarning: string;
   readonly saveHeading: string;
   readonly privacy: string;
   readonly openSteps: string;
@@ -31,6 +34,7 @@ const LOCALES: readonly LocaleCase[] = [
     moreOptions: "More options",
     startOver: "Start over",
     saveStatus: "Draft saved",
+    saveWarning: "Not kept after you close this tab",
     saveHeading: "Saved on this device",
     privacy: "Your data stays on this device",
     openSteps: "Open the step list",
@@ -46,6 +50,7 @@ const LOCALES: readonly LocaleCase[] = [
     moreOptions: "Plus d’options",
     startOver: "Recommencer",
     saveStatus: "Brouillon enregistré",
+    saveWarning: "Non conservé après la fermeture de cet onglet",
     saveHeading: "Enregistré sur cet appareil",
     privacy: "Vos données restent sur cet appareil",
     openSteps: "Ouvrir la liste des étapes",
@@ -61,6 +66,7 @@ const LOCALES: readonly LocaleCase[] = [
     moreOptions: "Mais opções",
     startOver: "Recomeçar",
     saveStatus: "Rascunho guardado",
+    saveWarning: "Não é mantido depois de fechar este separador",
     saveHeading: "Guardado neste dispositivo",
     privacy: "Os seus dados ficam neste dispositivo",
     openSteps: "Abrir a lista de etapas",
@@ -225,6 +231,80 @@ for (const locale of LOCALES) {
         await page.keyboard.press("Escape");
         // oxlint-disable-next-line no-await-in-loop -- wait for popover to close.
         await expect(saveHeading).toBeHidden();
+      }
+    }
+  });
+
+  test(`top bar fits at 640 px and 768 px in ${locale.name}, including save warnings`, async ({
+    page,
+  }) => {
+    await stubCatalogue(page);
+    // Block IndexedDB so SaveStatus enters its session-only warning state.
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "indexedDB", {
+        get() {
+          throw new Error("Storage blocked");
+        },
+      });
+    });
+
+    for (const viewport of [TABLET_SM, TABLET_MD] as const) {
+      // oxlint-disable-next-line no-await-in-loop -- viewports are checked one at a time.
+      await page.setViewportSize(viewport);
+      for (const route of ROUTES) {
+        // oxlint-disable-next-line no-await-in-loop -- routes are checked one at a time.
+        await page.goto(`/${locale.query}${route.hash}`);
+        // oxlint-disable-next-line no-await-in-loop -- wait for the route's heading to load.
+        await expect(
+          page.getByRole("heading", { level: 1, name: locale.headings[route.key] }),
+        ).toBeVisible();
+        const header = page.getByRole("banner");
+        // oxlint-disable-next-line no-await-in-loop -- wait for top bar controls.
+        await expect(header.getByRole("button", { name: locale.moreOptions })).toBeVisible();
+
+        // oxlint-disable-next-line no-await-in-loop -- check document overflow.
+        const overflow = await page.evaluate(() => ({
+          scrollWidth: document.documentElement.scrollWidth,
+          innerWidth: window.innerWidth,
+        }));
+        expect(
+          overflow.scrollWidth,
+          `${locale.name} ${viewport.width}px ${route.name}: document scrollWidth`,
+        ).toBeLessThanOrEqual(overflow.innerWidth);
+
+        // oxlint-disable-next-line no-await-in-loop -- check header stays inside viewport.
+        await expectInsideViewport(
+          header,
+          viewport.width,
+          `${locale.name} ${viewport.width}px ${route.name} header`,
+        );
+
+        // At 768 px (md) the top bar is single-row.
+        if (viewport.width >= TABLET_MD.width) {
+          // oxlint-disable-next-line no-await-in-loop -- measure single-row height at md.
+          const headerBox = await header.boundingBox();
+          expect(
+            headerBox?.height ?? 999,
+            `${locale.name} ${viewport.width}px ${route.name} header height`,
+          ).toBeLessThanOrEqual(60);
+        }
+
+        if (route.building) {
+          const warningButton = header.getByRole("button", { name: locale.saveWarning });
+          // oxlint-disable-next-line no-await-in-loop -- check warning button stays on screen.
+          await expectInsideViewport(
+            warningButton,
+            viewport.width,
+            `${locale.name} ${viewport.width}px save warning`,
+          );
+          // Warning text is visible from `sm:` (wider than an icon-only button).
+          // oxlint-disable-next-line no-await-in-loop -- measure warning button width.
+          const warningBox = await warningButton.boundingBox();
+          expect(
+            warningBox?.width ?? 0,
+            `${locale.name} ${viewport.width}px save warning text visible`,
+          ).toBeGreaterThan(80);
+        }
       }
     }
   });

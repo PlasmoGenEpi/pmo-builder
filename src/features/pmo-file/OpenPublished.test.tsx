@@ -18,14 +18,15 @@ import { signIn } from "@/features/review/zenodoAuth";
 import { depositDraft } from "@/features/review/zenodoDeposit";
 import { createTestStore } from "@/features/shared/testing";
 import { i18n } from "@/i18n";
-import { AppStoreProvider, publishedPmoSessionOf, workingPmoSessionOf } from "@/state";
+import { AppStoreProvider, workingPmoSessionOf } from "@/state";
 import { installBlobStream } from "@/test/blobStream";
 import { ToastProvider } from "@/ui";
 import { installDomPolyfills } from "@/ui/testPolyfills";
 import { createInThreadEngine } from "@/worker/engine";
 
-import { isPublishedTab, OpenPublished, type FileFetcher } from "./OpenPublished";
+import { OpenPublished, type FileFetcher } from "./OpenPublished";
 import { PmoFilePage, PMO_TABS, type PmoTab } from "./PmoFilePage";
+import { isPublishedTab } from "./publishedTabs";
 
 vi.mock("@/features/review/zenodoAuth", () => ({ signIn: vi.fn<typeof signIn>() }));
 vi.mock("@/features/review/zenodoDeposit", () => ({ depositDraft: vi.fn<typeof depositDraft>() }));
@@ -240,7 +241,6 @@ describe("Published view (OpenPublished)", () => {
   it("leaves a pre-existing working PMO and its subset untouched, and drops the published PMO on leaving", async () => {
     const store = createTestStore();
     const working = workingPmoSessionOf(store);
-    const published = publishedPmoSessionOf(store);
 
     // Open a 50-specimen working PMO and make a 3-specimen subset before visiting a published PMO.
     await working.open({
@@ -265,21 +265,13 @@ describe("Published view (OpenPublished)", () => {
     expect(await screen.findByText("This file is a valid PMO")).toBeInTheDocument();
     // Overview shows the published PMO's 8 specimens, not the working PMO's 50 or subset's 3.
     expect(screen.getByRole("region", { name: "What is in the PMO" })).toHaveTextContent("8");
-    expect(published.state.getState().open).toMatchObject({
-      kind: "opened",
-      origin: { kind: "published", id: "303" },
-    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
 
     // Leave the published view via the Dataset page link.
     await user.click(screen.getByRole("link", { name: "Dataset page" }));
     expect(await screen.findByText("Dataset page 303")).toBeInTheDocument();
 
-    // Published PMO is dropped from memory on leaving.
-    await waitFor(() => {
-      expect(published.state.getState().open).toEqual({ kind: "none" });
-    });
-
-    // Working PMO and its subset are still intact in My PMO file.
+    // Working PMO and its 3-specimen subset are still intact in My PMO file.
     act(() => {
       location.navigate("/pmo/overview");
     });
@@ -288,21 +280,27 @@ describe("Published view (OpenPublished)", () => {
     ).toBeInTheDocument();
     const sourceSwitch = screen.getByRole("radiogroup", { name: "Work with" });
     expect(within(sourceSwitch).getByRole("radio", { name: "Subset" })).toBeChecked();
-    expect(working.state.getState().subset).toMatchObject({
-      kind: "made",
-      made: { summary: { specimens: 3 } },
+    await user.click(screen.getByRole("tab", { name: "Subset" }));
+    expect(await screen.findByText(/^It keeps 3 of \d+ specimens/)).toBeInTheDocument();
+
+    // Returning to the published view fetches again, confirming it was dropped on leaving.
+    act(() => {
+      location.navigate("/published/303/overview");
     });
+    expect(await screen.findByText("This file is a valid PMO")).toBeInTheDocument();
+    expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
   it("drops the previous published PMO when navigating directly to another published record", async () => {
     const fetcher = vi
       .fn<FileFetcher>()
       .mockResolvedValueOnce(FILE)
-      .mockResolvedValueOnce(OTHER_FILE);
-    const { store, location } = await openPublishedView("/published/303/overview", { fetcher });
+      .mockResolvedValueOnce(OTHER_FILE)
+      .mockResolvedValueOnce(FILE);
+    const { location } = await openPublishedView("/published/303/overview", { fetcher });
 
     expect(await screen.findByText("This file is a valid PMO")).toBeInTheDocument();
-    expect(publishedPmoSessionOf(store).isPublishedOpen("303")).toBe(true);
+    expect(screen.getByRole("region", { name: "What is in the PMO" })).toHaveTextContent("8");
 
     act(() => {
       location.navigate("/published/301/overview");
@@ -310,11 +308,26 @@ describe("Published view (OpenPublished)", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Maputo surveillance 2015 to 2019" }),
     ).toBeInTheDocument();
+    expect(await screen.findByText("This file is a valid PMO")).toBeInTheDocument();
     await waitFor(() => {
-      expect(publishedPmoSessionOf(store).isPublishedOpen("301")).toBe(true);
+      expect(screen.getByRole("region", { name: "What is in the PMO" })).toHaveTextContent("4");
     });
     expect(fetcher).toHaveBeenCalledTimes(2);
-    expect(screen.getByRole("region", { name: "What is in the PMO" })).toHaveTextContent("4");
+
+    // Navigating back to 303 downloads it again, confirming 303 was dropped when 301 opened.
+    act(() => {
+      location.navigate("/published/303/overview");
+    });
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Border travellers, Mozambique and Eswatini",
+      }),
+    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("region", { name: "What is in the PMO" })).toHaveTextContent("8");
+    });
+    expect(fetcher).toHaveBeenCalledTimes(3);
   });
 
   it("normalizes an unknown tab address to overview", async () => {
@@ -383,7 +396,7 @@ describe("Published view (OpenPublished)", () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
-  it("shows why a refused published file could not be opened inline, without linking to /pmo", async () => {
+  it("explains published wrong-version refusals without telling readers to rebuild from tables", async () => {
     const wrongVersion = {
       ...publishedPmo(4),
       pmo_header: { ...EXAMPLE.pmo_header, pmo_version: "1.0.0" },
@@ -393,11 +406,37 @@ describe("Published view (OpenPublished)", () => {
     await openPublishedView("/published/303/summary", { fetcher });
     const alert = await screen.findByRole("alert");
     expect(within(alert).getByText("The published file could not be opened")).toBeInTheDocument();
-    expect(within(alert).getByText(/PMO version 1\.0\.0/)).toBeInTheDocument();
+    expect(
+      within(alert).getByText(
+        "This file is in PMO version 1.0.0. Only version 1.1.0 files can be opened here. Download it from Zenodo to inspect it on your computer.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(alert).queryByText(/Build it again/)).not.toBeInTheDocument();
     expect(within(alert).queryByRole("link", { name: "See why" })).not.toBeInTheDocument();
     expect(
       within(alert).getByRole("link", { name: "Download it from Zenodo instead" }),
     ).toHaveAttribute("href", "https://zenodo.org/api/records/303/files/study.pmo.json.gz/content");
+  });
+
+  it("explains published missing-version refusals without telling readers to rebuild from tables", async () => {
+    const { pmo_version: _omitted, ...headerWithoutVersion } = EXAMPLE.pmo_header;
+    const missingVersion = {
+      ...publishedPmo(4),
+      pmo_header: headerWithoutVersion,
+    };
+    const fetcher = vi
+      .fn<FileFetcher>()
+      .mockResolvedValue(new Blob([JSON.stringify(missingVersion)]));
+
+    await openPublishedView("/published/303/summary", { fetcher });
+    const alert = await screen.findByRole("alert");
+    expect(within(alert).getByText("The published file could not be opened")).toBeInTheDocument();
+    expect(
+      within(alert).getByText(
+        "This file does not say which PMO version it is. Only version 1.1.0 files can be opened here. Download it from Zenodo to inspect it on your computer.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(alert).queryByText(/Build it again/)).not.toBeInTheDocument();
   });
 
   it("shows invalid schema problems inline for a refused published file, without linking to /pmo", async () => {
@@ -454,8 +493,11 @@ describe("Published view (OpenPublished)", () => {
   describe("Work with this file", () => {
     it("opens the published PMO in My PMO file with all tabs when no working PMO is open, without re-downloading", async () => {
       const deferred = deferredBlob();
-      const fetcher = vi.fn<FileFetcher>(() => deferred.promise);
-      const { user, store, location } = await openPublishedView("/published/303/summary", {
+      const fetcher = vi
+        .fn<FileFetcher>()
+        .mockImplementationOnce(() => deferred.promise)
+        .mockResolvedValue(FILE);
+      const { user, location } = await openPublishedView("/published/303/summary", {
         fetcher,
       });
 
@@ -493,22 +535,20 @@ describe("Published view (OpenPublished)", () => {
 
       // Already-downloaded Blob was reused; Zenodo was not contacted again.
       expect(fetcher).toHaveBeenCalledTimes(1);
-      // Published slot was freed and working slot holds the published origin.
-      expect(publishedPmoSessionOf(store).state.getState().open).toEqual({ kind: "none" });
-      expect(workingPmoSessionOf(store).state.getState().open).toMatchObject({
-        kind: "opened",
-        name: "study.pmo.json.gz",
-        origin: {
-          kind: "published",
-          id: "303",
-          title: "Border travellers, Mozambique and Eswatini",
-          recordUrl: "https://zenodo.org/records/303",
-        },
-      });
 
-      // Overview shows the published-PMO origin callout.
+      // Overview shows the published-PMO origin callout linking back to the Zenodo record.
       await user.click(screen.getByRole("tab", { name: "Overview" }));
       expect(await screen.findByText("This is a published PMO")).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /Border travellers, Mozambique and Eswatini/ }),
+      ).toHaveAttribute("href", "https://zenodo.org/records/303");
+
+      // Returning to the published view downloads again, confirming the published slot was freed.
+      act(() => {
+        location.navigate("/published/303/overview");
+      });
+      expect(await screen.findByText("This file is a valid PMO")).toBeInTheDocument();
+      expect(fetcher).toHaveBeenCalledTimes(2);
     });
 
     it("asks before replacing an open working PMO, leaves it intact on cancel, and replaces it on confirm", async () => {
@@ -535,22 +575,21 @@ describe("Published view (OpenPublished)", () => {
       const dialog = await screen.findByRole("alertdialog");
       expect(within(dialog).getByText(/my-lab\.pmo\.json/)).toBeInTheDocument();
 
-      // Cancelling leaves the published view open and the working PMO untouched.
+      // Cancelling leaves the published view open without re-fetching and keeps the working PMO.
       await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
       await waitFor(() => {
         expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
       });
       expect(location.history.at(-1)).toBe("/published/303/tables");
-      expect(working.state.getState().open).toMatchObject({
-        kind: "opened",
-        name: "my-lab.pmo.json",
-        origin: { kind: "chosen" },
-      });
-      expect(publishedPmoSessionOf(store).isPublishedOpen("303")).toBe(true);
+      expect(
+        screen.getByRole("button", { name: "Download all tables (.zip)" }),
+      ).toBeInTheDocument();
+      expect(fetcher).toHaveBeenCalledTimes(1);
 
       // Confirming replaces the working PMO without re-downloading and lands on the same tab.
       await user.click(screen.getByRole("button", { name: "Work with this file" }));
       const secondDialog = await screen.findByRole("alertdialog");
+      expect(within(secondDialog).getByText(/my-lab\.pmo\.json/)).toBeInTheDocument();
       await user.click(within(secondDialog).getByRole("button", { name: "Replace it" }));
 
       expect(
@@ -559,11 +598,8 @@ describe("Published view (OpenPublished)", () => {
       expect(location.history.at(-1)).toBe("/pmo/tables");
       expect(screen.getByRole("tab", { name: "Tables", selected: true })).toBeInTheDocument();
       expect(fetcher).toHaveBeenCalledTimes(1);
-      expect(working.state.getState().open).toMatchObject({
-        kind: "opened",
-        name: "study.pmo.json.gz",
-        origin: { kind: "published", id: "303" },
-      });
+      await user.click(screen.getByRole("tab", { name: "Overview" }));
+      expect(await screen.findByText("This is a published PMO")).toBeInTheDocument();
     });
 
     it("names both the working PMO and its subset in the confirmation, keeping both on cancel and replacing them on confirm", async () => {
@@ -583,10 +619,6 @@ describe("Published view (OpenPublished)", () => {
         targets: { kind: "all" },
         minReads: 0,
       });
-      const subsetState = working.state.getState().subset;
-      expect(subsetState.kind).toBe("made");
-      if (subsetState.kind !== "made") return;
-      const subsetFileName = subsetState.made.fileName;
 
       const fetcher = vi.fn<FileFetcher>().mockResolvedValue(FILE);
       const { user, location } = await openPublishedView("/published/303/overview", {
@@ -599,25 +631,32 @@ describe("Published view (OpenPublished)", () => {
       await user.click(screen.getByRole("button", { name: "Work with this file" }));
       const dialog = await screen.findByRole("alertdialog");
       expect(within(dialog).getByText(/my-lab\.pmo\.json/)).toBeInTheDocument();
-      expect(
-        within(dialog).getByText(new RegExp(subsetFileName.replace(/\./g, "\\."))),
-      ).toBeInTheDocument();
+      expect(within(dialog).getByText(/my-lab-subset\.json\.gz/)).toBeInTheDocument();
 
-      // Cancelling leaves both the working PMO and its subset untouched.
+      // Cancelling leaves both the working PMO and its subset untouched in My PMO file.
       await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
       await waitFor(() => {
         expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
       });
-      expect(working.state.getState().open).toMatchObject({
-        kind: "opened",
-        name: "my-lab.pmo.json",
+      act(() => {
+        location.navigate("/pmo/overview");
       });
-      expect(working.state.getState().subset).toMatchObject({
-        kind: "made",
-        made: { fileName: subsetFileName, summary: { specimens: 3 } },
-      });
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "my-lab.pmo.json" }),
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByRole("radiogroup", { name: "Work with" })).getByRole("radio", {
+          name: "Subset",
+        }),
+      ).toBeChecked();
 
-      // Confirming replaces both and opens the published PMO in My PMO file.
+      // Returning and confirming replaces both without re-downloading during hand-off.
+      act(() => {
+        location.navigate("/published/303/overview");
+      });
+      expect(await screen.findByText("This file is a valid PMO")).toBeInTheDocument();
+      const fetchesBeforeConfirm = fetcher.mock.calls.length;
+
       await user.click(screen.getByRole("button", { name: "Work with this file" }));
       const confirmDialog = await screen.findByRole("alertdialog");
       await user.click(within(confirmDialog).getByRole("button", { name: "Replace it" }));
@@ -626,8 +665,102 @@ describe("Published view (OpenPublished)", () => {
         await screen.findByRole("heading", { level: 1, name: "study.pmo.json.gz" }),
       ).toBeInTheDocument();
       expect(location.history.at(-1)).toBe("/pmo/overview");
+      expect(fetcher).toHaveBeenCalledTimes(fetchesBeforeConfirm);
+      expect(screen.queryByRole("radiogroup", { name: "Work with" })).not.toBeInTheDocument();
+    });
+
+    it("asks before replacing a working PMO that is still opening", async () => {
+      const engine = createInThreadEngine();
+      let releaseOpen: () => void = noop;
+      const openGate = new Promise<void>((resolve) => {
+        releaseOpen = resolve;
+      });
+      const store = createTestStore({
+        engine: {
+          ...engine,
+          workingPmo: async (call) => {
+            if (call.slot === "working" && call.request.kind === "open") {
+              await openGate;
+            }
+            return engine.workingPmo(call);
+          },
+        },
+      });
+      // Start opening a working PMO without waiting for it to finish.
+      const pendingOpen = workingPmoSessionOf(store).open({
+        kind: "file",
+        file: new File([stringifyPmo(EXAMPLE)], "slow-lab.pmo.json"),
+        name: "slow-lab.pmo.json",
+        origin: { kind: "chosen" },
+      });
+
+      const fetcher = vi.fn<FileFetcher>().mockResolvedValue(FILE);
+      const { user, location } = await openPublishedView("/published/303/summary", {
+        store,
+        fetcher,
+      });
+
+      expect(
+        await screen.findByRole("tab", { name: "Summary", selected: true }),
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Work with this file" }));
+      const dialog = await screen.findByRole("alertdialog");
+      expect(within(dialog).getByText(/slow-lab\.pmo\.json/)).toBeInTheDocument();
+
+      await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+      await waitFor(() => {
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      });
+
+      releaseOpen();
+      await pendingOpen;
+      act(() => {
+        location.navigate("/pmo/overview");
+      });
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "slow-lab.pmo.json" }),
+      ).toBeInTheDocument();
+    });
+
+    it("recovers the published view when hand-off into My PMO file is superseded", async () => {
+      const engine = createInThreadEngine();
+      let supersedeNext = true;
+      let storeRef: ReturnType<typeof createTestStore> | null = null;
+      const store = createTestStore({
+        engine: {
+          ...engine,
+          workingPmo: async (call) => {
+            if (call.slot === "working" && call.request.kind === "open" && supersedeNext) {
+              supersedeNext = false;
+              // Simulate a competing open or close superseding this hand-off before it settles.
+              if (storeRef !== null) void workingPmoSessionOf(storeRef).close();
+            }
+            return engine.workingPmo(call);
+          },
+        },
+      });
+      storeRef = store;
+
+      const fetcher = vi.fn<FileFetcher>().mockResolvedValue(FILE);
+      const { user, location } = await openPublishedView("/published/303/summary", {
+        store,
+        fetcher,
+      });
+
+      expect(
+        await screen.findByRole("tab", { name: "Summary", selected: true }),
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Work with this file" }));
+
+      // Stays in the published view and recovers cleanly instead of hanging on "Downloading".
+      expect(await screen.findByText("Reads by sample and target")).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: "Summary", selected: true })).toBeInTheDocument();
+      expect(screen.queryByText(/Downloading/)).not.toBeInTheDocument();
+      expect(screen.queryByText("Opening in My PMO file")).not.toBeInTheDocument();
+      expect(location.history.at(-1)).toBe("/published/303/summary");
       expect(fetcher).toHaveBeenCalledTimes(1);
-      expect(working.state.getState().subset).toEqual({ kind: "none" });
     });
 
     it("preserves published origin on Publish and lets the owner deposit a new version from a subset", async () => {
