@@ -751,7 +751,7 @@ describe("PmoFilePage: summary", () => {
   it("jumps to a section, listing only the sections the file has", async () => {
     const { user } = await open(pmoFile(EXAMPLE));
     await user.click(await screen.findByRole("tab", { name: "Summary" }));
-    const jumps = await screen.findByRole("navigation", { name: "Sections" });
+    const jumps = await screen.findByRole("navigation", { name: "On this page" });
     expect(
       within(jumps)
         .getAllByRole("button")

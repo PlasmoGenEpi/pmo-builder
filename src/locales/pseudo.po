@@ -3581,6 +3581,11 @@ msgstr ""
 msgid "of {targets}"
 msgstr ""
 
+#. Name of the jump links to headings in the current view
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "On this page"
+msgstr ""
+
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "One method for every run"
 msgstr ""
@@ -4751,7 +4756,6 @@ msgid "Search to see the others."
 msgstr ""
 
 #: src/app/TopBar.tsx
-#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Sections"
 msgstr ""
 
