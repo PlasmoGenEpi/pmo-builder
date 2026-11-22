@@ -2,7 +2,7 @@
  * The subset form: what the user has chosen, which specimens that matches,
  * and the request it makes. Pure.
  */
-import type { PmoChoices, SubsetRequest } from "@/domain/tools/types";
+import { COLLECTION_YEAR_FIELD, type PmoChoices, type SubsetRequest } from "@/domain/tools/types";
 
 /** How specimens are chosen. */
 export type SpecimenMode = "all" | "metadata" | "names";
@@ -78,6 +78,8 @@ export function formProblem(choices: PmoChoices, form: SubsetForm): FormProblem 
 /** The request the form makes. */
 export function requestOf(form: SubsetForm): SubsetRequest {
   const conditions = form.conditions.filter((condition) => condition.values.length > 0);
+  const yearCondition = conditions.find((condition) => condition.field === COLLECTION_YEAR_FIELD);
+  const rawConditions = conditions.filter((condition) => condition.field !== COLLECTION_YEAR_FIELD);
   return {
     specimens:
       form.specimenMode === "all"
@@ -87,8 +89,9 @@ export function requestOf(form: SubsetForm): SubsetRequest {
           : {
               kind: "metadata",
               criteria: Object.fromEntries(
-                conditions.map((condition) => [condition.field, condition.values]),
+                rawConditions.map((condition) => [condition.field, condition.values]),
               ),
+              ...(yearCondition === undefined ? {} : { collectionYears: yearCondition.values }),
             },
     targets:
       form.targetMode === "all" ? { kind: "all" } : { kind: "names", names: form.targetNames },

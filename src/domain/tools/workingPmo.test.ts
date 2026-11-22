@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { buildExamplePmo } from "@/domain/build/testing";
 
 import { examplePmoWithReadCounts, richPmo } from "./testing";
-import type { SubsetRequest } from "./types";
+import { COLLECTION_YEAR_FIELD, type SubsetRequest } from "./types";
 import {
   baseNameOf,
   choicesOf,
@@ -66,10 +66,72 @@ describe("choicesOf", () => {
   });
 
   it("gives each specimen's values for the offered fields", () => {
-    const [field] = choices.metadata;
-    if (field === undefined) return;
-    const counted = choices.specimens.filter((specimen) => field.field in specimen.values).length;
-    expect(counted).toBe(field.values.reduce((sum, value) => sum + value.count, 0));
+    for (const field of choices.metadata) {
+      const counted = choices.specimens.filter((specimen) => field.field in specimen.values).length;
+      expect(counted).toBe(field.values.reduce((sum, value) => sum + value.count, 0));
+    }
+  });
+
+  it("offers collection_year right before collection_date, sorted ascending by year", () => {
+    const fields = choices.metadata.map((field) => field.field);
+    const yearIndex = fields.indexOf(COLLECTION_YEAR_FIELD);
+    const dateIndex = fields.indexOf("collection_date");
+    expect(yearIndex).toBeGreaterThanOrEqual(0);
+    expect(yearIndex).toBe(dateIndex - 1);
+    expect(choices.metadata[yearIndex]?.values).toEqual([
+      { value: "2015", label: "2015", count: 5 },
+      { value: "2016", label: "2016", count: 9 },
+      { value: "2017", label: "2017", count: 14 },
+      { value: "2018", label: "2018", count: 14 },
+      { value: "2019", label: "2019", count: 8 },
+    ]);
+    expect(
+      choices.specimens.find((s) => s.name === "example_specimen_04")?.values[
+        COLLECTION_YEAR_FIELD
+      ],
+    ).toBe("2015");
+    expect(
+      choices.specimens.find((s) => s.name === "example_specimen_01")?.values[
+        COLLECTION_YEAR_FIELD
+      ],
+    ).toBe("2019");
+  });
+
+  it("omits collection_year when fewer than two distinct years are present", () => {
+    const oneYear: PortableMicrohaplotypeObject = {
+      ...EXAMPLE,
+      specimen_info: EXAMPLE.specimen_info.map((specimen) => ({
+        ...specimen,
+        collection_date: "2019-01",
+      })),
+    };
+    expect(choicesOf(oneYear).metadata.map((field) => field.field)).not.toContain(
+      COLLECTION_YEAR_FIELD,
+    );
+  });
+
+  it("still offers collection_year when collection_date has too many distinct values", () => {
+    const template = EXAMPLE.specimen_info[0];
+    if (template === undefined) throw new Error("no specimen");
+    const manyDates: PortableMicrohaplotypeObject = {
+      ...EXAMPLE,
+      specimen_info: Array.from({ length: 65 }, (_, index) => {
+        const year = index < 35 ? 2018 : 2019;
+        const month = String((index % 12) + 1).padStart(2, "0");
+        const day = String((index % 28) + 1).padStart(2, "0");
+        return {
+          ...template,
+          specimen_name: `s_${index}`,
+          collection_date: `${year}-${month}-${day}`,
+        };
+      }),
+    };
+    const fields = choicesOf(manyDates).metadata;
+    expect(fields.map((field) => field.field)).not.toContain("collection_date");
+    expect(fields.find((field) => field.field === COLLECTION_YEAR_FIELD)?.values).toEqual([
+      { value: "2018", label: "2018", count: 35 },
+      { value: "2019", label: "2019", count: 30 },
+    ]);
   });
 });
 
@@ -111,7 +173,7 @@ describe("makeSubset", () => {
   });
 
   it("chooses specimens by metadata", () => {
-    const [field] = choices.metadata;
+    const field = choices.metadata.find((item) => item.field !== COLLECTION_YEAR_FIELD);
     const [value] = field?.values ?? [];
     if (field === undefined || value === undefined) return;
     const { outcome } = makeSubset(
@@ -125,6 +187,78 @@ describe("makeSubset", () => {
     );
     if (outcome.kind !== "made") throw new Error(outcome.kind);
     expect(outcome.summary.specimens).toBeLessThanOrEqual(value.count);
+  });
+
+  it("chooses specimens by collection year alone, keeping the exact specimens", () => {
+    const { outcome, subset } = makeSubset(
+      EXAMPLE,
+      {
+        specimens: { kind: "metadata", criteria: {}, collectionYears: ["2015", "2019"] },
+        targets: { kind: "all" },
+        minReads: 0,
+      },
+      "study.json",
+    );
+    if (outcome.kind !== "made" || subset === null) throw new Error(outcome.kind);
+    expect(subset.specimen_info.map((specimen) => specimen.specimen_name)).toEqual([
+      "example_specimen_01",
+      "example_specimen_04",
+      "example_specimen_05",
+      "example_specimen_09",
+      "example_specimen_10",
+      "example_specimen_16",
+      "example_specimen_22",
+      "example_specimen_26",
+      "example_specimen_29",
+      "example_specimen_33",
+      "example_specimen_35",
+      "example_specimen_45",
+      "example_specimen_50",
+    ]);
+    expect(outcome.problems).toEqual([]);
+    expect(validatePmo(subset).valid).toBe(true);
+  });
+
+  it("combines collection year with raw metadata criteria", () => {
+    const { outcome, subset } = makeSubset(
+      EXAMPLE,
+      {
+        specimens: {
+          kind: "metadata",
+          criteria: { collection_date: ["2016-05", "2019-06"] },
+          collectionYears: ["2019"],
+        },
+        targets: { kind: "all" },
+        minReads: 0,
+      },
+      "study.json",
+    );
+    if (outcome.kind !== "made" || subset === null) throw new Error(outcome.kind);
+    expect(subset.specimen_info.map((specimen) => specimen.specimen_name)).toEqual([
+      "example_specimen_05",
+      "example_specimen_22",
+      "example_specimen_29",
+      "example_specimen_45",
+      "example_specimen_50",
+    ]);
+  });
+
+  it("says when nothing is left for disjoint year and metadata criteria", () => {
+    const { outcome, subset } = makeSubset(
+      EXAMPLE,
+      {
+        specimens: {
+          kind: "metadata",
+          criteria: { collection_date: ["2016-05"] },
+          collectionYears: ["2015"],
+        },
+        targets: { kind: "all" },
+        minReads: 0,
+      },
+      "study.json",
+    );
+    expect(outcome).toEqual({ kind: "empty" });
+    expect(subset).toBeNull();
   });
 
   it("says when nothing is left", () => {
@@ -149,7 +283,7 @@ describe("makeSubset", () => {
 
 describe("previewSubset", () => {
   const choices = choicesOf(EXAMPLE);
-  const [field] = choices.metadata;
+  const field = choices.metadata.find((item) => item.field !== COLLECTION_YEAR_FIELD);
   const requests: readonly SubsetRequest[] = [
     { specimens: { kind: "all" }, targets: { kind: "all" }, minReads: 0 },
     {
@@ -170,6 +304,20 @@ describe("previewSubset", () => {
       targets: { kind: "names", names: choices.targets.slice(3, 20) },
       minReads: 200,
     },
+    {
+      specimens: { kind: "metadata", criteria: {}, collectionYears: ["2015", "2019"] },
+      targets: { kind: "all" },
+      minReads: 0,
+    },
+    {
+      specimens: {
+        kind: "metadata",
+        criteria: { collection_date: ["2016-05", "2019-06"] },
+        collectionYears: ["2019"],
+      },
+      targets: { kind: "names", names: choices.targets.slice(0, 10) },
+      minReads: 50,
+    },
   ];
 
   it.each(requests)("counts what making the subset gives", (request) => {
@@ -182,6 +330,16 @@ describe("previewSubset", () => {
       librarySamplesWithData: outcome.summary.librarySamplesWithDetections,
       targetsWithCalls: outcome.summary.targetsWithCalls,
     });
+  });
+
+  it("counts the exact specimens kept by collection years", () => {
+    expect(
+      previewSubset(EXAMPLE, {
+        specimens: { kind: "metadata", criteria: {}, collectionYears: ["2015", "2019"] },
+        targets: { kind: "all" },
+        minReads: 0,
+      }),
+    ).toMatchObject({ specimens: 13, librarySamples: 13 });
   });
 
   it("finds nothing left where making the subset would", () => {
