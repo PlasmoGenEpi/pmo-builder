@@ -33,32 +33,11 @@ import {
 } from "@/ui";
 
 import { NoAnswer, type NoAnswerReason } from "../NoAnswer";
+import { specimenFieldLabel } from "../specimenFieldNames";
 import { useSettled } from "../useSettled";
 
 import { SortableTable, type SortableColumn } from "./SortableTable";
 import { MinReadsField, NoReadsAboveMinimum, ViewToolbar } from "./ViewToolbar";
-
-/** What each grouping field is called on screen. */
-function fieldName(key: GroupKey): string {
-  switch (key) {
-    case "collection_country":
-      return t`Country`;
-    case "geo_admin1":
-      return t`Administrative area, level 1`;
-    case "geo_admin2":
-      return t`Administrative area, level 2`;
-    case "geo_admin3":
-      return t`Administrative area, level 3`;
-    case "collection_year":
-      return t`Collection year`;
-    case "collection_month":
-      return t`Collection month`;
-    case "project":
-      return t`Project`;
-    default:
-      return key;
-  }
-}
 
 function groupName(row: { readonly name: string | null }): string {
   return (
@@ -452,7 +431,7 @@ function Comparison({
   }
   const present = formatCount(field.present);
   const total = formatCount(field.total);
-  const name = fieldName(field.key);
+  const name = specimenFieldLabel(field.key);
   return (
     <>
       {field.present < field.total ? (
@@ -581,7 +560,7 @@ export function CompareTab({
               options={usable.map((field) => {
                 const fieldPresent = formatCount(field.present);
                 const fieldTotal = formatCount(field.total);
-                const label = fieldName(field.key);
+                const label = specimenFieldLabel(field.key);
                 return {
                   value: field.key,
                   label: t`${label} (${fieldPresent} of ${fieldTotal} specimens)`,
