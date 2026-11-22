@@ -204,7 +204,7 @@ function Overview({
 }
 
 /**
- * Opens the PMO the draft built, then shows My PMO file: its overview, or
+ * Opens the PMO the draft built, then shows My PMO file: its summary, or
  * why it was refused or could not be opened, as for any other file. The
  * session runs the open to the end even if this page is left meanwhile; only
  * moving to My PMO file is skipped then.
@@ -220,7 +220,7 @@ function OpenBuilt() {
       const result = await session.open({ kind: "built" });
       if (!live || result.kind === "superseded") return;
       if (result.kind === "no-built-pmo") setNoBuiltPmo(true);
-      else navigate("/pmo/overview", { replace: true });
+      else navigate("/pmo/summary", { replace: true });
     }
     void open();
     return () => {
