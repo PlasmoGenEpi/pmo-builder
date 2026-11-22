@@ -57,8 +57,8 @@ export function PrivacyIndicator() {
       trigger={
         <Button size="sm" onPointerEnter={preloadPrivacyDetails} onFocus={preloadPrivacyDetails}>
           <ShieldCheck aria-hidden="true" className="size-3.5 shrink-0 text-success" />
-          {/* On a phone the shield alone fits the top bar; screen readers still hear the words. */}
-          <span className="max-sm:sr-only">{t`Your data stays on this device`}</span>
+          {/* On narrow screens the shield alone fits the top bar; screen readers still hear the words. */}
+          <span className="max-lg:sr-only">{t`Your data stays on this device`}</span>
         </Button>
       }
     />

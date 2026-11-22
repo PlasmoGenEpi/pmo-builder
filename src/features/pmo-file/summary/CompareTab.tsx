@@ -20,7 +20,7 @@ import type {
   WorkingSource,
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
-import { useWorkingPmoQuery } from "@/state";
+import { usePmoQuery } from "@/state";
 import {
   Callout,
   Combobox,
@@ -410,7 +410,7 @@ function Comparison({
     (): WorkingPmoRequest<"groups"> => ({ kind: "groups", source, key: field.key, minReads }),
     [source, field.key, minReads],
   );
-  const loaded = useWorkingPmoQuery(request);
+  const loaded = usePmoQuery(request);
   const comparison = loaded.kind === "ok" ? loaded.value : null;
   const shownTarget = useMemo(
     () =>
@@ -532,7 +532,7 @@ export function CompareTab({
     (): WorkingPmoRequest<"groupFields"> => ({ kind: "groupFields", source }),
     [source],
   );
-  const fields = useWorkingPmoQuery(fieldsRequest);
+  const fields = usePmoQuery(fieldsRequest);
   const [key, setKey] = useState<GroupKey | null>(null);
 
   if (fields.kind === "loading") return <Skeleton className="h-40 w-full" />;
@@ -551,26 +551,28 @@ export function CompareTab({
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <ViewToolbar>
-        <Field label={t`Group specimens by`} className="w-96">
+        <Field label={t`Group specimens by`} layout="compact" className="min-w-0 max-w-full">
           {(control) => (
-            <Select
-              {...control}
-              options={usable.map((field) => {
-                const fieldPresent = formatCount(field.present);
-                const fieldTotal = formatCount(field.total);
-                const label = specimenFieldLabel(field.key);
-                return {
-                  value: field.key,
-                  label: t`${label} (${fieldPresent} of ${fieldTotal} specimens)`,
-                };
-              })}
-              value={chosen.key}
-              onValueChange={(value) =>
-                setKey(usable.find((field) => field.key === value)?.key ?? null)
-              }
-            />
+            <div className="w-full min-w-0 sm:w-72">
+              <Select
+                {...control}
+                options={usable.map((field) => {
+                  const fieldPresent = formatCount(field.present);
+                  const fieldTotal = formatCount(field.total);
+                  const label = specimenFieldLabel(field.key);
+                  return {
+                    value: field.key,
+                    label: t`${label} (${fieldPresent} of ${fieldTotal} specimens)`,
+                  };
+                })}
+                value={chosen.key}
+                onValueChange={(value) =>
+                  setKey(usable.find((field) => field.key === value)?.key ?? null)
+                }
+              />
+            </div>
           )}
         </Field>
         <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />

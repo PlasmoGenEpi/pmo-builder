@@ -179,10 +179,12 @@ export interface Engine {
   /** One panel's built fragment, for saving to the library, or `null` when it has not built. */
   getPanelFragment(panelId: string): Promise<JsonValue | null>;
   /**
-   * Carries every request about the working PMO: opening, closing, and
-   * reading it. A request for an older generation than the newest open or
-   * close is answered as stale. Opening a file lets go of the PMO held before,
-   * before reading the new one.
+   * Carries every request about a held PMO slot (`"working"` by default, or
+   * `"published"` for the read-only published view): opening, closing, and
+   * reading it. Each slot tracks its own generation and held file apart from
+   * the other. A request for an older generation than the slot's newest open
+   * or close is answered as stale. Opening a file lets go of the PMO held in
+   * that slot before reading the new one.
    */
   workingPmo<K extends WorkingPmoKind>(call: WorkingPmoCall<K>): Promise<WorkingPmoAnswer<K>>;
   /** Releases the engine. A worker is terminated. */

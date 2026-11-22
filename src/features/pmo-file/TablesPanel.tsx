@@ -12,7 +12,7 @@ import {
   type WorkingSource,
 } from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
-import { useWorkingPmoQuery, useWorkingPmoSession } from "@/state";
+import { usePmoQuery, usePmoSession } from "@/state";
 import { Button, DataTable, SegmentedControl, Spinner, formatCount, type CellValue } from "@/ui";
 
 import { NoAnswer, type NoAnswerReason } from "./NoAnswer";
@@ -90,7 +90,7 @@ function TablePreviewSection({ id, title, source }: TablePreviewSectionProps) {
     () => ({ kind: "tablePreview", source, id, limit: TABLE_PREVIEW_LIMIT }),
     [source, id],
   );
-  const answer = useWorkingPmoQuery(request);
+  const answer = usePmoQuery(request);
 
   const recordRows = useMemo<readonly Readonly<Record<string, CellValue>>[]>(() => {
     if (answer.kind !== "ok") return [];
@@ -158,7 +158,7 @@ export interface TablesPanelProps {
 
 /** The tables in a PMO, each to preview or download as CSV or TSV. */
 export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) {
-  const session = useWorkingPmoSession();
+  const session = usePmoSession();
   const idPrefix = useId();
   const [format, setFormat] = useState<TableFormat>("csv");
   const [saving, setSaving] = useState<TableId | "all" | null>(null);

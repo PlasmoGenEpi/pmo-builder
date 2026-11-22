@@ -45,9 +45,9 @@ export function expectInsideViewport(
 /** Tabs on My PMO file that E2E specs open. */
 export type PmoFileTab = "overview" | "summary" | "compare";
 
-const TAB_LABELS: Readonly<Record<"en" | "fr", Readonly<Record<"summary" | "compare", string>>>> = {
-  en: { summary: "Summary", compare: "Compare" },
-  fr: { summary: "Résumé", compare: "Comparer" },
+const TAB_LABELS: Readonly<Record<"en" | "fr", Readonly<Record<PmoFileTab, string>>>> = {
+  en: { overview: "Overview", summary: "Summary", compare: "Compare" },
+  fr: { overview: "Aperçu", summary: "Résumé", compare: "Comparer" },
 };
 
 /** Options for {@link openBuiltExample}. */
@@ -67,9 +67,6 @@ export async function openBuiltExample(options: OpenBuiltExampleOptions): Promis
     await page.evaluate(() => {
       globalThis.location.hash = "/pmo/open-built";
     });
-    await expect(page.getByText("This is the PMO built from your draft")).toBeVisible({
-      timeout: BUILD_TIMEOUT,
-    });
   } else {
     await page.goto("/?lang=fr");
     await page.getByRole("button", { name: "Essayer avec des données d’exemple" }).click();
@@ -80,11 +77,11 @@ export async function openBuiltExample(options: OpenBuiltExampleOptions): Promis
     await page.evaluate(() => {
       globalThis.location.hash = "/pmo/open-built";
     });
-    await expect(page.getByText("Voici le PMO créé à partir de votre brouillon")).toBeVisible({
-      timeout: BUILD_TIMEOUT,
-    });
   }
-  if (tab !== "overview") {
+  // The built PMO opens on its Summary tab.
+  const summary = page.getByRole("tab", { name: TAB_LABELS[lang].summary });
+  await expect(summary).toBeVisible({ timeout: BUILD_TIMEOUT });
+  if (tab !== "summary") {
     await page.getByRole("tab", { name: TAB_LABELS[lang][tab] }).click();
   }
 }

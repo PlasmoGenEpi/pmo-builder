@@ -6,7 +6,7 @@ import { Button, EmptyState, NumberField, formatCount, jumpToHeading } from "@/u
 /** The row of controls above the Summary and Compare views. */
 export function ViewToolbar({ children }: { readonly children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start gap-x-8 gap-y-4 border-b border-border pb-6">
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border pb-3">
       {children}
     </div>
   );
@@ -20,15 +20,22 @@ export interface MinReadsFieldProps {
 
 /** The minimum reads for a microhaplotype to count. Worded as on the Subset tab. */
 export function MinReadsField({ value, onValueChange }: MinReadsFieldProps) {
+  const hint = t`Leave empty to count them all.`;
   return (
     <NumberField
       label={t`Minimum reads per microhaplotype`}
-      hint={t`Leave empty to count them all.`}
+      hint={hint}
+      title={hint}
+      placeholder={t({
+        message: "All",
+        comment:
+          "Placeholder in the minimum reads input when empty, meaning all microhaplotypes count",
+      })}
+      layout="compact"
       integer
       min={0}
       value={value}
       onValueChange={onValueChange}
-      className="w-64"
     />
   );
 }
@@ -79,10 +86,13 @@ export interface Jump {
 export function SectionJumps({ jumps }: { readonly jumps: readonly Jump[] }) {
   return (
     <nav
-      aria-label={t`Sections`}
-      className="flex basis-full flex-wrap items-center gap-x-1 gap-y-1"
+      aria-label={t({
+        message: "On this page",
+        comment: "Name of the jump links to headings in the current view",
+      })}
+      className="flex flex-wrap items-center gap-x-1 gap-y-1"
     >
-      <span className="pr-2 text-sm text-text-subtle">
+      <span className="pr-1.5 text-sm text-text-subtle">
         {t({ message: "Jump to", comment: "Followed by links to the sections of the page" })}
       </span>
       {jumps.map((jump) => (

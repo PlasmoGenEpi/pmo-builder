@@ -10,7 +10,7 @@ import type {
   WorkingSource,
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
-import { useWorkingPmoQuery } from "@/state";
+import { usePmoQuery } from "@/state";
 import { Card, SectionHeading, Skeleton, Stat, Switch, formatCount } from "@/ui";
 
 import { AlleleBars } from "./AlleleBars";
@@ -262,7 +262,7 @@ export function SummaryPanel({
     (): WorkingPmoRequest<"summary"> => ({ kind: "summary", source, minReads }),
     [source, minReads],
   );
-  const loaded = useWorkingPmoQuery(request);
+  const loaded = usePmoQuery(request);
 
   const summary = loaded.kind === "ok" ? loaded.value : null;
   const columns = useMemo(
@@ -296,7 +296,7 @@ export function SummaryPanel({
   const nothingPasses = summary !== null && minReads > 0 && summary.headline.samplesWithData === 0;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <ViewToolbar>
         <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
         {summary === null || nothingPasses ? null : <SectionJumps jumps={jumpsOf(summary)} />}

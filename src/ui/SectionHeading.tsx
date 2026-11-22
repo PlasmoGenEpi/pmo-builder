@@ -33,7 +33,7 @@ export function SectionHeading({
           id={id}
           tabIndex={id === undefined ? undefined : -1}
           className={cn(
-            "scroll-mt-[calc(var(--spacing-topbar)+1rem)] font-semibold text-text",
+            "scroll-mt-28 font-semibold text-text md:scroll-mt-[calc(var(--spacing-topbar)+1rem)]",
             level === 2 ? "text-lg tracking-tight" : "text-md",
           )}
         >

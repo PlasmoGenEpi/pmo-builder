@@ -20,7 +20,9 @@ _Avoid_: output, result, export
 
 **Working PMO**:
 The one PMO file open in My PMO file, together with the subset made from it,
-if any. Opening another file replaces it.
+if any. Opening another file replaces it. Viewing a published PMO leaves it
+alone; a published PMO becomes the working PMO only when the user asks to
+work with it.
 _Avoid_: workspace, open file, loaded PMO
 
 **Origin**:
@@ -40,6 +42,13 @@ _Avoid_: filter, extract, slice
 A PMO file deposited in the Zenodo community and listed in the app's
 catalogue.
 _Avoid_: dataset (except for the page that shows one), record
+
+**Published view**:
+The read-only view of a published PMO at its own address, with Overview,
+Summary, Compare and Tables. It holds the file apart from the working PMO for
+the visit and drops it on leaving; it never replaces the working PMO unless
+the user asks to work with the file.
+_Avoid_: preview, published workspace
 
 **Deposit**:
 Sending a PMO file to Zenodo as a new record or a new version, at the user's

@@ -17,9 +17,8 @@ async function openExamplePmo(page: Page): Promise<void> {
   await page.evaluate(() => {
     globalThis.location.hash = "/pmo/open-built";
   });
-  await expect(page.getByText("This is the PMO built from your draft")).toBeVisible({
-    timeout: BUILD_TIMEOUT,
-  });
+  // The built PMO opens on its Summary tab.
+  await expect(page.getByRole("tab", { name: "Summary" })).toBeVisible({ timeout: BUILD_TIMEOUT });
 }
 
 test("previews tables by keyboard with 20 rows and count line, and lists read counts by stage", async ({
