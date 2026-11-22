@@ -20,7 +20,6 @@ export function AlleleBars({ target }: { readonly target: TargetSummary }) {
   });
   const shown = target.alleles.slice(0, MAX_BARS);
   const rest = target.alleles.length - shown.length;
-  const top = shown[0]?.freq ?? 1;
   const sources = new Set(shown.map((allele) => allele.label.source));
   const targetName = target.name;
   const sampleCount = target.samples;
@@ -30,6 +29,7 @@ export function AlleleBars({ target }: { readonly target: TargetSummary }) {
       <p className="text-sm text-text-muted">{t`No microhaplotypes were counted at ${targetName}.`}</p>
     );
   }
+  const top = Math.max(...shown.map((allele) => allele.freq));
   return (
     <figure className="flex flex-col gap-3">
       <figcaption className="text-base font-medium break-all text-text">
@@ -38,36 +38,36 @@ export function AlleleBars({ target }: { readonly target: TargetSummary }) {
           other: `Microhaplotypes at ${targetName}, seen in # samples`,
         })}
       </figcaption>
-      <ul className="flex flex-col gap-2">
+      <ul className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2.5 sm:grid-cols-[fit-content(14rem)_minmax(0,1fr)_auto] sm:gap-y-2">
         {shown.map((allele) => {
           const share = percent.format(allele.freq);
           const count = allele.count;
+          const widthPercent = top > 0 ? (allele.freq / top) * 100 : 0;
           return (
             <li
               key={allele.mhapId}
-              className="grid grid-cols-[minmax(0,16rem)_1fr] items-center gap-3"
+              className="col-span-full grid grid-cols-subgrid items-center gap-y-1 sm:gap-y-0"
             >
               <span
-                className="truncate font-mono text-xs text-text-muted"
+                className="col-span-full w-0 min-w-full truncate font-mono text-xs text-text-muted sm:col-span-1 sm:w-auto sm:min-w-0"
                 title={
                   allele.label.note === null ? allele.seq : `${allele.seq}\n${allele.label.note}`
                 }
               >
                 {allele.label.label === "" ? `#${allele.mhapId}` : allele.label.label}
               </span>
-              <span className="flex items-center gap-2">
+              <span className="block h-3 w-full overflow-hidden rounded-sm bg-surface-subtle">
                 <span
                   aria-hidden="true"
-                  className="h-3 rounded-r-[4px]"
+                  className="block h-full rounded-r-sm"
                   style={{
-                    width: `${Math.max(1, (allele.freq / top) * 100)}%`,
-                    maxWidth: "calc(100% - 9rem)",
+                    width: `${widthPercent}%`,
                     background: SERIES[resolved],
                   }}
                 />
-                <span className="text-sm whitespace-nowrap text-text tabular-nums">
-                  {plural(count, { one: `${share} (# sample)`, other: `${share} (# samples)` })}
-                </span>
+              </span>
+              <span className="text-sm whitespace-nowrap text-text tabular-nums">
+                {plural(count, { one: `${share} (# sample)`, other: `${share} (# samples)` })}
               </span>
             </li>
           );
