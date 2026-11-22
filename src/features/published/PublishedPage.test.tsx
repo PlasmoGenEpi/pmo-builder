@@ -64,9 +64,17 @@ function titles(): string[] {
     .map((card) => within(card).getByRole("heading").textContent);
 }
 
-async function choose(user: ReturnType<typeof userEvent.setup>, field: string, option: string) {
+async function choose(
+  user: ReturnType<typeof userEvent.setup>,
+  field: string,
+  option: string | RegExp,
+) {
   await user.click(screen.getByRole("combobox", { name: field }));
   await user.click(await screen.findByRole("option", { name: option }));
+}
+
+function countryButton() {
+  return screen.getByRole("button", { name: /^Country:/ });
 }
 
 describe("PublishedPage", () => {
@@ -98,35 +106,69 @@ describe("PublishedPage", () => {
     expect(screen.getByText(/Read from Zenodo on 15 November 2026/)).toBeInTheDocument();
   });
 
-  it("narrows the list by search, country, panel and year", async () => {
+  it("narrows the list by search, countries, panel, species and year, showing cross-filter counts", async () => {
     const user = userEvent.setup();
     render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
     await screen.findByText("3 datasets");
 
-    await user.type(screen.getByRole("searchbox", { name: "Search" }), "uganda");
-    expect(titles()).toEqual(["Northern Uganda cohort"]);
-    expect(screen.getByText("1 of 3 datasets")).toBeInTheDocument();
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("3 datasets");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(status).toHaveAttribute("aria-atomic", "true");
+
+    // Searching by species name and by covered collection year.
+    await user.type(screen.getByRole("searchbox", { name: "Search" }), "vivax");
+    expect(titles()).toEqual(["Border travellers, Mozambique and Eswatini"]);
+    expect(status).toHaveTextContent("1 of 3 datasets");
     await user.clear(screen.getByRole("searchbox", { name: "Search" }));
 
-    await choose(user, "Country", "Mozambique");
+    await user.type(screen.getByRole("searchbox", { name: "Search" }), "2017");
+    expect(titles()).toEqual(["Maputo surveillance 2015 to 2019"]);
+    expect(status).toHaveTextContent("1 of 3 datasets");
+    await user.clear(screen.getByRole("searchbox", { name: "Search" }));
+
+    // Choosing two countries lists published PMOs from either.
+    await user.click(countryButton());
+    await user.click(await screen.findByRole("checkbox", { name: "Uganda (1)" }));
+    await user.click(screen.getByRole("checkbox", { name: "Eswatini (1)" }));
+    await user.keyboard("{Escape}");
     expect(titles()).toEqual([
-      "Maputo surveillance 2015 to 2019",
+      "Northern Uganda cohort",
       "Border travellers, Mozambique and Eswatini",
     ]);
-    await choose(user, "Panel", "AMPLseq");
+    expect(status).toHaveTextContent("2 of 3 datasets");
+
+    // Panel counts reflect the two chosen countries (AMPLseq: 2, Mad4hatter: 1).
+    await choose(user, "Panel", "AMPLseq (2)");
+    expect(titles()).toEqual([
+      "Northern Uganda cohort",
+      "Border travellers, Mozambique and Eswatini",
+    ]);
+
+    // Country counts reflect the active AMPLseq panel (Mozambique drops from 2 to 1).
+    await user.click(countryButton());
+    expect(await screen.findByRole("checkbox", { name: "Mozambique (1)" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Clear countries" }));
+    await user.keyboard("{Escape}");
+
+    // Species filter lists species by name with counts reflecting AMPLseq (falciparum: 2, vivax: 1).
+    await choose(user, "Species", "Plasmodium vivax (1)");
     expect(titles()).toEqual(["Border travellers, Mozambique and Eswatini"]);
-    await choose(user, "Country", "Any country");
+    expect(status).toHaveTextContent("1 of 3 datasets");
+
+    await choose(user, "Species", "Any species");
     await choose(user, "Panel", "Any panel");
-    await choose(user, "Collected in", "2017");
+    await choose(user, "Collected in", "2017 (1)");
     expect(titles()).toEqual(["Maputo surveillance 2015 to 2019"]);
   });
 
-  it("offers to clear the filters when nothing matches", async () => {
+  it("offers to clear the filters when nothing matches and announces zero results", async () => {
     const user = userEvent.setup();
     render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
     await screen.findByText("3 datasets");
     await user.type(screen.getByRole("searchbox", { name: "Search" }), "nothing like this");
     expect(screen.getByText("No published PMO matches")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("0 of 3 datasets");
     expect(screen.queryByRole("article")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Clear the filters" }));
     expect(titles()).toHaveLength(3);
@@ -144,6 +186,7 @@ describe("PublishedPage", () => {
     expect(await screen.findByRole("article")).toBeInTheDocument();
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Country:/ })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Build a PMO" })).toHaveAttribute("href", "/build");
   });
 
@@ -192,7 +235,7 @@ describe("PublishedPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps search and filters in the address without pushing a history entry per letter, and clears them", async () => {
+  it("keeps search, multiple countries and species in the address without pushing a history entry per letter", async () => {
     const user = userEvent.setup();
     const { wrapper: listWrapper, location } = makeWrapper("/published");
     const { unmount } = render(<PublishedPage load={READY} zenodo={ZENODO} />, {
@@ -201,15 +244,22 @@ describe("PublishedPage", () => {
     await screen.findByText("3 datasets");
     expect(location.history).toEqual(["/published"]);
 
-    await user.type(screen.getByRole("searchbox", { name: "Search" }), "maputo");
-    expect(location.history).toEqual(["/published?q=maputo"]);
+    await user.type(screen.getByRole("searchbox", { name: "Search" }), "mozambique");
+    expect(location.history).toEqual(["/published?q=mozambique"]);
 
-    await choose(user, "Country", "Mozambique");
+    await user.click(countryButton());
+    await user.click(await screen.findByRole("checkbox", { name: "Mozambique (2)" }));
+    await user.click(screen.getByRole("checkbox", { name: "Eswatini (1)" }));
+    await user.keyboard("{Escape}");
+    await choose(user, "Species", "Plasmodium vivax (1)");
+
     expect(location.history).toEqual([
-      "/published?q=maputo",
-      "/published?q=maputo&country=Mozambique",
+      "/published?q=mozambique",
+      "/published?q=mozambique&country=Mozambique",
+      "/published?q=mozambique&country=Eswatini&country=Mozambique",
+      "/published?q=mozambique&country=Eswatini&country=Mozambique&species=5855",
     ]);
-    expect(titles()).toEqual(["Maputo surveillance 2015 to 2019"]);
+    expect(titles()).toEqual(["Border travellers, Mozambique and Eswatini"]);
 
     // Loading the copied address shows the same filtered list.
     const copiedAddress = location.history.at(-1);
@@ -217,8 +267,10 @@ describe("PublishedPage", () => {
     const { wrapper: copiedWrapper } = makeWrapper(copiedAddress);
     render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper: copiedWrapper });
     expect(await screen.findByText("1 of 3 datasets")).toBeInTheDocument();
-    expect(titles()).toEqual(["Maputo surveillance 2015 to 2019"]);
-    expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("maputo");
+    expect(titles()).toEqual(["Border travellers, Mozambique and Eswatini"]);
+    expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("mozambique");
+    expect(countryButton()).toHaveTextContent("2 countries");
+    expect(screen.getByRole("combobox", { name: "Species" })).toHaveTextContent("Plasmodium vivax");
 
     await user.click(screen.getByRole("button", { name: "Clear the filters" }));
     expect(titles()).toHaveLength(3);
@@ -277,7 +329,7 @@ describe("PublishedPage", () => {
 
       await screen.findByText("3 datasets");
       await user.type(screen.getByRole("searchbox", { name: "Search" }), "mozambique");
-      await choose(user, "Panel", "Mad4hatter");
+      await choose(user, "Panel", "Mad4hatter (2)");
       expect(window.location.hash).toBe("#/published?q=mozambique&panel=Mad4hatter");
 
       currentScrollY = 640;

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   citationOf,
+  facetCountsOf,
   facetsOf,
   filterDatasets,
   isRepositoryIndex,
@@ -66,18 +67,28 @@ describe("filterDatasets", () => {
     expect(ids(filterDatasets(DATASETS, NO_FILTERS))).toEqual(["301", "302", "303"]);
   });
 
-  it("narrows by country and by panel", () => {
-    expect(ids(filterDatasets(DATASETS, { ...NO_FILTERS, country: "Mozambique" }))).toEqual([
+  it("narrows by one or more countries, by panel and by species", () => {
+    expect(ids(filterDatasets(DATASETS, { ...NO_FILTERS, countries: ["Mozambique"] }))).toEqual([
       "301",
       "303",
     ]);
+    expect(
+      ids(filterDatasets(DATASETS, { ...NO_FILTERS, countries: ["Uganda", "Eswatini"] })),
+    ).toEqual(["302", "303"]);
     expect(ids(filterDatasets(DATASETS, { ...NO_FILTERS, panel: "AMPLseq" }))).toEqual([
       "302",
       "303",
     ]);
     expect(
-      ids(filterDatasets(DATASETS, { ...NO_FILTERS, panel: "AMPLseq", country: "Uganda" })),
+      ids(filterDatasets(DATASETS, { ...NO_FILTERS, panel: "AMPLseq", countries: ["Uganda"] })),
     ).toEqual(["302"]);
+    expect(ids(filterDatasets(DATASETS, { ...NO_FILTERS, species: 5855 }))).toEqual(["303"]);
+    expect(ids(filterDatasets(DATASETS, { ...NO_FILTERS, species: 5833 }))).toEqual([
+      "301",
+      "302",
+      "303",
+    ]);
+    expect(ids(filterDatasets(DATASETS, { ...NO_FILTERS, species: 5850 }))).toEqual([]);
   });
 
   it("keeps the datasets whose collection covers the year", () => {
@@ -86,24 +97,100 @@ describe("filterDatasets", () => {
     expect(ids(filterDatasets(DATASETS, { ...NO_FILTERS, year: 2020 }))).toEqual([]);
   });
 
-  it("searches titles, authors, countries, panels, BioProjects and DOIs, all words at once", () => {
+  it("searches titles, authors, countries, panels, species, covered years, BioProjects and DOIs", () => {
     expect(search("uganda")).toEqual(["302"]);
     expect(search("ACHAN")).toEqual(["302"]);
     expect(search("mozambique mad4hatter")).toEqual(["301", "303"]);
     expect(search("PRJNA0000001")).toEqual(["301"]);
     expect(search("zenodo.303")).toEqual(["303"]);
+    expect(search("vivax")).toEqual(["303"]);
+    expect(search("P. vivax")).toEqual(["303"]);
+    expect(search("falciparum")).toEqual(["301", "302", "303"]);
+    expect(search("2017")).toEqual(["301"]);
+    expect(search("2021")).toEqual(["302"]);
+    expect(search("2020")).toEqual([]);
+    expect(search("uganda 2021")).toEqual(["302"]);
     expect(search("  ")).toEqual(["301", "302", "303"]);
     expect(search("uganda mozambique")).toEqual([]);
+
+    const large = largeCatalogue().datasets;
+    const vivaxSearch = ids(filterDatasets(large, { ...NO_FILTERS, search: "vivax" }));
+    const vivaxFilter = ids(filterDatasets(large, { ...NO_FILTERS, species: 5855 }));
+    expect(vivaxSearch.length).toBeGreaterThan(0);
+    expect(vivaxSearch).toEqual(vivaxFilter);
   });
 });
 
-describe("facetsOf and totalsOf", () => {
-  it("lists each country, panel and covered year once", () => {
+describe("facetsOf, facetCountsOf and totalsOf", () => {
+  it("lists each country, panel, species and covered year once", () => {
     expect(facetsOf(DATASETS)).toEqual({
       countries: ["Eswatini", "Mozambique", "Uganda"],
       panels: ["AMPLseq", "Mad4hatter"],
+      species: [5833, 5855],
       years: [2021, 2019, 2018, 2017, 2016, 2015],
     });
+  });
+
+  it("sorts species by their display name", () => {
+    const mixed = [dataset({ id: "1", taxa: [5855, 5858, 5833] })];
+    expect(facetsOf(mixed).species).toEqual([5833, 5858, 5855]);
+  });
+
+  it("counts each choice reflecting the other active filters", () => {
+    const unfiltered = facetCountsOf(DATASETS, NO_FILTERS);
+    expect(Object.fromEntries(unfiltered.countries)).toEqual({
+      Eswatini: 1,
+      Mozambique: 2,
+      Uganda: 1,
+    });
+    expect(Object.fromEntries(unfiltered.panels)).toEqual({ AMPLseq: 2, Mad4hatter: 2 });
+    expect(Object.fromEntries(unfiltered.species)).toEqual({ 5833: 3, 5855: 1 });
+    expect(Object.fromEntries(unfiltered.years)).toEqual({
+      2021: 1,
+      2019: 1,
+      2018: 1,
+      2017: 1,
+      2016: 1,
+      2015: 1,
+    });
+
+    // Active panel narrows country, species and year counts, while panel choices still show their own totals.
+    const byPanel = facetCountsOf(DATASETS, { ...NO_FILTERS, panel: "AMPLseq" });
+    expect(Object.fromEntries(byPanel.countries)).toEqual({
+      Eswatini: 1,
+      Mozambique: 1,
+      Uganda: 1,
+    });
+    expect(Object.fromEntries(byPanel.panels)).toEqual({ AMPLseq: 2, Mad4hatter: 2 });
+    expect(Object.fromEntries(byPanel.species)).toEqual({ 5833: 2, 5855: 1 });
+    expect(byPanel.years.get(2021)).toBe(1);
+    expect(byPanel.years.get(2017)).toBe(0);
+
+    // Active countries narrow panel, species and year counts, while country choices keep their counts under the other filters.
+    const byTwoCountries = facetCountsOf(DATASETS, {
+      ...NO_FILTERS,
+      countries: ["Uganda", "Eswatini"],
+    });
+    expect(Object.fromEntries(byTwoCountries.countries)).toEqual({
+      Eswatini: 1,
+      Mozambique: 2,
+      Uganda: 1,
+    });
+    expect(Object.fromEntries(byTwoCountries.panels)).toEqual({ AMPLseq: 2, Mad4hatter: 1 });
+    expect(Object.fromEntries(byTwoCountries.species)).toEqual({ 5833: 2, 5855: 1 });
+    expect(byTwoCountries.years.get(2021)).toBe(1);
+    expect(byTwoCountries.years.get(2017)).toBe(0);
+
+    // Active search narrows every facet including species.
+    const bySearch = facetCountsOf(DATASETS, { ...NO_FILTERS, search: "vivax" });
+    expect(Object.fromEntries(bySearch.countries)).toEqual({
+      Eswatini: 1,
+      Mozambique: 1,
+      Uganda: 0,
+    });
+    expect(Object.fromEntries(bySearch.panels)).toEqual({ AMPLseq: 1, Mad4hatter: 1 });
+    expect(Object.fromEntries(bySearch.species)).toEqual({ 5833: 1, 5855: 1 });
+    expect(bySearch.years.get(2021)).toBe(0);
   });
 
   it("does not list centuries of years for a mistyped date", () => {

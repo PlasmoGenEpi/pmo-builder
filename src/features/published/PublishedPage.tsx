@@ -21,14 +21,17 @@ import { buttonClassName, cn, EmptyState, formatCount, inputClassName, Link, Sel
 
 import { DEFAULT_LIST_STATE, publishedHref, readListState } from "./address";
 import {
+  facetCountsOf,
   facetsOf,
   filterDatasets,
   longDate,
+  taxonName,
   totalsOf,
   yearsText,
   type CatalogueFilters,
 } from "./catalogue";
 import { CatalogueProblem } from "./CatalogueProblem";
+import { CountryFilter } from "./CountryFilter";
 import { loadSharedCatalogue, useCatalogue, type CatalogueLoader } from "./useCatalogue";
 
 /** The `Select` value that stands for "no limit". Radix does not allow an empty one. */
@@ -170,6 +173,14 @@ function Totals({ datasets }: { readonly datasets: readonly PublishedDataset[] }
   );
 }
 
+function choiceWithCount(name: string, count: number): string {
+  const countText = formatCount(count);
+  return t({
+    message: `${name} (${countText})`,
+    comment: "Filter choice with the number of matching published PMOs",
+  });
+}
+
 function Filters({
   datasets,
   filters,
@@ -180,21 +191,26 @@ function Filters({
   readonly onChange: (filters: CatalogueFilters, options?: { readonly replace?: boolean }) => void;
 }) {
   const facets = useMemo(() => facetsOf(datasets), [datasets]);
-  const countries =
-    filters.country !== null && !facets.countries.includes(filters.country)
-      ? [filters.country, ...facets.countries]
-      : facets.countries;
+  const counts = useMemo(() => facetCountsOf(datasets, filters), [datasets, filters]);
+  const countries = [
+    ...filters.countries.filter((country) => !facets.countries.includes(country)),
+    ...facets.countries,
+  ];
   const panels =
     filters.panel !== null && !facets.panels.includes(filters.panel)
       ? [filters.panel, ...facets.panels]
       : facets.panels;
+  const species =
+    filters.species !== null && !facets.species.includes(filters.species)
+      ? [filters.species, ...facets.species]
+      : facets.species;
   const years =
     filters.year !== null && !facets.years.includes(filters.year)
       ? [filters.year, ...facets.years]
       : facets.years;
   return (
     <div className="flex flex-wrap items-center gap-2.5">
-      <div className="relative min-w-0 flex-1 basis-48 max-sm:basis-full">
+      <div className="relative min-w-0 flex-1 basis-56 max-sm:basis-full">
         <Search
           aria-hidden="true"
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-text-subtle"
@@ -210,29 +226,45 @@ function Filters({
           className={cn(inputClassName, "h-control pl-9 text-base")}
         />
       </div>
-      <div className="w-40 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
-        <Select
-          aria-label={t`Country`}
-          value={filters.country ?? ANY}
-          onValueChange={(value) => onChange({ ...filters, country: value === ANY ? null : value })}
-          options={[
-            { value: ANY, label: t`Any country` },
-            ...countries.map((country) => ({ value: country, label: country })),
-          ]}
+      <div className="w-44 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
+        <CountryFilter
+          countries={countries}
+          selected={filters.countries}
+          counts={counts.countries}
+          onChange={(nextCountries) => onChange({ ...filters, countries: nextCountries })}
         />
       </div>
-      <div className="w-36 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
+      <div className="w-44 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
         <Select
           aria-label={t`Panel`}
           value={filters.panel ?? ANY}
           onValueChange={(value) => onChange({ ...filters, panel: value === ANY ? null : value })}
           options={[
             { value: ANY, label: t`Any panel` },
-            ...panels.map((panel) => ({ value: panel, label: panel })),
+            ...panels.map((panel) => ({
+              value: panel,
+              label: choiceWithCount(panel, counts.panels.get(panel) ?? 0),
+            })),
           ]}
         />
       </div>
-      <div className="w-28 max-sm:min-w-0 max-sm:grow-0 max-sm:basis-[calc(50%-0.3125rem)]">
+      <div className="w-52 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
+        <Select
+          aria-label={t`Species`}
+          value={filters.species === null ? ANY : String(filters.species)}
+          onValueChange={(value) =>
+            onChange({ ...filters, species: value === ANY ? null : Number(value) })
+          }
+          options={[
+            { value: ANY, label: t`Any species` },
+            ...species.map((taxon) => ({
+              value: String(taxon),
+              label: choiceWithCount(taxonName(taxon), counts.species.get(taxon) ?? 0),
+            })),
+          ]}
+        />
+      </div>
+      <div className="w-32 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
         <Select
           aria-label={t`Collected in`}
           value={filters.year === null ? ANY : String(filters.year)}
@@ -241,7 +273,10 @@ function Filters({
           }
           options={[
             { value: ANY, label: t`Any year` },
-            ...years.map((year) => ({ value: String(year), label: String(year) })),
+            ...years.map((year) => ({
+              value: String(year),
+              label: choiceWithCount(String(year), counts.years.get(year) ?? 0),
+            })),
           ]}
         />
       </div>
@@ -252,8 +287,9 @@ function Filters({
 function isFiltered(filters: CatalogueFilters): boolean {
   return (
     filters.search.trim() !== "" ||
-    filters.country !== null ||
+    filters.countries.length > 0 ||
     filters.panel !== null ||
+    filters.species !== null ||
     filters.year !== null
   );
 }
@@ -341,14 +377,14 @@ function Catalogue({
         ) : null}
         {datasets.length > 1 ? (
           <div className="flex min-h-6 items-center justify-between gap-4 px-1">
-            <p className="text-sm text-text-muted" aria-live="polite">
+            <output aria-live="polite" aria-atomic="true" className="text-sm text-text-muted">
               {filtered
                 ? plural(datasets.length, {
                     one: `${shownCount} of # dataset`,
                     other: `${shownCount} of # datasets`,
                   })
                 : plural(datasets.length, { one: "# dataset", other: "# datasets" })}
-            </p>
+            </output>
             {filtered ? (
               <button
                 type="button"
