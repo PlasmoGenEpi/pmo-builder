@@ -19,7 +19,7 @@ import type {
   WorkingSource,
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
-import { useWorkingPmoQuery } from "@/state";
+import { usePmoQuery } from "@/state";
 import {
   Callout,
   Combobox,
@@ -320,7 +320,7 @@ function Comparison({
     (): WorkingPmoRequest<"groups"> => ({ kind: "groups", source, key: field.key, minReads }),
     [source, field.key, minReads],
   );
-  const loaded = useWorkingPmoQuery(request);
+  const loaded = usePmoQuery(request);
   const comparison = loaded.kind === "ok" ? loaded.value : null;
   const shownTarget = useMemo(
     () =>
@@ -421,7 +421,7 @@ export function CompareTab({ source, minReads: minReadsInput, onMinReadsChange }
     (): WorkingPmoRequest<"groupFields"> => ({ kind: "groupFields", source }),
     [source],
   );
-  const fields = useWorkingPmoQuery(fieldsRequest);
+  const fields = usePmoQuery(fieldsRequest);
   const [key, setKey] = useState<GroupKey | null>(null);
 
   if (fields.kind === "loading") return <Skeleton className="h-40 w-full" />;

@@ -14,6 +14,7 @@ import { STEPS, getStep, page } from "./steps";
 beforeAll(installDomPolyfills);
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 function LoadedPage() {
@@ -129,15 +130,28 @@ describe("App", () => {
 });
 
 describe("usage counts for pages outside the steps", () => {
-  it("counts the published list, a dataset page and My PMO file by kind only", async () => {
+  it("counts the published list, a dataset page, a published view and My PMO file by kind only", async () => {
     const spy = vi.spyOn(await import("@/analytics"), "recordPageOpened");
-    for (const path of ["/published", "/published/24237928", "/pmo"]) {
+    for (const path of [
+      "/published",
+      "/published/24237928",
+      "/published/24237928/summary",
+      "/pmo",
+    ]) {
       const { unmount } = render(
         <App locationHook={memoryLocation({ path }).hook} store={createTestStore()} />,
       );
       unmount();
     }
-    expect(spy.mock.calls).toEqual([["published"], ["dataset"], ["pmo-file"]]);
+    expect(spy.mock.calls).toEqual([["published"], ["dataset"], ["dataset"], ["pmo-file"]]);
+  });
+
+  it("does not count legacy /pmo/published links as My PMO file", async () => {
+    const spy = vi.spyOn(await import("@/analytics"), "recordPageOpened");
+    const { location } = renderAt("/pmo/published/303/summary");
+    await waitFor(() => expect(location.history.at(-1)).toBe("/published/303/summary"));
+    expect(spy).not.toHaveBeenCalledWith("pmo-file");
+    expect(spy).toHaveBeenCalledWith("dataset");
   });
 });
 
@@ -148,9 +162,36 @@ describe("addresses from before the sections", () => {
     ["/publish", "/pmo/publish"],
     ["/pmo-tools", "/pmo"],
     ["/build", "/build/microhaplotypes"],
+    ["/pmo/published/303", "/published/303/overview"],
+    ["/pmo/published/303/summary", "/published/303/summary"],
+    ["/pmo/published/303/subset", "/published/303/overview"],
   ])("sends %s to %s", async (from, to) => {
     const { location } = renderAt(from);
     await waitFor(() => expect(location.history.at(-1)).toBe(to));
+  });
+});
+
+describe("published view in the app shell", () => {
+  it("marks Published active in the top bar on /published/:id/:tab", async () => {
+    vi.stubEnv("VITE_ZENODO_COMMUNITY", "pmocommunity");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(catalogue()), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    renderAt("/published/303/summary");
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Border travellers, Mozambique and Eswatini",
+      }),
+    ).toBeInTheDocument();
+    const sections = screen.getByRole("navigation", { name: "Sections" });
+    expect(within(sections).getByRole("link", { current: "page" })).toHaveTextContent("Published");
+    expect(within(sections).getByRole("link", { name: "My PMO file" })).not.toHaveAttribute(
+      "aria-current",
+    );
   });
 });
 
@@ -181,6 +222,7 @@ describe("other-tab draft notice", () => {
     ["/pmo", "My PMO file"],
     ["/published", "Published PMOs"],
     ["/published/301", "Maputo surveillance 2015 to 2019"],
+    ["/published/301/summary", "Maputo surveillance 2015 to 2019"],
   ])("does not show on %s", async (path, heading) => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify(catalogue()), {

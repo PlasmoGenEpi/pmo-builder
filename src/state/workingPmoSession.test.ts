@@ -19,7 +19,7 @@ import { readZip } from "@/domain/tools/zipTesting";
 import { createInThreadEngine } from "@/worker/engine";
 import { stoppableWorkers } from "@/test/workers";
 
-import { createAppStore } from "./store";
+import { createAppStore, publishedPmoSessionOf, workingPmoSessionOf } from "./store";
 import {
   createWorkingPmoSession,
   type PmoToOpen,
@@ -959,5 +959,133 @@ describe("working PMO session: original or subset", () => {
     await session.subset(keepFirst(3));
     await session.close();
     expect(session.state.getState().source).toBe("original");
+  });
+});
+
+describe("working and published PMO slots", () => {
+  it("keeps the working PMO and its subset separate from the published slot on one store", async () => {
+    const engine = createInThreadEngine();
+    const store = createAppStore({
+      engine,
+      storage: createDraftStorage({ openBackend: () => createMemoryBackend() }),
+      rebuildDelayMs: 1,
+      saveDelayMs: 1,
+    });
+    const working = workingPmoSessionOf(store);
+    const published = publishedPmoSessionOf(store);
+
+    await working.open(chosen(pmoFile(EXAMPLE, "working.json")));
+    await working.subset(keepFirst(3));
+    working.setMinReads(25);
+
+    await published.open({
+      kind: "file",
+      file: pmoFile(smallerPmo(5), "published.json"),
+      name: "published.json",
+      origin: {
+        kind: "published",
+        id: "303",
+        title: "Published study",
+        recordUrl: "https://zenodo.org/records/303",
+      },
+    });
+    published.setMinReads(10);
+
+    // Each slot answers for its own file.
+    expect(await working.query(SUMMARY)).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: EXAMPLE.library_sample_info.length },
+    });
+    expect(await working.query({ ...SUMMARY, source: "subset" })).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 3 },
+    });
+    expect(await published.query(SUMMARY)).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 5 },
+    });
+
+    // Closing the published slot leaves the working PMO, its subset and its settings untouched.
+    await published.close();
+    expect(await published.query(SUMMARY)).toEqual({ kind: "not-open" });
+    expect(working.state.getState()).toMatchObject({
+      open: { kind: "opened", name: "working.json" },
+      subset: { kind: "made", request: keepFirst(3) },
+      source: "subset",
+      minReads: 25,
+    });
+    expect(await working.query({ ...SUMMARY, source: "subset" })).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 3 },
+    });
+  });
+
+  it("restores each slot independently when the worker restarts", async () => {
+    const workers = stoppableWorkers(() => createInThreadEngine());
+    const working = createWorkingPmoSession({
+      engine: workers.engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "working",
+    });
+    const published = createWorkingPmoSession({
+      engine: workers.engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "published",
+    });
+
+    await working.open(chosen(pmoFile(EXAMPLE, "working.json")));
+    await working.subset(keepFirst(2));
+    await published.open(chosen(pmoFile(smallerPmo(4), "published.json")));
+    workers.stop();
+
+    expect(await published.query(SUMMARY)).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 4 },
+    });
+    expect(await working.query({ ...SUMMARY, source: "subset" })).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 2 },
+    });
+    expect(await working.query(SUMMARY)).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: EXAMPLE.library_sample_info.length },
+    });
+  });
+
+  it("clears both slots when the engine is disposed", async () => {
+    const engine = createInThreadEngine();
+    const working = createWorkingPmoSession({
+      engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "working",
+    });
+    const published = createWorkingPmoSession({
+      engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "published",
+    });
+
+    await working.open(chosen(pmoFile(EXAMPLE, "working.json")));
+    await published.open(chosen(pmoFile(smallerPmo(4), "published.json")));
+    await engine.dispose();
+
+    expect(
+      await engine.workingPmo({
+        slot: "working",
+        generation: working.state.getState().generation,
+        request: SUMMARY,
+      }),
+    ).toEqual({ kind: "not-open" });
+    expect(
+      await engine.workingPmo({
+        slot: "published",
+        generation: published.state.getState().generation,
+        request: SUMMARY,
+      }),
+    ).toEqual({ kind: "not-open" });
   });
 });

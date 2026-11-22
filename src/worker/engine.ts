@@ -44,6 +44,7 @@ import {
   parseFile,
   type ImportFailure,
 } from "@/domain/import";
+import type { PmoSlot } from "@/domain/tools/types";
 import {
   answerWorkingPmo,
   NOTHING_HELD,
@@ -230,8 +231,11 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
   let latestRequest = 0;
   let buildRevision = 0;
   let latestPmo: PortableMicrohaplotypeObject | null = null;
-  /** The working PMO: a PMO file opened to look over, subset or export, apart from the draft. */
-  let held: WorkingPmoHeld = NOTHING_HELD;
+  /** The held PMO slots: the working PMO and the read-only published view, kept apart. */
+  const held: Record<PmoSlot, WorkingPmoHeld> = {
+    working: NOTHING_HELD,
+    published: NOTHING_HELD,
+  };
   /** The latest PMO's files, made when first asked for, by format (gzipped or not). */
   let fileMemo: {
     readonly pmo: PortableMicrohaplotypeObject;
@@ -502,11 +506,12 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     },
 
     async workingPmo(call) {
-      const step = answerWorkingPmo(held, call);
-      held = step.held;
+      const slot: PmoSlot = call.slot ?? "working";
+      const step = answerWorkingPmo(held[slot], call);
+      held[slot] = step.held;
       const work = await step.work;
-      const settled = settleWorkingPmo({ held, call, work });
-      held = settled.held;
+      const settled = settleWorkingPmo({ held: held[slot], call, work });
+      held[slot] = settled.held;
       return settled.result;
     },
 
@@ -524,7 +529,8 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       latestPmo = null;
       previewMemo = null;
       suggestionsMemo = null;
-      held = NOTHING_HELD;
+      held.working = NOTHING_HELD;
+      held.published = NOTHING_HELD;
       return Promise.resolve();
     },
   };

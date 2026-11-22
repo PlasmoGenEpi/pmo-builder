@@ -406,8 +406,13 @@ export interface WorkingPmoValues {
   readonly groups: GroupComparison;
 }
 
-/** A request, with the generation of the working PMO it is meant for. */
+/** Which held PMO slot a request targets. */
+export type PmoSlot = "working" | "published";
+
+/** A request, with the generation of the PMO slot it is meant for. */
 export interface WorkingPmoCall<K extends WorkingPmoKind = WorkingPmoKind> {
+  /** Which held PMO slot this targets. Defaults to `"working"`. */
+  readonly slot?: PmoSlot;
   /** Goes up with every open or close. A request for an older generation is answered as stale. */
   readonly generation: number;
   readonly request: WorkingPmoRequest<K>;

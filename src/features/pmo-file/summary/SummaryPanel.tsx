@@ -10,7 +10,7 @@ import type {
   WorkingSource,
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
-import { useWorkingPmoQuery } from "@/state";
+import { usePmoQuery } from "@/state";
 import { Card, SectionHeading, Skeleton, Stat, Switch, formatCount } from "@/ui";
 
 import { AlleleBars } from "./AlleleBars";
@@ -253,7 +253,7 @@ export function SummaryPanel({
     (): WorkingPmoRequest<"summary"> => ({ kind: "summary", source, minReads }),
     [source, minReads],
   );
-  const loaded = useWorkingPmoQuery(request);
+  const loaded = usePmoQuery(request);
 
   const summary = loaded.kind === "ok" ? loaded.value : null;
   const columns = useMemo(
