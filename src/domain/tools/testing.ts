@@ -9,6 +9,55 @@
  */
 import type { PortableMicrohaplotypeObject } from "pmotools-ts";
 
+import { buildDraft } from "@/domain/build/merge";
+import { EXAMPLE_MAPPINGS, mappedTable, readExample, testContext } from "@/domain/build/testing";
+import { createEmptyDraft, createPanelEntry } from "@/domain/draft";
+
+/** The MAD4HATTER example PMO with its read counts by stage included (3 samples, 8 stage rows). */
+export function examplePmoWithReadCounts(): PortableMicrohaplotypeObject {
+  const tables = {
+    alleles: readExample("mad4hatter_allele_data_example.csv"),
+    panel: readExample("mad4hatter_panel_info_example.csv"),
+    metadata: readExample("mad4hatter_metadata_example.tsv"),
+    totals: readExample("example_raw_reads.txt"),
+    byStage: readExample("reads_per_stage.txt"),
+  };
+  const empty = createEmptyDraft();
+  const { merge } = buildDraft(
+    {
+      ...empty,
+      microhaplotypes: {
+        table: mappedTable("alleles", tables.alleles, EXAMPLE_MAPPINGS.alleles),
+        runName: { mode: "fixed", fixedName: "run1", column: null },
+        representativeColumns: [],
+      },
+      panel: {
+        panels: [
+          {
+            ...createPanelEntry("Mad4hatter"),
+            table: mappedTable("panel", tables.panel, EXAMPLE_MAPPINGS.panel),
+          },
+        ],
+      },
+      specimens: {
+        table: mappedTable("metadata", tables.metadata, EXAMPLE_MAPPINGS.specimens),
+      },
+      librarySamples: {
+        table: mappedTable("metadata", tables.metadata, EXAMPLE_MAPPINGS.librarySamples),
+      },
+      readCounts: {
+        ...empty.readCounts,
+        totals: mappedTable("totals", tables.totals, EXAMPLE_MAPPINGS.totals),
+        byStage: mappedTable("byStage", tables.byStage, EXAMPLE_MAPPINGS.byStage),
+      },
+    },
+    testContext(tables),
+    { creationDate: "2026-01-01" },
+  );
+  if (merge.outcome.kind !== "built") throw new Error("the example with read counts did not build");
+  return merge.outcome.pmo;
+}
+
 /** The PMO described above. */
 export function richPmo(): PortableMicrohaplotypeObject {
   return {

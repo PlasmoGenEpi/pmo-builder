@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { buildExamplePmo } from "@/domain/build/testing";
-import { richPmo } from "@/domain/tools/testing";
+import { examplePmoWithReadCounts, richPmo } from "@/domain/tools/testing";
 import { createDraftStorage, createMemoryBackend } from "@/domain/draft";
 import type { SubsetRequest, WorkingPmoRequest } from "@/domain/tools/types";
 import type { Engine } from "@/worker";
@@ -336,6 +336,130 @@ describe("working PMO session: tables", () => {
     await session.open(chosen(pmoFile(smallerPmo(3), "second.json")));
     expect(await engine.workingPmo({ generation, request: TABLE })).toEqual({ kind: "stale" });
     expect(await engine.workingPmo({ generation, request: TABLES })).toEqual({ kind: "stale" });
+  });
+
+  it("writes read counts by stage for original and subset, and includes it in the archive", async () => {
+    const { session } = makeSession();
+    const withCounts = examplePmoWithReadCounts();
+    await session.open(chosen(pmoFile(withCounts, "study.json")));
+    const open = session.state.getState().open;
+    expect(open.kind === "opened" && open.opened.tables).toContainEqual({
+      id: "readCounts",
+      rows: 8,
+    });
+
+    const original = await session.query({
+      kind: "table",
+      source: "original",
+      id: "readCounts",
+      format: "csv",
+    });
+    if (original.kind !== "ok") throw new Error(original.kind);
+    expect(original.value.fileName).toBe("study-read-counts.csv");
+    expect(original.value.text.trimEnd().split("\n")).toHaveLength(9);
+
+    const sample01Specimen =
+      withCounts.specimen_info[
+        withCounts.library_sample_info.find(
+          (library) => library.library_sample_name === "example_sample_01",
+        )?.specimen_id ?? -1
+      ]?.specimen_name;
+    if (sample01Specimen === undefined) throw new Error("expected specimen");
+
+    await session.subset({
+      specimens: { kind: "names", names: [sample01Specimen] },
+      targets: { kind: "all" },
+      minReads: 0,
+    });
+    const subset = session.state.getState().subset;
+    expect(subset.kind === "made" && subset.made.tables).toContainEqual({
+      id: "readCounts",
+      rows: 2,
+    });
+
+    const subsetTable = await session.query({
+      kind: "table",
+      source: "subset",
+      id: "readCounts",
+      format: "tsv",
+    });
+    if (subsetTable.kind !== "ok") throw new Error(subsetTable.kind);
+    expect(subsetTable.value.fileName).toBe("study-subset-read-counts.tsv");
+    expect(subsetTable.value.text.trimEnd().split("\n")).toEqual([
+      "library_sample_name\ttotal_raw_count\ttarget_name\tstage\treads",
+      "example_sample_01\t10\tPf3D7_01_v3-145388-145662-1A\tdemux\t10",
+      "example_sample_01\t10\tPf3D7_01_v3-145388-145662-1A\tdada2\t7",
+    ]);
+
+    const archive = await session.query({ kind: "tables", source: "subset", format: "tsv" });
+    if (archive.kind !== "ok") throw new Error(archive.kind);
+    const files = await readZip(archive.value.blob);
+    expect(files.map((file) => file.name)).toContain("study-subset-read-counts.tsv");
+  });
+
+  it("previews the first 20 rows of a table for original and subset, matching the download", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+
+    const preview = await session.query({
+      kind: "tablePreview",
+      source: "original",
+      id: "alleles",
+    });
+    const downloaded = await session.query({
+      kind: "table",
+      source: "original",
+      id: "alleles",
+      format: "tsv",
+    });
+    if (preview.kind !== "ok" || downloaded.kind !== "ok") {
+      throw new Error(`expected ok, got ${preview.kind} / ${downloaded.kind}`);
+    }
+    const [header, ...dataLines] = downloaded.value.text.trimEnd().split("\n");
+    expect(preview.value.columns).toEqual(header?.split("\t"));
+    expect(preview.value.totalRows).toBe(dataLines.length);
+    expect(preview.value.rows).toHaveLength(20);
+    expect(
+      preview.value.rows.map((row) =>
+        row.map((cell) => (cell === null ? "" : String(cell))).join("\t"),
+      ),
+    ).toEqual(dataLines.slice(0, 20));
+
+    const names = EXAMPLE.specimen_info.slice(0, 2).map((specimen) => specimen.specimen_name);
+    await session.subset({
+      specimens: { kind: "names", names },
+      targets: { kind: "all" },
+      minReads: 0,
+    });
+    const subsetPreview = await session.query({
+      kind: "tablePreview",
+      source: "subset",
+      id: "specimens",
+    });
+    if (subsetPreview.kind !== "ok") throw new Error(subsetPreview.kind);
+    expect(subsetPreview.value.totalRows).toBe(2);
+    expect(subsetPreview.value.rows).toHaveLength(2);
+    const nameColumn = subsetPreview.value.columns.indexOf("specimen_name");
+    expect(subsetPreview.value.rows.map((row) => row[nameColumn])).toEqual(names);
+  });
+
+  it("answers tablePreview with not-open, no-subset, and stale as other queries do", async () => {
+    const engine = createInThreadEngine();
+    const { session } = makeSession({ engine });
+    const request: WorkingPmoRequest<"tablePreview"> = {
+      kind: "tablePreview",
+      source: "original",
+      id: "specimens",
+    };
+
+    expect(await session.query(request)).toEqual({ kind: "not-open" });
+
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    expect(await session.query({ ...request, source: "subset" })).toEqual({ kind: "no-subset" });
+
+    const { generation } = session.state.getState();
+    await session.open(chosen(pmoFile(smallerPmo(3), "second.json")));
+    expect(await engine.workingPmo({ generation, request })).toEqual({ kind: "stale" });
   });
 });
 

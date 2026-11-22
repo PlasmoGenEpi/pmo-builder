@@ -34,6 +34,7 @@ import {
   pmoFile,
   previewSubset,
   tableFile,
+  tablePreview,
   tablesArchive,
 } from "./workingPmo";
 
@@ -215,6 +216,11 @@ const HANDLERS: { readonly [K in WorkingPmoKind]: Handler<K> } = {
   table: reading<"table">({
     sourceOf: (request) => request.source,
     read: ({ pmo, baseName }, { id, format }) => tableFile(pmo, { id, format, baseName }),
+  }),
+
+  tablePreview: reading<"tablePreview">({
+    sourceOf: (request) => request.source,
+    read: ({ pmo }, { id, limit }) => tablePreview(pmo, { id, limit }),
   }),
 
   tables: reading<"tables">({
