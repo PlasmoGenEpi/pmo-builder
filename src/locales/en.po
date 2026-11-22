@@ -1947,6 +1947,10 @@ msgstr "Column \"{runLike}\" tells them apart, so the table probably holds sever
 msgid "Comments"
 msgstr "Comments"
 
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Common minimum read counts"
+msgstr "Common minimum read counts"
+
 #: src/features/pmo-file/PmoReading.tsx
 msgid "Compare"
 msgstr "Compare"
@@ -3012,6 +3016,10 @@ msgstr "Latitude and longitude"
 #: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Leave empty to count them all."
 msgstr "Leave empty to count them all."
+
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Leave empty to count them all. The most in this file is {mostReads}."
+msgstr "Leave empty to count them all. The most in this file is {mostReads}."
 
 #: src/features/review/SectionChecklist.tsx
 msgid "Left out"

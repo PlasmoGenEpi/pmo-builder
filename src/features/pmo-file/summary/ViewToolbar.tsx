@@ -1,12 +1,18 @@
 import { plural, t } from "@lingui/core/macro";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 
-import { Button, EmptyState, NumberField, formatCount, jumpToHeading } from "@/ui";
+import { Button, EmptyState, NumberField, cn, formatCount, jumpToHeading } from "@/ui";
+
+/** Common minimum read count cutoffs offered as one-press choices beside the input. */
+const COMMON_MIN_READS = [10, 50, 100, 500] as const;
+
+const ACTIVE_CUTOFF_CLASS =
+  "border-accent bg-accent-subtle font-semibold text-accent-text hover:border-accent hover:bg-accent-subtle";
 
 /** The row of controls above the Summary and Compare views. */
 export function ViewToolbar({ children }: { readonly children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border pb-3">
+    <div className="flex flex-wrap items-start gap-x-4 gap-y-2 border-b border-border pb-3">
       {children}
     </div>
   );
@@ -16,27 +22,74 @@ export function ViewToolbar({ children }: { readonly children: ReactNode }) {
 export interface MinReadsFieldProps {
   readonly value: number | null;
   readonly onValueChange: (value: number | null) => void;
+  /** The most reads any microhaplotype has in what is shown, or `null` when unknown. */
+  readonly maxReads: number | null;
 }
 
 /** The minimum reads for a microhaplotype to count. Worded as on the Subset tab. */
-export function MinReadsField({ value, onValueChange }: MinReadsFieldProps) {
-  const hint = t`Leave empty to count them all.`;
+export function MinReadsField({ value, onValueChange, maxReads }: MinReadsFieldProps) {
+  const hintId = useId();
+  const mostReads = maxReads !== null && maxReads > 0 ? formatCount(maxReads) : null;
+  const hint =
+    mostReads === null
+      ? t`Leave empty to count them all.`
+      : t`Leave empty to count them all. The most in this file is ${mostReads}.`;
+  const cutoffs =
+    maxReads === null ? COMMON_MIN_READS : COMMON_MIN_READS.filter((cutoff) => cutoff <= maxReads);
+  const allActive = value === null || value === 0;
+  const allLabel = t({
+    message: "All",
+    comment: "Placeholder in the minimum reads input when empty, meaning all microhaplotypes count",
+  });
+
   return (
-    <NumberField
-      label={t`Minimum reads per microhaplotype`}
-      hint={hint}
-      title={hint}
-      placeholder={t({
-        message: "All",
-        comment:
-          "Placeholder in the minimum reads input when empty, meaning all microhaplotypes count",
-      })}
-      layout="compact"
-      integer
-      min={0}
-      value={value}
-      onValueChange={onValueChange}
-    />
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <NumberField
+          label={t`Minimum reads per microhaplotype`}
+          aria-describedby={hintId}
+          title={hint}
+          placeholder={allLabel}
+          layout="compact"
+          integer
+          min={0}
+          value={value}
+          onValueChange={onValueChange}
+        />
+        {cutoffs.length > 0 ? (
+          <fieldset className="flex flex-wrap items-center gap-1">
+            <legend className="sr-only">{t`Common minimum read counts`}</legend>
+            <Button
+              variant="secondary"
+              size="sm"
+              aria-pressed={allActive}
+              className={cn("px-2", allActive && ACTIVE_CUTOFF_CLASS)}
+              onClick={() => onValueChange(null)}
+            >
+              {allLabel}
+            </Button>
+            {cutoffs.map((cutoff) => {
+              const active = value === cutoff;
+              return (
+                <Button
+                  key={cutoff}
+                  variant="secondary"
+                  size="sm"
+                  aria-pressed={active}
+                  className={cn("px-2 tabular-nums", active && ACTIVE_CUTOFF_CLASS)}
+                  onClick={() => onValueChange(cutoff)}
+                >
+                  {formatCount(cutoff)}
+                </Button>
+              );
+            })}
+          </fieldset>
+        ) : null}
+      </div>
+      <p id={hintId} className="text-xs text-text-muted">
+        {hint}
+      </p>
+    </div>
   );
 }
 

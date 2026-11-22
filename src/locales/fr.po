@@ -1941,6 +1941,10 @@ msgstr "La colonne « {runLike} » les distingue : le tableau contient donc p
 msgid "Comments"
 msgstr "Commentaires"
 
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Common minimum read counts"
+msgstr "Nombres minimaux de lectures courants"
+
 #: src/features/pmo-file/PmoReading.tsx
 msgid "Compare"
 msgstr "Comparer"
@@ -3006,6 +3010,10 @@ msgstr "Latitude et longitude"
 #: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Leave empty to count them all."
 msgstr "Laissez vide pour tous les compter."
+
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Leave empty to count them all. The most in this file is {mostReads}."
+msgstr "Laissez vide pour tous les compter. Le maximum dans ce fichier est de {mostReads}."
 
 #: src/features/review/SectionChecklist.tsx
 msgid "Left out"
