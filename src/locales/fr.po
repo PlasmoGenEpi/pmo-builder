@@ -5663,10 +5663,6 @@ msgstr "Le fichier « {fileName} » du {table} n’est pas chargé. Importez-l
 msgid "The file and your column choices for it are removed from this draft. You can add the file again later."
 msgstr "Le fichier et vos choix de colonnes pour ce fichier sont retirés de ce brouillon. Vous pourrez ajouter le fichier à nouveau plus tard."
 
-#: src/features/pmo-file/PmoFilePage.tsx
-msgid "The file as it was opened"
-msgstr "Le fichier tel qu’il a été ouvert"
-
 #: src/features/pmo-file/OpenPublished.tsx
 msgid "The file could not be downloaded from Zenodo"
 msgstr "Le fichier n’a pas pu être téléchargé depuis Zenodo"
@@ -6058,10 +6054,6 @@ msgstr "Le matériel source, par exemple GENOMIC ou TRANSCRIPTOMIC."
 #: src/domain/fields/samples.ts
 msgid "The specimen this library was made from, as named in the specimen table."
 msgstr "Le spécimen à partir duquel cette bibliothèque a été préparée, tel que nommé dans le tableau des spécimens."
-
-#: src/features/pmo-file/PmoFilePage.tsx
-msgid "The specimens and targets you kept"
-msgstr "Les spécimens et les cibles que vous avez gardés"
 
 #: src/domain/fields/samples.ts
 msgid "The SRA or ENA experiment accession, if the data was submitted."

@@ -1,4 +1,4 @@
-import { act, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { stringifyPmo, type PortableMicrohaplotypeObject } from "pmotools-ts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -150,6 +150,52 @@ describe("PmoFilePage: opening", () => {
     await renderPage(ZENODO, first.store);
     expect(screen.getByText("This file is a valid PMO")).toBeInTheDocument();
     expect(screen.getByText("study.json")).toBeInTheDocument();
+  });
+
+  it("shows the full drop area with no file open, and one compact header bar once opened", async () => {
+    const { user } = await renderPage(ZENODO);
+    expect(
+      screen.getByRole("button", { name: /PMO: Drag a file here or choose a file/ }),
+    ).toBeInTheDocument();
+
+    const file = pmoFile(ownPmo(), "lab-run.json");
+    await user.upload(screen.getByLabelText("Choose pmo file"), file);
+    await screen.findByText("This file is a valid PMO");
+
+    expect(
+      screen.queryByRole("button", { name: /PMO: Drag a file here or choose a file/ }),
+    ).not.toBeInTheDocument();
+
+    const heading = screen.getByRole("heading", { level: 1, name: "lab-run.json" });
+    const bar = heading.closest("header");
+    expect(bar).not.toBeNull();
+    if (bar === null) return;
+
+    expect(within(bar).getByRole("button", { name: "Replace pmo file" })).toBeInTheDocument();
+    expect(within(bar).getByRole("button", { name: "Remove pmo file" })).toBeInTheDocument();
+    expect(within(bar).queryByRole("radiogroup", { name: "Work with" })).not.toBeInTheDocument();
+
+    // Once a subset exists, the Original/Subset choice sits in the same compact bar.
+    await makeSubset(user, 3);
+    expect(within(bar).getByRole("radiogroup", { name: "Work with" })).toBeInTheDocument();
+
+    // Dropping an unsupported file onto the bar warns without closing the open PMO.
+    fireEvent.drop(bar, {
+      dataTransfer: {
+        files: [new File(["%PDF"], "notes.pdf", { type: "application/pdf" })],
+        types: ["Files"],
+      },
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(/notes\.pdf is not a file type/);
+    expect(screen.getByRole("tab", { name: "Summary" })).toBeInTheDocument();
+
+    // Removing closes the file and brings back the full drop area.
+    await user.click(within(bar).getByRole("button", { name: "Remove pmo file" }));
+    await act(() => Promise.resolve());
+    expect(
+      screen.getByRole("button", { name: /PMO: Drag a file here or choose a file/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Summary" })).not.toBeInTheDocument();
   });
 });
 

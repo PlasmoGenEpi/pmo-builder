@@ -6,7 +6,7 @@ import { Button, NumberField, jumpToHeading } from "@/ui";
 /** The row of controls above the Summary and Compare views. */
 export function ViewToolbar({ children }: { readonly children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start gap-x-8 gap-y-4 border-b border-border pb-6">
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border pb-3">
       {children}
     </div>
   );
@@ -24,11 +24,11 @@ export function MinReadsField({ value, onValueChange }: MinReadsFieldProps) {
     <NumberField
       label={t`Minimum reads per microhaplotype`}
       hint={t`Leave empty to count them all.`}
+      layout="compact"
       integer
       min={0}
       value={value}
       onValueChange={onValueChange}
-      className="w-64"
     />
   );
 }
@@ -42,11 +42,8 @@ export interface Jump {
 /** Links to the sections of a long view, each scrolling to its heading. */
 export function SectionJumps({ jumps }: { readonly jumps: readonly Jump[] }) {
   return (
-    <nav
-      aria-label={t`Sections`}
-      className="flex basis-full flex-wrap items-center gap-x-1 gap-y-1"
-    >
-      <span className="pr-2 text-sm text-text-subtle">
+    <nav aria-label={t`Sections`} className="flex flex-wrap items-center gap-x-1 gap-y-1">
+      <span className="pr-1.5 text-sm text-text-subtle">
         {t({ message: "Jump to", comment: "Followed by links to the sections of the page" })}
       </span>
       {jumps.map((jump) => (

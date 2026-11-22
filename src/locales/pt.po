@@ -5663,10 +5663,6 @@ msgstr "O ficheiro «{fileName}» da {table} não está carregado. Carregue-o no
 msgid "The file and your column choices for it are removed from this draft. You can add the file again later."
 msgstr "O ficheiro e as escolhas de colunas que fez para ele são removidos deste rascunho. Pode voltar a adicionar o ficheiro mais tarde."
 
-#: src/features/pmo-file/PmoFilePage.tsx
-msgid "The file as it was opened"
-msgstr "O ficheiro tal como foi aberto"
-
 #: src/features/pmo-file/OpenPublished.tsx
 msgid "The file could not be downloaded from Zenodo"
 msgstr "Não foi possível transferir o ficheiro do Zenodo"
@@ -6058,10 +6054,6 @@ msgstr "O material de origem, por exemplo GENOMIC ou TRANSCRIPTOMIC."
 #: src/domain/fields/samples.ts
 msgid "The specimen this library was made from, as named in the specimen table."
 msgstr "O espécime a partir do qual esta biblioteca foi feita, tal como nomeado na tabela de espécimes."
-
-#: src/features/pmo-file/PmoFilePage.tsx
-msgid "The specimens and targets you kept"
-msgstr "Os espécimes e os alvos que manteve"
 
 #: src/domain/fields/samples.ts
 msgid "The SRA or ENA experiment accession, if the data was submitted."

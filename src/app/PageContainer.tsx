@@ -12,16 +12,24 @@ export interface PageContainerProps {
    * list; `full` lets wide tables use the whole window.
    */
   width?: PageWidth;
+  /** Tighter top padding for views that open with a slim header bar above tabs. */
+  compact?: boolean;
   children: ReactNode;
   className?: string;
 }
 
 /** The padded, centred column every page sits in. */
-export function PageContainer({ width = "reading", children, className }: PageContainerProps) {
+export function PageContainer({
+  width = "reading",
+  compact = false,
+  children,
+  className,
+}: PageContainerProps) {
   return (
     <div
       className={cn(
-        "mx-auto w-full px-4 pt-8 pb-16 sm:px-8 lg:pt-10",
+        "mx-auto w-full px-4 pb-16 sm:px-8",
+        compact ? "pt-4" : "pt-8 lg:pt-10",
         width === "reading" ? "max-w-reading" : width === "step" ? "max-w-step" : "max-w-wide",
         className,
       )}

@@ -5669,10 +5669,6 @@ msgstr ""
 msgid "The file and your column choices for it are removed from this draft. You can add the file again later."
 msgstr ""
 
-#: src/features/pmo-file/PmoFilePage.tsx
-msgid "The file as it was opened"
-msgstr ""
-
 #: src/features/pmo-file/OpenPublished.tsx
 msgid "The file could not be downloaded from Zenodo"
 msgstr ""
@@ -6063,10 +6059,6 @@ msgstr ""
 
 #: src/domain/fields/samples.ts
 msgid "The specimen this library was made from, as named in the specimen table."
-msgstr ""
-
-#: src/features/pmo-file/PmoFilePage.tsx
-msgid "The specimens and targets you kept"
 msgstr ""
 
 #: src/domain/fields/samples.ts

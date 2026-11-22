@@ -39,7 +39,17 @@ export {
   type FieldControlProps,
   type FieldProps,
 } from "./Field";
-export { FileDropzone, type ChosenFile, type FileDropzoneProps } from "./FileDropzone";
+export {
+  FileDropActions,
+  FileDropzone,
+  useFileDrop,
+  type ChosenFile,
+  type FileDropActionsProps,
+  type FileDropHandlers,
+  type FileDropState,
+  type FileDropzoneProps,
+  type UseFileDropOptions,
+} from "./FileDropzone";
 export { formatBytes, formatCount } from "./format";
 export { IconButton, type IconButtonProps } from "./IconButton";
 export { KeyValueList, type KeyValueItem, type KeyValueListProps } from "./KeyValueList";
