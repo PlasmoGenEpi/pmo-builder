@@ -992,6 +992,14 @@ msgstr ""
 msgid "{withoutData, plural, one {# specimen has no library sample, so no data, and is left out of any subset.} other {# specimens have no library sample, so no data, and are left out of any subset.}}"
 msgstr ""
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "{workingName} and the subset you made from it ({subsetName}) are currently open in My PMO file. Opening this published PMO will replace them."
+msgstr ""
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "{workingName} is currently open in My PMO file. Opening this published PMO will replace it."
+msgstr ""
+
 #: src/ui/FileDropzone.tsx
 msgid "<0>. Accepts</0> {fileTypes}"
 msgstr ""
@@ -3788,6 +3796,10 @@ msgstr ""
 msgid "Open the Zenodo upload page"
 msgstr ""
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Opening in My PMO file"
+msgstr ""
+
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Opening the file"
 msgstr ""
@@ -4506,8 +4518,16 @@ msgstr ""
 msgid "Replace {fileLabel} file"
 msgstr ""
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Replace it"
+msgstr ""
+
 #: src/features/panel/PanelEditor.tsx
 msgid "Replace saved panel"
+msgstr ""
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Replace the file open in My PMO file?"
 msgstr ""
 
 #: src/features/panel/PanelEditor.tsx
@@ -6895,6 +6915,10 @@ msgstr ""
 
 #: src/app/HomePage.tsx
 msgid "Work with a PMO file"
+msgstr ""
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Work with this file"
 msgstr ""
 
 #: src/features/shared/SectionResult.tsx

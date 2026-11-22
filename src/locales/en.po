@@ -992,6 +992,14 @@ msgstr "{where}. It {reasonText}."
 msgid "{withoutData, plural, one {# specimen has no library sample, so no data, and is left out of any subset.} other {# specimens have no library sample, so no data, and are left out of any subset.}}"
 msgstr "{withoutData, plural, one {# specimen has no library sample, so no data, and is left out of any subset.} other {# specimens have no library sample, so no data, and are left out of any subset.}}"
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "{workingName} and the subset you made from it ({subsetName}) are currently open in My PMO file. Opening this published PMO will replace them."
+msgstr "{workingName} and the subset you made from it ({subsetName}) are currently open in My PMO file. Opening this published PMO will replace them."
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "{workingName} is currently open in My PMO file. Opening this published PMO will replace it."
+msgstr "{workingName} is currently open in My PMO file. Opening this published PMO will replace it."
+
 #: src/ui/FileDropzone.tsx
 msgid "<0>. Accepts</0> {fileTypes}"
 msgstr "<0>. Accepts</0> {fileTypes}"
@@ -3788,6 +3796,10 @@ msgstr "Open the upload page and sign in to Zenodo. The community is already cho
 msgid "Open the Zenodo upload page"
 msgstr "Open the Zenodo upload page"
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Opening in My PMO file"
+msgstr "Opening in My PMO file"
+
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Opening the file"
 msgstr "Opening the file"
@@ -4506,9 +4518,17 @@ msgstr "Replace"
 msgid "Replace {fileLabel} file"
 msgstr "Replace {fileLabel} file"
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Replace it"
+msgstr "Replace it"
+
 #: src/features/panel/PanelEditor.tsx
 msgid "Replace saved panel"
 msgstr "Replace saved panel"
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Replace the file open in My PMO file?"
+msgstr "Replace the file open in My PMO file?"
 
 #: src/features/panel/PanelEditor.tsx
 msgid "Replace the saved panel \"{name}\"?"
@@ -6896,6 +6916,10 @@ msgstr "Work with"
 #: src/app/HomePage.tsx
 msgid "Work with a PMO file"
 msgstr "Work with a PMO file"
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Work with this file"
+msgstr "Work with this file"
 
 #: src/features/shared/SectionResult.tsx
 msgid "Working out the result."
