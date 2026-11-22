@@ -281,8 +281,9 @@ test("sorts the list from the keyboard, keeps sort in the address, and survives 
   // Change sort using the keyboard alone: focus, open, move to "Most specimens", select.
   await sortControl.focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("listbox")).toBeVisible();
+  await expect(page.getByRole("option", { name: "Newest published" })).toBeFocused();
   await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("option", { name: "Most specimens" })).toBeFocused();
   await page.keyboard.press("Enter");
 
   await expect(sortControl).toContainText("Most specimens");
