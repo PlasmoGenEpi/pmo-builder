@@ -52,18 +52,49 @@ export async function loadCatalogue(
   }
 }
 
-/** What the list can be narrowed by. `null` means no limit. */
+/** What the list can be narrowed by. Empty or `null` means no limit. */
 export interface CatalogueFilters {
-  /** Words that must all appear in the title, authors, panels, countries or DOI. */
+  /** Words that must all appear in the title, authors, panels, countries, species, covered years, BioProjects or DOI. */
   readonly search: string;
-  readonly country: string | null;
+  /** Chosen countries; matches a published PMO in any of them. Empty means any country. */
+  readonly countries: readonly string[];
   readonly panel: string | null;
+  /** NCBI taxon identifier, or `null` for any species. */
+  readonly species: number | null;
   /** A year the collection must cover. */
   readonly year: number | null;
 }
 
 /** No limits. */
-export const NO_FILTERS: CatalogueFilters = { search: "", country: null, panel: null, year: null };
+export const NO_FILTERS: CatalogueFilters = {
+  search: "",
+  countries: [],
+  panel: null,
+  species: null,
+  year: null,
+};
+
+function coveredYears(dataset: PublishedDataset): number[] {
+  const range = dataset.collectionYears;
+  if (range === null) return [];
+  // A typo such as the year 202 must not make thousands of choices.
+  const first = Math.max(range.first, range.last - 100);
+  const years: number[] = [];
+  for (let year = first; year <= range.last; year += 1) years.push(year);
+  return years;
+}
+
+function searchableSpecies(taxa: readonly number[]): string[] {
+  const terms: string[] = [];
+  for (const taxon of taxa) {
+    const name = taxonName(taxon);
+    terms.push(name);
+    if (name.startsWith("Plasmodium ")) {
+      terms.push(`P. ${name.slice("Plasmodium ".length)}`);
+    }
+  }
+  return terms;
+}
 
 function searchable(dataset: PublishedDataset): string {
   return [
@@ -71,6 +102,8 @@ function searchable(dataset: PublishedDataset): string {
     ...dataset.creators,
     ...dataset.panels,
     ...dataset.countries,
+    ...searchableSpecies(dataset.taxa),
+    ...coveredYears(dataset).map(String),
     ...dataset.bioProjects,
     dataset.doi ?? "",
   ]
@@ -85,8 +118,14 @@ export function filterDatasets(
 ): PublishedDataset[] {
   const words = filters.search.toLowerCase().split(/\s+/).filter(Boolean);
   return datasets.filter((dataset) => {
-    if (filters.country !== null && !dataset.countries.includes(filters.country)) return false;
+    if (
+      filters.countries.length > 0 &&
+      !filters.countries.some((country) => dataset.countries.includes(country))
+    ) {
+      return false;
+    }
     if (filters.panel !== null && !dataset.panels.includes(filters.panel)) return false;
+    if (filters.species !== null && !dataset.taxa.includes(filters.species)) return false;
     if (filters.year !== null) {
       const years = dataset.collectionYears;
       if (years === null || filters.year < years.first || filters.year > years.last) return false;
@@ -154,6 +193,8 @@ export function sortDatasets(
 export interface CatalogueFacets {
   readonly countries: readonly string[];
   readonly panels: readonly string[];
+  /** Distinct NCBI taxon identifiers present in the datasets, sorted by species name. */
+  readonly species: readonly number[];
   /** Every year some dataset's collection covers, newest first. */
   readonly years: readonly number[];
 }
@@ -162,21 +203,67 @@ export interface CatalogueFacets {
 export function facetsOf(datasets: readonly PublishedDataset[]): CatalogueFacets {
   const countries = new Set<string>();
   const panels = new Set<string>();
+  const species = new Set<number>();
   const years = new Set<number>();
   for (const dataset of datasets) {
     for (const country of dataset.countries) countries.add(country);
     for (const panel of dataset.panels) panels.add(panel);
-    const range = dataset.collectionYears;
-    if (range !== null) {
-      // A typo such as the year 202 must not make thousands of choices.
-      const first = Math.max(range.first, range.last - 100);
-      for (let year = first; year <= range.last; year += 1) years.add(year);
-    }
+    for (const taxon of dataset.taxa) species.add(taxon);
+    for (const year of coveredYears(dataset)) years.add(year);
   }
   return {
     countries: [...countries].toSorted((a, b) => a.localeCompare(b)),
     panels: [...panels].toSorted((a, b) => a.localeCompare(b)),
+    species: [...species].toSorted((a, b) => taxonName(a).localeCompare(taxonName(b)) || a - b),
     years: [...years].toSorted((a, b) => b - a),
+  };
+}
+
+/** Number of published PMOs each filter choice would give with the other filters as they are. */
+export interface FacetCounts {
+  readonly countries: ReadonlyMap<string, number>;
+  readonly panels: ReadonlyMap<string, number>;
+  readonly species: ReadonlyMap<number, number>;
+  readonly years: ReadonlyMap<number, number>;
+}
+
+function countBy<T>(
+  keys: readonly T[],
+  datasets: readonly PublishedDataset[],
+  valuesOf: (dataset: PublishedDataset) => Iterable<T>,
+): Map<T, number> {
+  const counts = new Map<T, number>();
+  for (const key of keys) counts.set(key, 0);
+  for (const dataset of datasets) {
+    const seen = new Set<T>();
+    for (const value of valuesOf(dataset)) {
+      if (seen.has(value)) continue;
+      seen.add(value);
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
+/**
+ * Counts how many published PMOs each filter choice produces while holding all
+ * other active filters (including search) in place.
+ */
+export function facetCountsOf(
+  datasets: readonly PublishedDataset[],
+  filters: CatalogueFilters,
+): FacetCounts {
+  const facets = facetsOf(datasets);
+  const forCountries = filterDatasets(datasets, { ...filters, countries: [] });
+  const forPanels = filterDatasets(datasets, { ...filters, panel: null });
+  const forSpecies = filterDatasets(datasets, { ...filters, species: null });
+  const forYears = filterDatasets(datasets, { ...filters, year: null });
+
+  return {
+    countries: countBy(facets.countries, forCountries, (dataset) => dataset.countries),
+    panels: countBy(facets.panels, forPanels, (dataset) => dataset.panels),
+    species: countBy(facets.species, forSpecies, (dataset) => dataset.taxa),
+    years: countBy(facets.years, forYears, coveredYears),
   };
 }
 

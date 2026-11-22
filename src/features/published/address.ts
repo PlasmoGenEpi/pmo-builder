@@ -8,10 +8,12 @@ import { DEFAULT_SORT, isSortOrder, type SortOrder } from "./catalogue";
 export interface PublishedListState {
   /** Words searched across each published PMO's metadata. */
   readonly search: string;
-  /** Chosen country, or `null` for any country. */
-  readonly country: string | null;
+  /** Chosen countries; empty means any country. Matches a published PMO in any of them. */
+  readonly countries: readonly string[];
   /** Chosen panel, or `null` for any panel. */
   readonly panel: string | null;
+  /** Chosen species NCBI taxon identifier, or `null` for any species. */
+  readonly species: number | null;
   /** Chosen collection year, or `null` for any year. */
   readonly year: number | null;
   /** Order of entries in the list. */
@@ -21,8 +23,9 @@ export interface PublishedListState {
 /** The default, unfiltered list state. Serializes to an empty query string. */
 export const DEFAULT_LIST_STATE: PublishedListState = {
   search: "",
-  country: null,
+  countries: [],
   panel: null,
+  species: null,
   year: null,
   sort: DEFAULT_SORT,
 };
@@ -31,10 +34,21 @@ function nonEmpty(value: string | null): string | null {
   return value !== null && value.trim() !== "" ? value : null;
 }
 
-function parseYear(raw: string | null): number | null {
+function uniqueNonEmpty(values: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    if (value.trim() === "" || seen.has(value)) continue;
+    seen.add(value);
+    result.push(value);
+  }
+  return result;
+}
+
+function parsePositiveInt(raw: string | null): number | null {
   if (raw === null || !/^\d+$/.test(raw)) return null;
-  const year = Number(raw);
-  return Number.isSafeInteger(year) && year > 0 ? year : null;
+  const value = Number(raw);
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
 function parseSort(raw: string | null): SortOrder {
@@ -47,9 +61,10 @@ export function readListState(search: string): PublishedListState {
   const rawQuery = params.get("q") ?? "";
   return {
     search: rawQuery.trim() === "" ? "" : rawQuery,
-    country: nonEmpty(params.get("country")),
+    countries: uniqueNonEmpty(params.getAll("country")),
     panel: nonEmpty(params.get("panel")),
-    year: parseYear(params.get("year")),
+    species: parsePositiveInt(params.get("species")),
+    year: parsePositiveInt(params.get("year")),
     sort: parseSort(params.get("sort")),
   };
 }
@@ -58,8 +73,13 @@ export function readListState(search: string): PublishedListState {
 export function writeListState(state: PublishedListState): string {
   const params = new URLSearchParams();
   if (state.search.trim() !== "") params.set("q", state.search);
-  if (state.country !== null && state.country.trim() !== "") params.set("country", state.country);
+  for (const country of uniqueNonEmpty(state.countries)) {
+    params.append("country", country);
+  }
   if (state.panel !== null && state.panel.trim() !== "") params.set("panel", state.panel);
+  if (state.species !== null && Number.isSafeInteger(state.species) && state.species > 0) {
+    params.set("species", String(state.species));
+  }
   if (state.year !== null && Number.isSafeInteger(state.year) && state.year > 0) {
     params.set("year", String(state.year));
   }

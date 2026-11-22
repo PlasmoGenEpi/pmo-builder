@@ -88,6 +88,11 @@ msgstr "{0, plural, one {{name} (# step)} other {{name} (# steps)}}"
 msgid "{0, plural, one {{shownCount} of # dataset} other {{shownCount} of # datasets}}"
 msgstr "{0, plural, one {{shownCount} of # dataset} other {{shownCount} of # datasets}}"
 
+#. placeholder {0}: selected.length
+#: src/features/published/CountryFilter.tsx
+msgid "{0, plural, one {# country} other {# countries}}"
+msgstr "{0, plural, one {# country} other {# countries}}"
+
 #. placeholder {0}: datasets.length
 #: src/features/published/PublishedPage.tsx
 msgid "{0, plural, one {# dataset} other {# datasets}}"
@@ -127,6 +132,11 @@ msgstr "{0, plural, one {# run uses this method and will need another one.} othe
 #: src/features/microhaplotypes/MicrohaplotypesStep.tsx
 msgid "{0, plural, one {# run} other {# runs}}"
 msgstr "{0, plural, one {# run} other {# runs}}"
+
+#. placeholder {0}: selected.length
+#: src/features/published/CountryFilter.tsx
+msgid "{0, plural, one {# selected} other {# selected}}"
+msgstr "{0, plural, one {# selected} other {# selected}}"
 
 #. placeholder {0}: summary.runs
 #: src/features/review/reviewModel.ts
@@ -408,6 +418,10 @@ msgstr "{count, plural, one {The specimen table names a project with no record h
 msgid "{count, plural, one {Warning} other {Warnings}}"
 msgstr "{count, plural, one {Warning} other {Warnings}}"
 
+#: src/features/published/CountryFilter.tsx
+msgid "{country} <0>({countText})</0>"
+msgstr "{country} <0>({countText})</0>"
+
 #: src/features/pmo-file/summary/CompareTab.tsx
 msgid "{dated} of {all} specimens have a collection date that gives the month."
 msgstr "{dated} of {all} specimens have a collection date that gives the month."
@@ -623,6 +637,11 @@ msgstr "{more, plural, one {{shown} and # more} other {{shown} and # more}}"
 #: src/features/shared/NameCheck.tsx
 msgid "{more, plural, one {{shownNames} and # more} other {{shownNames} and # more}}"
 msgstr "{more, plural, one {{shownNames} and # more} other {{shownNames} and # more}}"
+
+#. Filter choice with the number of matching published PMOs
+#: src/features/published/PublishedPage.tsx
+msgid "{name} ({countText})"
+msgstr "{name} ({countText})"
 
 #. A record in the PMO, by its name, such as 'Specimen "S1"'.
 #: src/domain/build/merge.ts
@@ -1413,7 +1432,7 @@ msgstr "Annotation link"
 msgid "Annotations"
 msgstr "Annotations"
 
-#: src/features/published/PublishedPage.tsx
+#: src/features/published/CountryFilter.tsx
 msgid "Any country"
 msgstr "Any country"
 
@@ -1428,6 +1447,10 @@ msgstr "Any notes about the specimen, separated by commas."
 #: src/features/published/PublishedPage.tsx
 msgid "Any panel"
 msgstr "Any panel"
+
+#: src/features/published/PublishedPage.tsx
+msgid "Any species"
+msgstr "Any species"
 
 #: src/features/published/PublishedPage.tsx
 msgid "Any year"
@@ -1689,6 +1712,10 @@ msgstr "Chromosome"
 msgid "Chromosomes"
 msgstr "Chromosomes"
 
+#: src/features/published/CountryFilter.tsx
+msgid "Clear countries"
+msgstr "Clear countries"
+
 #: src/features/published/PublishedPage.tsx
 msgid "Clear the filters"
 msgstr "Clear the filters"
@@ -1879,6 +1906,11 @@ msgstr "Counting"
 #: src/features/published/PublishedPage.tsx
 msgid "Country"
 msgstr "Country"
+
+#. Button label for the country filter showing the current selection
+#: src/features/published/CountryFilter.tsx
+msgid "Country: {summary}"
+msgstr "Country: {summary}"
 
 #. Heading for a group of optional fields in the column-matching editor
 #: src/domain/fields/microhaplotypes.ts
@@ -2278,9 +2310,17 @@ msgstr "Fill in the genome, or choose no genome."
 msgid "Fill this in, or set the reference genome to None."
 msgstr "Fill this in, or set the reference genome to None."
 
+#: src/features/published/CountryFilter.tsx
+msgid "Filter by country"
+msgstr "Filter by country"
+
 #: src/features/table-import/MatchingParts.tsx
 msgid "Filter by name or column"
 msgstr "Filter by name or column"
+
+#: src/features/published/CountryFilter.tsx
+msgid "Filter countries"
+msgstr "Filter countries"
 
 #: src/features/table-import/MatchingParts.tsx
 msgid "Filter optional fields"
@@ -3345,6 +3385,10 @@ msgstr "No file is open"
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "No library sample has any microhaplotypes left with these choices. Choose more specimens or targets, or fewer reads."
 msgstr "No library sample has any microhaplotypes left with these choices. Choose more specimens or targets, or fewer reads."
+
+#: src/features/published/CountryFilter.tsx
+msgid "No matching country"
+msgstr "No matching country"
 
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "No method is ready yet. Finish the methods table above."
@@ -5062,6 +5106,7 @@ msgid "Sort by {columnLabel}"
 msgstr "Sort by {columnLabel}"
 
 #: src/features/published/DatasetPage.tsx
+#: src/features/published/PublishedPage.tsx
 msgid "Species"
 msgstr "Species"
 

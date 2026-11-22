@@ -24,34 +24,48 @@ async function serveLargeCatalogue(page: Page): Promise<void> {
   });
 }
 
-async function chooseOption(page: Page, label: string, option: string): Promise<void> {
+async function chooseOption(page: Page, label: string, option: string | RegExp): Promise<void> {
   await page.getByRole("combobox", { name: label }).click();
-  await page.getByRole("option", { name: option, exact: true }).click();
+  await page.getByRole("option", { name: option }).click();
 }
 
-test("keeps search and country in the address, loads a copied address, and clears cleanly", async ({
+test("keeps search, multiple countries and species in the address, loads a copied address, and clears cleanly", async ({
   page,
 }) => {
   await serveLargeCatalogue(page);
   await page.goto("/?lang=en#/published");
-  await expect(page.getByText("150 datasets")).toBeVisible();
+  const status = page.getByRole("status");
+  await expect(status).toHaveText("150 datasets");
   expect(await page.evaluate(() => window.location.hash)).toBe("#/published");
 
   const historyBeforeSearch = await page.evaluate(() => window.history.length);
   const searchBox = page.getByRole("searchbox", { name: "Search" });
-  await searchBox.pressSequentially("surveillance");
-  await expect
-    .poll(() => page.evaluate(() => window.location.hash))
-    .toBe("#/published?q=surveillance");
+  await searchBox.pressSequentially("vivax");
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#/published?q=vivax");
 
   // Typing in the search replaces the current entry instead of adding one per letter.
   expect(await page.evaluate(() => window.history.length)).toBe(historyBeforeSearch);
   expect(await page.evaluate(() => window.location.search)).toBe("?lang=en");
+  const vivaxCount = await page.locator("article").count();
+  expect(vivaxCount).toBeGreaterThan(0);
+  await expect(status).toHaveText(`${vivaxCount} of 150 datasets`);
 
-  await chooseOption(page, "Country", "Kenya");
+  await searchBox.fill("");
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#/published");
+
+  await page.getByRole("button", { name: /^Country:/ }).click();
+  await page.getByRole("checkbox", { name: /^Kenya \(\d+\)$/ }).click();
+  await page.getByRole("checkbox", { name: /^Uganda \(\d+\)$/ }).click();
+  await page.keyboard.press("Escape");
+
   await expect
     .poll(() => page.evaluate(() => window.location.hash))
-    .toBe("#/published?q=surveillance&country=Kenya");
+    .toBe("#/published?country=Kenya&country=Uganda");
+
+  await chooseOption(page, "Species", /^Plasmodium falciparum \(\d+\)$/);
+  await expect
+    .poll(() => page.evaluate(() => window.location.hash))
+    .toBe("#/published?country=Kenya&country=Uganda&species=5833");
 
   const copiedUrl = page.url();
   const filteredTitles = await page
@@ -62,8 +76,10 @@ test("keeps search and country in the address, loads a copied address, and clear
   // Loading the copied address in a fresh visit shows the exact same list.
   await page.goto("about:blank");
   await page.goto(copiedUrl);
-  await expect(page.getByRole("searchbox", { name: "Search" })).toHaveValue("surveillance");
-  await expect(page.getByRole("combobox", { name: "Country" })).toContainText("Kenya");
+  await expect(page.getByRole("button", { name: /^Country:/ })).toContainText("2 countries");
+  await expect(page.getByRole("combobox", { name: "Species" })).toContainText(
+    "Plasmodium falciparum",
+  );
   const reloadedTitles = await page
     .locator("article h3")
     .evaluateAll((headings) => headings.map((heading) => heading.textContent ?? ""));
@@ -71,7 +87,7 @@ test("keeps search and country in the address, loads a copied address, and clear
 
   // Clearing the filters resets both the list and the address.
   await page.getByRole("button", { name: "Clear the filters" }).click();
-  await expect(page.getByText("150 datasets")).toBeVisible();
+  await expect(status).toHaveText("150 datasets");
   expect(await page.evaluate(() => window.location.hash)).toBe("#/published");
 });
 
@@ -84,7 +100,7 @@ test("restores search, filters and scroll position when going Back from a datase
   await expect(page.getByText("150 datasets")).toBeVisible();
 
   await page.getByRole("searchbox", { name: "Search" }).fill("20");
-  await chooseOption(page, "Panel", "Mad4hatter");
+  await chooseOption(page, "Panel", /^Mad4hatter \(\d+\)$/);
   await expect
     .poll(() => page.evaluate(() => window.location.hash))
     .toBe("#/published?q=20&panel=Mad4hatter");
@@ -226,7 +242,9 @@ test("totals follow filters and fit without overlap at 390 px with six-digit spe
   assertNoTotalsOverlap(unfiltered);
 
   // Filtering updates the totals and shows that the list is filtered.
-  await chooseOption(page, "Country", "Kenya");
+  await page.getByRole("button", { name: /^Country:/ }).click();
+  await page.getByRole("checkbox", { name: /^Kenya \(\d+\)$/ }).click();
+  await page.keyboard.press("Escape");
   await expect(totalsRegion.getByText("Filtered list")).toBeVisible();
   const filtered = await inspectTotalsLayout();
   expect(parseCount(filtered.numbers[0]?.text)).toBeGreaterThan(0);

@@ -10,17 +10,18 @@ describe("published list address", () => {
     expect(readListState("?")).toEqual(DEFAULT_LIST_STATE);
   });
 
-  it("round-trips search, country, panel, collection year and sort", () => {
+  it("round-trips search, countries, panel, species, collection year and sort", () => {
     const state = {
       search: "maputo surveillance",
-      country: "Mozambique",
+      countries: ["Mozambique", "Uganda"],
       panel: "Mad4hatter",
+      species: 5855,
       year: 2017,
       sort: "specimens" as const,
     };
     const query = writeListState(state);
     expect(query).toBe(
-      "q=maputo+surveillance&country=Mozambique&panel=Mad4hatter&year=2017&sort=specimens",
+      "q=maputo+surveillance&country=Mozambique&country=Uganda&panel=Mad4hatter&species=5855&year=2017&sort=specimens",
     );
     expect(publishedHref(state)).toBe(`/published?${query}`);
     expect(readListState(query)).toEqual(state);
@@ -49,22 +50,38 @@ describe("published list address", () => {
     const punctuation = {
       ...DEFAULT_LIST_STATE,
       search: "a&b+c",
-      country: "Côte d'Ivoire",
+      countries: ["Côte d'Ivoire"],
     };
     expect(readListState(writeListState(punctuation))).toEqual(punctuation);
   });
 
+  it("deduplicates repeated countries and ignores blank entries", () => {
+    expect(
+      readListState("country=Kenya&country=&country=Kenya&country=Uganda&country=+++"),
+    ).toEqual({
+      ...DEFAULT_LIST_STATE,
+      countries: ["Kenya", "Uganda"],
+    });
+    expect(
+      writeListState({
+        ...DEFAULT_LIST_STATE,
+        countries: ["Kenya", " ", "Kenya", "Uganda"],
+      }),
+    ).toBe("country=Kenya&country=Uganda");
+  });
+
   it("ignores malformed, empty and unknown query parameters", () => {
-    expect(readListState("country=&panel=&year=not-a-year&sort=oldest&extra=1")).toEqual(
-      DEFAULT_LIST_STATE,
-    );
+    expect(
+      readListState("country=&panel=&species=vivax&year=not-a-year&sort=oldest&extra=1"),
+    ).toEqual(DEFAULT_LIST_STATE);
     expect(readListState("sort=")).toEqual(DEFAULT_LIST_STATE);
     expect(readListState("sort=newest")).toEqual(DEFAULT_LIST_STATE);
-    expect(readListState("year=0")).toEqual(DEFAULT_LIST_STATE);
-    expect(readListState("year=-2020")).toEqual(DEFAULT_LIST_STATE);
-    expect(readListState("year=2019.5")).toEqual(DEFAULT_LIST_STATE);
-    expect(readListState("year=2021&unknown=foo")).toEqual({
+    expect(readListState("species=0&year=0")).toEqual(DEFAULT_LIST_STATE);
+    expect(readListState("species=-5855&year=-2020")).toEqual(DEFAULT_LIST_STATE);
+    expect(readListState("species=5855.5&year=2019.5")).toEqual(DEFAULT_LIST_STATE);
+    expect(readListState("species=5855&year=2021&unknown=foo")).toEqual({
       ...DEFAULT_LIST_STATE,
+      species: 5855,
       year: 2021,
     });
   });
