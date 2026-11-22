@@ -1903,6 +1903,10 @@ msgstr "A coluna «{runLike}» distingue essas linhas, por isso a tabela contém
 msgid "Comments"
 msgstr "Comentários"
 
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Common minimum read counts"
+msgstr "Números mínimos de leituras comuns"
+
 #: src/features/pmo-file/PmoReading.tsx
 msgid "Compare"
 msgstr "Comparar"
@@ -2958,6 +2962,10 @@ msgstr "Latitude e longitude"
 #: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Leave empty to count them all."
 msgstr "Deixe vazio para os contar todos."
+
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Leave empty to count them all. The most in this file is {mostReads}."
+msgstr "Deixe vazio para os contar todos. O máximo neste ficheiro é {mostReads}."
 
 #: src/features/review/SectionChecklist.tsx
 msgid "Left out"

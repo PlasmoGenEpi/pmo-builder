@@ -298,7 +298,7 @@ export function SummaryPanel({
   return (
     <div className="flex flex-col gap-6">
       <ViewToolbar>
-        <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
+        <MinReadsField value={minReadsInput} maxReads={maxReads} onValueChange={onMinReadsChange} />
         {summary === null || nothingPasses ? null : <SectionJumps jumps={jumpsOf(summary)} />}
       </ViewToolbar>
 

@@ -575,7 +575,7 @@ export function CompareTab({
             </div>
           )}
         </Field>
-        <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
+        <MinReadsField value={minReadsInput} maxReads={maxReads} onValueChange={onMinReadsChange} />
       </ViewToolbar>
 
       <Comparison

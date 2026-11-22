@@ -95,10 +95,14 @@ export function NumberField({
       className={className}
     >
       {(control) => {
+        const describedBy =
+          [control["aria-describedby"], input["aria-describedby"]].filter(Boolean).join(" ") ||
+          undefined;
         const element = (
           <input
             {...input}
             {...control}
+            aria-describedby={describedBy}
             type="text"
             inputMode={integer ? "numeric" : "decimal"}
             required={required}

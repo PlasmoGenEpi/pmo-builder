@@ -1416,6 +1416,101 @@ describe("PmoFilePage: summary", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the file's largest read count and applies common cutoffs across Summary and Compare", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Samples" });
+
+    expect(
+      screen.getByText("Leave empty to count them all. The most in this file is 1,279."),
+    ).toBeVisible();
+    const summaryCutoffs = screen.getByRole("group", { name: "Common minimum read counts" });
+    expect(
+      within(summaryCutoffs)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["All", "10", "50", "100", "500"]);
+
+    const beforeSamples = screen.getAllByText("Samples with data", { exact: true })[0]
+      ?.parentElement?.textContent;
+    await user.click(within(summaryCutoffs).getByRole("button", { name: "500" }));
+    expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("500");
+    await vi.waitFor(
+      () => {
+        expect(
+          screen.getAllByText("Samples with data", { exact: true })[0]?.parentElement?.textContent,
+        ).not.toBe(beforeSamples);
+      },
+      { timeout: 3000 },
+    );
+
+    // Value and active cutoff carry over to Compare, and clearing there carries back to Summary.
+    await user.click(screen.getByRole("tab", { name: "Compare" }));
+    await screen.findByRole("table", { name: "Groups" }, { timeout: 3000 });
+    expect(
+      screen.getByText("Leave empty to count them all. The most in this file is 1,279."),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("500");
+    const compareCutoffs = screen.getByRole("group", { name: "Common minimum read counts" });
+    expect(within(compareCutoffs).getByRole("button", { name: "500" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await user.click(within(compareCutoffs).getByRole("button", { name: "All" }));
+    expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("");
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+    expect(await screen.findByLabelText("Minimum reads per microhaplotype")).toHaveValue("");
+    expect(
+      within(screen.getByRole("group", { name: "Common minimum read counts" })).getByRole(
+        "button",
+        { name: "All" },
+      ),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("filters cutoffs to the active original or subset largest read count", async () => {
+    const { user } = await open(pmoFile(richPmo()));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Samples" });
+
+    expect(
+      screen.getByText("Leave empty to count them all. The most in this file is 90."),
+    ).toBeVisible();
+    const originalCutoffs = screen.getByRole("group", { name: "Common minimum read counts" });
+    expect(
+      within(originalCutoffs)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["All", "10", "50"]);
+
+    // Make a subset with only neg (max 3 reads): no common cutoff <= 3 should be offered.
+    await user.click(screen.getByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: "Specimens I tick" }));
+    const specimens = screen.getByRole("group", { name: "Specimens" });
+    await user.click(within(specimens).getByRole("checkbox", { name: /neg/ }));
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    await screen.findByText("The subset is ready");
+
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Samples" });
+    expect(
+      screen.getByText("Leave empty to count them all. The most in this file is 3."),
+    ).toBeVisible();
+    expect(screen.queryByRole("group", { name: "Common minimum read counts" })).toBeNull();
+
+    // Switching back to Original restores the original largest count and cutoffs.
+    await user.click(screen.getByRole("radio", { name: "Original" }));
+    expect(
+      await screen.findByText("Leave empty to count them all. The most in this file is 90."),
+    ).toBeVisible();
+    expect(
+      within(screen.getByRole("group", { name: "Common minimum read counts" }))
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["All", "10", "50"]);
+  });
+
   it("keeps missing values last in both directions on the pipeline stage table", async () => {
     const base = richPmo();
     const withStages: PortableMicrohaplotypeObject = {
