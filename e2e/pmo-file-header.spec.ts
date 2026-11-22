@@ -142,16 +142,43 @@ test("at 390x844 visible data appears on the first screen of Summary and Compare
   await page.setViewportSize({ width: 390, height: 844 });
   await openExamplePmo(page);
 
-  // Summary: first headline stat fits within the first screen.
+  // Summary: headline tiles sit two to a row within the 390px viewport and fit on the first screen.
   await page.getByRole("tab", { name: "Summary" }).click();
   const firstStat = page.getByText("Samples with data", { exact: true }).first().locator("..");
+  const secondStat = page.getByText("Targets with data", { exact: true }).first().locator("..");
+  const thirdStat = page
+    .getByText("Median targets per sample", { exact: true })
+    .first()
+    .locator("..");
+  const fourthStat = page
+    .getByText("Samples with more than one clone", { exact: true })
+    .first()
+    .locator("..");
   const firstStatBox = await boxOf(firstStat);
+  const secondStatBox = await boxOf(secondStat);
+  const thirdStatBox = await boxOf(thirdStat);
+  const fourthStatBox = await boxOf(fourthStat);
   expect(firstStatBox.y + firstStatBox.height).toBeLessThanOrEqual(844);
+  expect(Math.abs(firstStatBox.y - secondStatBox.y)).toBeLessThanOrEqual(4);
+  expect(secondStatBox.x).toBeGreaterThan(firstStatBox.x);
+  expect(secondStatBox.x + secondStatBox.width).toBeLessThanOrEqual(390);
+  expect(Math.abs(thirdStatBox.y - fourthStatBox.y)).toBeLessThanOrEqual(4);
+  expect(thirdStatBox.y).toBeGreaterThan(firstStatBox.y);
+  expect(fourthStatBox.x + fourthStatBox.width).toBeLessThanOrEqual(390);
+
+  // Choosing a headline tile moves to its section below the top bar and focuses the heading.
+  await secondStat.click();
+  const topBarBox = await boxOf(page.getByRole("banner"));
+  const targetsHeading = page.getByRole("heading", { level: 2, name: "Targets" });
+  const targetsHeadingBox = await boxOf(targetsHeading);
+  expect(targetsHeadingBox.y).toBeGreaterThanOrEqual(topBarBox.y + topBarBox.height - 0.5);
+  await expect(targetsHeading).toBeFocused();
+
+  await page.evaluate(() => window.scrollTo(0, 0));
 
   // Clicking a Summary jump link lands the heading below the sticky two-row top bar.
   const jumpsNav = page.getByRole("navigation", { name: "On this page" });
   await jumpsNav.getByRole("button", { name: "Samples" }).click();
-  const topBarBox = await boxOf(page.getByRole("banner"));
   const samplesHeadingBox = await boxOf(page.getByRole("heading", { level: 2, name: "Samples" }));
   expect(samplesHeadingBox.y).toBeGreaterThanOrEqual(topBarBox.y + topBarBox.height - 0.5);
 

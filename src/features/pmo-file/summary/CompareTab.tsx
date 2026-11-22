@@ -36,6 +36,7 @@ import { NoAnswer, type NoAnswerReason } from "../NoAnswer";
 import { specimenFieldLabel } from "../specimenFieldNames";
 import { useSettled } from "../useSettled";
 
+import { SequenceLabel } from "./SequenceLabel";
 import { SortableTable, type SortableColumn } from "./SortableTable";
 import { MinReadsField, NoReadsAboveMinimum, ViewToolbar } from "./ViewToolbar";
 
@@ -124,9 +125,12 @@ function AllelesByGroup({
               <th
                 scope="row"
                 className="px-3 py-1.5 text-left font-mono text-xs font-normal text-text-muted"
-                title={allele.seq}
               >
-                {allele.label.label}
+                <SequenceLabel
+                  label={allele.label.label === "" ? `#${allele.mhapId}` : allele.label.label}
+                  seq={allele.seq}
+                  note={allele.label.note}
+                />
               </th>
               {allele.freqs.map((freq, index) => (
                 <td key={groups[index]?.name ?? `none${index}`} className="px-3 py-1.5">

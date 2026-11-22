@@ -1,4 +1,5 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { stringifyPmo, type PortableMicrohaplotypeObject } from "pmotools-ts";
 import { describe, expect, it } from "vitest";
 
@@ -217,5 +218,22 @@ describe("CompareTab: collection timeline short bars", () => {
     const labels = [...timeline.querySelectorAll("svg text")].map((node) => node.textContent);
     expect(labels).toContain("2015-05");
     expect(labels).toContain("2019-08");
+  });
+});
+
+describe("CompareTab: microhaplotype sequences", () => {
+  it("opens and copies a microhaplotype's full sequence from the table", async () => {
+    const user = userEvent.setup();
+    await openAndRenderCompare(richPmo());
+    const table = await screen.findByRole("table", { name: "Microhaplotype frequencies by group" });
+
+    await user.click(within(table).getByRole("button", { name: "A4T" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Sequence for A4T" });
+    expect(within(dialog).getByText("AAAT")).toBeVisible();
+
+    await user.click(within(dialog).getByRole("button", { name: "Copy" }));
+    expect(await navigator.clipboard.readText()).toBe("AAAT");
+    expect(within(dialog).getByRole("button", { name: "Copied" })).toBeVisible();
   });
 });
