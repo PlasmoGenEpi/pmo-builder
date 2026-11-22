@@ -206,7 +206,7 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
       <Coverage have={have} total={total}>
         {t`Plate positions are given for ${haveCount} of ${totalCount} library samples.`}
       </Coverage>
-      <div ref={platesRef} className="relative flex flex-wrap gap-8">
+      <div ref={platesRef} className="relative flex min-w-0 flex-wrap gap-8">
         {plates.map((plate) => {
           const wells = placed.filter((sample) => sample.plate?.plate === plate);
           const rows = Math.max(
@@ -216,89 +216,103 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
           const cols = Math.max(12, ...wells.map((sample) => sample.plate?.col ?? 1));
           const wellCount = formatCount(wells.length);
           return (
-            <figure key={plate} className="flex flex-col gap-2">
+            <figure key={plate} className="flex min-w-0 max-w-full flex-col gap-2">
               <figcaption className="text-sm font-medium text-text">{plate}</figcaption>
               <p className="sr-only">{t`Plate ${plate}: ${wellCount} library samples. The sample table gives the same figures.`}</p>
-              <svg width={(cols + 1) * cell} height={(rows + 1) * cell} aria-hidden="true">
-                {Array.from({ length: cols }, (_, col) => (
-                  <text
-                    key={`c${col}`}
-                    x={(col + 1.5) * cell}
-                    y={cell * 0.65}
-                    textAnchor="middle"
-                    className="fill-text-muted text-[10px]"
-                  >
-                    {col + 1}
-                  </text>
-                ))}
-                {Array.from({ length: rows }, (_, row) => (
-                  <text
-                    key={`r${row}`}
-                    x={cell * 0.5}
-                    y={(row + 1.6) * cell}
-                    textAnchor="middle"
-                    className="fill-text-muted text-[10px]"
-                  >
-                    {ROW_LETTERS[row]}
-                  </text>
-                ))}
-                {Array.from({ length: rows * cols }, (_, index) => {
-                  const row = Math.floor(index / cols);
-                  const col = index % cols;
-                  const sample = wells.find(
-                    (item) => item.plate?.row === ROW_LETTERS[row] && item.plate?.col === col + 1,
-                  );
-                  const fill =
-                    sample === undefined
-                      ? "transparent"
-                      : sample.targets === 0
-                        ? EMPTY_CELL[resolved]
-                        : rampColour(ramp, sample.targets / maxTargets);
-                  return (
-                    <rect
-                      key={index}
-                      x={(col + 1) * cell + 2}
-                      y={(row + 1) * cell + 2}
-                      width={cell - 4}
-                      height={cell - 4}
-                      rx={4}
-                      fill={fill}
-                      className={sample === undefined ? "stroke-border" : undefined}
-                      strokeDasharray={sample === undefined ? "2 2" : undefined}
-                      onMouseEnter={(event) => {
-                        if (sample === undefined) return;
-                        const rect = event.currentTarget.getBoundingClientRect();
-                        setHover({
-                          sample,
-                          well: {
-                            left: rect.left,
-                            top: rect.top,
-                            right: rect.right,
-                            bottom: rect.bottom,
-                          },
-                        });
-                      }}
-                      onMouseLeave={() => setHover(null)}
-                    />
-                  );
-                })}
-                {wells
-                  .filter((sample) => sample.targets === 0)
-                  .map((sample) => {
-                    const row = ROW_LETTERS.indexOf(sample.plate?.row ?? "A");
-                    const col = (sample.plate?.col ?? 1) - 1;
-                    const x = (col + 1) * cell + 8;
-                    const y = (row + 1) * cell + 8;
+              <section
+                aria-label={plate}
+                // Focusable so keyboard users can scroll wide plates.
+                // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+                tabIndex={0}
+                onScroll={() => setHover(null)}
+                className="max-w-full overflow-x-auto focus-visible:outline-offset-0"
+              >
+                <svg
+                  width={(cols + 1) * cell}
+                  height={(rows + 1) * cell}
+                  className="block"
+                  aria-hidden="true"
+                >
+                  {Array.from({ length: cols }, (_, col) => (
+                    <text
+                      key={`c${col}`}
+                      x={(col + 1.5) * cell}
+                      y={cell * 0.65}
+                      textAnchor="middle"
+                      className="fill-text-muted text-[10px]"
+                    >
+                      {col + 1}
+                    </text>
+                  ))}
+                  {Array.from({ length: rows }, (_, row) => (
+                    <text
+                      key={`r${row}`}
+                      x={cell * 0.5}
+                      y={(row + 1.6) * cell}
+                      textAnchor="middle"
+                      className="fill-text-muted text-[10px]"
+                    >
+                      {ROW_LETTERS[row]}
+                    </text>
+                  ))}
+                  {Array.from({ length: rows * cols }, (_, index) => {
+                    const row = Math.floor(index / cols);
+                    const col = index % cols;
+                    const sample = wells.find(
+                      (item) => item.plate?.row === ROW_LETTERS[row] && item.plate?.col === col + 1,
+                    );
+                    const fill =
+                      sample === undefined
+                        ? "transparent"
+                        : sample.targets === 0
+                          ? EMPTY_CELL[resolved]
+                          : rampColour(ramp, sample.targets / maxTargets);
                     return (
-                      <path
-                        key={`x${sample.libraryId}`}
-                        d={`M${x},${y} l${cell - 16},${cell - 16} M${x + cell - 16},${y} l${-(cell - 16)},${cell - 16}`}
-                        className="pointer-events-none stroke-text-muted"
-                        strokeWidth={1.5}
+                      <rect
+                        key={index}
+                        x={(col + 1) * cell + 2}
+                        y={(row + 1) * cell + 2}
+                        width={cell - 4}
+                        height={cell - 4}
+                        rx={4}
+                        fill={fill}
+                        className={sample === undefined ? "stroke-border" : undefined}
+                        strokeDasharray={sample === undefined ? "2 2" : undefined}
+                        onMouseEnter={(event) => {
+                          if (sample === undefined) return;
+                          const rect = event.currentTarget.getBoundingClientRect();
+                          setHover({
+                            sample,
+                            well: {
+                              left: rect.left,
+                              top: rect.top,
+                              right: rect.right,
+                              bottom: rect.bottom,
+                            },
+                          });
+                        }}
+                        onMouseLeave={() => setHover(null)}
                       />
                     );
                   })}
-              </svg>
+                  {wells
+                    .filter((sample) => sample.targets === 0)
+                    .map((sample) => {
+                      const row = ROW_LETTERS.indexOf(sample.plate?.row ?? "A");
+                      const col = (sample.plate?.col ?? 1) - 1;
+                      const x = (col + 1) * cell + 8;
+                      const y = (row + 1) * cell + 8;
+                      return (
+                        <path
+                          key={`x${sample.libraryId}`}
+                          d={`M${x},${y} l${cell - 16},${cell - 16} M${x + cell - 16},${y} l${-(cell - 16)},${cell - 16}`}
+                          className="pointer-events-none stroke-text-muted"
+                          strokeWidth={1.5}
+                        />
+                      );
+                    })}
+                </svg>
+              </section>
             </figure>
           );
         })}
@@ -360,9 +374,16 @@ export function DensityView({ summary, headingId }: QualityViewProps) {
       <Coverage have={have} total={total}>
         {t`A density is given for ${haveCount} of ${totalCount} library samples.`}
       </Coverage>
-      <figure className="flex flex-col gap-2">
+      <figure className="flex min-w-0 flex-col gap-2">
         <p className="sr-only">{t`Targets with data against parasite density for ${pointCount} samples. The sample table gives the same figures.`}</p>
-        <svg width={width} height={height} aria-hidden="true">
+        <svg
+          width={width}
+          height={height}
+          viewBox={`0 0 ${width} ${height}`}
+          className="block h-auto w-full"
+          style={{ maxWidth: width }}
+          aria-hidden="true"
+        >
           {ticks.map((tick) => (
             <g key={tick}>
               <line
