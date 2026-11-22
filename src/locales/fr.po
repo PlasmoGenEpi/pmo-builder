@@ -82,8 +82,10 @@ msgstr "{0, plural, one {{name} (# étape)} other {{name} (# étapes)}}"
 msgid "{0, plural, one {{shownCount} of # dataset} other {{shownCount} of # datasets}}"
 msgstr "{0, plural, one {{shownCount} sur # jeu de données} other {{shownCount} sur # jeux de données}}"
 
+#. placeholder {0}: matrix.countries.length
 #. placeholder {0}: selected.length
 #: src/features/published/CountryFilter.tsx
+#: src/features/published/CoverageGrid.tsx
 msgid "{0, plural, one {# country} other {# countries}}"
 msgstr "{0, plural, one {# pays} other {# pays}}"
 
@@ -117,6 +119,11 @@ msgstr "{0, plural, one {# panel. Les cibles présentes dans plusieurs panels ne
 msgid "{0, plural, one {# project} other {# projects}}"
 msgstr "{0, plural, one {# projet} other {# projets}}"
 
+#. placeholder {0}: cell.datasets
+#: src/features/published/CoverageGrid.tsx
+msgid "{0, plural, one {# published PMO} other {# published PMOs}}"
+msgstr "{0, plural, one {# PMO publié} other {# PMO publiés}}"
+
 #. placeholder {0}: using.length
 #: src/features/bioinformatics/MethodsPart.tsx
 msgid "{0, plural, one {# run uses this method and will need another one.} other {# runs use this method and will need another one.}}"
@@ -137,8 +144,10 @@ msgstr "{0, plural, one {# sélectionné} other {# sélectionnés}}"
 msgid "{0, plural, one {# sequencing run} other {# sequencing runs}}"
 msgstr "{0, plural, one {# run de séquençage} other {# runs de séquençage}}"
 
+#. placeholder {0}: cell.specimens
 #. placeholder {0}: dataset.summary.specimens
 #. placeholder {0}: summary.specimens
+#: src/features/published/CoverageGrid.tsx
 #: src/features/published/PublishedPage.tsx
 #: src/features/review/reviewModel.ts
 msgid "{0, plural, one {# specimen} other {# specimens}}"
@@ -412,9 +421,24 @@ msgstr "{count, plural, one {Le tableau des spécimens indique un projet sans en
 msgid "{count, plural, one {Warning} other {Warnings}}"
 msgstr "{count, plural, one {Avertissement} other {Avertissements}}"
 
+#. Summary in the coverage grid header: country count and collection year range
+#: src/features/published/CoverageGrid.tsx
+msgid "{countriesLabel}, {yearsRange}"
+msgstr "{countriesLabel}, {yearsRange}"
+
 #: src/features/published/CountryFilter.tsx
 msgid "{country} <0>({countText})</0>"
 msgstr "{country} <0>({countText})</0>"
+
+#. Accessible description of a populated cell in the coverage grid
+#: src/features/published/CoverageGrid.tsx
+msgid "{country}, {year}: {specimensText} in {pmosText}"
+msgstr "{country}, {year} : {specimensText} dans {pmosText}"
+
+#. Accessible description of an empty cell in the coverage grid
+#: src/features/published/CoverageGrid.tsx
+msgid "{country}, {year}: 0 specimens"
+msgstr "{country}, {year} : 0 spécimen"
 
 #: src/features/pmo-file/summary/CompareTab.tsx
 msgid "{dated} of {all} specimens have a collection date that gives the month."
@@ -494,6 +518,7 @@ msgid "{first} to {last}"
 msgstr "{first} à {last}"
 
 #: src/features/published/catalogue.ts
+#: src/features/published/CoverageGrid.tsx
 msgid "{firstYear} to {lastYear}"
 msgstr "{firstYear} à {lastYear}"
 
@@ -604,6 +629,10 @@ msgstr "{mappedCount, plural, one {{missingCount, plural, one {{mappedFields} es
 #: src/features/pmo-file/summary/ReadsGrid.tsx
 msgid "{maxReads} reads (log scale)"
 msgstr "{maxReads} lectures (échelle logarithmique)"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "{maxSpecimensText} specimens (log scale)"
+msgstr "{maxSpecimensText} spécimens (échelle logarithmique)"
 
 #: src/features/review/VerdictCard.tsx
 msgid "{message} Reload the page to try again."
@@ -1009,6 +1038,14 @@ msgstr "{withoutData, plural, one {# spécimen n’a aucun échantillon de bibli
 msgid "<0>. Accepts</0> {fileTypes}"
 msgstr "<0>. Formats acceptés :</0> {fileTypes}"
 
+#: src/features/published/CoverageGrid.tsx
+msgid "<0>{country}, {year}:</0> {specimensText} in {pmosText}"
+msgstr "<0>{country}, {year} :</0> {specimensText} dans {pmosText}"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "<0>{country}, {year}:</0> 0 specimens"
+msgstr "<0>{country}, {year} :</0> 0 spécimen"
+
 #: src/features/records/NameCoverage.tsx
 msgid "<0>{shownNames}</0> and {more} more"
 msgstr "<0>{shownNames}</0> et {more} autres"
@@ -1041,6 +1078,10 @@ msgstr "<0>Run de séquençage</0>, si vous l’avez, doit correspondre à un ru
 #: src/features/librarySamples/LibrarySamplesStep.tsx
 msgid "<0>Specimen name</0> must match a name in the table on the Specimens step."
 msgstr "<0>Nom du spécimen</0> doit correspondre à un nom du tableau de l’étape Spécimens."
+
+#: src/features/published/CoverageGrid.tsx
+msgid "0 specimens"
+msgstr "0 spécimen"
 
 #: src/features/pmo-file/summary/CompareTab.tsx
 msgid "A bar chart of specimens per collection period. The figures are in the bars' tooltips and in the group table."
@@ -1897,6 +1938,7 @@ msgstr "Comptage en cours"
 #. Field label: the country a specimen was collected in
 #: src/domain/fields/samples.ts
 #: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/published/CoverageGrid.tsx
 #: src/features/published/PublishedPage.tsx
 msgid "Country"
 msgstr "Pays"
@@ -1910,6 +1952,10 @@ msgstr "Pays : {summary}"
 #: src/domain/fields/microhaplotypes.ts
 msgid "Counts"
 msgstr "Comptages"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "Coverage by country and year"
+msgstr "Couverture par pays et par année"
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "Creating the draft"
@@ -3312,6 +3358,10 @@ msgstr "Descendre {name}"
 msgid "Move {name} up"
 msgstr "Monter {name}"
 
+#: src/features/published/CoverageGrid.tsx
+msgid "Move to a cell to read its figures. Choose a cell to filter by country and year."
+msgstr "Placez-vous sur une cellule pour lire ses chiffres. Choisissez une cellule pour filtrer par pays et par année."
+
 #. Top bar section: working with a PMO file the user has
 #: src/app/TopBar.tsx
 #: src/features/pmo-file/OpenPublished.tsx
@@ -3383,6 +3433,14 @@ msgstr "Avec ces choix, il ne reste aucun microhaplotype dans aucun échantillon
 #: src/features/published/CountryFilter.tsx
 msgid "No matching country"
 msgstr "Aucun pays correspondant"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "No matching data"
+msgstr "Aucune donnée correspondante"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "No matching published PMOs have both a country and a collection year."
+msgstr "Aucun PMO publié correspondant n’indique à la fois un pays et une année de collecte."
 
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "No method is ready yet. Finish the methods table above."
@@ -5156,6 +5214,10 @@ msgstr "Type de spécimen"
 #: src/features/specimens/SpecimensStep.tsx
 msgid "Specimens"
 msgstr "Spécimens"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "Specimens by country and collection year"
+msgstr "Spécimens par pays et par année de collecte"
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Specimens I tick"

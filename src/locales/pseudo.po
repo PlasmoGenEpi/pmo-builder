@@ -88,8 +88,10 @@ msgstr ""
 msgid "{0, plural, one {{shownCount} of # dataset} other {{shownCount} of # datasets}}"
 msgstr ""
 
+#. placeholder {0}: matrix.countries.length
 #. placeholder {0}: selected.length
 #: src/features/published/CountryFilter.tsx
+#: src/features/published/CoverageGrid.tsx
 msgid "{0, plural, one {# country} other {# countries}}"
 msgstr ""
 
@@ -123,6 +125,11 @@ msgstr ""
 msgid "{0, plural, one {# project} other {# projects}}"
 msgstr ""
 
+#. placeholder {0}: cell.datasets
+#: src/features/published/CoverageGrid.tsx
+msgid "{0, plural, one {# published PMO} other {# published PMOs}}"
+msgstr ""
+
 #. placeholder {0}: using.length
 #: src/features/bioinformatics/MethodsPart.tsx
 msgid "{0, plural, one {# run uses this method and will need another one.} other {# runs use this method and will need another one.}}"
@@ -143,8 +150,10 @@ msgstr ""
 msgid "{0, plural, one {# sequencing run} other {# sequencing runs}}"
 msgstr ""
 
+#. placeholder {0}: cell.specimens
 #. placeholder {0}: dataset.summary.specimens
 #. placeholder {0}: summary.specimens
+#: src/features/published/CoverageGrid.tsx
 #: src/features/published/PublishedPage.tsx
 #: src/features/review/reviewModel.ts
 msgid "{0, plural, one {# specimen} other {# specimens}}"
@@ -418,8 +427,23 @@ msgstr ""
 msgid "{count, plural, one {Warning} other {Warnings}}"
 msgstr ""
 
+#. Summary in the coverage grid header: country count and collection year range
+#: src/features/published/CoverageGrid.tsx
+msgid "{countriesLabel}, {yearsRange}"
+msgstr ""
+
 #: src/features/published/CountryFilter.tsx
 msgid "{country} <0>({countText})</0>"
+msgstr ""
+
+#. Accessible description of a populated cell in the coverage grid
+#: src/features/published/CoverageGrid.tsx
+msgid "{country}, {year}: {specimensText} in {pmosText}"
+msgstr ""
+
+#. Accessible description of an empty cell in the coverage grid
+#: src/features/published/CoverageGrid.tsx
+msgid "{country}, {year}: 0 specimens"
 msgstr ""
 
 #: src/features/pmo-file/summary/CompareTab.tsx
@@ -500,6 +524,7 @@ msgid "{first} to {last}"
 msgstr ""
 
 #: src/features/published/catalogue.ts
+#: src/features/published/CoverageGrid.tsx
 msgid "{firstYear} to {lastYear}"
 msgstr ""
 
@@ -609,6 +634,10 @@ msgstr ""
 
 #: src/features/pmo-file/summary/ReadsGrid.tsx
 msgid "{maxReads} reads (log scale)"
+msgstr ""
+
+#: src/features/published/CoverageGrid.tsx
+msgid "{maxSpecimensText} specimens (log scale)"
 msgstr ""
 
 #: src/features/review/VerdictCard.tsx
@@ -1015,6 +1044,14 @@ msgstr ""
 msgid "<0>. Accepts</0> {fileTypes}"
 msgstr ""
 
+#: src/features/published/CoverageGrid.tsx
+msgid "<0>{country}, {year}:</0> {specimensText} in {pmosText}"
+msgstr ""
+
+#: src/features/published/CoverageGrid.tsx
+msgid "<0>{country}, {year}:</0> 0 specimens"
+msgstr ""
+
 #: src/features/records/NameCoverage.tsx
 msgid "<0>{shownNames}</0> and {more} more"
 msgstr ""
@@ -1046,6 +1083,10 @@ msgstr ""
 
 #: src/features/librarySamples/LibrarySamplesStep.tsx
 msgid "<0>Specimen name</0> must match a name in the table on the Specimens step."
+msgstr ""
+
+#: src/features/published/CoverageGrid.tsx
+msgid "0 specimens"
 msgstr ""
 
 #: src/features/pmo-file/summary/CompareTab.tsx
@@ -1903,6 +1944,7 @@ msgstr ""
 #. Field label: the country a specimen was collected in
 #: src/domain/fields/samples.ts
 #: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/published/CoverageGrid.tsx
 #: src/features/published/PublishedPage.tsx
 msgid "Country"
 msgstr ""
@@ -1915,6 +1957,10 @@ msgstr ""
 #. Heading for a group of optional fields in the column-matching editor
 #: src/domain/fields/microhaplotypes.ts
 msgid "Counts"
+msgstr ""
+
+#: src/features/published/CoverageGrid.tsx
+msgid "Coverage by country and year"
 msgstr ""
 
 #: src/features/review/PublishToZenodo.tsx
@@ -3318,6 +3364,10 @@ msgstr ""
 msgid "Move {name} up"
 msgstr ""
 
+#: src/features/published/CoverageGrid.tsx
+msgid "Move to a cell to read its figures. Choose a cell to filter by country and year."
+msgstr ""
+
 #. Top bar section: working with a PMO file the user has
 #: src/app/TopBar.tsx
 #: src/features/pmo-file/OpenPublished.tsx
@@ -3388,6 +3438,14 @@ msgstr ""
 
 #: src/features/published/CountryFilter.tsx
 msgid "No matching country"
+msgstr ""
+
+#: src/features/published/CoverageGrid.tsx
+msgid "No matching data"
+msgstr ""
+
+#: src/features/published/CoverageGrid.tsx
+msgid "No matching published PMOs have both a country and a collection year."
 msgstr ""
 
 #: src/features/bioinformatics/RunsPart.tsx
@@ -5161,6 +5219,10 @@ msgstr ""
 #: src/features/review/PmoContents.tsx
 #: src/features/specimens/SpecimensStep.tsx
 msgid "Specimens"
+msgstr ""
+
+#: src/features/published/CoverageGrid.tsx
+msgid "Specimens by country and collection year"
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx

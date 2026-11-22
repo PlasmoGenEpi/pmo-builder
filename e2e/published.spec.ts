@@ -3,6 +3,7 @@
  * address round-trip for search and filters, history behaviour while typing,
  * clearing filters, and restoring search, filters and scroll position on Back.
  */
+import { AxeBuilder } from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
 import { largeCatalogue } from "../src/features/published/testing";
@@ -323,3 +324,114 @@ test("sorts the list from the keyboard, keeps sort in the address, and survives 
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#/published");
   expect(await firstTitle()).toBe(LARGE_CATALOGUE.datasets[0]?.title);
 });
+
+test("opens the coverage grid, navigates and selects a cell from the keyboard, and filters the list", async ({
+  page,
+}) => {
+  await serveLargeCatalogue(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/#/published");
+  await expect(page.getByText("150 datasets")).toBeVisible();
+
+  const toggle = page.getByRole("button", { name: /Coverage by country and year/ });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await toggle.focus();
+  await page.keyboard.press("Enter");
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+  const grid = page.getByRole("table", { name: "Specimens by country and collection year" });
+  await expect(grid).toBeVisible();
+  await expect(page.getByText("0 specimens", { exact: true })).toBeVisible();
+  await expect(page.getByText(/specimens \(log scale\)/)).toBeVisible();
+
+  // Move across cells with arrow keys and pick a populated cell via Enter.
+  const firstCell = grid.locator("tbody button").first();
+  await firstCell.focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowDown");
+
+  const readout = page.getByTestId("coverage-readout");
+  await expect(readout).toContainText("Benin, 2009:");
+
+  // Choose the first populated cell for Benin in 2009 (or move to a populated Angola cell).
+  const populatedCell = grid
+    .getByRole("button", { name: /^Angola, 2008: .+ in \d+ published PMOs?$/ })
+    .first();
+  await populatedCell.focus();
+  await expect(readout).toContainText("Angola, 2008:");
+  await page.keyboard.press("Enter");
+
+  await expect
+    .poll(() => page.evaluate(() => window.location.hash))
+    .toBe("#/published?country=Angola&year=2008");
+  await expect(populatedCell).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: /^Country:/ })).toContainText("Angola");
+  await expect(page.getByRole("combobox", { name: "Collected in" })).toContainText("2008");
+  expect(await page.locator("article").count()).toBeGreaterThan(0);
+
+  // Choosing the active cell again clears the country and year filters.
+  await page.keyboard.press("Enter");
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#/published");
+  await expect(page.getByRole("status")).toHaveText("150 datasets");
+});
+
+test("keeps the coverage grid scrolling inside its own area at 390 px with no page overflow", async ({
+  page,
+}) => {
+  await serveLargeCatalogue(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/published");
+  await expect(page.getByText("150 datasets")).toBeVisible();
+
+  await page.getByRole("button", { name: /Coverage by country and year/ }).click();
+  const scrollBox = page.getByTestId("coverage-scroll");
+  await expect(scrollBox).toBeVisible();
+
+  const metrics = await scrollBox.evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    const readout = document
+      .querySelector('[data-testid="coverage-readout"]')
+      ?.getBoundingClientRect();
+    return {
+      boxScrollWidth: el.scrollWidth,
+      boxClientWidth: el.clientWidth,
+      boxRight: box.right,
+      readoutRight: readout?.right ?? 0,
+      pageOverflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  });
+
+  expect(metrics.boxScrollWidth).toBeGreaterThan(metrics.boxClientWidth);
+  expect(metrics.boxRight).toBeLessThanOrEqual(390);
+  expect(metrics.readoutRight).toBeLessThanOrEqual(390);
+  expect(metrics.pageOverflowX).toBeLessThanOrEqual(0);
+});
+
+const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`coverage grid passes axe WCAG 2.2 AA in the ${colorScheme} theme`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+    await serveLargeCatalogue(page);
+    await page.goto("/#/published");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", colorScheme);
+    await expect(page.getByText("150 datasets")).toBeVisible();
+
+    await page.getByRole("button", { name: /Coverage by country and year/ }).click();
+    const grid = page.getByRole("table", { name: "Specimens by country and collection year" });
+    await expect(grid).toBeVisible();
+    await grid.locator("tbody button").first().focus();
+
+    const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+    const serious = results.violations
+      .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
+      .map(
+        (violation) =>
+          `${violation.id} (${violation.impact ?? "unknown"}): ${violation.nodes
+            .slice(0, 5)
+            .map((node) => node.target.join(" "))
+            .join(", ")}`,
+      );
+    expect(serious).toEqual([]);
+  });
+}
