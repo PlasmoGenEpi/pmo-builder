@@ -2328,6 +2328,10 @@ msgid "Everything you type and every column you match."
 msgstr "Everything you type and every column you match."
 
 #: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Expected heterozygosity (0 to 1)"
+msgstr "Expected heterozygosity (0 to 1)"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
 msgid "Expected heterozygosity of each target in each group: 1 minus the sum of squared allele frequencies."
 msgstr "Expected heterozygosity of each target in each group: 1 minus the sum of squared allele frequencies."
 
@@ -3126,6 +3130,7 @@ msgstr "List"
 
 #: src/app/App.tsx
 #: src/app/privacy/PrivacyIndicator.tsx
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/published/CatalogueProblem.tsx
 #: src/ui/Spinner.tsx
 msgid "Loading"
@@ -3626,6 +3631,10 @@ msgstr "No target is ticked yet."
 #: src/app/privacy/UsageNotice.tsx
 msgid "No usage counts will be sent"
 msgstr "No usage counts will be sent"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "No value (unshaded)"
+msgstr "No value (unshaded)"
 
 #. The choice of no column in a list of columns
 #: src/ui/Combobox.tsx
