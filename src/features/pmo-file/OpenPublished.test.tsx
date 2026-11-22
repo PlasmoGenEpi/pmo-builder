@@ -360,6 +360,7 @@ describe("Published view (OpenPublished)", () => {
         name: "huge.pmo.json.gz",
         size: 350 * 1024 * 1024,
         url: "https://zenodo.org/api/records/404/files/huge.pmo.json.gz/content",
+        fingerprint: null,
       },
     });
     const loadHuge = () => Promise.resolve({ kind: "ready" as const, index: catalogue([huge]) });

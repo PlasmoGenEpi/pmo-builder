@@ -33,7 +33,7 @@ const DATASET_FILE_URL = `/fixtures/published/${DATASET_FILE_NAME}`;
 
 function fixtureCatalogue(fileSize: number) {
   return {
-    version: 1,
+    version: 2,
     harvestedAt: "2026-11-15T03:00:00.000Z",
     community: "pmocommunity",
     datasets: [
@@ -50,6 +50,7 @@ function fixtureCatalogue(fileSize: number) {
           name: DATASET_FILE_NAME,
           size: fileSize,
           url: DATASET_FILE_URL,
+          fingerprint: null,
         },
         summary: {
           specimens: 50,
