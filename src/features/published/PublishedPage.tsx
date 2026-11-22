@@ -5,32 +5,78 @@ import {
   CalendarDays,
   ChevronRight,
   FlaskConical,
+  List,
+  ListFilter,
   MapPin,
   Search,
+  Table2,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Link as RouterLink } from "wouter";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Link as RouterLink, useLocation, useSearch } from "wouter";
 
+import { lastNavigationKind } from "@/app/hashLocation";
 import { PageContainer } from "@/app/PageContainer";
+import { BUILD_PATH } from "@/app/steps";
 import type { PublishedDataset } from "@/domain/repository/types";
 import { communityUrl, zenodoConfig, type ZenodoConfig } from "@/features/review/zenodo";
-import { buttonClassName, cn, EmptyState, formatCount, inputClassName, Link, Select } from "@/ui";
+import {
+  Badge,
+  Button,
+  buttonClassName,
+  cn,
+  EmptyState,
+  formatCount,
+  inputClassName,
+  Link,
+  SegmentedControl,
+  Select,
+} from "@/ui";
 
 import {
+  DEFAULT_LIST_STATE,
+  PAGE_SIZE,
+  publishedHref,
+  readListState,
+  type ListView,
+  type PublishedListState,
+} from "./address";
+import {
+  facetCountsOf,
   facetsOf,
   filterDatasets,
+  isSortOrder,
   longDate,
-  NO_FILTERS,
+  shortAuthors,
+  sortDatasets,
+  taxonName,
   totalsOf,
   yearsText,
   type CatalogueFilters,
+  type SortOrder,
 } from "./catalogue";
 import { CatalogueProblem } from "./CatalogueProblem";
+import { CountryFilter } from "./CountryFilter";
+import { MIN_DATASETS_FOR_COVERAGE } from "./coverage";
+import { CoverageGrid } from "./CoverageGrid";
+import { PublishedTable } from "./PublishedTable";
 import { loadSharedCatalogue, useCatalogue, type CatalogueLoader } from "./useCatalogue";
 
 /** The `Select` value that stands for "no limit". Radix does not allow an empty one. */
 const ANY = "any";
+
+interface SavedVisitState {
+  readonly scrollY: number;
+  readonly coverageOpen: boolean;
+}
+
+/** Scroll offset and coverage-grid expansion per query string, kept for the current visit so Back returns to the same row. */
+const visitStates = new Map<string, SavedVisitState>();
+
+/** Clears saved scroll positions and visit state. Intended for tests. */
+export function clearScrollPositionsForTests(): void {
+  visitStates.clear();
+}
 
 /** A fact about a dataset with the icon that says what kind it is. */
 function Fact({
@@ -44,7 +90,7 @@ function Fact({
   readonly children: string;
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm text-text-muted">
+    <span className="inline-flex min-w-0 max-w-full items-center gap-1 text-sm text-text-muted">
       <Icon aria-hidden="true" className="size-3.5 shrink-0 text-text-subtle" />
       <span className="sr-only">
         {t({
@@ -52,33 +98,43 @@ function Fact({
           comment: "Before a fact about a dataset, for screen readers",
         })}{" "}
       </span>
-      {children}
+      <span className="truncate">{children}</span>
     </span>
   );
 }
 
 /** One dataset in the list. The whole row opens its page. */
-function DatasetRow({ dataset }: { readonly dataset: PublishedDataset }) {
+function DatasetRow({
+  dataset,
+  onOpen,
+}: {
+  readonly dataset: PublishedDataset;
+  readonly onOpen: () => void;
+}) {
   const years = yearsText(dataset);
   const year = /^\d{4}/.exec(dataset.published)?.[0];
+  const authorLine = [shortAuthors(dataset.creators), year]
+    .filter((part) => part !== undefined && part !== "")
+    .join(" · ");
   return (
-    <article className="group relative flex items-center gap-5 px-5 py-4 transition-colors duration-100 hover:bg-surface-subtle sm:px-6 sm:py-5">
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <h3 className="text-md font-semibold text-pretty text-text">
+    <article
+      data-dataset-id={dataset.id}
+      className="group relative flex items-center gap-4 px-4 py-2 transition-colors duration-100 hover:bg-surface-subtle sm:px-5 sm:py-2"
+    >
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <h3 className="text-base font-semibold text-pretty text-text">
           <RouterLink
             href={`/published/${dataset.id}`}
+            onClick={onOpen}
+            title={dataset.title}
             className="rounded-sm underline-offset-2 group-hover:text-accent-text after:absolute after:inset-0"
           >
-            {dataset.title}
+            <span className="line-clamp-2">{dataset.title}</span>
           </RouterLink>
         </h3>
-        <p className="text-base text-text-muted">
-          {[dataset.creators.join("; "), year]
-            .filter((part) => part !== undefined && part !== "")
-            .join(" · ")}
-        </p>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1">
-          <span className="text-sm font-medium text-text sm:hidden">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-text-muted">
+          {authorLine === "" ? null : <span className="max-w-full truncate">{authorLine}</span>}
+          <span className="font-medium text-text tabular-nums sm:hidden">
             {plural(dataset.summary.specimens, { one: "# specimen", other: "# specimens" })}
           </span>
           {dataset.panels.length === 0 ? null : (
@@ -98,29 +154,35 @@ function DatasetRow({ dataset }: { readonly dataset: PublishedDataset }) {
           )}
         </div>
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-0.5 text-right max-sm:hidden">
-        <span className="flex items-baseline gap-1.5">
-          <span className="text-xl font-semibold tracking-tight text-text tabular-nums">
+      <div className="flex shrink-0 flex-col items-end text-right max-sm:hidden">
+        <span className="flex items-baseline gap-1">
+          <span className="text-base font-semibold tracking-tight text-text tabular-nums">
             {formatCount(dataset.summary.specimens)}
           </span>
           <span className="text-sm text-text-muted">
             {plural(dataset.summary.specimens, { one: "specimen", other: "specimens" })}
           </span>
         </span>
-        <span className="text-sm text-text-subtle">
+        <span className="text-xs text-text-subtle tabular-nums">
           {plural(dataset.summary.targets, { one: "# target", other: "# targets" })}
         </span>
       </div>
       <ChevronRight
         aria-hidden="true"
-        className="size-4.5 shrink-0 text-text-subtle transition-transform duration-100 group-hover:translate-x-0.5 group-hover:text-accent-text"
+        className="size-4 shrink-0 text-text-subtle transition-transform duration-100 group-hover:translate-x-0.5 group-hover:text-accent-text"
       />
     </article>
   );
 }
 
 /** The totals, side by side in one band. */
-function Totals({ datasets }: { readonly datasets: readonly PublishedDataset[] }) {
+function Totals({
+  datasets,
+  filtered,
+}: {
+  readonly datasets: readonly PublishedDataset[];
+  readonly filtered: boolean;
+}) {
   const totals = useMemo(() => totalsOf(datasets), [datasets]);
   const items = [
     {
@@ -140,17 +202,43 @@ function Totals({ datasets }: { readonly datasets: readonly PublishedDataset[] }
     },
   ];
   return (
-    <dl className="grid grid-cols-3 divide-x divide-border rounded-xl border border-border bg-surface shadow-xs">
-      {items.map((item) => (
-        <div key={item.id} className="flex flex-col-reverse gap-0.5 px-4 py-4 sm:px-6">
-          <dt className="text-sm text-text-muted">{item.label}</dt>
-          <dd className="text-2xl font-semibold tracking-tight text-text tabular-nums">
-            {formatCount(item.value)}
-          </dd>
+    <section
+      aria-label={t`Totals`}
+      className="overflow-hidden rounded-xl border border-border bg-surface shadow-xs"
+    >
+      {filtered ? (
+        <div className="flex flex-wrap items-center gap-2 border-b border-border bg-surface-subtle px-4 py-2 sm:px-6">
+          <Badge tone="accent" icon={ListFilter}>
+            <Trans>Filtered list</Trans>
+          </Badge>
+          <p className="text-sm text-text-muted">
+            <Trans>Totals for matching published PMOs</Trans>
+          </p>
         </div>
-      ))}
-    </dl>
+      ) : null}
+      <dl className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {items.map((item) => (
+          <div
+            key={item.id}
+            className="flex min-w-0 items-baseline justify-between gap-4 px-4 py-3 sm:flex-col-reverse sm:items-start sm:justify-start sm:gap-0.5 sm:px-6 sm:py-4"
+          >
+            <dt className="text-sm text-text-muted">{item.label}</dt>
+            <dd className="text-xl font-semibold tracking-tight text-text tabular-nums md:text-2xl">
+              {formatCount(item.value)}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
+}
+
+function choiceWithCount(name: string, count: number): string {
+  const countText = formatCount(count);
+  return t({
+    message: `${name} (${countText})`,
+    comment: "Filter choice with the number of matching published PMOs",
+  });
 }
 
 function Filters({
@@ -160,12 +248,29 @@ function Filters({
 }: {
   readonly datasets: readonly PublishedDataset[];
   readonly filters: CatalogueFilters;
-  readonly onChange: (filters: CatalogueFilters) => void;
+  readonly onChange: (filters: CatalogueFilters, options?: { readonly replace?: boolean }) => void;
 }) {
   const facets = useMemo(() => facetsOf(datasets), [datasets]);
+  const counts = useMemo(() => facetCountsOf(datasets, filters), [datasets, filters]);
+  const countries = [
+    ...filters.countries.filter((country) => !facets.countries.includes(country)),
+    ...facets.countries,
+  ];
+  const panels =
+    filters.panel !== null && !facets.panels.includes(filters.panel)
+      ? [filters.panel, ...facets.panels]
+      : facets.panels;
+  const species =
+    filters.species !== null && !facets.species.includes(filters.species)
+      ? [filters.species, ...facets.species]
+      : facets.species;
+  const years =
+    filters.year !== null && !facets.years.includes(filters.year)
+      ? [filters.year, ...facets.years]
+      : facets.years;
   return (
-    <div className="flex flex-wrap items-center gap-2.5">
-      <div className="relative min-w-0 flex-1 basis-48 max-sm:basis-full">
+    <div className="grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-center">
+      <div className="relative col-span-2 min-w-0 sm:flex-1 sm:basis-48">
         <Search
           aria-hidden="true"
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-text-subtle"
@@ -175,33 +280,51 @@ function Filters({
           aria-label={t`Search`}
           placeholder={t`Search datasets`}
           value={filters.search}
-          onChange={(event) => onChange({ ...filters, search: event.target.value })}
+          onChange={(event) =>
+            onChange({ ...filters, search: event.target.value }, { replace: true })
+          }
           className={cn(inputClassName, "h-control pl-9 text-base")}
         />
       </div>
-      <div className="w-40 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
-        <Select
-          aria-label={t`Country`}
-          value={filters.country ?? ANY}
-          onValueChange={(value) => onChange({ ...filters, country: value === ANY ? null : value })}
-          options={[
-            { value: ANY, label: t`Any country` },
-            ...facets.countries.map((country) => ({ value: country, label: country })),
-          ]}
+      <div className="min-w-0 sm:w-44">
+        <CountryFilter
+          countries={countries}
+          selected={filters.countries}
+          counts={counts.countries}
+          onChange={(nextCountries) => onChange({ ...filters, countries: nextCountries })}
         />
       </div>
-      <div className="w-36 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
+      <div className="min-w-0 sm:w-44">
         <Select
           aria-label={t`Panel`}
           value={filters.panel ?? ANY}
           onValueChange={(value) => onChange({ ...filters, panel: value === ANY ? null : value })}
           options={[
             { value: ANY, label: t`Any panel` },
-            ...facets.panels.map((panel) => ({ value: panel, label: panel })),
+            ...panels.map((panel) => ({
+              value: panel,
+              label: choiceWithCount(panel, counts.panels.get(panel) ?? 0),
+            })),
           ]}
         />
       </div>
-      <div className="w-28 max-sm:min-w-0 max-sm:grow-0 max-sm:basis-[calc(50%-0.3125rem)]">
+      <div className="min-w-0 sm:w-52">
+        <Select
+          aria-label={t`Species`}
+          value={filters.species === null ? ANY : String(filters.species)}
+          onValueChange={(value) =>
+            onChange({ ...filters, species: value === ANY ? null : Number(value) })
+          }
+          options={[
+            { value: ANY, label: t`Any species` },
+            ...species.map((taxon) => ({
+              value: String(taxon),
+              label: choiceWithCount(taxonName(taxon), counts.species.get(taxon) ?? 0),
+            })),
+          ]}
+        />
+      </div>
+      <div className="min-w-0 sm:w-32">
         <Select
           aria-label={t`Collected in`}
           value={filters.year === null ? ANY : String(filters.year)}
@@ -210,7 +333,10 @@ function Filters({
           }
           options={[
             { value: ANY, label: t`Any year` },
-            ...facets.years.map((year) => ({ value: String(year), label: String(year) })),
+            ...years.map((year) => ({
+              value: String(year),
+              label: choiceWithCount(String(year), counts.years.get(year) ?? 0),
+            })),
           ]}
         />
       </div>
@@ -221,9 +347,75 @@ function Filters({
 function isFiltered(filters: CatalogueFilters): boolean {
   return (
     filters.search.trim() !== "" ||
-    filters.country !== null ||
+    filters.countries.length > 0 ||
     filters.panel !== null ||
+    filters.species !== null ||
     filters.year !== null
+  );
+}
+
+/** Order menu for the published PMOs list, with a visible label. */
+function SortControl({
+  sort,
+  onChange,
+}: {
+  readonly sort: SortOrder;
+  readonly onChange: (sort: SortOrder) => void;
+}) {
+  const id = useId();
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <label htmlFor={id} className="text-sm font-medium whitespace-nowrap text-text-muted">
+        {t({ message: "Sort by", comment: "Label for the published list order menu" })}
+      </label>
+      <div className="min-w-48 max-w-full">
+        <Select
+          id={id}
+          value={sort}
+          onValueChange={(value) => {
+            if (isSortOrder(value)) onChange(value);
+          }}
+          options={[
+            { value: "newest", label: t`Newest published` },
+            { value: "specimens", label: t`Most specimens` },
+            { value: "year", label: t`Latest collection year` },
+            { value: "title", label: t`Title` },
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** Switch between compact list rows and the sortable table view. */
+function ViewSwitch({
+  view,
+  onChange,
+}: {
+  readonly view: ListView;
+  readonly onChange: (view: ListView) => void;
+}) {
+  return (
+    <SegmentedControl
+      label={t({
+        message: "View",
+        comment: "Accessible label for switching between list and table view",
+      })}
+      value={view}
+      onValueChange={onChange}
+      segments={[
+        {
+          value: "list",
+          label: t({ message: "List", comment: "Published PMOs compact list view" }),
+          icon: List,
+        },
+        {
+          value: "table",
+          label: t({ message: "Table", comment: "Published PMOs sortable table view" }),
+          icon: Table2,
+        },
+      ]}
+    />
   );
 }
 
@@ -246,7 +438,7 @@ function AddYours() {
         <RouterLink href="/pmo/publish" className={buttonClassName({ variant: "secondary" })}>
           <Trans>Publish a file</Trans>
         </RouterLink>
-        <RouterLink href="/" className={buttonClassName({ variant: "secondary" })}>
+        <RouterLink href={BUILD_PATH} className={buttonClassName({ variant: "secondary" })}>
           <Trans>Build a PMO</Trans>
           <ArrowRight aria-hidden="true" className="size-4" />
         </RouterLink>
@@ -255,11 +447,99 @@ function AddYours() {
   );
 }
 
-function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[] }) {
-  const [filters, setFilters] = useState<CatalogueFilters>(NO_FILTERS);
-  const shown = useMemo(() => filterDatasets(datasets, filters), [datasets, filters]);
-  const filtered = isFiltered(filters);
-  const shownCount = formatCount(shown.length);
+function Catalogue({
+  datasets,
+  search,
+  coverageOpen,
+  onCoverageOpenChange,
+  onOpenDataset,
+}: {
+  readonly datasets: readonly PublishedDataset[];
+  readonly search: string;
+  readonly coverageOpen: boolean;
+  readonly onCoverageOpenChange: (open: boolean) => void;
+  readonly onOpenDataset: () => void;
+}) {
+  const [, navigate] = useLocation();
+  const listState = useMemo(() => readListState(search), [search]);
+  const matching = useMemo(
+    () => sortDatasets(filterDatasets(datasets, listState), listState.sort),
+    [datasets, listState],
+  );
+  const visible = useMemo(() => matching.slice(0, listState.shown), [matching, listState.shown]);
+  const showCoverage = useMemo(
+    () =>
+      datasets.length >= MIN_DATASETS_FOR_COVERAGE &&
+      datasets.some((entry) => entry.countries.length > 0 && entry.collectionYears !== null),
+    [datasets],
+  );
+  const coverageDatasets = useMemo(
+    () =>
+      showCoverage ? filterDatasets(datasets, { ...listState, countries: [], year: null }) : [],
+    [datasets, listState, showCoverage],
+  );
+  const entriesRef = useRef<HTMLElement | null>(null);
+  const pendingFocusIdRef = useRef<string | null>(null);
+  const filtered = isFiltered(listState);
+  const matchingCount = formatCount(matching.length);
+  const shownCount = formatCount(visible.length);
+
+  useEffect(() => {
+    const targetId = pendingFocusIdRef.current;
+    if (targetId === null || !visible.some((entry) => entry.id === targetId)) return;
+    const container = entriesRef.current;
+    if (container === null) return;
+    for (const item of container.querySelectorAll<HTMLElement>("[data-dataset-id]")) {
+      if (item.dataset.datasetId === targetId) {
+        const link = item.querySelector("a");
+        if (link !== null) {
+          pendingFocusIdRef.current = null;
+          link.focus();
+        }
+        return;
+      }
+    }
+  }, [visible]);
+
+  const updateListState = (
+    next: PublishedListState,
+    options: { readonly replace?: boolean; readonly focusDatasetId?: string | null } = {},
+  ) => {
+    const nextHref = publishedHref(next);
+    const currentHref = search === "" ? "/published" : `/published?${search}`;
+    if (nextHref === currentHref) return;
+    pendingFocusIdRef.current = options.focusDatasetId ?? null;
+    navigate(nextHref, { replace: options.replace === true });
+  };
+
+  const handleSortChange = (sort: SortOrder) => {
+    if (sort === listState.sort) return;
+    updateListState({ ...listState, sort, shown: PAGE_SIZE });
+  };
+
+  const handleSelectCoverageCell = (country: string, year: number) => {
+    const alreadySelected =
+      listState.countries.length === 1 &&
+      listState.countries[0] === country &&
+      listState.year === year;
+    updateListState({
+      ...listState,
+      countries: alreadySelected ? [] : [country],
+      year: alreadySelected ? null : year,
+      shown: PAGE_SIZE,
+    });
+  };
+
+  const handleShowMore = () => {
+    const firstNew = matching[visible.length];
+    updateListState(
+      {
+        ...listState,
+        shown: Math.min(matching.length, listState.shown + PAGE_SIZE),
+      },
+      { focusDatasetId: firstNew?.id ?? null },
+    );
+  };
 
   if (datasets.length === 0) {
     return (
@@ -268,7 +548,7 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
         description={t`Build a PMO from your tables, or publish a PMO file you already have. It appears here once a curator accepts it.`}
         action={
           <div className="flex flex-wrap justify-center gap-2">
-            <RouterLink href="/" className={buttonClassName({ variant: "primary" })}>
+            <RouterLink href={BUILD_PATH} className={buttonClassName({ variant: "primary" })}>
               <Trans>Build a PMO</Trans>
               <ArrowRight aria-hidden="true" className="size-4" />
             </RouterLink>
@@ -282,52 +562,109 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <Totals datasets={datasets} />
-      <section aria-labelledby="published-list-heading" className="flex flex-col gap-3">
+    <div className="flex min-w-0 flex-col gap-6">
+      <Totals datasets={matching} filtered={filtered} />
+      <section
+        ref={entriesRef}
+        aria-labelledby="published-list-heading"
+        className="flex min-w-0 flex-col gap-3"
+      >
         <h2 id="published-list-heading" className="sr-only">
           <Trans>Datasets</Trans>
         </h2>
         {/* With a single dataset there is nothing to narrow down. */}
         {datasets.length > 1 ? (
-          <Filters datasets={datasets} filters={filters} onChange={setFilters} />
+          <Filters
+            datasets={datasets}
+            filters={listState}
+            onChange={(nextFilters, options) =>
+              updateListState({ ...listState, ...nextFilters, shown: PAGE_SIZE }, options)
+            }
+          />
+        ) : null}
+        {showCoverage ? (
+          <CoverageGrid
+            datasets={coverageDatasets}
+            selectedCountries={listState.countries}
+            selectedYear={listState.year}
+            onSelectCell={handleSelectCoverageCell}
+            open={coverageOpen}
+            onOpenChange={onCoverageOpenChange}
+          />
         ) : null}
         {datasets.length > 1 ? (
-          <div className="flex min-h-6 items-center justify-between gap-4 px-1">
-            <p className="text-sm text-text-muted" aria-live="polite">
-              {filtered
-                ? plural(datasets.length, {
-                    one: `${shownCount} of # dataset`,
-                    other: `${shownCount} of # datasets`,
-                  })
-                : plural(datasets.length, { one: "# dataset", other: "# datasets" })}
-            </p>
-            {filtered ? (
-              <button
-                type="button"
-                onClick={() => setFilters(NO_FILTERS)}
-                className="cursor-pointer rounded-sm text-sm font-medium text-accent-text underline-offset-2 hover:underline"
-              >
-                <Trans>Clear the filters</Trans>
-              </button>
-            ) : null}
+          <div className="flex min-h-6 flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <output aria-live="polite" aria-atomic="true" className="text-sm text-text-muted">
+                {filtered
+                  ? plural(datasets.length, {
+                      one: `${matchingCount} of # dataset`,
+                      other: `${matchingCount} of # datasets`,
+                    })
+                  : plural(datasets.length, { one: "# dataset", other: "# datasets" })}
+              </output>
+              {filtered ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateListState({
+                      ...DEFAULT_LIST_STATE,
+                      sort: listState.sort,
+                      view: listState.view,
+                    })
+                  }
+                  className="cursor-pointer rounded-sm text-sm font-medium text-accent-text underline-offset-2 hover:underline"
+                >
+                  <Trans>Clear the filters</Trans>
+                </button>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <SortControl sort={listState.sort} onChange={handleSortChange} />
+              <ViewSwitch
+                view={listState.view}
+                onChange={(view) => updateListState({ ...listState, view })}
+              />
+            </div>
           </div>
         ) : null}
-        {shown.length === 0 ? (
+        {matching.length === 0 ? (
           <EmptyState
             icon={Search}
             title={t`No published PMO matches`}
             description={t`Try fewer words or a wider choice.`}
           />
+        ) : listState.view === "table" ? (
+          <PublishedTable
+            datasets={visible}
+            sort={listState.sort}
+            onSortChange={handleSortChange}
+            onOpenDataset={onOpenDataset}
+          />
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface shadow-xs">
-            {shown.map((dataset) => (
+            {visible.map((dataset) => (
               <li key={dataset.id}>
-                <DatasetRow dataset={dataset} />
+                <DatasetRow dataset={dataset} onOpen={onOpenDataset} />
               </li>
             ))}
           </ul>
         )}
+        {matching.length > PAGE_SIZE ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+            <p className="text-sm text-text-muted tabular-nums">
+              {plural(matching.length, {
+                one: `Showing ${shownCount} of # published PMO`,
+                other: `Showing ${shownCount} of # published PMOs`,
+              })}
+            </p>
+            {visible.length < matching.length ? (
+              <Button variant="secondary" onClick={handleShowMore}>
+                <Trans>Show more</Trans>
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </section>
       <AddYours />
     </div>
@@ -370,6 +707,94 @@ export interface PublishedPageProps {
 }
 
 /**
+ * Remembers the list's scroll offset and coverage-grid expansion by query
+ * string, restoring the expanded grid before scrolling once the catalogue has
+ * rendered after a browser Back or Forward navigation.
+ */
+function useListVisitState(
+  ready: boolean,
+  search: string,
+): {
+  readonly coverageOpen: boolean;
+  readonly setCoverageOpen: (open: boolean) => void;
+  readonly recordVisit: () => void;
+} {
+  const [coverageOpen, setCoverageOpenState] = useState(() =>
+    lastNavigationKind() === "pop" ? (visitStates.get(search)?.coverageOpen ?? false) : false,
+  );
+  const [prevSearch, setPrevSearch] = useState(search);
+  if (prevSearch !== search) {
+    setPrevSearch(search);
+    if (lastNavigationKind() === "pop") {
+      const saved = visitStates.get(search);
+      if (saved !== undefined) setCoverageOpenState(saved.coverageOpen);
+    }
+  }
+
+  const coverageOpenRef = useRef(coverageOpen);
+  const restoredKeyRef = useRef<string | null>(null);
+  const restoringRef = useRef(false);
+
+  useEffect(() => {
+    coverageOpenRef.current = coverageOpen;
+  }, [coverageOpen]);
+
+  useEffect(() => {
+    if (!ready || restoredKeyRef.current === search) return undefined;
+    restoredKeyRef.current = search;
+    if (lastNavigationKind() !== "pop") return undefined;
+    const savedY = visitStates.get(search)?.scrollY;
+    if (savedY === undefined || savedY <= 0) return undefined;
+
+    restoringRef.current = true;
+    if (typeof window.scrollTo === "function") window.scrollTo({ top: savedY });
+    const frameId = window.requestAnimationFrame(() => {
+      if (window.scrollY !== savedY && typeof window.scrollTo === "function") {
+        window.scrollTo({ top: savedY });
+      }
+      restoringRef.current = false;
+    });
+    return () => {
+      restoringRef.current = false;
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [ready, search]);
+
+  useEffect(() => {
+    if (!ready) return undefined;
+    const onScroll = () => {
+      if (!restoringRef.current) {
+        visitStates.set(search, {
+          scrollY: window.scrollY,
+          coverageOpen: coverageOpenRef.current,
+        });
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [ready, search]);
+
+  const setCoverageOpen = (open: boolean) => {
+    coverageOpenRef.current = open;
+    setCoverageOpenState(open);
+    if (ready) {
+      visitStates.set(search, { scrollY: window.scrollY, coverageOpen: open });
+    }
+  };
+
+  const recordVisit = () => {
+    visitStates.set(search, {
+      scrollY: window.scrollY,
+      coverageOpen: coverageOpenRef.current,
+    });
+  };
+
+  return { coverageOpen, setCoverageOpen, recordVisit };
+}
+
+/**
  * The list of PMOs published in the Zenodo community, with totals and
  * filters. It reads a file on this site that is rebuilt from Zenodo, so
  * browsing it contacts nothing else.
@@ -379,13 +804,18 @@ export function PublishedPage({
   zenodo = zenodoConfig(),
 }: PublishedPageProps = {}) {
   const state = useCatalogue(load);
+  const search = useSearch();
+  const { coverageOpen, setCoverageOpen, recordVisit } = useListVisitState(
+    state.kind === "ready",
+    search,
+  );
   const community =
     state.kind === "ready" ? (zenodo?.community ?? state.index.community) : zenodo?.community;
   const name = zenodo?.communityName ?? community ?? "Zenodo";
 
   return (
-    <PageContainer>
-      <div className="flex flex-col gap-6">
+    <PageContainer width="full">
+      <div className="flex min-w-0 flex-col gap-6">
         <header className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight text-text">
             <Trans>Published PMOs</Trans>
@@ -403,7 +833,13 @@ export function PublishedPage({
         </header>
         {state.kind === "ready" ? (
           <>
-            <Catalogue datasets={state.index.datasets} />
+            <Catalogue
+              datasets={state.index.datasets}
+              search={search}
+              coverageOpen={coverageOpen}
+              onCoverageOpenChange={setCoverageOpen}
+              onOpenDataset={recordVisit}
+            />
             <HarvestNote harvestedAt={state.index.harvestedAt} />
           </>
         ) : (

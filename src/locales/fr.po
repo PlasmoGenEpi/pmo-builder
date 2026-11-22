@@ -72,15 +72,27 @@ msgstr "(choix actuel)"
 msgid "(opens in a new tab)"
 msgstr "(s’ouvre dans un nouvel onglet)"
 
+#. placeholder {0}: datasets.length
+#: src/features/published/PublishedPage.tsx
+msgid "{0, plural, one {{matchingCount} of # dataset} other {{matchingCount} of # datasets}}"
+msgstr "{0, plural, one {{matchingCount} sur # jeu de données} other {{matchingCount} sur # jeux de données}}"
+
+#. placeholder {0}: matrix.maxSpecimens
+#: src/features/published/CoverageGrid.tsx
+msgid "{0, plural, one {{maxSpecimensText} specimen (log scale)} other {{maxSpecimensText} specimens (log scale)}}"
+msgstr "{0, plural, one {{maxSpecimensText} spécimen (échelle logarithmique)} other {{maxSpecimensText} spécimens (échelle logarithmique)}}"
+
 #. placeholder {0}: method.steps
 #: src/features/bioinformatics/methodOptions.ts
 msgid "{0, plural, one {{name} (# step)} other {{name} (# steps)}}"
 msgstr "{0, plural, one {{name} (# étape)} other {{name} (# étapes)}}"
 
-#. placeholder {0}: datasets.length
-#: src/features/published/PublishedPage.tsx
-msgid "{0, plural, one {{shownCount} of # dataset} other {{shownCount} of # datasets}}"
-msgstr "{0, plural, one {{shownCount} sur # jeu de données} other {{shownCount} sur # jeux de données}}"
+#. placeholder {0}: matrix.countries.length
+#. placeholder {0}: selected.length
+#: src/features/published/CountryFilter.tsx
+#: src/features/published/CoverageGrid.tsx
+msgid "{0, plural, one {# country} other {# countries}}"
+msgstr "{0, plural, one {# pays} other {# pays}}"
 
 #. placeholder {0}: datasets.length
 #: src/features/published/PublishedPage.tsx
@@ -112,6 +124,11 @@ msgstr "{0, plural, one {# panel. Les cibles présentes dans plusieurs panels ne
 msgid "{0, plural, one {# project} other {# projects}}"
 msgstr "{0, plural, one {# projet} other {# projets}}"
 
+#. placeholder {0}: cell.datasets
+#: src/features/published/CoverageGrid.tsx
+msgid "{0, plural, one {# published PMO} other {# published PMOs}}"
+msgstr "{0, plural, one {# PMO publié} other {# PMO publiés}}"
+
 #. placeholder {0}: using.length
 #: src/features/bioinformatics/MethodsPart.tsx
 msgid "{0, plural, one {# run uses this method and will need another one.} other {# runs use this method and will need another one.}}"
@@ -122,13 +139,20 @@ msgstr "{0, plural, one {# run utilise cette méthode et devra en utiliser une a
 msgid "{0, plural, one {# run} other {# runs}}"
 msgstr "{0, plural, one {# run} other {# runs}}"
 
+#. placeholder {0}: selected.length
+#: src/features/published/CountryFilter.tsx
+msgid "{0, plural, one {# selected} other {# selected}}"
+msgstr "{0, plural, one {# sélectionné} other {# sélectionnés}}"
+
 #. placeholder {0}: summary.runs
 #: src/features/review/reviewModel.ts
 msgid "{0, plural, one {# sequencing run} other {# sequencing runs}}"
 msgstr "{0, plural, one {# run de séquençage} other {# runs de séquençage}}"
 
+#. placeholder {0}: cell.specimens
 #. placeholder {0}: dataset.summary.specimens
 #. placeholder {0}: summary.specimens
+#: src/features/published/CoverageGrid.tsx
 #: src/features/published/PublishedPage.tsx
 #: src/features/review/reviewModel.ts
 msgid "{0, plural, one {# specimen} other {# specimens}}"
@@ -222,6 +246,11 @@ msgstr "{0, plural, one {Run} other {Runs}}"
 #: src/features/sequencing/SequencingStep.tsx
 msgid "{0, plural, one {Sequencing run} other {Sequencing runs}}"
 msgstr "{0, plural, one {Run de séquençage} other {Runs de séquençage}}"
+
+#. placeholder {0}: matching.length
+#: src/features/published/PublishedPage.tsx
+msgid "{0, plural, one {Showing {shownCount} of # published PMO} other {Showing {shownCount} of # published PMOs}}"
+msgstr "{0, plural, one {Affichage de {shownCount} sur # PMO publié} other {Affichage de {shownCount} sur # PMO publiés}}"
 
 #. placeholder {0}: dataset.summary.specimens
 #: src/features/published/PublishedPage.tsx
@@ -402,6 +431,20 @@ msgstr "{count, plural, one {Le tableau des spécimens indique un projet sans en
 msgid "{count, plural, one {Warning} other {Warnings}}"
 msgstr "{count, plural, one {Avertissement} other {Avertissements}}"
 
+#. Summary in the coverage grid header: country count and collection year range
+#: src/features/published/CoverageGrid.tsx
+msgid "{countriesLabel}, {yearsRange}"
+msgstr "{countriesLabel}, {yearsRange}"
+
+#: src/features/published/CountryFilter.tsx
+msgid "{country} <0>({countText})</0>"
+msgstr "{country} <0>({countText})</0>"
+
+#. Accessible description of a cell in the coverage grid
+#: src/features/published/CoverageGrid.tsx
+msgid "{country}, {year}: {summary}"
+msgstr "{country}, {year} : {summary}"
+
 #: src/features/pmo-file/summary/CompareTab.tsx
 msgid "{dated} of {all} specimens have a collection date that gives the month."
 msgstr "{dated} spécimens sur {all} ont une date de collecte indiquant le mois."
@@ -478,6 +521,11 @@ msgstr "{first} (ou {alternatives})"
 #: src/features/specimens/SpecimensStep.tsx
 msgid "{first} to {last}"
 msgstr "{first} à {last}"
+
+#. First author followed by et al. when there are more than two authors
+#: src/features/published/catalogue.ts
+msgid "{firstAuthor} et al."
+msgstr "{firstAuthor} et al."
 
 #: src/features/published/catalogue.ts
 msgid "{firstYear} to {lastYear}"
@@ -625,6 +673,11 @@ msgstr "{more, plural, one {{shown} et # autre} other {{shown} et # autres}}"
 #: src/features/shared/NameCheck.tsx
 msgid "{more, plural, one {{shownNames} and # more} other {{shownNames} and # more}}"
 msgstr "{more, plural, one {{shownNames} et # autre} other {{shownNames} et # autres}}"
+
+#. Filter choice with the number of matching published PMOs
+#: src/features/published/PublishedPage.tsx
+msgid "{name} ({countText})"
+msgstr "{name} ({countText})"
 
 #. A record in the PMO, by its name, such as 'Specimen "S1"'.
 #: src/domain/build/merge.ts
@@ -873,6 +926,11 @@ msgstr "{specimenCount, plural, one {Le projet « {project} » est attribué �
 msgid "{specimens, plural, one {{fieldLabel}, in # specimen} other {{fieldLabel}, in # specimens}}"
 msgstr "{specimens, plural, one {{fieldLabel}, dans # spécimen} other {{fieldLabel}, dans # spécimens}}"
 
+#. Specimen and published PMO counts for a populated cell in the coverage grid
+#: src/features/published/CoverageGrid.tsx
+msgid "{specimensText} in {pmosText}"
+msgstr "{specimensText} dans {pmosText}"
+
 #: src/features/panel/PanelStep.tsx
 msgid "{targetCount} before merging"
 msgstr "{targetCount} avant fusion"
@@ -1007,6 +1065,10 @@ msgstr "{workingName} est actuellement ouvert dans Mon fichier PMO. Ouvrir ce PM
 msgid "<0>. Accepts</0> {fileTypes}"
 msgstr "<0>. Formats acceptés :</0> {fileTypes}"
 
+#: src/features/published/CoverageGrid.tsx
+msgid "<0>{country}, {year}:</0> {summary}"
+msgstr "<0>{country}, {year} :</0> {summary}"
+
 #: src/features/records/NameCoverage.tsx
 msgid "<0>{shownNames}</0> and {more} more"
 msgstr "<0>{shownNames}</0> et {more} autres"
@@ -1039,6 +1101,11 @@ msgstr "<0>Run de séquençage</0>, si vous l’avez, doit correspondre à un ru
 #: src/features/librarySamples/LibrarySamplesStep.tsx
 msgid "<0>Specimen name</0> must match a name in the table on the Specimens step."
 msgstr "<0>Nom du spécimen</0> doit correspondre à un nom du tableau de l’étape Spécimens."
+
+#. Specimen count for an empty cell in the coverage grid
+#: src/features/published/CoverageGrid.tsx
+msgid "0 specimens"
+msgstr "0 spécimen"
 
 #: src/features/pmo-file/summary/CompareTab.tsx
 msgid "A bar chart of specimens per collection period. The figures are in the bars' tooltips and in the group table."
@@ -1429,7 +1496,7 @@ msgstr "Lien vers l’annotation"
 msgid "Annotations"
 msgstr "Annotations"
 
-#: src/features/published/PublishedPage.tsx
+#: src/features/published/CountryFilter.tsx
 msgid "Any country"
 msgstr "Tous les pays"
 
@@ -1444,6 +1511,10 @@ msgstr "Les remarques sur le spécimen, séparées par des virgules."
 #: src/features/published/PublishedPage.tsx
 msgid "Any panel"
 msgstr "Tous les panels"
+
+#: src/features/published/PublishedPage.tsx
+msgid "Any species"
+msgstr "Toutes les espèces"
 
 #: src/features/published/PublishedPage.tsx
 msgid "Any year"
@@ -1706,6 +1777,10 @@ msgstr "Chromosome"
 msgid "Chromosomes"
 msgstr "Chromosomes"
 
+#: src/features/published/CountryFilter.tsx
+msgid "Clear countries"
+msgstr "Effacer les pays"
+
 #: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Clear minimum reads"
 msgstr "Effacer le minimum de lectures"
@@ -1768,6 +1843,10 @@ msgstr "Mois de collecte"
 #: src/features/pmo-file/specimenFieldNames.ts
 msgid "Collection year"
 msgstr "Année de collecte"
+
+#: src/features/published/PublishedTable.tsx
+msgid "Collection years"
+msgstr "Années de collecte"
 
 #. Names a column of the user's table inside other messages, such as 'is blank in column "SampleID"'. {column} is the column's name in the file. Write it without an article: the message around it adds any article or preposition your language needs.
 #: src/domain/build/notices.ts
@@ -1903,14 +1982,25 @@ msgstr "Comptage en cours"
 #. Field label: the country a specimen was collected in
 #: src/domain/fields/samples.ts
 #: src/features/pmo-file/specimenFieldNames.ts
+#: src/features/published/CoverageGrid.tsx
 #: src/features/published/PublishedPage.tsx
+#: src/features/published/PublishedTable.tsx
 msgid "Country"
 msgstr "Pays"
+
+#. Button label for the country filter showing the current selection
+#: src/features/published/CountryFilter.tsx
+msgid "Country: {summary}"
+msgstr "Pays : {summary}"
 
 #. Heading for a group of optional fields in the column-matching editor
 #: src/domain/fields/microhaplotypes.ts
 msgid "Counts"
 msgstr "Comptages"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "Coverage by country and year"
+msgstr "Couverture par pays et par année"
 
 #: src/features/review/PublishToZenodo.tsx
 msgid "Creating the draft"
@@ -2310,13 +2400,25 @@ msgstr "Remplissez les informations du génome, ou choisissez de ne pas indiquer
 msgid "Fill this in, or set the reference genome to None."
 msgstr "Remplissez ce champ, ou définissez le génome de référence sur Aucun."
 
+#: src/features/published/CountryFilter.tsx
+msgid "Filter by country"
+msgstr "Filtrer par pays"
+
 #: src/features/table-import/MatchingParts.tsx
 msgid "Filter by name or column"
 msgstr "Filtrer par nom ou par colonne"
 
+#: src/features/published/CountryFilter.tsx
+msgid "Filter countries"
+msgstr "Filtrer les pays"
+
 #: src/features/table-import/MatchingParts.tsx
 msgid "Filter optional fields"
 msgstr "Filtrer les champs facultatifs"
+
+#: src/features/published/PublishedPage.tsx
+msgid "Filtered list"
+msgstr "Liste filtrée"
 
 #: src/app/HomePage.tsx
 msgid "Find published PMOs"
@@ -2338,6 +2440,10 @@ msgstr "Finalisation"
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Finish the required steps first, so that the PMO can be built."
 msgstr "Terminez d’abord les étapes obligatoires pour que le PMO puisse être créé."
+
+#: src/features/published/PublishedTable.tsx
+msgid "First author"
+msgstr "Premier auteur"
 
 #: src/features/review/ThingsToCheck.tsx
 msgid "Fix on {stepTitle}"
@@ -2841,6 +2947,10 @@ msgstr "Les étiquettes avec une position chromosomique sont les variants que le
 msgid "Language"
 msgstr "Langue"
 
+#: src/features/published/PublishedPage.tsx
+msgid "Latest collection year"
+msgstr "Année de collecte la plus récente"
+
 #: src/domain/fields/samples.ts
 msgid "Latitude and longitude"
 msgstr "Latitude et longitude"
@@ -3002,6 +3112,11 @@ msgstr "Liens qui ne sont pas des nombres entiers"
 #: src/features/review/noticeKinds.ts
 msgid "Links that point at nothing"
 msgstr "Liens qui ne pointent vers rien"
+
+#. Published PMOs compact list view
+#: src/features/published/PublishedPage.tsx
+msgid "List"
+msgstr "Liste"
 
 #: src/app/App.tsx
 #: src/app/privacy/PrivacyIndicator.tsx
@@ -3314,6 +3429,10 @@ msgstr "Allèles au maximum sur une cible"
 msgid "most common"
 msgstr "le plus fréquent"
 
+#: src/features/published/PublishedPage.tsx
+msgid "Most specimens"
+msgstr "Le plus de spécimens"
+
 #: src/features/records/RecordList.tsx
 msgid "Move {name} down"
 msgstr "Descendre {name}"
@@ -3321,6 +3440,10 @@ msgstr "Descendre {name}"
 #: src/features/records/RecordList.tsx
 msgid "Move {name} up"
 msgstr "Monter {name}"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "Move to a cell to read its figures. Choose a cell to filter by country and year."
+msgstr "Placez-vous sur une cellule pour lire ses chiffres. Choisissez une cellule pour filtrer par pays et par année."
 
 #. Top bar section: working with a PMO file the user has
 #: src/app/TopBar.tsx
@@ -3373,6 +3496,10 @@ msgstr "Nécessaire pour cette étape. Une ligne par échantillon, avec le nom d
 msgid "Negative"
 msgstr "Négatif"
 
+#: src/features/published/PublishedPage.tsx
+msgid "Newest published"
+msgstr "Publication la plus récente"
+
 #: src/app/StepPage.tsx
 msgid "Next"
 msgstr "Suivant"
@@ -3384,6 +3511,18 @@ msgstr "Aucun fichier n’est ouvert"
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "No library sample has any microhaplotypes left with these choices. Choose more specimens or targets, or fewer reads."
 msgstr "Avec ces choix, il ne reste aucun microhaplotype dans aucun échantillon de bibliothèque. Choisissez plus de spécimens ou de cibles, ou moins de lectures."
+
+#: src/features/published/CountryFilter.tsx
+msgid "No matching country"
+msgstr "Aucun pays correspondant"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "No matching data"
+msgstr "Aucune donnée correspondante"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "No matching published PMOs have both a country and a collection year."
+msgstr "Aucun PMO publié correspondant n’indique à la fois un pays et une année de collecte."
 
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "No method is ready yet. Finish the methods table above."
@@ -3960,6 +4099,7 @@ msgstr "Page introuvable"
 #: src/domain/build/merge.ts
 #: src/domain/fields/samples.ts
 #: src/features/published/PublishedPage.tsx
+#: src/features/published/PublishedTable.tsx
 #: src/features/review/PmoContents.tsx
 msgid "Panel"
 msgstr "Panel"
@@ -4340,6 +4480,10 @@ msgstr "Vues du PMO publié"
 #: src/features/published/PublishedPage.tsx
 msgid "Published PMOs"
 msgstr "PMO publiés"
+
+#: src/features/published/PublishedTable.tsx
+msgid "Published PMOs table"
+msgstr "Tableau des PMO publiés"
 
 #: src/features/records/checks.ts
 msgid "Put each one on its own line"
@@ -5044,6 +5188,7 @@ msgstr "Tout afficher ({total})"
 msgid "Show fewer"
 msgstr "Afficher moins"
 
+#: src/features/published/PublishedPage.tsx
 #: src/ui/CodeBlock.tsx
 msgid "Show more"
 msgstr "Afficher plus"
@@ -5135,11 +5280,19 @@ msgstr "Un problème est survenu lors de la lecture du {table}. Vérifiez l’as
 msgid "Something went wrong while working out the PMO: {message}"
 msgstr "Un problème est survenu lors de la génération du PMO : {message}"
 
+#. Label for the published list order menu
+#: src/features/published/PublishedPage.tsx
+msgid "Sort by"
+msgstr "Trier par"
+
 #: src/features/pmo-file/summary/SortableTable.tsx
+#: src/features/published/PublishedTable.tsx
 msgid "Sort by {columnLabel}"
 msgstr "Trier par {columnLabel}"
 
 #: src/features/published/DatasetPage.tsx
+#: src/features/published/PublishedPage.tsx
+#: src/features/published/PublishedTable.tsx
 msgid "Species"
 msgstr "Espèces"
 
@@ -5192,10 +5345,15 @@ msgstr "Type de spécimen"
 #: src/features/pmo-file/SubsetPanel.tsx
 #: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/pmo-file/TablesPanel.tsx
+#: src/features/published/PublishedTable.tsx
 #: src/features/review/PmoContents.tsx
 #: src/features/specimens/SpecimensStep.tsx
 msgid "Specimens"
 msgstr "Spécimens"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "Specimens by country and collection year"
+msgstr "Spécimens par pays et par année de collecte"
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Specimens I tick"
@@ -5385,6 +5543,11 @@ msgstr "Passer au thème clair"
 #: src/app/OtherTabNotice.tsx
 msgid "Switching to this tab"
 msgstr "Passage à cet onglet"
+
+#. Published PMOs sortable table view
+#: src/features/published/PublishedPage.tsx
+msgid "Table"
+msgstr "Tableau"
 
 #: src/features/pmo-file/PmoReading.tsx
 msgid "Tables"
@@ -6582,6 +6745,8 @@ msgstr "Tout cocher"
 msgid "Tick all found"
 msgstr "Cocher tous les résultats"
 
+#: src/features/published/PublishedPage.tsx
+#: src/features/published/PublishedTable.tsx
 #: src/features/review/PublishToZenodo.tsx
 msgid "Title"
 msgstr "Titre"
@@ -6598,6 +6763,14 @@ msgstr "Total des lectures brutes"
 #: src/features/readCounts/ReadCountsStep.tsx
 msgid "Total reads per sample"
 msgstr "Total des lectures par échantillon"
+
+#: src/features/published/PublishedPage.tsx
+msgid "Totals"
+msgstr "Totaux"
+
+#: src/features/published/PublishedPage.tsx
+msgid "Totals for matching published PMOs"
+msgstr "Totaux pour les PMO publiés correspondants"
 
 #: src/features/readCounts/ReadCountsStep.tsx
 msgid "Totals only"
@@ -6718,6 +6891,10 @@ msgstr "Utiliser un panel enregistré précédemment"
 msgid "Use a saved panel instead"
 msgstr "Utiliser plutôt un panel enregistré"
 
+#: src/features/published/CoverageGrid.tsx
+msgid "Use arrow keys to move between cells, Enter or Space to filter."
+msgstr "Utilisez les touches fléchées pour vous déplacer entre les cellules, Entrée ou Espace pour filtrer."
+
 #: src/app/HomePage.tsx
 msgid "Use the example"
 msgstr "Utiliser l’exemple"
@@ -6776,6 +6953,11 @@ msgstr "Valeurs contenant des caractères interdits par le format PMO"
 #: src/features/published/DatasetPage.tsx
 msgid "Version"
 msgstr "Version"
+
+#. Accessible label for switching between list and table view
+#: src/features/published/PublishedPage.tsx
+msgid "View"
+msgstr "Affichage"
 
 #: src/app/privacy/PrivacyDetails.tsx
 msgid "Visit record, not sent"
