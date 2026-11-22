@@ -20,7 +20,7 @@ import {
   rampColour,
 } from "@/ui";
 
-import { SortableTable, type SortableColumn } from "./SortableTable";
+import { SortableTable, type SortableColumn, type SortableTableDownload } from "./SortableTable";
 
 /** "Plate positions are given for 40 of 50 library samples." and the like, when not all have it. */
 function Coverage({
@@ -462,8 +462,14 @@ export function DensityView({ summary, headingId }: QualityViewProps) {
   );
 }
 
+/** Props for {@link StagesView}. */
+export interface StagesViewProps extends QualityViewProps {
+  /** Offers a browser-side download of the pipeline stage table. */
+  readonly download?: SortableTableDownload;
+}
+
 /** Reads at each pipeline stage: where reads are lost between demultiplexing and the final calls. */
-export function StagesView({ summary, headingId }: QualityViewProps) {
+export function StagesView({ summary, headingId, download }: StagesViewProps) {
   const counted = stageCounted(summary);
   if (counted.length === 0) return null;
   const percent = new Intl.NumberFormat(intlLocale(), {
@@ -520,6 +526,9 @@ export function StagesView({ summary, headingId }: QualityViewProps) {
         rows={counted}
         rowKey={(row) => `${row.run}\u0000${row.libraryId}`}
         initialSort={{ key: "kept", descending: false }}
+        searchableColumns={["name"]}
+        searchPlaceholder={t`Search sample`}
+        download={download}
       />
     </section>
   );

@@ -1,9 +1,17 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { saveFile } from "@/features/review/saveFile";
 
 import { SortableTable, type SortableColumn } from "./SortableTable";
+
+vi.mock("@/features/review/saveFile", () => ({ saveFile: vi.fn<typeof saveFile>() }));
+
+beforeEach(() => {
+  vi.mocked(saveFile).mockReset();
+});
 
 interface TargetRow {
   readonly name: string;
@@ -179,5 +187,113 @@ describe("SortableTable", () => {
 
     await user.click(within(table).getByText("0.10"));
     expect(within(table).getByRole("button", { name: "t-low", pressed: true })).toBeInTheDocument();
+  });
+
+  it("hides search when a table has five or fewer rows, while still showing the count and download", async () => {
+    const user = userEvent.setup();
+    render(
+      <SortableTable
+        label="Targets"
+        columns={TARGET_COLUMNS}
+        rows={TARGET_ROWS}
+        rowKey={(row) => row.name}
+        searchableColumns={["name"]}
+        download={{ fileName: "study-summary-targets", format: "csv" }}
+      />,
+    );
+
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    expect(screen.getByText("Showing 5 of 5 rows")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Download Targets as csv" }));
+    expect(saveFile).toHaveBeenCalledTimes(1);
+    const [blob, fileName] = vi.mocked(saveFile).mock.calls[0] ?? [];
+    expect(fileName).toBe("study-summary-targets.csv");
+    expect(await blob?.text()).toBe(
+      [
+        "Target,Heterozygosity",
+        "t-empty-a,",
+        "t-mid,0.5",
+        "t-empty-b,",
+        "t-high,0.85",
+        "t-low,0.1",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("searches named columns, updates the row count, clears the search and downloads only shown sorted rows", async () => {
+    interface SampleRow {
+      readonly name: string;
+      readonly specimen: string | null;
+      readonly note: string;
+      readonly reads: number;
+    }
+    const columns: readonly SortableColumn<SampleRow>[] = [
+      { key: "name", label: "Library sample", value: (row) => row.name },
+      { key: "specimen", label: "Specimen", value: (row) => row.specimen },
+      { key: "note", label: "Note", value: (row) => row.note },
+      { key: "reads", label: "Reads", value: (row) => row.reads, numeric: true },
+    ];
+    const rows: readonly SampleRow[] = [
+      { name: "LIB_01", specimen: "SPEC_KENYA_1", note: "alpha", reads: 120 },
+      { name: "LIB_02", specimen: "SPEC_MALI_2", note: "beta", reads: 450 },
+      { name: "LIB_03", specimen: "SPEC_KENYA_3", note: "gamma", reads: 300 },
+      { name: "LIB_04", specimen: "SPEC_GHANA_4", note: "kenya-note", reads: 80 },
+      { name: "LIB_05", specimen: null, note: "delta", reads: 60 },
+      { name: "LIB_06", specimen: "SPEC_MALI_6", note: "epsilon", reads: 900 },
+    ];
+    const user = userEvent.setup();
+    render(
+      <SortableTable
+        label="Samples"
+        columns={columns}
+        rows={rows}
+        rowKey={(row) => row.name}
+        initialSort={{ key: "reads", descending: true }}
+        searchableColumns={["name", "specimen"]}
+        searchPlaceholder="Search sample or specimen"
+        download={{ fileName: "study-summary-samples", format: "tsv" }}
+      />,
+    );
+
+    const search = screen.getByRole("searchbox", { name: "Search Samples" });
+    expect(search).toHaveAttribute("placeholder", "Search sample or specimen");
+    expect(screen.getByText("Showing 6 of 6 rows")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Clear/ })).not.toBeInTheDocument();
+
+    // Matches specimen column case-insensitively and ignores non-searchable "note" column.
+    await user.type(search, "kenya");
+    const table = screen.getByRole("table", { name: "Samples" });
+    expect(firstColumnValues(table)).toEqual(["LIB_03", "LIB_01"]);
+    expect(screen.getByText("Showing 2 of 6 rows")).toBeInTheDocument();
+
+    // Download holds the two shown rows in current sorted order with on-screen headings in TSV.
+    await user.click(screen.getByRole("button", { name: "Download Samples as tsv" }));
+    expect(saveFile).toHaveBeenCalledTimes(1);
+    const [blob, fileName] = vi.mocked(saveFile).mock.calls[0] ?? [];
+    expect(fileName).toBe("study-summary-samples.tsv");
+    expect(await blob?.text()).toBe(
+      [
+        "Library sample\tSpecimen\tNote\tReads",
+        "LIB_03\tSPEC_KENYA_3\tgamma\t300",
+        "LIB_01\tSPEC_KENYA_1\talpha\t120",
+        "",
+      ].join("\n"),
+    );
+
+    // Search with no matches shows empty message and disables download.
+    await user.clear(search);
+    await user.type(search, "no-such-sample");
+    expect(screen.getByText("Showing 0 of 6 rows")).toBeInTheDocument();
+    expect(screen.getByText("Nothing matches the search.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Download Samples as tsv" })).toBeDisabled();
+
+    // Clear action restores all rows and focuses the search box.
+    await user.click(screen.getByRole("button", { name: "Clear search for Samples" }));
+    expect(search).toHaveValue("");
+    expect(search).toHaveFocus();
+    expect(screen.getByText("Showing 6 of 6 rows")).toBeInTheDocument();
+    expect(firstColumnValues(table)).toHaveLength(6);
   });
 });

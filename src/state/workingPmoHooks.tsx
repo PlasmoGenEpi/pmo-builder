@@ -56,6 +56,11 @@ export function usePmoSession(): WorkingPmoSession {
   return fromContext ?? working;
 }
 
+/** Selects part of the active view's PMO session state. Return stable values from `select`. */
+export function usePmo<T>(select: (state: WorkingPmoState) => T): T {
+  return useStore(usePmoSession().state, select);
+}
+
 /** A query's answer, or that it is still being worked out. A stale answer is never shown. */
 export type WorkingPmoQueryState<K extends WorkingPmoQueryKind> =
   | { readonly kind: "loading" }
