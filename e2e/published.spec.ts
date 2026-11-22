@@ -137,3 +137,128 @@ test("restores search, filters and scroll position when going Back from a datase
   const scrollAfterBack = await page.evaluate(() => window.scrollY);
   expect(Math.abs(scrollAfterBack - scrollBeforeOpen)).toBeLessThanOrEqual(20);
 });
+
+interface Box {
+  readonly left: number;
+  readonly right: number;
+  readonly top: number;
+  readonly bottom: number;
+}
+
+function boxesOverlap(a: Box, b: Box): boolean {
+  return !(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top);
+}
+
+function parseCount(text: string | undefined): number {
+  return Number((text ?? "").replaceAll(",", ""));
+}
+
+interface TotalsLayout {
+  readonly regionRect: Box;
+  readonly numbers: readonly {
+    readonly text: string;
+    readonly rect: Box;
+    readonly overflowX: number;
+  }[];
+  readonly labels: readonly {
+    readonly text: string;
+    readonly rect: Box;
+  }[];
+  readonly pageOverflowX: number;
+}
+
+function assertNoTotalsOverlap(layout: TotalsLayout): void {
+  expect(layout.pageOverflowX).toBeLessThanOrEqual(0);
+  for (const num of layout.numbers) {
+    expect(num.overflowX).toBeLessThanOrEqual(1);
+    expect(num.rect.left).toBeGreaterThanOrEqual(layout.regionRect.left - 1);
+    expect(num.rect.right).toBeLessThanOrEqual(layout.regionRect.right + 1);
+  }
+  for (let i = 0; i < layout.numbers.length; i += 1) {
+    const a = layout.numbers[i];
+    const labelA = layout.labels[i];
+    if (a === undefined || labelA === undefined) continue;
+    expect(boxesOverlap(a.rect, labelA.rect)).toBe(false);
+    for (let j = i + 1; j < layout.numbers.length; j += 1) {
+      const b = layout.numbers[j];
+      if (b === undefined) continue;
+      expect(boxesOverlap(a.rect, b.rect)).toBe(false);
+    }
+  }
+}
+
+test("totals follow filters and fit without overlap at 390 px with six-digit specimens", async ({
+  page,
+}) => {
+  await serveLargeCatalogue(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/published");
+  await expect(page.getByText("150 datasets")).toBeVisible();
+
+  const totalsRegion = page.getByRole("region", { name: "Totals" });
+  await expect(totalsRegion).toBeVisible();
+  await expect(totalsRegion.getByText("Filtered list")).toBeHidden();
+
+  const inspectTotalsLayout = async (): Promise<TotalsLayout> =>
+    totalsRegion.evaluate((region) => {
+      const regionRect = region.getBoundingClientRect();
+      const numbers = [...region.querySelectorAll("dd")].map((dd) => {
+        const range = document.createRange();
+        range.selectNodeContents(dd);
+        const rect = range.getBoundingClientRect();
+        return {
+          text: dd.textContent?.trim() ?? "",
+          rect: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom },
+          overflowX: dd.scrollWidth - dd.clientWidth,
+        };
+      });
+      const labels = [...region.querySelectorAll("dt")].map((dt) => {
+        const range = document.createRange();
+        range.selectNodeContents(dt);
+        const rect = range.getBoundingClientRect();
+        return {
+          text: dt.textContent?.trim() ?? "",
+          rect: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom },
+        };
+      });
+      return {
+        regionRect: {
+          left: regionRect.left,
+          right: regionRect.right,
+          top: regionRect.top,
+          bottom: regionRect.bottom,
+        },
+        numbers,
+        labels,
+        pageOverflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      };
+    });
+
+  const unfiltered = await inspectTotalsLayout();
+  expect(unfiltered.numbers).toHaveLength(3);
+  expect(unfiltered.numbers[0]?.text).toBe("150");
+  expect(unfiltered.numbers[1]?.text).toMatch(/^\d{3},\d{3}$/);
+  expect(unfiltered.numbers[2]?.text).toBe("26");
+  assertNoTotalsOverlap(unfiltered);
+
+  // Filtering updates the totals and shows that the list is filtered.
+  await page.getByRole("button", { name: /^Country:/ }).click();
+  await page.getByRole("checkbox", { name: /^Kenya \(\d+\)$/ }).click();
+  await page.keyboard.press("Escape");
+  await expect(totalsRegion.getByText("Filtered list")).toBeVisible();
+  const filtered = await inspectTotalsLayout();
+  expect(parseCount(filtered.numbers[0]?.text)).toBeGreaterThan(0);
+  expect(parseCount(filtered.numbers[0]?.text)).toBeLessThan(150);
+  expect(parseCount(filtered.numbers[1]?.text)).toBeGreaterThan(0);
+  expect(parseCount(filtered.numbers[1]?.text)).toBeLessThan(
+    parseCount(unfiltered.numbers[1]?.text),
+  );
+  expect(parseCount(filtered.numbers[2]?.text)).toBeGreaterThanOrEqual(1);
+  expect(parseCount(filtered.numbers[2]?.text)).toBeLessThan(26);
+  assertNoTotalsOverlap(filtered);
+
+  // Clearing filters restores whole-catalogue totals and hides the filtered badge.
+  await page.getByRole("button", { name: "Clear the filters" }).click();
+  await expect(totalsRegion.getByText("Filtered list")).toBeHidden();
+  await expect(totalsRegion.locator("dd").first()).toHaveText("150");
+});

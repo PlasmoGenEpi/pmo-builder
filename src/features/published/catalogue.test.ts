@@ -200,6 +200,18 @@ describe("facetsOf, facetCountsOf and totalsOf", () => {
 
   it("adds up the datasets, specimens and countries", () => {
     expect(totalsOf(DATASETS)).toEqual({ datasets: 3, specimens: 1258, countries: 3 });
+    expect(
+      totalsOf(filterDatasets(DATASETS, { ...NO_FILTERS, countries: ["Mozambique"] })),
+    ).toEqual({
+      datasets: 2,
+      specimens: 58,
+      countries: 2,
+    });
+    expect(totalsOf(filterDatasets(DATASETS, { ...NO_FILTERS, search: "uganda" }))).toEqual({
+      datasets: 1,
+      specimens: 1200,
+      countries: 1,
+    });
     expect(totalsOf([])).toEqual({ datasets: 0, specimens: 0, countries: 0 });
   });
 });

@@ -2326,6 +2326,10 @@ msgstr ""
 msgid "Filter optional fields"
 msgstr ""
 
+#: src/features/published/PublishedPage.tsx
+msgid "Filtered list"
+msgstr ""
+
 #: src/app/HomePage.tsx
 msgid "Find published PMOs"
 msgstr ""
@@ -6537,6 +6541,14 @@ msgstr ""
 #: src/domain/fields/readCounts.ts
 #: src/features/readCounts/ReadCountsStep.tsx
 msgid "Total reads per sample"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Totals"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Totals for matching published PMOs"
 msgstr ""
 
 #: src/features/readCounts/ReadCountsStep.tsx

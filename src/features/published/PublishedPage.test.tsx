@@ -16,7 +16,7 @@ import { installDomPolyfills } from "@/ui/testPolyfills";
 import type { CatalogueLoad } from "./catalogue";
 import { DatasetPage } from "./DatasetPage";
 import { clearScrollPositionsForTests, PublishedPage } from "./PublishedPage";
-import { catalogue, DATASETS } from "./testing";
+import { catalogue, DATASETS, largeCatalogue } from "./testing";
 
 beforeAll(installDomPolyfills);
 
@@ -62,6 +62,10 @@ function titles(): string[] {
   return screen
     .getAllByRole("article")
     .map((card) => within(card).getByRole("heading").textContent);
+}
+
+function parseCount(value: string | undefined): number {
+  return Number((value ?? "").replaceAll(",", ""));
 }
 
 async function choose(
@@ -160,6 +164,97 @@ describe("PublishedPage", () => {
     await choose(user, "Panel", "Any panel");
     await choose(user, "Collected in", "2017 (1)");
     expect(titles()).toEqual(["Maputo surveillance 2015 to 2019"]);
+  });
+
+  it("shows whole-catalogue totals without a filtered indicator, then updates them when filtered and clears back", async () => {
+    const user = userEvent.setup();
+    render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
+    await screen.findByText("3 datasets");
+
+    const totals = screen.getByRole("region", { name: "Totals" });
+    expect(within(totals).queryByText("Filtered list")).not.toBeInTheDocument();
+    expect(
+      within(totals)
+        .getAllByRole("definition")
+        .map((el) => el.textContent),
+    ).toEqual(["3", "1,258", "3"]);
+
+    await user.click(countryButton());
+    await user.click(await screen.findByRole("checkbox", { name: "Mozambique (2)" }));
+    await user.keyboard("{Escape}");
+    expect(within(totals).getByText("Filtered list")).toBeInTheDocument();
+    expect(
+      within(totals)
+        .getAllByRole("definition")
+        .map((el) => el.textContent),
+    ).toEqual(["2", "58", "2"]);
+
+    await user.click(countryButton());
+    await user.click(await screen.findByRole("button", { name: "Clear countries" }));
+    await user.keyboard("{Escape}");
+    expect(within(totals).queryByText("Filtered list")).not.toBeInTheDocument();
+    expect(
+      within(totals)
+        .getAllByRole("definition")
+        .map((el) => el.textContent),
+    ).toEqual(["3", "1,258", "3"]);
+
+    await user.type(screen.getByRole("searchbox", { name: "Search" }), "uganda");
+    expect(within(totals).getByText("Filtered list")).toBeInTheDocument();
+    expect(
+      within(totals)
+        .getAllByRole("definition")
+        .map((el) => el.textContent),
+    ).toEqual(["1", "1,200", "1"]);
+
+    await user.clear(screen.getByRole("searchbox", { name: "Search" }));
+    await user.type(screen.getByRole("searchbox", { name: "Search" }), "nothing like this");
+    expect(within(totals).getByText("Filtered list")).toBeInTheDocument();
+    expect(
+      within(totals)
+        .getAllByRole("definition")
+        .map((el) => el.textContent),
+    ).toEqual(["0", "0", "0"]);
+
+    await user.click(screen.getByRole("button", { name: "Clear the filters" }));
+    expect(within(totals).queryByText("Filtered list")).not.toBeInTheDocument();
+    expect(
+      within(totals)
+        .getAllByRole("definition")
+        .map((el) => el.textContent),
+    ).toEqual(["3", "1,258", "3"]);
+  });
+
+  it("updates totals from a six-digit catalogue when a filter is applied", async () => {
+    const user = userEvent.setup();
+    render(
+      <PublishedPage load={gives({ kind: "ready", index: largeCatalogue(150) })} zenodo={ZENODO} />,
+      { wrapper },
+    );
+    await screen.findByText("150 datasets");
+
+    const totals = screen.getByRole("region", { name: "Totals" });
+    expect(within(totals).queryByText("Filtered list")).not.toBeInTheDocument();
+    const unfilteredValues = within(totals)
+      .getAllByRole("definition")
+      .map((el) => el.textContent);
+    expect(unfilteredValues[0]).toBe("150");
+    expect(unfilteredValues[1]).toMatch(/^\d{3},\d{3}$/);
+    expect(unfilteredValues[2]).toBe("26");
+
+    await user.click(countryButton());
+    await user.click(await screen.findByRole("checkbox", { name: /^Kenya \(\d+\)$/ }));
+    await user.keyboard("{Escape}");
+    expect(within(totals).getByText("Filtered list")).toBeInTheDocument();
+    const filteredValues = within(totals)
+      .getAllByRole("definition")
+      .map((el) => el.textContent);
+    expect(parseCount(filteredValues[0])).toBeGreaterThan(0);
+    expect(parseCount(filteredValues[0])).toBeLessThan(150);
+    expect(parseCount(filteredValues[1])).toBeGreaterThan(0);
+    expect(parseCount(filteredValues[1])).toBeLessThan(parseCount(unfilteredValues[1]));
+    expect(parseCount(filteredValues[2])).toBeGreaterThanOrEqual(1);
+    expect(parseCount(filteredValues[2])).toBeLessThan(26);
   });
 
   it("offers to clear the filters when nothing matches and announces zero results", async () => {

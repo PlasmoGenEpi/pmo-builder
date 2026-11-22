@@ -2320,6 +2320,10 @@ msgstr "Filtrar os países"
 msgid "Filter optional fields"
 msgstr "Filtrar os campos opcionais"
 
+#: src/features/published/PublishedPage.tsx
+msgid "Filtered list"
+msgstr "Lista filtrada"
+
 #: src/app/HomePage.tsx
 msgid "Find published PMOs"
 msgstr "Encontrar PMO publicados"
@@ -6532,6 +6536,14 @@ msgstr "Total de leituras brutas"
 #: src/features/readCounts/ReadCountsStep.tsx
 msgid "Total reads per sample"
 msgstr "Total de leituras por amostra"
+
+#: src/features/published/PublishedPage.tsx
+msgid "Totals"
+msgstr "Totais"
+
+#: src/features/published/PublishedPage.tsx
+msgid "Totals for matching published PMOs"
+msgstr "Totais dos PMO publicados correspondentes"
 
 #: src/features/readCounts/ReadCountsStep.tsx
 msgid "Totals only"

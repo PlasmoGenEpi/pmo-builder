@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ChevronRight,
   FlaskConical,
+  ListFilter,
   MapPin,
   Search,
   type LucideIcon,
@@ -17,7 +18,16 @@ import { PageContainer } from "@/app/PageContainer";
 import { BUILD_PATH } from "@/app/steps";
 import type { PublishedDataset } from "@/domain/repository/types";
 import { communityUrl, zenodoConfig, type ZenodoConfig } from "@/features/review/zenodo";
-import { buttonClassName, cn, EmptyState, formatCount, inputClassName, Link, Select } from "@/ui";
+import {
+  Badge,
+  buttonClassName,
+  cn,
+  EmptyState,
+  formatCount,
+  inputClassName,
+  Link,
+  Select,
+} from "@/ui";
 
 import { DEFAULT_LIST_STATE, publishedHref, readListState } from "./address";
 import {
@@ -140,7 +150,13 @@ function DatasetRow({
 }
 
 /** The totals, side by side in one band. */
-function Totals({ datasets }: { readonly datasets: readonly PublishedDataset[] }) {
+function Totals({
+  datasets,
+  filtered,
+}: {
+  readonly datasets: readonly PublishedDataset[];
+  readonly filtered: boolean;
+}) {
   const totals = useMemo(() => totalsOf(datasets), [datasets]);
   const items = [
     {
@@ -160,16 +176,34 @@ function Totals({ datasets }: { readonly datasets: readonly PublishedDataset[] }
     },
   ];
   return (
-    <dl className="grid grid-cols-3 divide-x divide-border rounded-xl border border-border bg-surface shadow-xs">
-      {items.map((item) => (
-        <div key={item.id} className="flex flex-col-reverse gap-0.5 px-4 py-4 sm:px-6">
-          <dt className="text-sm text-text-muted">{item.label}</dt>
-          <dd className="text-2xl font-semibold tracking-tight text-text tabular-nums">
-            {formatCount(item.value)}
-          </dd>
+    <section
+      aria-label={t`Totals`}
+      className="overflow-hidden rounded-xl border border-border bg-surface shadow-xs"
+    >
+      {filtered ? (
+        <div className="flex flex-wrap items-center gap-2 border-b border-border bg-surface-subtle px-4 py-2 sm:px-6">
+          <Badge tone="accent" icon={ListFilter}>
+            <Trans>Filtered list</Trans>
+          </Badge>
+          <p className="text-sm text-text-muted">
+            <Trans>Totals for matching published PMOs</Trans>
+          </p>
         </div>
-      ))}
-    </dl>
+      ) : null}
+      <dl className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {items.map((item) => (
+          <div
+            key={item.id}
+            className="flex min-w-0 items-baseline justify-between gap-4 px-4 py-3 sm:flex-col-reverse sm:items-start sm:justify-start sm:gap-0.5 sm:px-6 sm:py-4"
+          >
+            <dt className="text-sm text-text-muted">{item.label}</dt>
+            <dd className="text-xl font-semibold tracking-tight text-text tabular-nums md:text-2xl">
+              {formatCount(item.value)}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
@@ -366,7 +400,7 @@ function Catalogue({
 
   return (
     <div className="flex flex-col gap-6">
-      <Totals datasets={datasets} />
+      <Totals datasets={shown} filtered={filtered} />
       <section aria-labelledby="published-list-heading" className="flex flex-col gap-3">
         <h2 id="published-list-heading" className="sr-only">
           <Trans>Datasets</Trans>
