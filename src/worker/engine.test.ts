@@ -364,6 +364,89 @@ describe("engine", () => {
     });
   });
 
+  it("reuses the cached microhaplotypes section across rebuilds when project or panel changes", async () => {
+    const engine = testEngine();
+    const draft = await importExample(engine);
+    const first = await engine.build(draft, { creationDate: "2026-01-01" });
+    if (first.kind !== "built") throw new Error("first build superseded");
+    const firstFile = await engine.getPmoFile({ gzip: false });
+    if (firstFile === null) throw new Error("missing first PMO");
+    const firstPmo: unknown = JSON.parse(await firstFile.blob.text());
+
+    const withProject: Draft = {
+      ...draft,
+      project: {
+        ...draft.project,
+        records: [
+          createProjectRecord({
+            project_name: "PRJNA1040019",
+            project_description: "Updated study",
+          }),
+        ],
+      },
+    };
+    const second = await engine.build(withProject, { creationDate: "2026-01-01" });
+    if (second.kind !== "built") throw new Error("second build superseded");
+    expect(second.view.rebuilt).toEqual(["project"]);
+    expect(second.view.overall).toMatchObject({ status: "ready", pmo: "valid" });
+    expect(second.view.overall.summary).toMatchObject({
+      projects: 1,
+      targets: 276,
+      targetsWithCalls: 21,
+      librarySamplesWithDetections: 49,
+    });
+
+    const panelText = await exampleBlob("mad4hatter_panel_info_example.csv").text();
+    const lines = panelText.split(/\r?\n/);
+    const header = lines[0] ?? "";
+    const extraRow = [
+      "extra_target_00",
+      "10",
+      "100",
+      "20",
+      "90",
+      "TGCATGCATGCATGCATGCA",
+      "90",
+      "70",
+      "ACGTACGTACGTACGTACGT",
+      "diversity",
+    ].join("\t");
+    const expandedPanel = imported(
+      await engine.importFile({
+        file: new Blob([[header, extraRow, ...lines.slice(1)].join("\n")]),
+        fileName: "expanded_panel.tsv",
+      }),
+    );
+    const firstPanel = withProject.panel.panels[0];
+    if (firstPanel === undefined) throw new Error("missing panel");
+    const withExpandedPanel: Draft = {
+      ...withProject,
+      panel: {
+        panels: [{ ...firstPanel, table: mapped(expandedPanel, EXAMPLE_MAPPINGS.panel) }],
+      },
+    };
+    const third = await engine.build(withExpandedPanel, { creationDate: "2026-01-01" });
+    if (third.kind !== "built") throw new Error("third build superseded");
+    expect(third.view.rebuilt).toEqual(["panel"]);
+    expect(third.view.overall).toMatchObject({ status: "ready", pmo: "valid" });
+    expect(third.view.overall.summary).toMatchObject({
+      projects: 1,
+      targets: 277,
+      targetsWithCalls: 21,
+      librarySamplesWithDetections: 49,
+    });
+    const thirdFile = await engine.getPmoFile({ gzip: false });
+    if (thirdFile === null) throw new Error("missing third PMO");
+    const thirdPmo: unknown = JSON.parse(await thirdFile.blob.text());
+    expect(thirdPmo).toMatchObject({
+      project_info: [{ project_name: "PRJNA1040019", project_description: "Updated study" }],
+      detected_microhaplotypes:
+        typeof firstPmo === "object" && firstPmo !== null && "detected_microhaplotypes" in firstPmo
+          ? firstPmo.detected_microhaplotypes
+          : [],
+    });
+  });
+
   it("counts stream sizes matching the downloaded files and refreshes memos after a rebuild", async () => {
     const engine = testEngine();
     const draft = await importExample(engine);

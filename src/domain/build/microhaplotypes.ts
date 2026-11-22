@@ -1,8 +1,13 @@
 /**
- * The microhaplotypes section: the allele table, through `mhapTableToPmo`.
+ * The microhaplotypes section: the allele table, built in chunks through
+ * `createMhapTableBuilder`.
  */
 import { plural, t } from "@lingui/core/macro";
-import { mhapTableToPmo, type MhapTableToPmoOptions, type MhapTableToPmoResult } from "pmotools-ts";
+import {
+  createMhapTableBuilder,
+  type MhapTableToPmoOptions,
+  type MhapTableToPmoResult,
+} from "pmotools-ts";
 
 import type { MicrohaplotypesDraft } from "@/domain/draft";
 import type { RawRow, RawTable } from "@/domain/types";
@@ -52,17 +57,31 @@ const TABLE_LABEL = t({
     "The table of microhaplotypes: a table name in lower case, used inside other messages, such as 'The allele table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).",
 });
 
+/** Default number of rows fed to `createMhapTableBuilder` per chunk. */
+export const DEFAULT_MHAP_CHUNK_SIZE = 50_000;
+
+/** Options for {@link buildMicrohaplotypes}. */
+export interface BuildMicrohaplotypesOptions {
+  /** Rows added per chunk to `createMhapTableBuilder`. Defaults to {@link DEFAULT_MHAP_CHUNK_SIZE}. */
+  readonly chunkSize?: number;
+}
+
 /**
  * Builds the microhaplotypes section.
  *
  * - `empty`: no table and no run name.
  * - `incomplete`: no table, a required field unmapped, or a run name chosen but not given.
- * - `error`: a mapping or run name problem, or `mhapTableToPmo` threw.
+ * - `error`: a mapping or run name problem, or `createMhapTableBuilder` threw.
  */
 export function buildMicrohaplotypes(
   section: MicrohaplotypesDraft,
   context: BuildContext,
+  buildOptions: BuildMicrohaplotypesOptions = {},
 ): SectionResult<"microhaplotypes"> {
+  const chunkSize = buildOptions.chunkSize ?? DEFAULT_MHAP_CHUNK_SIZE;
+  if (!Number.isInteger(chunkSize) || chunkSize < 1) {
+    throw new RangeError(`chunkSize must be a positive integer, got ${chunkSize}`);
+  }
   if (section.table === null) {
     return runNameStarted(section.runName) || section.representativeColumns.length > 0
       ? notReady("microhaplotypes", "incomplete", [
@@ -118,15 +137,23 @@ export function buildMicrohaplotypes(
   const { options, unknownKeys } = columnOptions(prepared.columns, MHAP_COLUMN_OPTIONS);
   const representative = section.representativeColumns;
   const detected = prepared.additionalColumns.filter((column) => !representative.includes(column));
-  const run = runBuilder(prepared.issues, (onWarning) =>
-    mhapTableToPmo(prepared.typed, {
+  const run = runBuilder(prepared.issues, (onWarning) => {
+    const builder = createMhapTableBuilder({
       ...options,
       ...(runName.option === undefined ? {} : { bioinformaticsRunName: runName.option }),
       ...(representative.length > 0 ? { additionalRepresentativeMhapCols: representative } : {}),
       ...(detected.length > 0 ? { additionalMhapDetectedCols: detected } : {}),
       onWarning,
-    }),
-  );
+    });
+    if (prepared.typed.length <= chunkSize) {
+      builder.add(prepared.typed);
+    } else {
+      for (let offset = 0; offset < prepared.typed.length; offset += chunkSize) {
+        builder.add(prepared.typed.slice(offset, offset + chunkSize));
+      }
+    }
+    return builder.finish();
+  });
   const notices = [...unknownKeysNotice(unknownKeys, TABLE_LABEL), ...run.notices];
   if (!run.ok) return notReady("microhaplotypes", "error", notices);
   return ready(
