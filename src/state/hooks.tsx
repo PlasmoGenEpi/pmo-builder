@@ -18,6 +18,7 @@ import type { Suggestions } from "@/domain/build";
 import type { SectionId } from "@/domain/types";
 import {
   createEngine,
+  type BuildProgress,
   type OverallView,
   type PmoTextPreview,
   type SectionView,
@@ -52,11 +53,18 @@ let defaultStore: AppStore | null = null;
  */
 export function getDefaultAppStore(): AppStore {
   if (defaultStore === null) {
-    defaultStore = createAppStore({
-      engine: createEngine(),
+    let created: AppStore | null = null;
+    const engine = createEngine({
+      onProgress: (progress) => {
+        created?.setState({ progress });
+      },
+    });
+    created = createAppStore({
+      engine,
       storage: createDraftStorage(),
       editorLock: browserEditorLock("pmo-builder-draft-editor"),
     });
+    defaultStore = created;
     instrumentAppStore(defaultStore);
     void defaultStore.getState().actions.initialise();
   }
@@ -153,6 +161,11 @@ export function useSectionState<S extends SectionId>(section: S): SectionView<S>
 /** Whether a build is pending or failed, with the latest finished build. */
 export function useBuildState(): BuildState {
   return useAppState((state) => state.build);
+}
+
+/** Live reading/building progress while streaming a large allele table. */
+export function useBuildProgress(): BuildProgress {
+  return useAppState((state) => state.progress);
 }
 
 /** The whole-draft result of the latest build: status, notices, merge summary, PMO availability. */

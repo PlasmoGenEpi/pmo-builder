@@ -853,6 +853,10 @@ msgstr "{selectedCount} cochés sur {totalCount}"
 msgid "{shown, plural, one {{shownCount} row} other {{shownCount} rows}}"
 msgstr "{shown, plural, one {{shownCount} ligne} other {{shownCount} lignes}}"
 
+#: src/features/table-import/TablePreviewPanel.tsx
+msgid "{shownCount, plural, one {First {shownRows} row} other {First {shownRows} rows}}"
+msgstr "{shownCount, plural, one {{shownRows} première ligne} other {{shownRows} premières lignes}}"
+
 #: src/domain/build/merge.ts
 msgid "{specimenCount, plural, one {Project \"{project}\" is applied to all # specimen, because the specimen table names no project.} other {Project \"{project}\" is applied to all # specimens, because the specimen table names no project.}}"
 msgstr "{specimenCount, plural, one {Le projet « {project} » est attribué à # spécimen, car le tableau des spécimens ne mentionne aucun projet.} other {Le projet « {project} » est attribué aux # spécimens, car le tableau des spécimens ne mentionne aucun projet.}}"
@@ -1548,6 +1552,10 @@ msgstr "Générez un PMO à partir de vos tableaux, ou publiez un fichier PMO qu
 msgid "Build one in this app from <0><1>your tables</1></0>, or open one of the <2><3>published PMOs</3></2>."
 msgstr "Générez-en un dans cette application à partir de <0><1>vos tableaux</1></0>, ou ouvrez l’un des <2><3>PMO publiés</3></2>."
 
+#: src/features/shared/SectionResult.tsx
+msgid "Building the allele table"
+msgstr "Construction du tableau des allèles"
+
 #. The table of reads per sample, target and processing stage: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #. The table of reads per sample, target and processing stage: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
@@ -1596,6 +1604,10 @@ msgstr "Vérifiez votre connexion et rechargez la page."
 #: src/features/pmo-file/OpenPublished.tsx
 msgid "Check your connection. Zenodo may also be busy for a moment."
 msgstr "Vérifiez votre connexion. Zenodo est peut-être aussi momentanément surchargé."
+
+#: src/features/shared/SectionResult.tsx
+msgid "Checking the allele table"
+msgstr "Vérification du tableau des allèles"
 
 #: src/features/review/VerdictCard.tsx
 msgid "Checking your draft"
