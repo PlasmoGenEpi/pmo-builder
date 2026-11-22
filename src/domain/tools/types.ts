@@ -173,6 +173,19 @@ export interface TablesArchive {
 /** The delimited formats a table can be written in. */
 export type TableFormat = "csv" | "tsv";
 
+/** How many rows a table preview shows at most. */
+export const TABLE_PREVIEW_LIMIT = 20;
+
+/** One cell in a table preview. */
+export type TablePreviewCell = string | number | boolean | null;
+
+/** The column names and first rows of a table, for looking over before downloading. */
+export interface TablePreview {
+  readonly columns: readonly string[];
+  readonly rows: readonly (readonly TablePreviewCell[])[];
+  readonly totalRows: number;
+}
+
 /** What kind of control a specimen is, from its `specimen_type`. */
 export type ControlKind = "negative" | "positive" | "other";
 
@@ -371,6 +384,12 @@ export interface WorkingPmoRequests {
     readonly id: TableId;
     readonly format: TableFormat;
   };
+  /** The column names and first rows of one table of the original or the subset. */
+  readonly tablePreview: {
+    readonly source: WorkingSource;
+    readonly id: TableId;
+    readonly limit?: number;
+  };
   /** Every table of the original or the subset, as files in one zip. */
   readonly tables: { readonly source: WorkingSource; readonly format: TableFormat };
   /** The subset as a PMO file, gzipped or not, named after the opened file with "-subset". */
@@ -408,6 +427,7 @@ export interface WorkingPmoValues {
   readonly subset: SubsetMade;
   readonly preview: SubsetPreview;
   readonly table: TableFile;
+  readonly tablePreview: TablePreview;
   readonly tables: TablesArchive;
   readonly file: PmoFile;
   readonly groupFields: readonly GroupField[];

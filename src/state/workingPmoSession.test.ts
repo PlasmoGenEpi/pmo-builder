@@ -396,6 +396,71 @@ describe("working PMO session: tables", () => {
     const files = await readZip(archive.value.blob);
     expect(files.map((file) => file.name)).toContain("study-subset-read-counts.tsv");
   });
+
+  it("previews the first 20 rows of a table for original and subset, matching the download", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+
+    const preview = await session.query({
+      kind: "tablePreview",
+      source: "original",
+      id: "alleles",
+    });
+    const downloaded = await session.query({
+      kind: "table",
+      source: "original",
+      id: "alleles",
+      format: "tsv",
+    });
+    if (preview.kind !== "ok" || downloaded.kind !== "ok") {
+      throw new Error(`expected ok, got ${preview.kind} / ${downloaded.kind}`);
+    }
+    const [header, ...dataLines] = downloaded.value.text.trimEnd().split("\n");
+    expect(preview.value.columns).toEqual(header?.split("\t"));
+    expect(preview.value.totalRows).toBe(dataLines.length);
+    expect(preview.value.rows).toHaveLength(20);
+    expect(
+      preview.value.rows.map((row) =>
+        row.map((cell) => (cell === null ? "" : String(cell))).join("\t"),
+      ),
+    ).toEqual(dataLines.slice(0, 20));
+
+    const names = EXAMPLE.specimen_info.slice(0, 2).map((specimen) => specimen.specimen_name);
+    await session.subset({
+      specimens: { kind: "names", names },
+      targets: { kind: "all" },
+      minReads: 0,
+    });
+    const subsetPreview = await session.query({
+      kind: "tablePreview",
+      source: "subset",
+      id: "specimens",
+    });
+    if (subsetPreview.kind !== "ok") throw new Error(subsetPreview.kind);
+    expect(subsetPreview.value.totalRows).toBe(2);
+    expect(subsetPreview.value.rows).toHaveLength(2);
+    const nameColumn = subsetPreview.value.columns.indexOf("specimen_name");
+    expect(subsetPreview.value.rows.map((row) => row[nameColumn])).toEqual(names);
+  });
+
+  it("answers tablePreview with not-open, no-subset, and stale as other queries do", async () => {
+    const engine = createInThreadEngine();
+    const { session } = makeSession({ engine });
+    const request: WorkingPmoRequest<"tablePreview"> = {
+      kind: "tablePreview",
+      source: "original",
+      id: "specimens",
+    };
+
+    expect(await session.query(request)).toEqual({ kind: "not-open" });
+
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    expect(await session.query({ ...request, source: "subset" })).toEqual({ kind: "no-subset" });
+
+    const { generation } = session.state.getState();
+    await session.open(chosen(pmoFile(smallerPmo(3), "second.json")));
+    expect(await engine.workingPmo({ generation, request })).toEqual({ kind: "stale" });
+  });
 });
 
 describe("working PMO session: freeing memory", () => {
