@@ -15,7 +15,6 @@ describe("buildCoverage", () => {
       years: [],
       rows: [],
       maxSpecimens: 0,
-      populatedCells: 0,
     });
 
     const incomplete = [
@@ -27,11 +26,10 @@ describe("buildCoverage", () => {
       years: [],
       rows: [],
       maxSpecimens: 0,
-      populatedCells: 0,
     });
   });
 
-  it("builds contiguous collection years and sums specimens per country and year without double-counting row totals", () => {
+  it("builds contiguous collection years and sums specimens per country and year", () => {
     const entries = [
       dataset({
         id: "1",
@@ -57,13 +55,10 @@ describe("buildCoverage", () => {
     expect(matrix.countries).toEqual(["Kenya", "Uganda"]);
     expect(matrix.years).toEqual([2015, 2016, 2017, 2018]);
     expect(matrix.maxSpecimens).toBe(350);
-    expect(matrix.populatedCells).toBe(5);
 
     const [kenya, uganda] = matrix.rows;
     expect(kenya).toEqual({
       country: "Kenya",
-      totalSpecimens: 350,
-      totalDatasets: 2,
       cells: [
         { country: "Kenya", year: 2015, specimens: 50, datasets: 1 },
         { country: "Kenya", year: 2016, specimens: 350, datasets: 2 },
@@ -73,8 +68,6 @@ describe("buildCoverage", () => {
     });
     expect(uganda).toEqual({
       country: "Uganda",
-      totalSpecimens: 170,
-      totalDatasets: 2,
       cells: [
         { country: "Uganda", year: 2015, specimens: 50, datasets: 1 },
         { country: "Uganda", year: 2016, specimens: 50, datasets: 1 },
@@ -93,7 +86,6 @@ describe("buildCoverage", () => {
     expect(matrix.years.at(-1)).toBe(2026);
     expect(matrix.years).toHaveLength(19);
     expect(matrix.maxSpecimens).toBeGreaterThan(0);
-    expect(matrix.populatedCells).toBeGreaterThan(0);
 
     for (const row of matrix.rows) {
       expect(row.cells).toHaveLength(matrix.years.length);

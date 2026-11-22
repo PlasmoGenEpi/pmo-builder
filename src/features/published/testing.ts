@@ -169,7 +169,17 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-function pickDistinct<T>(items: readonly T[], count: number, rand: () => number, first?: T): T[] {
+function pickDistinct<T>({
+  items,
+  count,
+  rand,
+  first,
+}: {
+  readonly items: readonly T[];
+  readonly count: number;
+  readonly rand: () => number;
+  readonly first?: T;
+}): T[] {
   const chosen: T[] = first === undefined ? [] : [first];
   let guard = 0;
   while (chosen.length < count && guard < items.length * 4) {
@@ -201,25 +211,31 @@ export function largeCatalogue(count = 150): RepositoryIndex {
         ? LARGE_COUNTRIES[index]
         : LARGE_COUNTRIES[Math.floor(rand() * LARGE_COUNTRIES.length)];
     const countryCount = index % 25 === 4 ? 5 : rand() < 0.2 ? 2 : 1;
-    const countries = pickDistinct(LARGE_COUNTRIES, countryCount, rand, primaryCountry).toSorted(
-      (a, b) => a.localeCompare(b),
-    );
+    const countries = pickDistinct({
+      items: LARGE_COUNTRIES,
+      count: countryCount,
+      rand,
+      first: primaryCountry,
+    }).toSorted((a, b) => a.localeCompare(b));
 
     const primaryPanel =
       index < LARGE_PANELS.length
         ? LARGE_PANELS[index]
         : LARGE_PANELS[Math.floor(rand() * LARGE_PANELS.length)];
     const panelCount = rand() < 0.15 ? 2 : 1;
-    const panels = pickDistinct(LARGE_PANELS, panelCount, rand, primaryPanel).toSorted((a, b) =>
-      a.localeCompare(b),
-    );
+    const panels = pickDistinct({
+      items: LARGE_PANELS,
+      count: panelCount,
+      rand,
+      first: primaryPanel,
+    }).toSorted((a, b) => a.localeCompare(b));
 
     const firstYear = index < 19 ? 2008 + index : 2008 + Math.floor(rand() * 18);
     const span = index < 19 ? Math.min(2, 2026 - firstYear) : Math.floor(rand() * 5);
     const lastYear = Math.min(2026, firstYear + span);
 
     const authorCount = index % 6 === 0 ? 1 : index % 6 === 1 ? 2 : 3 + Math.floor(rand() * 12);
-    const creators = pickDistinct(LARGE_AUTHORS, authorCount, rand);
+    const creators = pickDistinct({ items: LARGE_AUTHORS, count: authorCount, rand });
 
     const bucket = rand();
     const specimens =

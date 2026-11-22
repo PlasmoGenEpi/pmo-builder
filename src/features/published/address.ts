@@ -2,7 +2,13 @@
  * Pure conversion between the published PMOs list's view state and the query
  * string kept inside the hash route (`#/published?q=...&country=...&sort=...&view=...&shown=...`).
  */
-import { DEFAULT_SORT, isSortOrder, type SortOrder } from "./catalogue";
+import {
+  DEFAULT_SORT,
+  isSortOrder,
+  NO_FILTERS,
+  type CatalogueFilters,
+  type SortOrder,
+} from "./catalogue";
 
 /** Number of published PMOs rendered at first and added by each "Show more" step. */
 export const PAGE_SIZE = 50;
@@ -22,17 +28,7 @@ export function isListView(value: string): value is ListView {
 }
 
 /** View state of the published PMOs list. */
-export interface PublishedListState {
-  /** Words searched across each published PMO's metadata. */
-  readonly search: string;
-  /** Chosen countries; empty means any country. Matches a published PMO in any of them. */
-  readonly countries: readonly string[];
-  /** Chosen panel, or `null` for any panel. */
-  readonly panel: string | null;
-  /** Chosen species NCBI taxon identifier, or `null` for any species. */
-  readonly species: number | null;
-  /** Chosen collection year, or `null` for any year. */
-  readonly year: number | null;
+export interface PublishedListState extends CatalogueFilters {
   /** Order of entries in the list. */
   readonly sort: SortOrder;
   /** Layout of entries: compact list or sortable table. */
@@ -43,11 +39,7 @@ export interface PublishedListState {
 
 /** The default, unfiltered list state. Serializes to an empty query string. */
 export const DEFAULT_LIST_STATE: PublishedListState = {
-  search: "",
-  countries: [],
-  panel: null,
-  species: null,
-  year: null,
+  ...NO_FILTERS,
   sort: DEFAULT_SORT,
   view: DEFAULT_VIEW,
   shown: PAGE_SIZE,

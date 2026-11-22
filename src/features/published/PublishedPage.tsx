@@ -12,7 +12,7 @@ import {
   Table2,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useRef } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link as RouterLink, useLocation, useSearch } from "wouter";
 
 import { lastNavigationKind } from "@/app/hashLocation";
@@ -65,12 +65,17 @@ import { loadSharedCatalogue, useCatalogue, type CatalogueLoader } from "./useCa
 /** The `Select` value that stands for "no limit". Radix does not allow an empty one. */
 const ANY = "any";
 
-/** Scroll offset of the list per query string, kept for the current visit so Back returns to the same row. */
-const scrollPositions = new Map<string, number>();
+interface SavedVisitState {
+  readonly scrollY: number;
+  readonly coverageOpen: boolean;
+}
 
-/** Clears saved scroll positions. Intended for tests. */
+/** Scroll offset and coverage-grid expansion per query string, kept for the current visit so Back returns to the same row. */
+const visitStates = new Map<string, SavedVisitState>();
+
+/** Clears saved scroll positions and visit state. Intended for tests. */
 export function clearScrollPositionsForTests(): void {
-  scrollPositions.clear();
+  visitStates.clear();
 }
 
 /** A fact about a dataset with the icon that says what kind it is. */
@@ -111,7 +116,6 @@ function DatasetRow({
   const authorLine = [shortAuthors(dataset.creators), year]
     .filter((part) => part !== undefined && part !== "")
     .join(" · ");
-  const allAuthors = dataset.creators.length > 2 ? dataset.creators.join("; ") : undefined;
   return (
     <article
       data-dataset-id={dataset.id}
@@ -129,11 +133,7 @@ function DatasetRow({
           </RouterLink>
         </h3>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-text-muted">
-          {authorLine === "" ? null : (
-            <span className="max-w-full truncate" title={allAuthors}>
-              {authorLine}
-            </span>
-          )}
+          {authorLine === "" ? null : <span className="max-w-full truncate">{authorLine}</span>}
           <span className="font-medium text-text tabular-nums sm:hidden">
             {plural(dataset.summary.specimens, { one: "# specimen", other: "# specimens" })}
           </span>
@@ -269,8 +269,8 @@ function Filters({
       ? [filters.year, ...facets.years]
       : facets.years;
   return (
-    <div className="flex flex-wrap items-center gap-2.5">
-      <div className="relative min-w-0 flex-1 basis-56 max-sm:basis-full">
+    <div className="grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-center">
+      <div className="relative col-span-2 min-w-0 sm:flex-1 sm:basis-48">
         <Search
           aria-hidden="true"
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-text-subtle"
@@ -286,7 +286,7 @@ function Filters({
           className={cn(inputClassName, "h-control pl-9 text-base")}
         />
       </div>
-      <div className="w-44 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
+      <div className="min-w-0 sm:w-44">
         <CountryFilter
           countries={countries}
           selected={filters.countries}
@@ -294,7 +294,7 @@ function Filters({
           onChange={(nextCountries) => onChange({ ...filters, countries: nextCountries })}
         />
       </div>
-      <div className="w-44 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
+      <div className="min-w-0 sm:w-44">
         <Select
           aria-label={t`Panel`}
           value={filters.panel ?? ANY}
@@ -308,7 +308,7 @@ function Filters({
           ]}
         />
       </div>
-      <div className="w-52 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
+      <div className="min-w-0 sm:w-52">
         <Select
           aria-label={t`Species`}
           value={filters.species === null ? ANY : String(filters.species)}
@@ -324,7 +324,7 @@ function Filters({
           ]}
         />
       </div>
-      <div className="w-32 max-sm:min-w-0 max-sm:flex-1 max-sm:basis-[calc(50%-0.3125rem)]">
+      <div className="min-w-0 sm:w-32">
         <Select
           aria-label={t`Collected in`}
           value={filters.year === null ? ANY : String(filters.year)}
@@ -450,10 +450,14 @@ function AddYours() {
 function Catalogue({
   datasets,
   search,
+  coverageOpen,
+  onCoverageOpenChange,
   onOpenDataset,
 }: {
   readonly datasets: readonly PublishedDataset[];
   readonly search: string;
+  readonly coverageOpen: boolean;
+  readonly onCoverageOpenChange: (open: boolean) => void;
   readonly onOpenDataset: () => void;
 }) {
   const [, navigate] = useLocation();
@@ -477,8 +481,8 @@ function Catalogue({
   const entriesRef = useRef<HTMLElement | null>(null);
   const pendingFocusIdRef = useRef<string | null>(null);
   const filtered = isFiltered(listState);
-  const shownCount = formatCount(matching.length);
-  const visibleCount = formatCount(visible.length);
+  const matchingCount = formatCount(matching.length);
+  const shownCount = formatCount(visible.length);
 
   useEffect(() => {
     const targetId = pendingFocusIdRef.current;
@@ -584,6 +588,8 @@ function Catalogue({
             selectedCountries={listState.countries}
             selectedYear={listState.year}
             onSelectCell={handleSelectCoverageCell}
+            open={coverageOpen}
+            onOpenChange={onCoverageOpenChange}
           />
         ) : null}
         {datasets.length > 1 ? (
@@ -592,8 +598,8 @@ function Catalogue({
               <output aria-live="polite" aria-atomic="true" className="text-sm text-text-muted">
                 {filtered
                   ? plural(datasets.length, {
-                      one: `${shownCount} of # dataset`,
-                      other: `${shownCount} of # datasets`,
+                      one: `${matchingCount} of # dataset`,
+                      other: `${matchingCount} of # datasets`,
                     })
                   : plural(datasets.length, { one: "# dataset", other: "# datasets" })}
               </output>
@@ -648,8 +654,8 @@ function Catalogue({
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <p className="text-sm text-text-muted tabular-nums">
               {plural(matching.length, {
-                one: `Showing ${visibleCount} of # published PMO`,
-                other: `Showing ${visibleCount} of # published PMOs`,
+                one: `Showing ${shownCount} of # published PMO`,
+                other: `Showing ${shownCount} of # published PMOs`,
               })}
             </p>
             {visible.length < matching.length ? (
@@ -701,18 +707,43 @@ export interface PublishedPageProps {
 }
 
 /**
- * Remembers the list's scroll offset by query string and restores it once the
- * catalogue has rendered after a browser Back or Forward navigation.
+ * Remembers the list's scroll offset and coverage-grid expansion by query
+ * string, restoring the expanded grid before scrolling once the catalogue has
+ * rendered after a browser Back or Forward navigation.
  */
-function useListScrollRestoration(ready: boolean, search: string): () => void {
+function useListVisitState(
+  ready: boolean,
+  search: string,
+): {
+  readonly coverageOpen: boolean;
+  readonly setCoverageOpen: (open: boolean) => void;
+  readonly recordVisit: () => void;
+} {
+  const [coverageOpen, setCoverageOpenState] = useState(() =>
+    lastNavigationKind() === "pop" ? (visitStates.get(search)?.coverageOpen ?? false) : false,
+  );
+  const [prevSearch, setPrevSearch] = useState(search);
+  if (prevSearch !== search) {
+    setPrevSearch(search);
+    if (lastNavigationKind() === "pop") {
+      const saved = visitStates.get(search);
+      if (saved !== undefined) setCoverageOpenState(saved.coverageOpen);
+    }
+  }
+
+  const coverageOpenRef = useRef(coverageOpen);
   const restoredKeyRef = useRef<string | null>(null);
   const restoringRef = useRef(false);
+
+  useEffect(() => {
+    coverageOpenRef.current = coverageOpen;
+  }, [coverageOpen]);
 
   useEffect(() => {
     if (!ready || restoredKeyRef.current === search) return undefined;
     restoredKeyRef.current = search;
     if (lastNavigationKind() !== "pop") return undefined;
-    const savedY = scrollPositions.get(search);
+    const savedY = visitStates.get(search)?.scrollY;
     if (savedY === undefined || savedY <= 0) return undefined;
 
     restoringRef.current = true;
@@ -732,7 +763,12 @@ function useListScrollRestoration(ready: boolean, search: string): () => void {
   useEffect(() => {
     if (!ready) return undefined;
     const onScroll = () => {
-      if (!restoringRef.current) scrollPositions.set(search, window.scrollY);
+      if (!restoringRef.current) {
+        visitStates.set(search, {
+          scrollY: window.scrollY,
+          coverageOpen: coverageOpenRef.current,
+        });
+      }
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
@@ -740,9 +776,22 @@ function useListScrollRestoration(ready: boolean, search: string): () => void {
     };
   }, [ready, search]);
 
-  return () => {
-    scrollPositions.set(search, window.scrollY);
+  const setCoverageOpen = (open: boolean) => {
+    coverageOpenRef.current = open;
+    setCoverageOpenState(open);
+    if (ready) {
+      visitStates.set(search, { scrollY: window.scrollY, coverageOpen: open });
+    }
   };
+
+  const recordVisit = () => {
+    visitStates.set(search, {
+      scrollY: window.scrollY,
+      coverageOpen: coverageOpenRef.current,
+    });
+  };
+
+  return { coverageOpen, setCoverageOpen, recordVisit };
 }
 
 /**
@@ -756,7 +805,10 @@ export function PublishedPage({
 }: PublishedPageProps = {}) {
   const state = useCatalogue(load);
   const search = useSearch();
-  const recordScrollPosition = useListScrollRestoration(state.kind === "ready", search);
+  const { coverageOpen, setCoverageOpen, recordVisit } = useListVisitState(
+    state.kind === "ready",
+    search,
+  );
   const community =
     state.kind === "ready" ? (zenodo?.community ?? state.index.community) : zenodo?.community;
   const name = zenodo?.communityName ?? community ?? "Zenodo";
@@ -784,7 +836,9 @@ export function PublishedPage({
             <Catalogue
               datasets={state.index.datasets}
               search={search}
-              onOpenDataset={recordScrollPosition}
+              coverageOpen={coverageOpen}
+              onCoverageOpenChange={setCoverageOpen}
+              onOpenDataset={recordVisit}
             />
             <HarvestNote harvestedAt={state.index.harvestedAt} />
           </>

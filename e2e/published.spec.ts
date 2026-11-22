@@ -373,6 +373,36 @@ test("opens the coverage grid, navigates and selects a cell from the keyboard, a
   await page.keyboard.press("Enter");
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#/published");
   await expect(page.getByRole("status")).toHaveText("150 datasets");
+
+  // Scrolling far down/right then jumping back left/up keeps focused cells clear of sticky headers.
+  const scrollBox = page.getByTestId("coverage-scroll");
+  await firstCell.focus();
+  await page.keyboard.press("Control+End");
+  await page.keyboard.press("Home");
+  const leftClearance = await scrollBox.evaluate((el) => {
+    const active = document.activeElement;
+    const corner = el.querySelector("thead th:first-child");
+    if (!(active instanceof HTMLElement) || !(corner instanceof HTMLElement)) return null;
+    return active.getBoundingClientRect().left - corner.getBoundingClientRect().right;
+  });
+  expect(leftClearance).not.toBeNull();
+  expect(leftClearance ?? -1).toBeGreaterThanOrEqual(-1);
+
+  await page.keyboard.press("Control+Home");
+  const cornerClearance = await scrollBox.evaluate((el) => {
+    const active = document.activeElement;
+    const corner = el.querySelector("thead th:first-child");
+    if (!(active instanceof HTMLElement) || !(corner instanceof HTMLElement)) return null;
+    const activeRect = active.getBoundingClientRect();
+    const cornerRect = corner.getBoundingClientRect();
+    return {
+      leftDelta: activeRect.left - cornerRect.right,
+      topDelta: activeRect.top - cornerRect.bottom,
+    };
+  });
+  expect(cornerClearance).not.toBeNull();
+  expect(cornerClearance?.leftDelta ?? -1).toBeGreaterThanOrEqual(-1);
+  expect(cornerClearance?.topDelta ?? -1).toBeGreaterThanOrEqual(-1);
 });
 
 test("keeps the coverage grid scrolling inside its own area at 390 px with no page overflow", async ({

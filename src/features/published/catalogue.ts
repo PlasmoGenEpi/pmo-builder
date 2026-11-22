@@ -74,13 +74,29 @@ export const NO_FILTERS: CatalogueFilters = {
   year: null,
 };
 
+/** Maximum year span retained when clamping mistyped collection years. */
+export const MAX_YEAR_SPAN = 100;
+
+/**
+ * Clamps a `[first, last]` year span to at most {@link MAX_YEAR_SPAN} years
+ * ending at `last`, so a typo such as the year `202` cannot produce thousands
+ * of choices or columns. Returns `null` when `first > last`.
+ */
+export function clampYearRange(
+  first: number,
+  last: number,
+): { readonly first: number; readonly last: number } | null {
+  if (first > last) return null;
+  return { first: Math.max(first, last - MAX_YEAR_SPAN), last };
+}
+
 function coveredYears(dataset: PublishedDataset): number[] {
   const range = dataset.collectionYears;
   if (range === null) return [];
-  // A typo such as the year 202 must not make thousands of choices.
-  const first = Math.max(range.first, range.last - 100);
+  const clamped = clampYearRange(range.first, range.last);
+  if (clamped === null) return [];
   const years: number[] = [];
-  for (let year = first; year <= range.last; year += 1) years.push(year);
+  for (let year = clamped.first; year <= clamped.last; year += 1) years.push(year);
   return years;
 }
 
@@ -227,11 +243,15 @@ export interface FacetCounts {
   readonly years: ReadonlyMap<number, number>;
 }
 
-function countBy<T>(
-  keys: readonly T[],
-  datasets: readonly PublishedDataset[],
-  valuesOf: (dataset: PublishedDataset) => Iterable<T>,
-): Map<T, number> {
+function countBy<T>({
+  keys,
+  datasets,
+  valuesOf,
+}: {
+  readonly keys: readonly T[];
+  readonly datasets: readonly PublishedDataset[];
+  readonly valuesOf: (dataset: PublishedDataset) => Iterable<T>;
+}): Map<T, number> {
   const counts = new Map<T, number>();
   for (const key of keys) counts.set(key, 0);
   for (const dataset of datasets) {
@@ -260,10 +280,26 @@ export function facetCountsOf(
   const forYears = filterDatasets(datasets, { ...filters, year: null });
 
   return {
-    countries: countBy(facets.countries, forCountries, (dataset) => dataset.countries),
-    panels: countBy(facets.panels, forPanels, (dataset) => dataset.panels),
-    species: countBy(facets.species, forSpecies, (dataset) => dataset.taxa),
-    years: countBy(facets.years, forYears, coveredYears),
+    countries: countBy({
+      keys: facets.countries,
+      datasets: forCountries,
+      valuesOf: (dataset) => dataset.countries,
+    }),
+    panels: countBy({
+      keys: facets.panels,
+      datasets: forPanels,
+      valuesOf: (dataset) => dataset.panels,
+    }),
+    species: countBy({
+      keys: facets.species,
+      datasets: forSpecies,
+      valuesOf: (dataset) => dataset.taxa,
+    }),
+    years: countBy({
+      keys: facets.years,
+      datasets: forYears,
+      valuesOf: coveredYears,
+    }),
   };
 }
 
@@ -295,13 +331,15 @@ export function taxonName(taxon: number): string {
   return TAXA[taxon] ?? t`NCBI taxon ${taxon}`;
 }
 
+/** Formats a collection year span as `"2019"` when single-year, or `"2015 to 2019"`. */
+export function formatYearRange(firstYear: number, lastYear: number): string {
+  return firstYear === lastYear ? String(firstYear) : t`${firstYear} to ${lastYear}`;
+}
+
 /** "2019", or "2015 to 2019". */
 export function yearsText(dataset: PublishedDataset): string | null {
   const years = dataset.collectionYears;
-  if (years === null) return null;
-  const firstYear = years.first;
-  const lastYear = years.last;
-  return firstYear === lastYear ? String(firstYear) : t`${firstYear} to ${lastYear}`;
+  return years === null ? null : formatYearRange(years.first, years.last);
 }
 
 /** A date such as "14 November 2026" from `YYYY-MM-DD`, or the text as given. */
