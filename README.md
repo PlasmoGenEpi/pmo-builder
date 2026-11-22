@@ -100,12 +100,28 @@ page for each with its numbers, its download from Zenodo and a citation.
 Zenodo is the store of record. The list is a file, `repository/index.json`,
 that `pnpm harvest` rebuilds from Zenodo before each build:
 
-- it lists the community's accepted records that carry the keyword
+- it lists every accepted record in the community that carries the keyword
   "Portable Microhaplotype Object";
-- it downloads each record's `.json` or `.json.gz` file and keeps the record
-  if the file matches the PMO format and its tables link up;
-- a record that fails is left out and named on the workflow run's page, for
-  the curators.
+- when a previous catalogue is available (from `--fallback`, or from `--out`
+  when `--fallback` is omitted), any record whose PMO file fingerprint matches
+  the last run keeps its entry and specimen rows with its title, authors and
+  other listing details refreshed, without downloading the file again;
+- it downloads the `.json` or `.json.gz` file of each new or changed record
+  and keeps the record if the file matches the PMO format and its tables link
+  up;
+- a record removed from the community is dropped from both `index.json` and
+  `specimens.json`;
+- a record that fails is left out, tried again on the next run, and named on
+  the workflow run's page along with how many records were carried over,
+  downloaded and left out.
+
+If the previous catalogue cannot be read or is in an older format version, the
+harvester runs a full harvest. Pass `--full` to force a full rebuild even when
+a previous catalogue exists:
+
+```bash
+pnpm harvest --community pmocommunity --full
+```
 
 The Deploy workflow harvests on every push and every night. If Zenodo cannot
 be read, it keeps the list already on the site. GitHub pauses a nightly
@@ -117,8 +133,9 @@ list, remove its record from the community on Zenodo. `specimens.json`, one
 row per specimen, is written beside the index for a later search across
 datasets; no page reads it yet.
 
-Run `pnpm harvest --community pmocommunity` to try the list locally. The
-output folder, `public/repository/`, is not committed.
+Run `pnpm harvest --community pmocommunity` to try the list locally. Running
+it again carries unchanged records over from `public/repository/`. The output
+folder, `public/repository/`, is not committed.
 
 ## My PMO file
 
