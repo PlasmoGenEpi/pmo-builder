@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { stringifyPmo, type PortableMicrohaplotypeObject } from "pmotools-ts";
 import { describe, expect, it } from "vitest";
 
@@ -217,5 +217,163 @@ describe("CompareTab: collection timeline short bars", () => {
     const labels = [...timeline.querySelectorAll("svg text")].map((node) => node.textContent);
     expect(labels).toContain("2015-05");
     expect(labels).toContain("2019-08");
+  });
+});
+
+/** Builds a valid PMO with two countries having the requested number of samples with data. */
+function twoGroupPmo(counts: readonly [number, number]): PortableMicrohaplotypeObject {
+  const base = richPmo();
+  const countries = ["Kenya", "Uganda"] as const;
+  const specimens: PortableMicrohaplotypeObject["specimen_info"] = [];
+  const libraries: PortableMicrohaplotypeObject["library_sample_info"] = [];
+  const detections: NonNullable<
+    PortableMicrohaplotypeObject["detected_microhaplotypes"][number]["library_samples"]
+  > = [];
+
+  for (const [countryIndex, count] of counts.entries()) {
+    const country = countries[countryIndex];
+    if (country === undefined) continue;
+    for (let i = 0; i < count; i += 1) {
+      const id = specimens.length;
+      specimens.push({
+        specimen_name: `${country}_${i + 1}`,
+        collection_country: country,
+      });
+      libraries.push({
+        library_sample_name: `LIB_${id + 1}`,
+        specimen_id: id,
+        panel_id: 0,
+      });
+      detections.push({
+        library_sample_id: id,
+        target_results: [
+          {
+            mhaps_target_id: 0,
+            mhaps: [{ mhap_id: i % 2, reads: 50 }],
+          },
+        ],
+      });
+    }
+  }
+
+  return {
+    ...base,
+    specimen_info: specimens,
+    library_sample_info: libraries,
+    detected_microhaplotypes: [{ bioinformatics_run_id: 0, library_samples: detections }],
+    read_counts_by_stage: [],
+  };
+}
+
+describe("CompareTab: group sizes and small-group marks", () => {
+  it("shows each group's number of samples with data in both the heterozygosity and microhaplotype headings", async () => {
+    await openAndRenderCompare(buildExamplePmo());
+    const expectedSizes: readonly (readonly [string, number])[] = [
+      ["2015", 5],
+      ["2016", 9],
+      ["2017", 14],
+      ["2018", 13],
+      ["2019", 8],
+    ];
+
+    const heTable = await screen.findByRole("table", { name: "Heterozygosity by target" });
+    const alleleTable = screen.getByRole("table", { name: "Microhaplotype frequencies by group" });
+
+    for (const table of [heTable, alleleTable]) {
+      for (const [year, count] of expectedSizes) {
+        const header = within(table).getByRole("columnheader", {
+          name: new RegExp(`${year}.*${count} samples with data`),
+        });
+        expect(header).toHaveTextContent(`n = ${count}`);
+      }
+    }
+  });
+
+  it("marks groups with fewer than 10 samples with data and explains the mark above the tables", async () => {
+    await openAndRenderCompare(buildExamplePmo());
+    const groupsTable = await screen.findByRole("table", { name: "Groups" });
+    const heTable = screen.getByRole("table", { name: "Heterozygosity by target" });
+    const alleleTable = screen.getByRole("table", { name: "Microhaplotype frequencies by group" });
+
+    // A line above the tables says what the small-group mark means.
+    const note = screen.getByText(/fewer than 10 samples with data/i, { selector: "p, p *" });
+    expect(
+      note.compareDocumentPosition(groupsTable) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    const smallYears = ["2015", "2016", "2019"];
+    const largerYears = ["2017", "2018"];
+
+    for (const table of [heTable, alleleTable]) {
+      for (const year of smallYears) {
+        const header = within(table).getByRole("columnheader", {
+          name: new RegExp(`${year}.*Small group \\(fewer than 10 samples with data\\)`),
+        });
+        expect(header).toBeInTheDocument();
+      }
+      for (const year of largerYears) {
+        const header = within(table).getByRole("columnheader", { name: new RegExp(`^${year}\\b`) });
+        expect(header).not.toHaveAccessibleName(/Small group/i);
+      }
+    }
+
+    // Small groups are also marked in the Groups table.
+    const groupRows = within(groupsTable).getAllByRole("row").slice(1);
+    for (const year of smallYears) {
+      const row = groupRows.find((candidate) => candidate.textContent?.includes(year));
+      expect(row).toBeDefined();
+      expect(row).toHaveTextContent(/Small group \(fewer than 10 samples with data\)/);
+    }
+    for (const year of largerYears) {
+      const row = groupRows.find((candidate) => candidate.textContent?.includes(year));
+      expect(row).toBeDefined();
+      expect(row).not.toHaveTextContent(/Small group/i);
+    }
+  });
+
+  it("omits the small-group mark and note when every group has at least 10 samples with data", async () => {
+    await openAndRenderCompare(twoGroupPmo([10, 12]));
+    const heTable = await screen.findByRole("table", { name: "Heterozygosity by target" });
+    const alleleTable = screen.getByRole("table", { name: "Microhaplotype frequencies by group" });
+
+    for (const table of [heTable, alleleTable]) {
+      const kenya = within(table).getByRole("columnheader", {
+        name: /Kenya.*10 samples with data/,
+      });
+      const uganda = within(table).getByRole("columnheader", {
+        name: /Uganda.*12 samples with data/,
+      });
+      expect(kenya).not.toHaveAccessibleName(/Small group/i);
+      expect(uganda).not.toHaveAccessibleName(/Small group/i);
+    }
+    expect(screen.queryByText(/fewer than 10 samples with data/i)).not.toBeInTheDocument();
+  });
+
+  it("uses singular sample wording for a 1-sample group and marks it while leaving a 10-sample group unmarked", async () => {
+    await openAndRenderCompare(twoGroupPmo([1, 10]));
+    const heTable = await screen.findByRole("table", { name: "Heterozygosity by target" });
+
+    const kenya = within(heTable).getByRole("columnheader", {
+      name: /Kenya.*1 sample with data.*Small group \(fewer than 10 samples with data\)/,
+    });
+    expect(kenya).toHaveTextContent("n = 1");
+
+    const uganda = within(heTable).getByRole("columnheader", {
+      name: /Uganda.*10 samples with data/,
+    });
+    expect(uganda).toHaveTextContent("n = 10");
+    expect(uganda).not.toHaveAccessibleName(/Small group/i);
+  });
+
+  it("explains Alleles seen in the Groups section", async () => {
+    await openAndRenderCompare(buildExamplePmo());
+    const heading = await screen.findByRole("heading", { name: "Groups" });
+    const section = heading.closest("section");
+    if (section === null) throw new Error("Expected Groups heading inside a section");
+    expect(
+      within(section).getByText(
+        /Alleles seen is the number of distinct alleles found in the group across targets\./,
+      ),
+    ).toBeInTheDocument();
   });
 });

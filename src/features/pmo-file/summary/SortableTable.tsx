@@ -14,6 +14,8 @@ export interface SortableColumn<Row> {
   readonly render?: (row: Row) => ReactNode;
   /** Right-aligned, for numbers. */
   readonly numeric?: boolean;
+  /** Secondary line rendered in the column heading below the sort button. */
+  readonly headerNote?: ReactNode;
 }
 
 /** Props for {@link SortableTable}. */
@@ -103,6 +105,16 @@ export function SortableTable<Row>({
                     <span className="whitespace-normal">{column.label}</span>
                     <Icon aria-hidden="true" className="size-3.5 shrink-0" />
                   </Button>
+                  {column.headerNote ? (
+                    <div
+                      className={cn(
+                        "mt-0.5 text-xs font-normal",
+                        column.numeric ? "text-right" : "text-left",
+                      )}
+                    >
+                      {column.headerNote}
+                    </div>
+                  ) : null}
                 </th>
               );
             })}

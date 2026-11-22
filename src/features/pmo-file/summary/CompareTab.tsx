@@ -6,7 +6,7 @@
  */
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, TriangleExclamationPoint } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useTheme } from "@/app/theme";
@@ -29,6 +29,7 @@ import {
   Select,
   SERIES,
   Skeleton,
+  cn,
   formatCount,
 } from "@/ui";
 
@@ -45,6 +46,72 @@ function groupName(row: { readonly name: string | null }): string {
   );
 }
 
+const SMALL_GROUP_THRESHOLD = 10;
+
+function isSmallGroup(group: GroupRow): boolean {
+  return group.withData < SMALL_GROUP_THRESHOLD;
+}
+
+function smallGroupLabel(): string {
+  const threshold = formatCount(SMALL_GROUP_THRESHOLD);
+  return t({
+    message: `Small group (fewer than ${threshold} samples with data)`,
+    comment:
+      "Accessible explanation on a warning mark next to a small group; {threshold} is a sample count such as 10",
+  });
+}
+
+/** Warning mark shown beside groups with fewer than {@link SMALL_GROUP_THRESHOLD} samples with data. */
+function SmallGroupMark() {
+  const label = smallGroupLabel();
+  return (
+    <span className="inline-flex items-center text-warning-text" title={label}>
+      <TriangleExclamationPoint aria-hidden="true" className="size-3.5 shrink-0" />
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
+/** Sample count and small-group mark shown under a group's column heading. */
+function GroupSizeNote({
+  group,
+  numeric,
+}: {
+  readonly group: GroupRow;
+  readonly numeric?: boolean;
+}) {
+  const sampleCount = group.withData;
+  const count = formatCount(sampleCount);
+  const fullCount = plural(sampleCount, {
+    one: "# sample with data",
+    other: "# samples with data",
+  });
+  const small = isSmallGroup(group);
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 whitespace-nowrap font-normal tabular-nums",
+        numeric && "justify-end",
+        small ? "text-warning-text" : "text-text-subtle",
+      )}
+    >
+      <span aria-hidden="true">
+        {t({
+          message: `n = ${count}`,
+          comment: "Compact sample count in a table column heading, e.g. n = 14",
+        })}
+      </span>
+      <span className="sr-only">{fullCount}</span>
+      {small ? (
+        <>
+          <span className="sr-only">, </span>
+          <SmallGroupMark />
+        </>
+      ) : null}
+    </span>
+  );
+}
+
 function groupColumns(): SortableColumn<GroupRow>[] {
   const percent = new Intl.NumberFormat(intlLocale(), {
     style: "percent",
@@ -52,7 +119,21 @@ function groupColumns(): SortableColumn<GroupRow>[] {
   });
   const decimal = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 2 });
   return [
-    { key: "name", label: t`Group`, value: (row) => row.name, render: groupName },
+    {
+      key: "name",
+      label: t`Group`,
+      value: (row) => row.name,
+      render: (row) =>
+        isSmallGroup(row) ? (
+          <span className="inline-flex items-center gap-1.5">
+            <span>{groupName(row)}</span>
+            <span className="sr-only">, </span>
+            <SmallGroupMark />
+          </span>
+        ) : (
+          groupName(row)
+        ),
+    },
     { key: "specimens", label: t`Specimens`, value: (row) => row.specimens, numeric: true },
     { key: "withData", label: t`Samples with data`, value: (row) => row.withData, numeric: true },
     {
@@ -103,7 +184,7 @@ function AllelesByGroup({
           <tr>
             <th
               scope="col"
-              className="border-b border-border px-3 py-2 text-left font-medium text-text-muted"
+              className="border-b border-border px-3 py-2 align-bottom text-left font-medium text-text-muted"
             >
               {t`Microhaplotype`}
             </th>
@@ -111,9 +192,12 @@ function AllelesByGroup({
               <th
                 key={group.name ?? ""}
                 scope="col"
-                className="border-b border-border px-3 py-2 text-left font-medium text-text-muted"
+                className="border-b border-border px-3 py-2 align-bottom text-left font-medium text-text-muted"
               >
-                {groupName(group)}
+                <div>{groupName(group)}</div>
+                <div className="mt-0.5 text-xs font-normal">
+                  <GroupSizeNote group={group} />
+                </div>
               </th>
             ))}
           </tr>
@@ -432,6 +516,8 @@ function Comparison({
   const present = formatCount(field.present);
   const total = formatCount(field.total);
   const name = specimenFieldLabel(field.key);
+  const hasSmallGroups = shown.groups.some(isSmallGroup);
+  const threshold = formatCount(SMALL_GROUP_THRESHOLD);
   return (
     <>
       {field.present < field.total ? (
@@ -440,10 +526,25 @@ function Comparison({
         </p>
       ) : null}
 
+      {hasSmallGroups ? (
+        <p className="flex items-start gap-1.5 text-sm text-text-muted">
+          <TriangleExclamationPoint
+            aria-hidden="true"
+            className="mt-0.5 size-4 shrink-0 text-warning-text"
+          />
+          <span>
+            {t({
+              message: `Groups marked with a warning have fewer than ${threshold} samples with data. Read their percentages with care.`,
+              comment: "{threshold} is a number of samples, such as 10",
+            })}
+          </span>
+        </p>
+      ) : null}
+
       <section className="flex flex-col gap-4">
         <SectionHeading
           title={t`Groups`}
-          description={t`More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group.`}
+          description={t`More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group. Alleles seen is the number of distinct alleles found in the group across targets.`}
         />
         <SortableTable
           label={t`Groups`}
@@ -465,6 +566,7 @@ function Comparison({
             ...shown.groups.map((group, index): SortableColumn<TargetAcrossGroups> => ({
               key: `g${index}`,
               label: groupName(group),
+              headerNote: <GroupSizeNote group={group} numeric />,
               value: (row) => row.heterozygosity[index] ?? null,
               render: (row) => {
                 const value = row.heterozygosity[index];
