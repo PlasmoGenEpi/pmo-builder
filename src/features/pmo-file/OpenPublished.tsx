@@ -1,6 +1,6 @@
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link as RouterLink, Redirect, useLocation, useParams } from "wouter";
 
 import { PageContainer } from "@/app/PageContainer";
@@ -14,12 +14,14 @@ import {
   PmoSessionProvider,
   usePublishedPmo,
   usePublishedPmoSession,
+  useWorkingPmoSession,
   type WorkingPmoSession,
 } from "@/state";
 import {
   Button,
   ButtonLink,
   Callout,
+  ConfirmDialog,
   Link,
   Spinner,
   Tabs,
@@ -89,8 +91,16 @@ function Reading({ children }: { readonly children: ReactNode }) {
   return <div className="max-w-reading">{children}</div>;
 }
 
-/** The slim header bar for a published PMO: title, authors, dataset page and Zenodo links. */
-function PublishedHeaderBar({ dataset }: { readonly dataset: PublishedDataset }) {
+/** The slim header bar for a published PMO: title, authors, dataset page, Zenodo links and hand-off action. */
+function PublishedHeaderBar({
+  dataset,
+  handingOff,
+  onWorkWith,
+}: {
+  readonly dataset: PublishedDataset;
+  readonly handingOff: boolean;
+  readonly onWorkWith: (() => void) | undefined;
+}) {
   const subtitle = dataset.creators.length === 0 ? undefined : dataset.creators.join("; ");
   return (
     <PmoHeaderBar
@@ -98,7 +108,7 @@ function PublishedHeaderBar({ dataset }: { readonly dataset: PublishedDataset })
       titleTooltip={dataset.title}
       subtitle={subtitle}
       actions={
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
           <RouterLink href={`/published/${dataset.id}`} asChild>
             <Link href={`/published/${dataset.id}`} variant="standalone">
               {t`Dataset page`}
@@ -107,6 +117,11 @@ function PublishedHeaderBar({ dataset }: { readonly dataset: PublishedDataset })
           <Link href={dataset.zenodoUrl} external variant="standalone">
             {t`Zenodo record`}
           </Link>
+          {onWorkWith !== undefined ? (
+            <Button variant="secondary" size="sm" loading={handingOff} onClick={onWorkWith}>
+              {t`Work with this file`}
+            </Button>
+          ) : null}
         </div>
       }
     />
@@ -132,6 +147,7 @@ function OpenDataset({
   readonly onRetry: () => void;
 }) {
   const session = usePublishedPmoSession();
+  const workingSession = useWorkingPmoSession();
   const [, navigate] = useLocation();
   const file = usePublishedPmo((state) => state.open);
   const generation = usePublishedPmo((state) => state.generation);
@@ -139,14 +155,28 @@ function OpenDataset({
   const [opening, setOpening] = useState<Opening>(() =>
     dataset.file.size > MAX_BYTES ? { kind: "too-large" } : { kind: "downloading" },
   );
+  const [handingOff, setHandingOff] = useState(false);
+  const [pendingReplace, setPendingReplace] = useState<{
+    readonly workingName: string;
+    readonly subsetName: string | null;
+  } | null>(null);
+  const handingOffRef = useRef(false);
+  const mountedRef = useRef(true);
   const fileName = dataset.file.name;
   const fileSize = formatBytes(dataset.file.size);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const isThisOpen =
     file.kind === "opened" && file.origin.kind === "published" && file.origin.id === dataset.id;
 
   useEffect(() => {
-    if (session.isPublishedOpen(dataset.id)) return undefined;
+    if (handingOffRef.current || session.isPublishedOpen(dataset.id)) return undefined;
     // Drop any previous published record right away before downloading (or rejecting as too large).
     if (session.state.getState().open.kind !== "none") {
       void session.close();
@@ -194,6 +224,50 @@ function OpenDataset({
     };
   }, [session, dataset, fetcher]);
 
+  async function handOff(): Promise<void> {
+    if (handingOffRef.current) return;
+    const current = session.state.getState().open;
+    if (
+      current.kind !== "opened" ||
+      current.origin.kind !== "published" ||
+      current.origin.id !== dataset.id
+    ) {
+      return;
+    }
+    const { file: blob, name, origin } = current;
+    // Mark hand-off before closing `publishedSession`, so closing it while
+    // still mounted cannot flash "Downloading" or re-trigger the Zenodo fetch.
+    handingOffRef.current = true;
+    setHandingOff(true);
+    // Free the published slot in the worker before parsing into the working
+    // slot, avoiding a temporary 2x memory spike on large files.
+    await session.close();
+    const result = await workingSession.open({ kind: "file", file: blob, name, origin });
+    if (!mountedRef.current) return;
+    if (result.kind === "opened") {
+      navigate(`/pmo/${tab}`);
+    } else if (result.kind !== "superseded") {
+      navigate("/pmo");
+    } else {
+      handingOffRef.current = false;
+      setHandingOff(false);
+    }
+  }
+
+  function requestWorkWith(): void {
+    if (handingOffRef.current || !isThisOpen) return;
+    const currentOpen = workingSession.state.getState().open;
+    if (currentOpen.kind === "opened") {
+      const currentSubset = workingSession.state.getState().subset;
+      setPendingReplace({
+        workingName: currentOpen.name,
+        subsetName: currentSubset.kind === "made" ? currentSubset.made.fileName : null,
+      });
+      return;
+    }
+    void handOff();
+  }
+
   const download = (
     <ButtonLink href={dataset.file.url} size="sm" target="_blank" rel="noreferrer noopener">
       <Trans>Download it from Zenodo instead</Trans>
@@ -201,7 +275,14 @@ function OpenDataset({
   );
 
   let body: ReactNode = null;
-  if (isThisOpen) {
+  if (handingOff) {
+    body = (
+      <output className="flex items-center gap-2 text-base text-text-muted">
+        <Spinner />
+        {t`Opening in My PMO file`}
+      </output>
+    );
+  } else if (isThisOpen) {
     body = (
       <PmoSessionProvider session={session}>
         <Tabs<PublishedTab>
@@ -370,12 +451,34 @@ function OpenDataset({
     }
   }
 
+  const workingName = pendingReplace?.workingName ?? "";
+  const subsetName = pendingReplace?.subsetName ?? null;
+
   return (
     <PageContainer width="full" compact>
       <div className="flex flex-col gap-4">
-        <PublishedHeaderBar dataset={dataset} />
+        <PublishedHeaderBar
+          dataset={dataset}
+          handingOff={handingOff}
+          onWorkWith={isThisOpen || handingOff ? requestWorkWith : undefined}
+        />
         {body}
       </div>
+      <ConfirmDialog
+        open={pendingReplace !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingReplace(null);
+        }}
+        title={t`Replace the file open in My PMO file?`}
+        description={
+          subsetName !== null
+            ? t`${workingName} and the subset you made from it (${subsetName}) are currently open in My PMO file. Opening this published PMO will replace them.`
+            : t`${workingName} is currently open in My PMO file. Opening this published PMO will replace it.`
+        }
+        confirmLabel={t`Replace it`}
+        tone="danger"
+        onConfirm={handOff}
+      />
     </PageContainer>
   );
 }

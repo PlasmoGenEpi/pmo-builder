@@ -6,6 +6,9 @@
  *   Original/Subset, Subset or Publish)
  * - Switching tabs keeps the address in sync without re-downloading
  * - A pre-existing working PMO and its subset survive untouched in `#/pmo`
+ * - "Work with this file" asks before replacing an open working PMO (naming it
+ *   and its subset); cancelling leaves both intact, confirming replaces them
+ *   without re-downloading, and with no working PMO it hands off directly
  * - Reloading `#/published/:id/:tab` preserves the address and re-opens the view
  * - Legacy `#/pmo/published/:id/:tab` redirects to `#/published/:id/:tab`
  *
@@ -188,6 +191,19 @@ test("published view keeps its address, shows header and 4 tabs, leaves working 
   });
   expect(pmoFetches).toBe(1);
 
+  // "Work with this file" asks before replacing the open working PMO and its subset.
+  await publishedHeader.getByRole("button", { name: "Work with this file" }).click();
+  const replaceDialog = page.getByRole("alertdialog");
+  await expect(replaceDialog).toBeVisible();
+  await expect(replaceDialog).toContainText("Mad4hatter.pmo.json.gz");
+  await expect(replaceDialog).toContainText("Mad4hatter-subset.json.gz");
+
+  // Cancelling keeps the published view open and leaves the working PMO and subset intact.
+  await replaceDialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(replaceDialog).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`#/published/${DATASET_ID}/overview$`));
+  expect(pmoFetches).toBe(1);
+
   // Returning to My PMO file: the working PMO and its subset are still there untouched.
   await page
     .getByRole("navigation", { name: "Sections" })
@@ -206,6 +222,35 @@ test("published view keeps its address, shows header and 4 tabs, leaves working 
       .getByRole("radiogroup", { name: "Work with" })
       .getByRole("radio", { name: "Subset" }),
   ).toBeChecked();
+
+  // Confirming "Work with this file" replaces the working PMO and opens the same tab in My PMO file.
+  await page.evaluate((id) => {
+    globalThis.location.hash = `/published/${id}/summary`;
+  }, DATASET_ID);
+  await expect(page.getByRole("tab", { name: "Summary", selected: true })).toBeVisible({
+    timeout: BUILD_TIMEOUT,
+  });
+  const fetchesBeforeConfirm = pmoFetches;
+  await page
+    .locator("main header")
+    .first()
+    .getByRole("button", { name: "Work with this file" })
+    .click();
+  const confirmDialog = page.getByRole("alertdialog");
+  await expect(confirmDialog).toContainText("Mad4hatter.pmo.json.gz");
+  await expect(confirmDialog).toContainText("Mad4hatter-subset.json.gz");
+  await confirmDialog.getByRole("button", { name: "Replace it" }).click();
+
+  await expect(page).toHaveURL(/#\/pmo\/summary$/);
+  await expect(
+    page.locator("main header").first().getByRole("heading", { level: 1, name: DATASET_FILE_NAME }),
+  ).toBeVisible({ timeout: BUILD_TIMEOUT });
+  await expect(page.getByRole("tab", { name: "Summary", selected: true })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Subset" })).toBeVisible();
+  await expect(page.getByRole("radiogroup", { name: "Work with" })).toHaveCount(0);
+  expect(pmoFetches).toBe(fetchesBeforeConfirm);
+  await page.getByRole("tab", { name: "Overview" }).click();
+  await expect(page.getByText("This is a published PMO")).toBeVisible({ timeout: BUILD_TIMEOUT });
 
   // Visiting a published view address directly and reloading preserves the view.
   await page.evaluate((id) => {
@@ -237,4 +282,19 @@ test("published view keeps its address, shows header and 4 tabs, leaves working 
   await expect(page.getByRole("tab", { name: "Summary", selected: true })).toBeVisible({
     timeout: BUILD_TIMEOUT,
   });
+
+  // After reload there is no working PMO, so "Work with this file" opens My PMO file directly.
+  const fetchesBeforeDirect = pmoFetches;
+  await page
+    .locator("main header")
+    .first()
+    .getByRole("button", { name: "Work with this file" })
+    .click();
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(page).toHaveURL(/#\/pmo\/summary$/);
+  await expect(
+    page.locator("main header").first().getByRole("heading", { level: 1, name: DATASET_FILE_NAME }),
+  ).toBeVisible({ timeout: BUILD_TIMEOUT });
+  await expect(page.getByRole("tab", { name: "Subset" })).toBeVisible();
+  expect(pmoFetches).toBe(fetchesBeforeDirect);
 });

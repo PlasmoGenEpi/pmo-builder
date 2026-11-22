@@ -14,15 +14,21 @@ import { memoryLocation } from "wouter/memory-location";
 import { buildExamplePmo } from "@/domain/build/testing";
 import { catalogue, dataset } from "@/features/published/testing";
 import type { ZenodoConfig } from "@/features/review/zenodo";
+import { signIn } from "@/features/review/zenodoAuth";
+import { depositDraft } from "@/features/review/zenodoDeposit";
 import { createTestStore } from "@/features/shared/testing";
 import { i18n } from "@/i18n";
 import { AppStoreProvider, publishedPmoSessionOf, workingPmoSessionOf } from "@/state";
+import { installBlobStream } from "@/test/blobStream";
 import { ToastProvider } from "@/ui";
 import { installDomPolyfills } from "@/ui/testPolyfills";
 import { createInThreadEngine } from "@/worker/engine";
 
 import { isPublishedTab, OpenPublished, type FileFetcher } from "./OpenPublished";
 import { PmoFilePage, PMO_TABS, type PmoTab } from "./PmoFilePage";
+
+vi.mock("@/features/review/zenodoAuth", () => ({ signIn: vi.fn<typeof signIn>() }));
+vi.mock("@/features/review/zenodoDeposit", () => ({ depositDraft: vi.fn<typeof depositDraft>() }));
 
 const ZENODO: ZenodoConfig = {
   community: "pmocommunity",
@@ -443,5 +449,250 @@ describe("Published view (OpenPublished)", () => {
       "/published",
     );
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  describe("Work with this file", () => {
+    it("opens the published PMO in My PMO file with all tabs when no working PMO is open, without re-downloading", async () => {
+      const deferred = deferredBlob();
+      const fetcher = vi.fn<FileFetcher>(() => deferred.promise);
+      const { user, store, location } = await openPublishedView("/published/303/summary", {
+        fetcher,
+      });
+
+      // Not offered while still downloading.
+      expect(
+        await screen.findByText("Downloading study.pmo.json.gz (22 KB) from Zenodo"),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Work with this file" })).not.toBeInTheDocument();
+
+      deferred.resolve(FILE);
+      expect(
+        await screen.findByRole("tab", { name: "Summary", selected: true }),
+      ).toBeInTheDocument();
+
+      const header = screen.getByRole("heading", { level: 1 }).closest("header");
+      expect(header).not.toBeNull();
+      if (header === null) return;
+      await user.click(within(header).getByRole("button", { name: "Work with this file" }));
+
+      // Lands on the same tab in My PMO file with all 6 tabs and no confirmation dialog.
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "study.pmo.json.gz" }),
+      ).toBeInTheDocument();
+      expect(location.history.at(-1)).toBe("/pmo/summary");
+      expect(screen.getByRole("tab", { name: "Summary", selected: true })).toBeInTheDocument();
+      expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+        "Overview",
+        "Summary",
+        "Compare",
+        "Tables",
+        "Subset",
+        "Publish to Zenodo",
+      ]);
+
+      // Already-downloaded Blob was reused; Zenodo was not contacted again.
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      // Published slot was freed and working slot holds the published origin.
+      expect(publishedPmoSessionOf(store).state.getState().open).toEqual({ kind: "none" });
+      expect(workingPmoSessionOf(store).state.getState().open).toMatchObject({
+        kind: "opened",
+        name: "study.pmo.json.gz",
+        origin: {
+          kind: "published",
+          id: "303",
+          title: "Border travellers, Mozambique and Eswatini",
+          recordUrl: "https://zenodo.org/records/303",
+        },
+      });
+
+      // Overview shows the published-PMO origin callout.
+      await user.click(screen.getByRole("tab", { name: "Overview" }));
+      expect(await screen.findByText("This is a published PMO")).toBeInTheDocument();
+    });
+
+    it("asks before replacing an open working PMO, leaves it intact on cancel, and replaces it on confirm", async () => {
+      const store = createTestStore();
+      const working = workingPmoSessionOf(store);
+      await working.open({
+        kind: "file",
+        file: new File([stringifyPmo(EXAMPLE)], "my-lab.pmo.json"),
+        name: "my-lab.pmo.json",
+        origin: { kind: "chosen" },
+      });
+
+      const fetcher = vi.fn<FileFetcher>().mockResolvedValue(FILE);
+      const { user, location } = await openPublishedView("/published/303/tables", {
+        store,
+        fetcher,
+      });
+
+      expect(
+        await screen.findByRole("tab", { name: "Tables", selected: true }),
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Work with this file" }));
+      const dialog = await screen.findByRole("alertdialog");
+      expect(within(dialog).getByText(/my-lab\.pmo\.json/)).toBeInTheDocument();
+
+      // Cancelling leaves the published view open and the working PMO untouched.
+      await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+      await waitFor(() => {
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      });
+      expect(location.history.at(-1)).toBe("/published/303/tables");
+      expect(working.state.getState().open).toMatchObject({
+        kind: "opened",
+        name: "my-lab.pmo.json",
+        origin: { kind: "chosen" },
+      });
+      expect(publishedPmoSessionOf(store).isPublishedOpen("303")).toBe(true);
+
+      // Confirming replaces the working PMO without re-downloading and lands on the same tab.
+      await user.click(screen.getByRole("button", { name: "Work with this file" }));
+      const secondDialog = await screen.findByRole("alertdialog");
+      await user.click(within(secondDialog).getByRole("button", { name: "Replace it" }));
+
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "study.pmo.json.gz" }),
+      ).toBeInTheDocument();
+      expect(location.history.at(-1)).toBe("/pmo/tables");
+      expect(screen.getByRole("tab", { name: "Tables", selected: true })).toBeInTheDocument();
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      expect(working.state.getState().open).toMatchObject({
+        kind: "opened",
+        name: "study.pmo.json.gz",
+        origin: { kind: "published", id: "303" },
+      });
+    });
+
+    it("names both the working PMO and its subset in the confirmation, keeping both on cancel and replacing them on confirm", async () => {
+      const store = createTestStore();
+      const working = workingPmoSessionOf(store);
+      await working.open({
+        kind: "file",
+        file: new File([stringifyPmo(EXAMPLE)], "my-lab.pmo.json"),
+        name: "my-lab.pmo.json",
+        origin: { kind: "chosen" },
+      });
+      const subsetNames = EXAMPLE.specimen_info
+        .slice(0, 3)
+        .map((specimen) => specimen.specimen_name);
+      await working.subset({
+        specimens: { kind: "names", names: subsetNames },
+        targets: { kind: "all" },
+        minReads: 0,
+      });
+      const subsetState = working.state.getState().subset;
+      expect(subsetState.kind).toBe("made");
+      if (subsetState.kind !== "made") return;
+      const subsetFileName = subsetState.made.fileName;
+
+      const fetcher = vi.fn<FileFetcher>().mockResolvedValue(FILE);
+      const { user, location } = await openPublishedView("/published/303/overview", {
+        store,
+        fetcher,
+      });
+
+      expect(await screen.findByText("This file is a valid PMO")).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Work with this file" }));
+      const dialog = await screen.findByRole("alertdialog");
+      expect(within(dialog).getByText(/my-lab\.pmo\.json/)).toBeInTheDocument();
+      expect(
+        within(dialog).getByText(new RegExp(subsetFileName.replace(/\./g, "\\."))),
+      ).toBeInTheDocument();
+
+      // Cancelling leaves both the working PMO and its subset untouched.
+      await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+      await waitFor(() => {
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      });
+      expect(working.state.getState().open).toMatchObject({
+        kind: "opened",
+        name: "my-lab.pmo.json",
+      });
+      expect(working.state.getState().subset).toMatchObject({
+        kind: "made",
+        made: { fileName: subsetFileName, summary: { specimens: 3 } },
+      });
+
+      // Confirming replaces both and opens the published PMO in My PMO file.
+      await user.click(screen.getByRole("button", { name: "Work with this file" }));
+      const confirmDialog = await screen.findByRole("alertdialog");
+      await user.click(within(confirmDialog).getByRole("button", { name: "Replace it" }));
+
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "study.pmo.json.gz" }),
+      ).toBeInTheDocument();
+      expect(location.history.at(-1)).toBe("/pmo/overview");
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      expect(working.state.getState().subset).toEqual({ kind: "none" });
+    });
+
+    it("preserves published origin on Publish and lets the owner deposit a new version from a subset", async () => {
+      installBlobStream();
+      vi.mocked(signIn).mockReset();
+      vi.mocked(depositDraft).mockReset();
+      vi.mocked(signIn).mockResolvedValue({ ok: true, token: "token-1" });
+      vi.mocked(depositDraft).mockResolvedValue({
+        ok: true,
+        draftUrl: "https://zenodo.org/uploads/30301",
+      });
+
+      const fetcher = vi.fn<FileFetcher>().mockResolvedValue(FILE);
+      const { user } = await openPublishedView("/published/303/overview", { fetcher });
+      expect(await screen.findByText("This file is a valid PMO")).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Work with this file" }));
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "study.pmo.json.gz" }),
+      ).toBeInTheDocument();
+
+      // Unmodified original is still blocked from accidental re-deposit.
+      await user.click(screen.getByRole("tab", { name: "Publish to Zenodo" }));
+      expect(await screen.findByText("This file is already published")).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Deposit in the PMO community" }),
+      ).not.toBeInTheDocument();
+
+      // After making a subset, depositing a new version of the owned Zenodo record works.
+      await user.click(screen.getByRole("tab", { name: "Subset" }));
+      const minReadsInput = await screen.findByLabelText(/Minimum reads per microhaplotype/);
+      await user.clear(minReadsInput);
+      await user.type(minReadsInput, "100");
+      const makeButton = screen.getByRole("button", { name: "Make the subset" });
+      await waitFor(() => expect(makeButton).toBeEnabled());
+      await user.click(makeButton);
+      expect(await screen.findByText("The subset is ready")).toBeInTheDocument();
+
+      await user.click(screen.getByRole("tab", { name: "Publish to Zenodo" }));
+      const openDeposit = await screen.findByRole("button", {
+        name: "Deposit in the PMO community",
+      });
+      await user.click(openDeposit);
+
+      const dialog = await screen.findByRole("dialog", { name: "Publish to Zenodo" });
+      await user.click(
+        within(dialog).getByRole("radio", { name: /A new version of a record I published/ }),
+      );
+      await user.type(
+        within(dialog).getByRole("textbox", { name: "The record" }),
+        "https://zenodo.org/records/303",
+      );
+      await user.click(
+        within(dialog).getByRole("button", { name: "Sign in to Zenodo and deposit" }),
+      );
+
+      expect(depositDraft).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          newVersionOf: "303",
+          creators: [],
+        }),
+      );
+      expect(
+        await within(dialog).findByText("Your new version is ready on Zenodo"),
+      ).toBeInTheDocument();
+    });
   });
 });

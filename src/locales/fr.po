@@ -986,6 +986,14 @@ msgstr "{where} {reasonText}."
 msgid "{withoutData, plural, one {# specimen has no library sample, so no data, and is left out of any subset.} other {# specimens have no library sample, so no data, and are left out of any subset.}}"
 msgstr "{withoutData, plural, one {# spécimen n’a aucun échantillon de bibliothèque, donc aucune donnée, et n’entre dans aucun sous-ensemble.} other {# spécimens n’ont aucun échantillon de bibliothèque, donc aucune donnée, et n’entrent dans aucun sous-ensemble.}}"
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "{workingName} and the subset you made from it ({subsetName}) are currently open in My PMO file. Opening this published PMO will replace them."
+msgstr "{workingName} et le sous-ensemble que vous en avez créé ({subsetName}) sont actuellement ouverts dans Mon fichier PMO. Ouvrir ce PMO publié les remplacera."
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "{workingName} is currently open in My PMO file. Opening this published PMO will replace it."
+msgstr "{workingName} est actuellement ouvert dans Mon fichier PMO. Ouvrir ce PMO publié le remplacera."
+
 #: src/ui/FileDropzone.tsx
 msgid "<0>. Accepts</0> {fileTypes}"
 msgstr "<0>. Formats acceptés :</0> {fileTypes}"
@@ -3782,6 +3790,10 @@ msgstr "Ouvrez la page d’import et connectez-vous à Zenodo. La communauté es
 msgid "Open the Zenodo upload page"
 msgstr "Ouvrir la page d’import de Zenodo"
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Opening in My PMO file"
+msgstr "Ouverture dans Mon fichier PMO"
+
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "Opening the file"
 msgstr "Ouverture du fichier"
@@ -4500,9 +4512,17 @@ msgstr "Remplacer"
 msgid "Replace {fileLabel} file"
 msgstr "Remplacer le fichier du {fileLabel}"
 
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Replace it"
+msgstr "Remplacer"
+
 #: src/features/panel/PanelEditor.tsx
 msgid "Replace saved panel"
 msgstr "Remplacer le panel enregistré"
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Replace the file open in My PMO file?"
+msgstr "Remplacer le fichier ouvert dans Mon fichier PMO ?"
 
 #: src/features/panel/PanelEditor.tsx
 msgid "Replace the saved panel \"{name}\"?"
@@ -6890,6 +6910,10 @@ msgstr "Travailler avec"
 #: src/app/HomePage.tsx
 msgid "Work with a PMO file"
 msgstr "Travailler avec un fichier PMO"
+
+#: src/features/pmo-file/OpenPublished.tsx
+msgid "Work with this file"
+msgstr "Travailler avec ce fichier"
 
 #: src/features/shared/SectionResult.tsx
 msgid "Working out the result."
