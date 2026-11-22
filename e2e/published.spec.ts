@@ -435,3 +435,174 @@ for (const colorScheme of ["light", "dark"] as const) {
     expect(serious).toEqual([]);
   });
 }
+
+test("shows at least ten compact rows per screen at 1280 by 800, clamps long titles and shortens long author lists", async ({
+  page,
+}) => {
+  await serveLargeCatalogue(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/#/published");
+  await expect(page.getByText("150 datasets")).toBeVisible();
+
+  const list = page.locator("article");
+  await expect(list).toHaveCount(150);
+
+  // Scroll the start of the list below the sticky top bar and count how many entries fit on one 1280x800 screen.
+  const visibleOnScreen = await page.evaluate(() => {
+    const articles = [...document.querySelectorAll("article")];
+    const first = articles[0];
+    if (first === undefined) return 0;
+    const header = document.querySelector("header");
+    const topBarHeight = header?.getBoundingClientRect().bottom ?? 0;
+    const targetTop = first.getBoundingClientRect().top + window.scrollY - topBarHeight;
+    window.scrollTo({ top: Math.max(0, targetTop) });
+    return articles.filter((article) => {
+      const rect = article.getBoundingClientRect();
+      return rect.top >= topBarHeight - 1 && rect.bottom <= window.innerHeight + 1;
+    }).length;
+  });
+  expect(visibleOnScreen).toBeGreaterThanOrEqual(10);
+
+  // A long title (> 120 chars) is visually clamped to at most two lines while exposing the full title on the link.
+  const longEntry = LARGE_CATALOGUE.datasets.find((entry) => entry.title.length > 120);
+  expect(longEntry).toBeDefined();
+  if (longEntry === undefined) return;
+  const longLink = page.getByRole("link", { name: longEntry.title });
+  await expect(longLink).toHaveAttribute("title", longEntry.title);
+  const clamped = await longLink.locator("span").evaluate((span) => {
+    const lineHeight = Number.parseFloat(getComputedStyle(span).lineHeight);
+    return { height: span.getBoundingClientRect().height, lineHeight };
+  });
+  expect(clamped.height).toBeLessThanOrEqual(clamped.lineHeight * 2 + 2);
+
+  // Entries with more than two authors show the first author and "et al.".
+  const manyAuthorsEntry = LARGE_CATALOGUE.datasets.find((entry) => entry.creators.length > 2);
+  expect(manyAuthorsEntry).toBeDefined();
+  if (manyAuthorsEntry === undefined) return;
+  const firstAuthor = manyAuthorsEntry.creators[0];
+  expect(firstAuthor).toBeDefined();
+  await expect(
+    page
+      .locator("article", { hasText: manyAuthorsEntry.title })
+      .getByText(`${firstAuthor} et al.`, { exact: false }),
+  ).toBeVisible();
+});
+
+test("switches to table view, syncs column sorting with Sort by, and survives Back", async ({
+  page,
+}) => {
+  await serveLargeCatalogue(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/#/published");
+  await expect(page.getByText("150 datasets")).toBeVisible();
+
+  const tableToggle = page.getByRole("radio", { name: "Table" });
+  const listToggle = page.getByRole("radio", { name: "List" });
+  await expect(listToggle).toHaveAttribute("aria-checked", "true");
+
+  await tableToggle.click();
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#/published?view=table");
+  await expect(tableToggle).toHaveAttribute("aria-checked", "true");
+
+  const table = page.getByRole("table");
+  await expect(table).toBeVisible();
+  const headers = await table
+    .getByRole("columnheader")
+    .evaluateAll((cells) => cells.map((cell) => cell.textContent?.trim() ?? ""));
+  expect(headers).toEqual([
+    "Title",
+    "First author",
+    "Country",
+    "Collection years",
+    "Panel",
+    "Species",
+    "Specimens",
+  ]);
+
+  const sortControl = page.getByRole("combobox", { name: "Sort by" });
+  const specimensHeader = table.getByRole("columnheader", { name: /Specimens/ });
+  await specimensHeader.getByRole("button").click();
+  await expect
+    .poll(() => page.evaluate(() => window.location.hash))
+    .toBe("#/published?sort=specimens&view=table");
+  await expect(sortControl).toContainText("Most specimens");
+  await expect(specimensHeader).toHaveAttribute("aria-sort", "descending");
+
+  const maxSpecimens = Math.max(
+    ...LARGE_CATALOGUE.datasets.map((entry) => entry.summary.specimens),
+  );
+  const mostSpecimensEntry = LARGE_CATALOGUE.datasets.find(
+    (entry) => entry.summary.specimens === maxSpecimens,
+  );
+  const firstRowLink = table.locator("tbody tr").first().getByRole("link");
+  await expect(firstRowLink).toHaveText(mostSpecimensEntry?.title ?? "");
+
+  const yearsHeader = table.getByRole("columnheader", { name: /Collection years/ });
+  await yearsHeader.getByRole("button").click();
+  await expect
+    .poll(() => page.evaluate(() => window.location.hash))
+    .toBe("#/published?sort=year&view=table");
+  await expect(sortControl).toContainText("Latest collection year");
+  await expect(yearsHeader).toHaveAttribute("aria-sort", "descending");
+
+  const titleHeader = table.getByRole("columnheader", { name: /Title/ });
+  await titleHeader.getByRole("button").click();
+  await expect
+    .poll(() => page.evaluate(() => window.location.hash))
+    .toBe("#/published?sort=title&view=table");
+  await expect(sortControl).toContainText("Title");
+  await expect(titleHeader).toHaveAttribute("aria-sort", "ascending");
+
+  const openedTitle = (await firstRowLink.textContent()) ?? "";
+  expect(openedTitle).toMatch(/^Angola /);
+  await firstRowLink.click();
+  await expect(page.getByRole("heading", { level: 1, name: openedTitle })).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByRole("table")).toBeVisible();
+  expect(await page.evaluate(() => window.location.hash)).toBe("#/published?sort=title&view=table");
+  await expect(tableToggle).toHaveAttribute("aria-checked", "true");
+  await expect(table.getByRole("columnheader", { name: /Title/ })).toHaveAttribute(
+    "aria-sort",
+    "ascending",
+  );
+
+  await listToggle.click();
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#/published?sort=title");
+  await expect(page.getByRole("table")).toBeHidden();
+  await expect(page.locator("article").first()).toBeVisible();
+});
+
+test("keeps both list and table views usable at 390 px without horizontal page scroll", async ({
+  page,
+}) => {
+  await serveLargeCatalogue(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/published");
+  await expect(page.getByText("150 datasets")).toBeVisible();
+
+  const listOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(listOverflow).toBeLessThanOrEqual(0);
+
+  await page.getByRole("radio", { name: "Table" }).click();
+  const tableRegion = page.getByRole("region", { name: "Published PMOs table" });
+  await expect(tableRegion).toBeVisible();
+  await expect(tableRegion).toHaveAttribute("tabindex", "0");
+
+  const tableLayout = await tableRegion.evaluate((region) => ({
+    pageOverflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    regionOverflowX: region.scrollWidth - region.clientWidth,
+    regionRight: region.getBoundingClientRect().right,
+    viewportWidth: window.innerWidth,
+  }));
+  expect(tableLayout.pageOverflowX).toBeLessThanOrEqual(0);
+  expect(tableLayout.regionOverflowX).toBeGreaterThan(0);
+  expect(tableLayout.regionRight).toBeLessThanOrEqual(tableLayout.viewportWidth + 1);
+
+  const firstLink = tableRegion.locator("tbody tr").first().getByRole("link");
+  const title = (await firstLink.textContent()) ?? "";
+  await firstLink.click();
+  await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+});

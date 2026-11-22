@@ -16,7 +16,7 @@ import { installDomPolyfills } from "@/ui/testPolyfills";
 import type { CatalogueLoad } from "./catalogue";
 import { DatasetPage } from "./DatasetPage";
 import { clearScrollPositionsForTests, PublishedPage } from "./PublishedPage";
-import { catalogue, DATASETS, largeCatalogue } from "./testing";
+import { catalogue, dataset, DATASETS, largeCatalogue } from "./testing";
 
 beforeAll(installDomPolyfills);
 
@@ -680,6 +680,121 @@ describe("PublishedPage", () => {
     expect(
       screen.getByText("No matching published PMOs have both a country and a collection year."),
     ).toBeInTheDocument();
+  });
+
+  it("shortens long author lists to first author et al. and exposes full long titles on the link", async () => {
+    const longTitle =
+      "Longitudinal genomic surveillance of antimalarial drug resistance markers and parasite population connectivity across sentinel clinics in Kenya (2018 to 2024)";
+    const entries = [
+      dataset({
+        id: "501",
+        title: longTitle,
+        creators: ["Okello, Grace", "Mensah, Kofi", "Achan, Sarah", "Diallo, Amadou"],
+        published: "2026-11-14",
+      }),
+      dataset({
+        id: "502",
+        title: "Two authors study",
+        creators: ["Okello, Grace", "Mensah, Kofi"],
+        published: "2026-11-10",
+      }),
+    ];
+    render(
+      <PublishedPage load={gives({ kind: "ready", index: catalogue(entries) })} zenodo={ZENODO} />,
+      { wrapper },
+    );
+    await screen.findByText("2 datasets");
+
+    const link = screen.getByRole("link", { name: longTitle });
+    expect(link).toHaveAttribute("title", longTitle);
+    expect(screen.getByText("Okello, Grace et al. · 2026")).toBeInTheDocument();
+    expect(screen.getByText("Okello, Grace; Mensah, Kofi · 2026")).toBeInTheDocument();
+  });
+
+  it("switches between list and table views, syncs table sorting with Sort by, and keeps view on Back", async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, "", "/#/published");
+
+    try {
+      render(
+        <I18nProvider i18n={i18n}>
+          <Router hook={useHashLocation}>
+            <Switch>
+              <Route path="/published">
+                <PublishedPage load={READY} zenodo={ZENODO} />
+              </Route>
+              <Route path="/published/:id">
+                {(params) => <DatasetPage id={params.id} load={READY} />}
+              </Route>
+            </Switch>
+          </Router>
+        </I18nProvider>,
+      );
+
+      await screen.findByText("3 datasets");
+      const listButton = screen.getByRole("radio", { name: "List" });
+      const tableButton = screen.getByRole("radio", { name: "Table" });
+      expect(listButton).toHaveAttribute("aria-checked", "true");
+      expect(tableButton).toHaveAttribute("aria-checked", "false");
+      expect(screen.getAllByRole("article")).toHaveLength(3);
+
+      await user.click(tableButton);
+      expect(window.location.hash).toBe("#/published?view=table");
+      expect(tableButton).toHaveAttribute("aria-checked", "true");
+      expect(screen.queryByRole("article")).not.toBeInTheDocument();
+
+      const table = screen.getByRole("table");
+      const tableTitles = () =>
+        within(table)
+          .getAllByRole("row")
+          .slice(1)
+          .map((row) => within(row).getByRole("link").textContent);
+
+      expect(tableTitles()).toEqual([
+        "Maputo surveillance 2015 to 2019",
+        "Northern Uganda cohort",
+        "Border travellers, Mozambique and Eswatini",
+      ]);
+
+      // Sorting from the table column header updates Sort by and the address.
+      const specimensHeader = within(table).getByRole("columnheader", { name: /Specimens/ });
+      await user.click(within(specimensHeader).getByRole("button"));
+      expect(window.location.hash).toBe("#/published?sort=specimens&view=table");
+      expect(screen.getByRole("combobox", { name: "Sort by" })).toHaveTextContent("Most specimens");
+      expect(specimensHeader).toHaveAttribute("aria-sort", "descending");
+      expect(tableTitles()).toEqual([
+        "Northern Uganda cohort",
+        "Maputo surveillance 2015 to 2019",
+        "Border travellers, Mozambique and Eswatini",
+      ]);
+
+      // Filtering and clearing filters keeps the table view and sort order.
+      await user.type(screen.getByRole("searchbox", { name: "Search" }), "uganda");
+      expect(tableTitles()).toEqual(["Northern Uganda cohort"]);
+      await user.click(screen.getByRole("button", { name: "Clear the filters" }));
+      expect(window.location.hash).toBe("#/published?sort=specimens&view=table");
+      expect(tableTitles()).toHaveLength(3);
+
+      // Opening a dataset and pressing Back restores table view and sort.
+      await user.click(within(table).getByRole("link", { name: "Northern Uganda cohort" }));
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "Northern Uganda cohort" }),
+      ).toBeInTheDocument();
+      window.history.back();
+
+      expect(await screen.findByRole("table")).toBeInTheDocument();
+      expect(window.location.hash).toBe("#/published?sort=specimens&view=table");
+      expect(screen.getByRole("radio", { name: "Table" })).toHaveAttribute("aria-checked", "true");
+      expect(screen.getByRole("combobox", { name: "Sort by" })).toHaveTextContent("Most specimens");
+
+      // Switching back to List removes view from the address.
+      await user.click(screen.getByRole("radio", { name: "List" }));
+      expect(window.location.hash).toBe("#/published?sort=specimens");
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      expect(screen.getAllByRole("article")).toHaveLength(3);
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
   });
 });
 

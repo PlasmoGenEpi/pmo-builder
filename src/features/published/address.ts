@@ -1,8 +1,22 @@
 /**
  * Pure conversion between the published PMOs list's view state and the query
- * string kept inside the hash route (`#/published?q=...&country=...&sort=...`).
+ * string kept inside the hash route (`#/published?q=...&country=...&sort=...&view=...`).
  */
 import { DEFAULT_SORT, isSortOrder, type SortOrder } from "./catalogue";
+
+/** The supported layouts for the published PMOs list. */
+export const LIST_VIEWS = ["list", "table"] as const;
+
+/** How the published PMOs are laid out: compact list rows or a sortable table. */
+export type ListView = (typeof LIST_VIEWS)[number];
+
+/** The default layout: compact list rows. */
+export const DEFAULT_VIEW: ListView = "list";
+
+/** Checks whether a string is a supported {@link ListView}. */
+export function isListView(value: string): value is ListView {
+  return LIST_VIEWS.some((view) => view === value);
+}
 
 /** View state of the published PMOs list. */
 export interface PublishedListState {
@@ -18,6 +32,8 @@ export interface PublishedListState {
   readonly year: number | null;
   /** Order of entries in the list. */
   readonly sort: SortOrder;
+  /** Layout of entries: compact list or sortable table. */
+  readonly view: ListView;
 }
 
 /** The default, unfiltered list state. Serializes to an empty query string. */
@@ -28,6 +44,7 @@ export const DEFAULT_LIST_STATE: PublishedListState = {
   species: null,
   year: null,
   sort: DEFAULT_SORT,
+  view: DEFAULT_VIEW,
 };
 
 function nonEmpty(value: string | null): string | null {
@@ -55,6 +72,10 @@ function parseSort(raw: string | null): SortOrder {
   return raw !== null && isSortOrder(raw) ? raw : DEFAULT_SORT;
 }
 
+function parseView(raw: string | null): ListView {
+  return raw !== null && isListView(raw) ? raw : DEFAULT_VIEW;
+}
+
 /** Reads the list's view state from a query string (with or without a leading `?`). */
 export function readListState(search: string): PublishedListState {
   const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
@@ -66,6 +87,7 @@ export function readListState(search: string): PublishedListState {
     species: parsePositiveInt(params.get("species")),
     year: parsePositiveInt(params.get("year")),
     sort: parseSort(params.get("sort")),
+    view: parseView(params.get("view")),
   };
 }
 
@@ -84,6 +106,7 @@ export function writeListState(state: PublishedListState): string {
     params.set("year", String(state.year));
   }
   if (state.sort !== DEFAULT_SORT) params.set("sort", state.sort);
+  if (state.view !== DEFAULT_VIEW) params.set("view", state.view);
   return params.toString();
 }
 

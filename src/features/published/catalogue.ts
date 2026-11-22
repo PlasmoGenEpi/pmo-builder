@@ -322,6 +322,21 @@ export function doiUrl(dataset: PublishedDataset): string | null {
   return dataset.doi === null ? null : `https://doi.org/${dataset.doi}`;
 }
 
+/**
+ * Formats an author list for compact views: empty when none, joined with `"; "`
+ * for one or two authors, or the first author followed by `"et al."` when more
+ * than two.
+ */
+export function shortAuthors(creators: readonly string[]): string {
+  const firstAuthor = creators[0];
+  if (firstAuthor === undefined) return "";
+  if (creators.length <= 2) return creators.join("; ");
+  return t({
+    message: `${firstAuthor} et al.`,
+    comment: "First author followed by et al. when there are more than two authors",
+  });
+}
+
 /** How to cite the dataset: authors, year, title, Zenodo and the DOI. */
 export function citationOf(dataset: PublishedDataset): string {
   const authors = dataset.creators.length === 0 ? "" : `${dataset.creators.join("; ")} `;

@@ -5,9 +5,11 @@ import {
   CalendarDays,
   ChevronRight,
   FlaskConical,
+  List,
   ListFilter,
   MapPin,
   Search,
+  Table2,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useId, useMemo, useRef } from "react";
@@ -26,6 +28,7 @@ import {
   formatCount,
   inputClassName,
   Link,
+  SegmentedControl,
   Select,
 } from "@/ui";
 
@@ -33,6 +36,7 @@ import {
   DEFAULT_LIST_STATE,
   publishedHref,
   readListState,
+  type ListView,
   type PublishedListState,
 } from "./address";
 import {
@@ -41,6 +45,7 @@ import {
   filterDatasets,
   isSortOrder,
   longDate,
+  shortAuthors,
   sortDatasets,
   taxonName,
   totalsOf,
@@ -52,6 +57,7 @@ import { CatalogueProblem } from "./CatalogueProblem";
 import { CountryFilter } from "./CountryFilter";
 import { MIN_DATASETS_FOR_COVERAGE } from "./coverage";
 import { CoverageGrid } from "./CoverageGrid";
+import { PublishedTable } from "./PublishedTable";
 import { loadSharedCatalogue, useCatalogue, type CatalogueLoader } from "./useCatalogue";
 
 /** The `Select` value that stands for "no limit". Radix does not allow an empty one. */
@@ -77,7 +83,7 @@ function Fact({
   readonly children: string;
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm text-text-muted">
+    <span className="inline-flex min-w-0 max-w-full items-center gap-1 text-sm text-text-muted">
       <Icon aria-hidden="true" className="size-3.5 shrink-0 text-text-subtle" />
       <span className="sr-only">
         {t({
@@ -85,7 +91,7 @@ function Fact({
           comment: "Before a fact about a dataset, for screen readers",
         })}{" "}
       </span>
-      {children}
+      <span className="truncate">{children}</span>
     </span>
   );
 }
@@ -100,25 +106,30 @@ function DatasetRow({
 }) {
   const years = yearsText(dataset);
   const year = /^\d{4}/.exec(dataset.published)?.[0];
+  const authorLine = [shortAuthors(dataset.creators), year]
+    .filter((part) => part !== undefined && part !== "")
+    .join(" · ");
+  const allAuthors = dataset.creators.length > 2 ? dataset.creators.join("; ") : undefined;
   return (
-    <article className="group relative flex items-center gap-5 px-5 py-4 transition-colors duration-100 hover:bg-surface-subtle sm:px-6 sm:py-5">
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <h3 className="text-md font-semibold text-pretty text-text">
+    <article className="group relative flex items-center gap-4 px-4 py-2 transition-colors duration-100 hover:bg-surface-subtle sm:px-5 sm:py-2">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <h3 className="text-base font-semibold text-pretty text-text">
           <RouterLink
             href={`/published/${dataset.id}`}
             onClick={onOpen}
+            title={dataset.title}
             className="rounded-sm underline-offset-2 group-hover:text-accent-text after:absolute after:inset-0"
           >
-            {dataset.title}
+            <span className="line-clamp-2">{dataset.title}</span>
           </RouterLink>
         </h3>
-        <p className="text-base text-text-muted">
-          {[dataset.creators.join("; "), year]
-            .filter((part) => part !== undefined && part !== "")
-            .join(" · ")}
-        </p>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1">
-          <span className="text-sm font-medium text-text sm:hidden">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-text-muted">
+          {authorLine === "" ? null : (
+            <span className="max-w-full truncate" title={allAuthors}>
+              {authorLine}
+            </span>
+          )}
+          <span className="font-medium text-text tabular-nums sm:hidden">
             {plural(dataset.summary.specimens, { one: "# specimen", other: "# specimens" })}
           </span>
           {dataset.panels.length === 0 ? null : (
@@ -138,22 +149,22 @@ function DatasetRow({
           )}
         </div>
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-0.5 text-right max-sm:hidden">
-        <span className="flex items-baseline gap-1.5">
-          <span className="text-xl font-semibold tracking-tight text-text tabular-nums">
+      <div className="flex shrink-0 flex-col items-end text-right max-sm:hidden">
+        <span className="flex items-baseline gap-1">
+          <span className="text-base font-semibold tracking-tight text-text tabular-nums">
             {formatCount(dataset.summary.specimens)}
           </span>
           <span className="text-sm text-text-muted">
             {plural(dataset.summary.specimens, { one: "specimen", other: "specimens" })}
           </span>
         </span>
-        <span className="text-sm text-text-subtle">
+        <span className="text-xs text-text-subtle tabular-nums">
           {plural(dataset.summary.targets, { one: "# target", other: "# targets" })}
         </span>
       </div>
       <ChevronRight
         aria-hidden="true"
-        className="size-4.5 shrink-0 text-text-subtle transition-transform duration-100 group-hover:translate-x-0.5 group-hover:text-accent-text"
+        className="size-4 shrink-0 text-text-subtle transition-transform duration-100 group-hover:translate-x-0.5 group-hover:text-accent-text"
       />
     </article>
   );
@@ -371,6 +382,38 @@ function SortControl({
   );
 }
 
+/** Switch between compact list rows and the sortable table view. */
+function ViewSwitch({
+  view,
+  onChange,
+}: {
+  readonly view: ListView;
+  readonly onChange: (view: ListView) => void;
+}) {
+  return (
+    <SegmentedControl
+      label={t({
+        message: "View",
+        comment: "Accessible label for switching between list and table view",
+      })}
+      value={view}
+      onValueChange={onChange}
+      segments={[
+        {
+          value: "list",
+          label: t({ message: "List", comment: "Published PMOs compact list view" }),
+          icon: List,
+        },
+        {
+          value: "table",
+          label: t({ message: "Table", comment: "Published PMOs sortable table view" }),
+          icon: Table2,
+        },
+      ]}
+    />
+  );
+}
+
 /** An invitation to add to the list, under it. */
 function AddYours() {
   return (
@@ -509,17 +552,29 @@ function Catalogue({
               {filtered ? (
                 <button
                   type="button"
-                  onClick={() => updateListState({ ...DEFAULT_LIST_STATE, sort: listState.sort })}
+                  onClick={() =>
+                    updateListState({
+                      ...DEFAULT_LIST_STATE,
+                      sort: listState.sort,
+                      view: listState.view,
+                    })
+                  }
                   className="cursor-pointer rounded-sm text-sm font-medium text-accent-text underline-offset-2 hover:underline"
                 >
                   <Trans>Clear the filters</Trans>
                 </button>
               ) : null}
             </div>
-            <SortControl
-              sort={listState.sort}
-              onChange={(sort) => updateListState({ ...listState, sort })}
-            />
+            <div className="flex flex-wrap items-center gap-3">
+              <SortControl
+                sort={listState.sort}
+                onChange={(sort) => updateListState({ ...listState, sort })}
+              />
+              <ViewSwitch
+                view={listState.view}
+                onChange={(view) => updateListState({ ...listState, view })}
+              />
+            </div>
           </div>
         ) : null}
         {shown.length === 0 ? (
@@ -527,6 +582,13 @@ function Catalogue({
             icon={Search}
             title={t`No published PMO matches`}
             description={t`Try fewer words or a wider choice.`}
+          />
+        ) : listState.view === "table" ? (
+          <PublishedTable
+            datasets={shown}
+            sort={listState.sort}
+            onSortChange={(sort) => updateListState({ ...listState, sort })}
+            onOpenDataset={onOpenDataset}
           />
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface shadow-xs">
@@ -640,7 +702,7 @@ export function PublishedPage({
   const name = zenodo?.communityName ?? community ?? "Zenodo";
 
   return (
-    <PageContainer>
+    <PageContainer width="full">
       <div className="flex min-w-0 flex-col gap-6">
         <header className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight text-text">

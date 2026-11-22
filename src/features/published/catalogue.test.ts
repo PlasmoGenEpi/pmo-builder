@@ -9,6 +9,7 @@ import {
   loadCatalogue,
   longDate,
   NO_FILTERS,
+  shortAuthors,
   sortDatasets,
   taxonName,
   totalsOf,
@@ -388,6 +389,18 @@ describe("wording", () => {
     expect(citationOf(dataset({ id: "5", title: "Done?", creators: [], doi: null }))).toBe(
       "(2026). Done? Zenodo. https://zenodo.org/records/5",
     );
+  });
+
+  it("shortens author lists of more than two to the first author and et al.", () => {
+    expect(shortAuthors([])).toBe("");
+    expect(shortAuthors(["Achan, Sarah"])).toBe("Achan, Sarah");
+    expect(shortAuthors(["Okello, Grace", "Mensah, Kofi"])).toBe("Okello, Grace; Mensah, Kofi");
+    expect(shortAuthors(["Okello, Grace", "Mensah, Kofi", "Achan, Sarah"])).toBe(
+      "Okello, Grace et al.",
+    );
+    const many = largeCatalogue(150).datasets.find((entry) => entry.creators.length >= 10);
+    expect(many).toBeDefined();
+    expect(shortAuthors(many?.creators ?? [])).toBe(`${many?.creators[0]} et al.`);
   });
 });
 

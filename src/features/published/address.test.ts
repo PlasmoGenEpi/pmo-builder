@@ -10,7 +10,7 @@ describe("published list address", () => {
     expect(readListState("?")).toEqual(DEFAULT_LIST_STATE);
   });
 
-  it("round-trips search, countries, panel, species, collection year and sort", () => {
+  it("round-trips search, countries, panel, species, collection year, sort and view", () => {
     const state = {
       search: "maputo surveillance",
       countries: ["Mozambique", "Uganda"],
@@ -18,14 +18,26 @@ describe("published list address", () => {
       species: 5855,
       year: 2017,
       sort: "specimens" as const,
+      view: "table" as const,
     };
     const query = writeListState(state);
     expect(query).toBe(
-      "q=maputo+surveillance&country=Mozambique&country=Uganda&panel=Mad4hatter&species=5855&year=2017&sort=specimens",
+      "q=maputo+surveillance&country=Mozambique&country=Uganda&panel=Mad4hatter&species=5855&year=2017&sort=specimens&view=table",
     );
     expect(publishedHref(state)).toBe(`/published?${query}`);
     expect(readListState(query)).toEqual(state);
     expect(readListState(`?${query}`)).toEqual(state);
+  });
+
+  it("writes the table view and omits the default list view", () => {
+    expect(DEFAULT_LIST_STATE.view).toBe("list");
+    expect(writeListState({ ...DEFAULT_LIST_STATE, view: "list" })).toBe("");
+    const tableState = { ...DEFAULT_LIST_STATE, view: "table" as const };
+    expect(writeListState(tableState)).toBe("view=table");
+    expect(readListState("view=table")).toEqual(tableState);
+    expect(readListState("view=list")).toEqual(DEFAULT_LIST_STATE);
+    expect(readListState("view=grid")).toEqual(DEFAULT_LIST_STATE);
+    expect(readListState("view=")).toEqual(DEFAULT_LIST_STATE);
   });
 
   it("writes non-default sort orders and omits the default newest sort", () => {
