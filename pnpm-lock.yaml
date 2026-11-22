@@ -188,8 +188,8 @@ importers:
         specifier: ^5.7.1
         version: 5.7.1
       pmotools-ts:
-        specifier: ^0.2.0
-        version: 0.2.0
+        specifier: ^0.3.0
+        version: 0.3.0
       radix-ui:
         specifier: ^1.8.1
         version: 1.8.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -2516,8 +2516,8 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  pmotools-ts@0.2.0:
-    resolution: {integrity: sha512-infN+u3ZqQaMUQBYfur/eaTL1+VE71GM7msS+JaoivWVn7a823vVgV7CaW2aHjdXvD728A6PGohOas6xAfJ/wg==}
+  pmotools-ts@0.3.0:
+    resolution: {integrity: sha512-bIYEAu+2aJfsOZ2E6cRtVK0gsvKi9v49430zlxslfgUOhnU7UWu6x2kmscRjEVQIp6xeONughIQ6uJLVo3Ed/A==}
     engines: {node: '>=22'}
 
   pofile-ts@4.0.3:
@@ -4882,7 +4882,7 @@ snapshots:
     dependencies:
       playwright-core: 1.65.0
 
-  pmotools-ts@0.2.0: {}
+  pmotools-ts@0.3.0: {}
 
   pofile-ts@4.0.3: {}
 

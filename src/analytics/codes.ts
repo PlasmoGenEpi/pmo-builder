@@ -17,6 +17,8 @@
  * reads the installed `pmotools-ts` package and fails when this list falls behind it.
  */
 export const PMOTOOLS_CODES = [
+  "infer/non-text-cell",
+  "infer/typer-finished",
   "integrity/duplicate-library-sample-result",
   "integrity/duplicate-mhap-id",
   "integrity/duplicate-name",
@@ -184,6 +186,7 @@ export const APP_CODES = [
 
 /** Modules whose unknown codes are counted as `<module>/other`. */
 export const CODE_MODULES = [
+  "infer",
   "integrity",
   "io",
   "merge",

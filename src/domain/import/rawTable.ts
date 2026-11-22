@@ -12,7 +12,7 @@ export function cleanCell(cell: GridCell | undefined): string | null {
 }
 
 /** Gives blank headers a position name and makes repeated headers unique: `reads`, `reads (2)`. */
-function uniqueHeaders(headers: readonly (string | null)[]): string[] {
+export function uniqueHeaders(headers: readonly (string | null)[]): string[] {
   const named = headers.map((header, index) => header ?? `Column ${index + 1}`);
   const taken = new Set<string>();
   const counts = new Map<string, number>();
