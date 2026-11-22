@@ -6,7 +6,8 @@
  */
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useTheme } from "@/app/theme";
 import type {
@@ -177,6 +178,26 @@ function AllelesByGroup({
   );
 }
 
+const TIMELINE_HEIGHT = 180;
+const TIMELINE_PAD = { left: 40, right: 12, bottom: 44, top: 12 } as const;
+const MIN_TIMELINE_SLOT = 14;
+const PREFERRED_TIMELINE_SLOT = 28;
+const MIN_TIMELINE_FALLBACK = 360;
+
+/** Rounded-top bar path drawn strictly above `axisY`, never inverting when shorter than its corner radius. */
+function timelineBarPath(options: {
+  readonly x: number;
+  readonly axisY: number;
+  readonly width: number;
+  readonly height: number;
+}): string {
+  const { x, axisY, width, height } = options;
+  const radius = Math.min(4, height, width / 2);
+  const straightY = height - radius;
+  const topWidth = width - radius * 2;
+  return `M${x},${axisY} v${-straightY} q0,${-radius} ${radius},${-radius} h${topWidth} q${radius},0 ${radius},${radius} v${straightY} z`;
+}
+
 /** Specimens per month or year, as bars. */
 function Timeline({
   comparison,
@@ -187,20 +208,74 @@ function Timeline({
 }) {
   const { resolved } = useTheme();
   const [hover, setHover] = useState<number | null>(null);
-  if (comparison.timeline.length === 0) return null;
-  const width = Math.max(360, comparison.timeline.length * 28 + 60);
-  const height = 180;
-  const pad = { left: 40, bottom: 44, top: 12 };
-  const max = Math.max(...comparison.timeline.map((point) => point.specimens));
-  const barWidth = (width - pad.left) / comparison.timeline.length;
+  const scroller = useRef<HTMLElement>(null);
+  const chart = useRef<SVGSVGElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
+  const [overflow, setOverflow] = useState<{ readonly left: boolean; readonly right: boolean }>({
+    left: false,
+    right: false,
+  });
+
+  const count = comparison.timeline.length;
+  const minContentWidth = TIMELINE_PAD.left + TIMELINE_PAD.right + count * MIN_TIMELINE_SLOT;
+  const preferredWidth = Math.max(
+    MIN_TIMELINE_FALLBACK,
+    TIMELINE_PAD.left + TIMELINE_PAD.right + count * PREFERRED_TIMELINE_SLOT,
+  );
+  const width =
+    containerWidth === null || containerWidth <= 0
+      ? preferredWidth
+      : minContentWidth > containerWidth
+        ? Math.ceil(minContentWidth)
+        : Math.min(containerWidth, preferredWidth);
+
+  const syncScroll = useCallback(() => {
+    const element = scroller.current;
+    if (element === null) return;
+    const left = element.scrollLeft > 1;
+    const right = element.scrollLeft + element.clientWidth < element.scrollWidth - 1;
+    setOverflow((previous) =>
+      previous.left === left && previous.right === right ? previous : { left, right },
+    );
+  }, []);
+
+  useEffect(() => {
+    if (count === 0) return undefined;
+    const element = scroller.current;
+    const svg = chart.current;
+    if (element === null) return undefined;
+    const measure = () => {
+      const next = Math.floor(element.clientWidth);
+      if (next > 0) setContainerWidth((previous) => (previous === next ? previous : next));
+      syncScroll();
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    if (svg !== null) observer.observe(svg);
+    return () => observer.disconnect();
+  }, [count, syncScroll]);
+
+  if (count === 0) return null;
+
+  const height = TIMELINE_HEIGHT;
+  const pad = TIMELINE_PAD;
+  const axisY = height - pad.bottom;
+  const plotHeight = height - pad.top - pad.bottom;
+  const max = Math.max(1, ...comparison.timeline.map((point) => point.specimens));
+  const barWidth = (width - pad.left - pad.right) / count;
+  const barInset = Math.min(2, barWidth / 4);
+  const innerBarWidth = Math.max(2, barWidth - barInset * 2);
   const dated = formatCount(comparison.dated);
   const all = formatCount(total);
   const hovered = hover === null ? null : comparison.timeline[hover];
   const hoverPeriod = hovered?.period ?? "";
   const hoverCount = hovered?.specimens ?? 0;
-  const every = Math.ceil(comparison.timeline.length / 12);
+  const lastIndex = count - 1;
+  const every = Math.max(Math.ceil(count / 12), Math.ceil(36 / barWidth));
   return (
-    <section className="flex flex-col gap-4">
+    <section className="flex min-w-0 flex-col gap-4">
       <SectionHeading
         title={t`When specimens were collected`}
         description={
@@ -216,71 +291,103 @@ function Timeline({
             : t`${dated} of ${all} specimens have a collection date.`}
         </p>
       ) : null}
-      <section
-        aria-label={t`When specimens were collected`}
-        // Focusable so keyboard users can scroll it.
-        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-        tabIndex={0}
-        className="overflow-x-auto"
-      >
-        <p className="sr-only">
-          {t`A bar chart of specimens per collection period. The figures are in the bars' tooltips and in the group table.`}
-        </p>
-        <svg width={width} height={height} aria-hidden="true">
-          <line
-            x1={pad.left}
-            x2={width}
-            y1={height - pad.bottom}
-            y2={height - pad.bottom}
-            className="stroke-border-strong"
-          />
-          <text
-            x={pad.left - 8}
-            y={pad.top + 4}
-            textAnchor="end"
-            className="fill-text-muted text-[11px]"
-          >
-            {max}
-          </text>
-          {comparison.timeline.map((point, index) => {
-            const barHeight = (point.specimens / max) * (height - pad.top - pad.bottom);
-            const x = pad.left + index * barWidth + 2;
-            return (
-              <g
-                key={point.period}
-                onMouseEnter={() => setHover(index)}
-                onMouseLeave={() => setHover(null)}
-              >
-                <rect
-                  x={x - 2}
-                  y={pad.top}
-                  width={barWidth}
-                  height={height - pad.top - pad.bottom}
-                  fill="transparent"
-                />
-                {point.specimens === 0 ? null : (
-                  <path
-                    d={`M${x},${height - pad.bottom} v${-(barHeight - 4)} q0,-4 4,-4 h${barWidth - 12} q4,0 4,4 v${barHeight - 4} z`}
-                    fill={SERIES[resolved]}
-                    opacity={hover === null || hover === index ? 1 : 0.6}
+      <div className="relative min-w-0">
+        <section
+          ref={scroller}
+          aria-label={t`When specimens were collected`}
+          // Focusable so keyboard users can scroll it.
+          // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+          tabIndex={0}
+          onScroll={syncScroll}
+          className="overflow-x-auto focus-visible:outline-offset-0"
+        >
+          <p className="sr-only">
+            {t`A bar chart of specimens per collection period. The figures are in the bars' tooltips and in the group table.`}
+          </p>
+          <svg ref={chart} width={width} height={height} className="block" aria-hidden="true">
+            <line
+              x1={pad.left}
+              x2={width - pad.right}
+              y1={axisY}
+              y2={axisY}
+              className="stroke-border-strong"
+            />
+            <text
+              x={pad.left - 8}
+              y={pad.top + 4}
+              textAnchor="end"
+              className="fill-text-muted text-[11px]"
+            >
+              {max}
+            </text>
+            {comparison.timeline.map((point, index) => {
+              const barHeight = Math.max(2, (point.specimens / max) * plotHeight);
+              const slotX = pad.left + index * barWidth;
+              const barX = slotX + barInset;
+              const labelX = barX + innerBarWidth / 2;
+              const showLabel =
+                index === lastIndex ||
+                (index % every === 0 && (lastIndex - index) * barWidth >= 32);
+              return (
+                <g
+                  key={point.period}
+                  onMouseEnter={() => setHover(index)}
+                  onMouseLeave={() => setHover(null)}
+                >
+                  <rect
+                    x={slotX}
+                    y={pad.top}
+                    width={barWidth}
+                    height={plotHeight}
+                    fill="transparent"
                   />
-                )}
-                {index % every === 0 ? (
-                  <text
-                    x={x + (barWidth - 4) / 2}
-                    y={height - pad.bottom + 14}
-                    textAnchor="end"
-                    transform={`rotate(-40 ${x + (barWidth - 4) / 2} ${height - pad.bottom + 14})`}
-                    className="fill-text-muted text-[10px]"
-                  >
-                    {point.period}
-                  </text>
-                ) : null}
-              </g>
-            );
-          })}
-        </svg>
-      </section>
+                  {point.specimens === 0 ? null : (
+                    <path
+                      d={timelineBarPath({
+                        x: barX,
+                        axisY,
+                        width: innerBarWidth,
+                        height: barHeight,
+                      })}
+                      fill={SERIES[resolved]}
+                      opacity={hover === null || hover === index ? 1 : 0.6}
+                    />
+                  )}
+                  {showLabel ? (
+                    <text
+                      x={labelX}
+                      y={axisY + 14}
+                      textAnchor="end"
+                      transform={`rotate(-40 ${labelX} ${axisY + 14})`}
+                      className="fill-text-muted text-[10px]"
+                    >
+                      {point.period}
+                    </text>
+                  ) : null}
+                </g>
+              );
+            })}
+          </svg>
+        </section>
+        {overflow.left ? (
+          <div
+            aria-hidden="true"
+            data-continues="left"
+            className="pointer-events-none absolute inset-y-0 left-0 flex w-10 items-center justify-start bg-linear-to-r from-canvas via-canvas/80 to-transparent pl-1 text-text-muted"
+          >
+            <ChevronLeft className="size-4" />
+          </div>
+        ) : null}
+        {overflow.right ? (
+          <div
+            aria-hidden="true"
+            data-continues="right"
+            className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-end bg-linear-to-l from-canvas via-canvas/80 to-transparent pr-1 text-text-muted"
+          >
+            <ChevronRight className="size-4" />
+          </div>
+        ) : null}
+      </div>
       <p className="min-h-5 text-sm text-text-muted" aria-live="polite">
         {hovered === null
           ? t`Hover over a bar to see its count.`
