@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import { Link as RouterLink } from "wouter";
 
 import { PageContainer } from "@/app/PageContainer";
+import { BUILD_PATH } from "@/app/steps";
 import type { PublishedDataset } from "@/domain/repository/types";
 import { communityUrl, zenodoConfig, type ZenodoConfig } from "@/features/review/zenodo";
 import { buttonClassName, cn, EmptyState, formatCount, inputClassName, Link, Select } from "@/ui";
@@ -246,7 +247,7 @@ function AddYours() {
         <RouterLink href="/pmo/publish" className={buttonClassName({ variant: "secondary" })}>
           <Trans>Publish a file</Trans>
         </RouterLink>
-        <RouterLink href="/" className={buttonClassName({ variant: "secondary" })}>
+        <RouterLink href={BUILD_PATH} className={buttonClassName({ variant: "secondary" })}>
           <Trans>Build a PMO</Trans>
           <ArrowRight aria-hidden="true" className="size-4" />
         </RouterLink>
@@ -268,7 +269,7 @@ function Catalogue({ datasets }: { readonly datasets: readonly PublishedDataset[
         description={t`Build a PMO from your tables, or publish a PMO file you already have. It appears here once a curator accepts it.`}
         action={
           <div className="flex flex-wrap justify-center gap-2">
-            <RouterLink href="/" className={buttonClassName({ variant: "primary" })}>
+            <RouterLink href={BUILD_PATH} className={buttonClassName({ variant: "primary" })}>
               <Trans>Build a PMO</Trans>
               <ArrowRight aria-hidden="true" className="size-4" />
             </RouterLink>

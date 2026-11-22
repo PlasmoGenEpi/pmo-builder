@@ -2,9 +2,12 @@ import { I18nProvider } from "@lingui/react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { memoryLocation } from "wouter/memory-location";
 
+import { App } from "@/app/App";
 import type { ZenodoConfig } from "@/features/review/zenodo";
+import { createTestStore } from "@/features/shared/testing";
 import { i18n } from "@/i18n";
 import { installDomPolyfills } from "@/ui/testPolyfills";
 
@@ -14,6 +17,9 @@ import { PublishedPage } from "./PublishedPage";
 import { catalogue, DATASETS } from "./testing";
 
 beforeAll(installDomPolyfills);
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 /** `<Trans>` needs the i18n context, as in the app. */
 function wrapper({ children }: { children: ReactNode }) {
@@ -115,7 +121,28 @@ describe("PublishedPage", () => {
     expect(await screen.findByRole("article")).toBeInTheDocument();
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Build a PMO" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Build a PMO" })).toHaveAttribute("href", "/build");
+  });
+
+  it("opens the first Build step from the Build a PMO link under the list", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(catalogue()), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    const location = memoryLocation({ path: "/published", record: true });
+    const user = userEvent.setup();
+    render(<App locationHook={location.hook} store={createTestStore()} />);
+
+    const share = await screen.findByRole("region", { name: "Share your data" });
+    await user.click(within(share).getByRole("link", { name: "Build a PMO" }));
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Microhaplotypes" }),
+    ).toBeInTheDocument();
+    expect(location.history.at(-1)).toBe("/build/microhaplotypes");
+    expect(location.history).not.toContain("/");
   });
 
   it("invites a first deposit when nothing has been published", async () => {
@@ -124,7 +151,7 @@ describe("PublishedPage", () => {
       { wrapper },
     );
     expect(await screen.findByText("No PMO has been published yet")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Build a PMO" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Build a PMO" })).toHaveAttribute("href", "/build");
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
 
