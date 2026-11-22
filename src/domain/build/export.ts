@@ -64,12 +64,19 @@ export async function measurePmoSize(
 }
 
 /** The start of a PMO's JSON text, for a preview. */
-export interface PmoPreview {
-  readonly text: string;
-  readonly truncated: boolean;
-  /** Length of the whole text, or `null` when previewing stopped early. */
-  readonly length: number | null;
-}
+export type PmoTextPreview =
+  | {
+      readonly text: string;
+      readonly truncated: false;
+      /** Length of the whole text. */
+      readonly length: number;
+    }
+  | {
+      readonly text: string;
+      readonly truncated: true;
+      /** `null` because previewing stopped early. */
+      readonly length: null;
+    };
 
 /**
  * The PMO as JSON text, cut at `maxLength` characters for a preview.
@@ -78,7 +85,7 @@ export interface PmoPreview {
  * characters are collected and truncation is known, without walking or
  * building the rest of the PMO.
  */
-export function previewPmo(pmo: PortableMicrohaplotypeObject, maxLength = 200_000): PmoPreview {
+export function previewPmo(pmo: PortableMicrohaplotypeObject, maxLength = 200_000): PmoTextPreview {
   const limit = Math.max(0, maxLength);
   const parts: string[] = [];
   let collected = 0;
@@ -100,9 +107,7 @@ export function previewPmo(pmo: PortableMicrohaplotypeObject, maxLength = 200_00
     collected += piece.length;
   }
   const text = parts.join("");
-  return {
-    text,
-    truncated,
-    length: truncated ? null : text.length,
-  };
+  return truncated
+    ? { text, truncated: true, length: null }
+    : { text, truncated: false, length: text.length };
 }

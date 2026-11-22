@@ -146,8 +146,8 @@ const RESULT_GUARDS: {
     value === null ||
     (isRecord(value) &&
       typeof value["text"] === "string" &&
-      typeof value["truncated"] === "boolean" &&
-      (value["length"] === null || typeof value["length"] === "number")),
+      ((value["truncated"] === false && typeof value["length"] === "number") ||
+        (value["truncated"] === true && value["length"] === null))),
   getPanelFragment: (value): value is EngineResult<"getPanelFragment"> => isJsonValue(value),
   workingPmo: (value): value is EngineResult<"workingPmo"> => isWorkingPmoEnvelope(value),
 };
