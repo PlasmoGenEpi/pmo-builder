@@ -774,6 +774,36 @@ describe("PmoFilePage: summary", () => {
     await user.click(within(samples).getByRole("button", { name: "Sort by Reads" }));
     expect(header).toHaveAttribute("aria-sort", "descending");
   });
+
+  it("keeps empty targets last when sorting by heterozygosity and announces the chosen target", async () => {
+    const { user } = await open(pmoFile(richPmo()));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Targets" });
+    await user.click(screen.getByRole("switch", { name: "Show targets with no data" }));
+
+    const targets = screen.getByRole("table", { name: "Targets" });
+    const sortByHe = within(targets).getByRole("button", { name: "Sort by Heterozygosity" });
+
+    // Highest to lowest: real values first, empty target (t3) last.
+    await user.click(sortByHe);
+    expect(columnOf(targets, /Target/)).toEqual(["t1", "t2", "t3"]);
+    expect(columnOf(targets, /Heterozygosity/).at(-1)).toBe("–");
+
+    // Lowest to highest: real values first, empty target (t3) still last.
+    await user.click(sortByHe);
+    expect(columnOf(targets, /Target/)).toEqual(["t2", "t1", "t3"]);
+    expect(columnOf(targets, /Heterozygosity/).at(-1)).toBe("–");
+
+    // Chosen target button announces pressed state; plain table rows carry no aria-selected.
+    expect(within(targets).getByRole("button", { name: "t1", pressed: true })).toBeInTheDocument();
+    expect(within(targets).getByRole("button", { name: "t2", pressed: false })).toBeInTheDocument();
+    for (const row of within(targets).getAllByRole("row")) {
+      expect(row).not.toHaveAttribute("aria-selected");
+    }
+    await user.click(within(targets).getByRole("button", { name: "t2" }));
+    expect(within(targets).getByRole("button", { name: "t2", pressed: true })).toBeInTheDocument();
+    expect(within(targets).getByRole("button", { name: "t1", pressed: false })).toBeInTheDocument();
+  });
 });
 
 describe("PmoFilePage: optional details", () => {
