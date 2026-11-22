@@ -160,7 +160,12 @@ async function openAndRenderCompare(pmo: PortableMicrohaplotypeObject) {
   });
   if (outcome.kind !== "opened") throw new Error(`Could not open test PMO: ${outcome.kind}`);
   return renderWithStore(
-    <CompareTab source="original" minReads={null} onMinReadsChange={() => undefined} />,
+    <CompareTab
+      source="original"
+      minReads={null}
+      maxReads={null}
+      onMinReadsChange={() => undefined}
+    />,
     { store },
   );
 }

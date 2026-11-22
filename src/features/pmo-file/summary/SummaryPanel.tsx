@@ -11,16 +11,7 @@ import type {
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
 import { useWorkingPmoQuery } from "@/state";
-import {
-  Button,
-  Card,
-  EmptyState,
-  SectionHeading,
-  Skeleton,
-  Stat,
-  Switch,
-  formatCount,
-} from "@/ui";
+import { Card, SectionHeading, Skeleton, Stat, Switch, formatCount } from "@/ui";
 
 import { AlleleBars } from "./AlleleBars";
 import {
@@ -37,7 +28,13 @@ import { SortableTable, type SortableColumn } from "./SortableTable";
 import { NoAnswer } from "../NoAnswer";
 import { useSettled } from "../useSettled";
 
-import { MinReadsField, SectionJumps, ViewToolbar, type Jump } from "./ViewToolbar";
+import {
+  MinReadsField,
+  NoReadsAboveMinimum,
+  SectionJumps,
+  ViewToolbar,
+  type Jump,
+} from "./ViewToolbar";
 
 function sampleColumns(summary: PmoSummary): SortableColumn<SampleSummary>[] {
   return [
@@ -242,8 +239,8 @@ export interface SummaryPanelProps {
   /** The minimum reads for a microhaplotype to count; `null` counts them all. */
   readonly minReads: number | null;
   readonly onMinReadsChange: (value: number | null) => void;
-  /** The most reads any microhaplotype has in the open file, shown when the minimum leaves nothing. */
-  readonly maxReads?: number;
+  /** The most reads any microhaplotype has in the working PMO, or `null` when unknown. */
+  readonly maxReads: number | null;
 }
 
 /**
@@ -297,8 +294,6 @@ export function SummaryPanel({
     null;
 
   const nothingPasses = summary !== null && minReads > 0 && summary.headline.samplesWithData === 0;
-  const minimum = formatCount(minReads);
-  const mostReads = maxReads === undefined ? null : formatCount(maxReads);
 
   return (
     <div className="flex flex-col gap-8">
@@ -324,24 +319,10 @@ export function SummaryPanel({
           </output>
         ) : null
       ) : nothingPasses ? (
-        <EmptyState
-          title={plural(minReads, {
-            one: `No microhaplotype has at least ${minimum} read`,
-            other: `No microhaplotype has at least ${minimum} reads`,
-          })}
-          description={
-            maxReads !== undefined && mostReads !== null && maxReads > 0 && maxReads < minReads
-              ? plural(maxReads, {
-                  one: `The most in this file is ${mostReads} read. Lower the minimum or clear it to see all microhaplotypes.`,
-                  other: `The most in this file is ${mostReads} reads. Lower the minimum or clear it to see all microhaplotypes.`,
-                })
-              : t`Lower the minimum or clear it to see all microhaplotypes.`
-          }
-          action={
-            <Button variant="primary" onClick={() => onMinReadsChange(null)}>
-              {t`Clear minimum reads`}
-            </Button>
-          }
+        <NoReadsAboveMinimum
+          minReads={minReads}
+          maxReads={maxReads}
+          onClear={() => onMinReadsChange(null)}
         />
       ) : (
         <>

@@ -6,21 +6,15 @@
 import type { Page } from "@playwright/test";
 
 import { expect, test } from "./fixtures/privacy";
-import { BUILD_TIMEOUT, loadExample } from "./support/review";
+import { openBuiltExample, requireBox } from "./support/pmoFile";
+import { BUILD_TIMEOUT } from "./support/review";
 
 /** Last target in `public/examples/mad4hatter_panel_info_example.csv` (276 targets). */
 const FIRST_TARGET = "Pf3D7_01_v3-145388-145662-1A";
 const LAST_TARGET = "Pf3D7_14_v3-294503-294768-2";
 
 async function openBuiltSummary(page: Page): Promise<void> {
-  await loadExample(page);
-  await page.evaluate(() => {
-    globalThis.location.hash = "/pmo/open-built";
-  });
-  await expect(page.getByText("This is the PMO built from your draft")).toBeVisible({
-    timeout: BUILD_TIMEOUT,
-  });
-  await page.getByRole("tab", { name: "Summary" }).click();
+  await openBuiltExample({ page, tab: "summary" });
   await expect(page.getByRole("heading", { name: "Reads by sample and target" })).toBeVisible({
     timeout: BUILD_TIMEOUT,
   });
@@ -62,12 +56,10 @@ test("at 390 px with all 276 targets, the reads grid scrolls sideways to the las
   const cellsCanvas = canvases.nth(1);
 
   await region.scrollIntoViewIfNeeded();
-  const regionBoxBefore = await region.boundingBox();
-  const labelsBoxBefore = await labelsCanvas.boundingBox();
-  const cellsBoxBefore = await cellsCanvas.boundingBox();
-  if (regionBoxBefore === null || labelsBoxBefore === null || cellsBoxBefore === null) {
-    throw new Error("Expected reads grid region and canvases to have bounding boxes");
-  }
+  const [labelsBoxBefore, cellsBoxBefore] = await Promise.all([
+    requireBox(labelsCanvas, "labels canvas before scroll"),
+    requireBox(cellsCanvas, "cells canvas before scroll"),
+  ]);
 
   // Hover the first target in row 0 before scrolling to capture row 0's sample name.
   await page.mouse.move(cellsBoxBefore.x + 1, cellsBoxBefore.y + 6);
@@ -84,12 +76,11 @@ test("at 390 px with all 276 targets, the reads grid scrolls sideways to the las
   expect(scrolledLeft).toBeGreaterThan(0);
 
   // Sample names must stay visible at the left edge of the scroll region.
-  const regionBoxAfter = await region.boundingBox();
-  const labelsBoxAfter = await labelsCanvas.boundingBox();
-  const cellsBoxAfter = await cellsCanvas.boundingBox();
-  if (regionBoxAfter === null || labelsBoxAfter === null || cellsBoxAfter === null) {
-    throw new Error("Expected reads grid region and canvases to have bounding boxes after scroll");
-  }
+  const [regionBoxAfter, labelsBoxAfter, cellsBoxAfter] = await Promise.all([
+    requireBox(region, "reads grid region after scroll"),
+    requireBox(labelsCanvas, "labels canvas after scroll"),
+    requireBox(cellsCanvas, "cells canvas after scroll"),
+  ]);
   expect(Math.abs(labelsBoxAfter.x - regionBoxAfter.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(labelsBoxAfter.x - labelsBoxBefore.x)).toBeLessThanOrEqual(1);
   expect(labelsBoxAfter.width).toBeGreaterThan(0);
@@ -108,8 +99,7 @@ test("at 390 px with all 276 targets, the reads grid scrolls sideways to the las
   await expect(tooltipCard).toContainText(row0Sample);
 
   // The tooltip stays within the 390 px viewport and the page still does not overflow.
-  const tooltipBox = await tooltipCard.boundingBox();
-  if (tooltipBox === null) throw new Error("Expected hover tooltip to have a bounding box");
+  const tooltipBox = await requireBox(tooltipCard, "hover tooltip");
   expect(tooltipBox.x).toBeGreaterThanOrEqual(0);
   expect(tooltipBox.x + tooltipBox.width).toBeLessThanOrEqual(390);
 
@@ -149,8 +139,7 @@ test("at 1280 px with the default 21 targets, the reads grid fits without sidewa
   await expect(canvases).toHaveCount(2);
   const cellsCanvas = canvases.nth(1);
   await region.scrollIntoViewIfNeeded();
-  const cellsBox = await cellsCanvas.boundingBox();
-  if (cellsBox === null) throw new Error("Expected cells canvas to have a bounding box");
+  const cellsBox = await requireBox(cellsCanvas, "cells canvas");
 
   // Hover the first target in row 0.
   await page.mouse.move(cellsBox.x + 10, cellsBox.y + 6);

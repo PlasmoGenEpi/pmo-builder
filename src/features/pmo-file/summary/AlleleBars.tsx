@@ -38,7 +38,7 @@ export function AlleleBars({ target }: { readonly target: TargetSummary }) {
           other: `Microhaplotypes at ${targetName}, seen in # samples`,
         })}
       </figcaption>
-      <ul className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2.5 sm:grid-cols-[fit-content(14rem)_minmax(0,1fr)_auto] sm:gap-y-2">
+      <ul className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2.5 sm:grid-cols-[fit-content(calc(var(--spacing)*56))_minmax(0,1fr)_auto] sm:gap-y-2">
         {shown.map((allele) => {
           const share = percent.format(allele.freq);
           const count = allele.count;

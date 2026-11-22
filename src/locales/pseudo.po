@@ -593,8 +593,7 @@ msgstr ""
 msgid "{mappedCount, plural, one {{missingCount, plural, one {{mappedFields} is mapped, but {missingFields} is not.} other {{mappedFields} is mapped, but {missingFields} are not.}}} other {{missingCount, plural, one {{mappedFields} are mapped, but {missingFields} is not.} other {{mappedFields} are mapped, but {missingFields} are not.}}}}"
 msgstr ""
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "{maxReads, plural, one {The most in this file is {mostReads} read. Lower the minimum or clear it to see all microhaplotypes.} other {The most in this file is {mostReads} reads. Lower the minimum or clear it to see all microhaplotypes.}}"
 msgstr ""
 
@@ -610,8 +609,7 @@ msgstr ""
 msgid "{methods, plural, one {# method} other {# methods}}, {runs, plural, one {# run} other {# runs}}"
 msgstr ""
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "{minReads, plural, one {No microhaplotype has at least {minimum} read} other {No microhaplotype has at least {minimum} reads}}"
 msgstr ""
 
@@ -1699,8 +1697,7 @@ msgstr ""
 msgid "Chromosomes"
 msgstr ""
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Clear minimum reads"
 msgstr ""
 
@@ -3034,8 +3031,7 @@ msgstr ""
 msgid "Look into your PMO"
 msgstr ""
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-#: src/features/pmo-file/summary/SummaryPanel.tsx
+#: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Lower the minimum or clear it to see all microhaplotypes."
 msgstr ""
 

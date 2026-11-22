@@ -22,10 +22,8 @@ import type {
 import { intlLocale } from "@/i18n/languages";
 import { useWorkingPmoQuery } from "@/state";
 import {
-  Button,
   Callout,
   Combobox,
-  EmptyState,
   Field,
   SectionHeading,
   Select,
@@ -38,7 +36,7 @@ import { NoAnswer, type NoAnswerReason } from "../NoAnswer";
 import { useSettled } from "../useSettled";
 
 import { SortableTable, type SortableColumn } from "./SortableTable";
-import { MinReadsField, ViewToolbar } from "./ViewToolbar";
+import { MinReadsField, NoReadsAboveMinimum, ViewToolbar } from "./ViewToolbar";
 
 /** What each grouping field is called on screen. */
 function fieldName(key: GroupKey): string {
@@ -425,7 +423,7 @@ function Comparison({
   readonly source: WorkingSource;
   readonly field: GroupField;
   readonly minReads: number;
-  readonly maxReads?: number;
+  readonly maxReads: number | null;
   readonly onClearMinReads: () => void;
 }) {
   const [target, setTarget] = useState<string | null>(null);
@@ -448,28 +446,8 @@ function Comparison({
   if (loaded.kind !== "ok") return <NoComparison reason={loaded.kind} />;
   const shown = loaded.value;
   if (minReads > 0 && shown.targets.length === 0) {
-    const minimum = formatCount(minReads);
-    const mostReads = maxReads === undefined ? null : formatCount(maxReads);
     return (
-      <EmptyState
-        title={plural(minReads, {
-          one: `No microhaplotype has at least ${minimum} read`,
-          other: `No microhaplotype has at least ${minimum} reads`,
-        })}
-        description={
-          maxReads !== undefined && mostReads !== null && maxReads > 0 && maxReads < minReads
-            ? plural(maxReads, {
-                one: `The most in this file is ${mostReads} read. Lower the minimum or clear it to see all microhaplotypes.`,
-                other: `The most in this file is ${mostReads} reads. Lower the minimum or clear it to see all microhaplotypes.`,
-              })
-            : t`Lower the minimum or clear it to see all microhaplotypes.`
-        }
-        action={
-          <Button variant="primary" onClick={onClearMinReads}>
-            {t`Clear minimum reads`}
-          </Button>
-        }
-      />
+      <NoReadsAboveMinimum minReads={minReads} maxReads={maxReads} onClear={onClearMinReads} />
     );
   }
   const present = formatCount(field.present);
@@ -559,8 +537,8 @@ export interface CompareTabProps {
   /** The minimum reads for a microhaplotype to count; `null` counts them all. */
   readonly minReads: number | null;
   readonly onMinReadsChange: (value: number | null) => void;
-  /** The most reads any microhaplotype has in the open file, shown when the minimum leaves nothing. */
-  readonly maxReads?: number;
+  /** The most reads any microhaplotype has in the working PMO, or `null` when unknown. */
+  readonly maxReads: number | null;
 }
 
 /** Specimens grouped by a field the file has, compared side by side. */
