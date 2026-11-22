@@ -1903,7 +1903,7 @@ msgid "Datasets"
 msgstr ""
 
 #: src/app/HomePage.tsx
-msgid "Datasets shared in the PlasmoGenEpi community on Zenodo, with their countries, years and panels."
+msgid "Datasets published on Zenodo, with their countries, years and panels."
 msgstr ""
 
 #: src/features/bioinformatics/RunsPart.tsx

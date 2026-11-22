@@ -17,8 +17,8 @@ vi.mock("./zenodoAuth", () => ({ signIn: vi.fn<typeof signIn>() }));
 vi.mock("./zenodoDeposit", () => ({ depositDraft: vi.fn<typeof depositDraft>() }));
 
 const MANUAL: ZenodoConfig = {
-  community: "plasmogenepi",
-  communityName: "PlasmoGenEpi",
+  community: "pmocommunity",
+  communityName: "PMO",
   clientId: null,
 };
 
@@ -90,8 +90,7 @@ function queryInvitation() {
 
 /** Opens the dialog from the invitation's button and returns it. */
 async function openDialog(user: UserEvent, zenodo: ZenodoConfig): Promise<HTMLElement> {
-  const name =
-    zenodo.clientId === null ? "Publish to Zenodo" : "Deposit in the PlasmoGenEpi community";
+  const name = zenodo.clientId === null ? "Publish to Zenodo" : "Deposit in the PMO community";
   await user.click(within(invitation()).getByRole("button", { name }));
   return screen.findByRole("dialog", { name: "Publish to Zenodo" });
 }
@@ -141,9 +140,10 @@ describe("Publish to Zenodo", () => {
     const verdict = screen.getByRole("region", { name: /^ready/i });
     expect(within(verdict).getByRole("button", { name: "Download PMO" })).toBeInTheDocument();
     expect(within(verdict).getByRole("region", { name: "Publish to Zenodo" })).toBeInTheDocument();
-    expect(
-      within(invitation()).getByRole("link", { name: /PlasmoGenEpi community/ }),
-    ).toHaveAttribute("href", "https://zenodo.org/communities/plasmogenepi/");
+    expect(within(invitation()).getByRole("link", { name: /PMO community/ })).toHaveAttribute(
+      "href",
+      "https://zenodo.org/communities/pmocommunity/",
+    );
   });
 
   it("does not offer to publish the example data", async () => {
@@ -160,7 +160,7 @@ describe("Publish to Zenodo", () => {
     // The same tables, once they count as the user's own, can be published.
     treatAsOwnData(store);
     expect(
-      within(invitation()).getByRole("button", { name: "Deposit in the PlasmoGenEpi community" }),
+      within(invitation()).getByRole("button", { name: "Deposit in the PMO community" }),
     ).toBeEnabled();
   });
 
@@ -179,7 +179,7 @@ describe("Publish to Zenodo", () => {
     const { user } = await renderReview(MANUAL);
     const dialog = await openDialog(user, MANUAL);
     const upload = within(dialog).getByRole("link", { name: /open the zenodo upload page/i });
-    expect(upload).toHaveAttribute("href", "https://zenodo.org/uploads/new?community=plasmogenepi");
+    expect(upload).toHaveAttribute("href", "https://zenodo.org/uploads/new?community=pmocommunity");
     expect(upload).toHaveAttribute("target", "_blank");
     expect(upload).toHaveAttribute("rel", "noreferrer noopener");
     expect(within(dialog).getByText(/sends nothing to Zenodo: you upload/)).toBeInTheDocument();
@@ -257,7 +257,7 @@ describe("Deposit on Zenodo", () => {
     expect(depositDraft).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         token: "token-1",
-        community: "plasmogenepi",
+        community: "pmocommunity",
         file: GZIP.blob,
         fileName: GZIP.fileName,
         date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
@@ -469,6 +469,6 @@ describe("Deposit on Zenodo", () => {
     await user.click(within(dialog).getByRole("button", { name: /upload it yourself instead/i }));
     expect(
       within(dialog).getByRole("link", { name: /open the zenodo upload page/i }),
-    ).toHaveAttribute("href", "https://zenodo.org/uploads/new?community=plasmogenepi");
+    ).toHaveAttribute("href", "https://zenodo.org/uploads/new?community=pmocommunity");
   });
 });

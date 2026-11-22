@@ -30,8 +30,8 @@ vi.mock("@/features/review/zenodoDeposit", () => ({
 }));
 
 const ZENODO: ZenodoConfig = {
-  community: "plasmogenepi",
-  communityName: "PlasmoGenEpi",
+  community: "pmocommunity",
+  communityName: "PMO",
   clientId: "client-1",
 };
 
@@ -422,7 +422,7 @@ async function described(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("tab", { name: "Publish to Zenodo" }));
   const region = await screen.findByRole("region", { name: "Publish to Zenodo" });
   await user.click(
-    await within(region).findByRole("button", { name: "Deposit in the PlasmoGenEpi community" }),
+    await within(region).findByRole("button", { name: "Deposit in the PMO community" }),
   );
   const dialog = await screen.findByRole("dialog", { name: "Publish to Zenodo" });
   await user.click(within(dialog).getByRole("button", { name: "Sign in to Zenodo and deposit" }));
@@ -644,14 +644,12 @@ describe("PmoFilePage: publishing", () => {
     const { user } = await open(file);
     await user.click(await screen.findByRole("tab", { name: "Publish to Zenodo" }));
     const publish = await screen.findByRole("region", { name: "Publish to Zenodo" });
-    await user.click(
-      within(publish).getByRole("button", { name: "Deposit in the PlasmoGenEpi community" }),
-    );
+    await user.click(within(publish).getByRole("button", { name: "Deposit in the PMO community" }));
     const dialog = await screen.findByRole("dialog", { name: "Publish to Zenodo" });
     await user.click(within(dialog).getByRole("button", { name: "Sign in to Zenodo and deposit" }));
     expect(await within(dialog).findByText("Your draft is ready on Zenodo")).toBeInTheDocument();
     expect(depositDraft).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ file, fileName: "lab-2025.pmo.json", community: "plasmogenepi" }),
+      expect.objectContaining({ file, fileName: "lab-2025.pmo.json", community: "pmocommunity" }),
     );
   });
 
@@ -676,7 +674,7 @@ describe("PmoFilePage: publishing", () => {
     expect(await screen.findByRole("radio", { name: "Subset" })).toBeChecked();
     const publish = await screen.findByRole("region", { name: "Publish to Zenodo" });
     await user.click(
-      await within(publish).findByRole("button", { name: "Deposit in the PlasmoGenEpi community" }),
+      await within(publish).findByRole("button", { name: "Deposit in the PMO community" }),
     );
     const dialog = await screen.findByRole("dialog", { name: "Publish to Zenodo" });
     await user.click(within(dialog).getByRole("button", { name: "Sign in to Zenodo and deposit" }));

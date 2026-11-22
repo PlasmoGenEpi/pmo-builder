@@ -50,9 +50,9 @@ function fakeZenodo(
 }
 
 const HAPPY = {
-  "GET /api/communities/plasmogenepi": {
+  "GET /api/communities/pmocommunity": {
     status: 200,
-    json: { id: "uuid-1", slug: "plasmogenepi" },
+    json: { id: "uuid-1", slug: "pmocommunity" },
   },
   "POST /api/records": { status: 201, json: { id: "24237640" } },
   "POST /api/records/24237640/draft/files": { status: 201, json: {} },
@@ -64,7 +64,7 @@ const HAPPY = {
 function input(send: typeof fetch, extra: Partial<DepositInput> = {}): DepositInput {
   return {
     token: "secret-token",
-    community: "plasmogenepi",
+    community: "pmocommunity",
     file: new Blob(["gz"]),
     fileName: "My PMO.pmo.json.gz",
     record: RECORD,
@@ -256,7 +256,7 @@ describe("depositDraft", () => {
 
 describe("depositDraft, as a new version", () => {
   const VERSION = {
-    "GET /api/communities/plasmogenepi": { status: 200, json: { id: "uuid-1" } },
+    "GET /api/communities/pmocommunity": { status: 200, json: { id: "uuid-1" } },
     "GET /api/records/500/versions/latest": {
       status: 200,
       json: { id: "502", parent: { communities: { ids: ["uuid-1"] } } },

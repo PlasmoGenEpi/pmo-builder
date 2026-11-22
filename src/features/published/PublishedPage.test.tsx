@@ -21,8 +21,8 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 const ZENODO: ZenodoConfig = {
-  community: "plasmogenepi",
-  communityName: "PlasmoGenEpi",
+  community: "pmocommunity",
+  communityName: "PMO",
   clientId: null,
 };
 
@@ -62,9 +62,9 @@ describe("PublishedPage", () => {
       "href",
       "/published/302",
     );
-    expect(screen.getByRole("link", { name: /PlasmoGenEpi community/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /PMO community/ })).toHaveAttribute(
       "href",
-      "https://zenodo.org/communities/plasmogenepi/",
+      "https://zenodo.org/communities/pmocommunity/",
     );
     expect(screen.getByText(/Read from Zenodo on 15 November 2026/)).toBeInTheDocument();
   });

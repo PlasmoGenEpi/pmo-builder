@@ -12,7 +12,7 @@ import type { MergeSummary, PersonalField, PublicationSummary } from "@/domain/b
 
 import { count } from "./reviewModel";
 
-/** The keyword that puts a record in the community's "PMO files" collection. */
+/** The keyword that marks a record as a PMO file. The list of published PMOs is built from it. */
 export const PMO_KEYWORD = "Portable Microhaplotype Object";
 
 const PMO_DOCS = "https://plasmogenepi.github.io/PMO_Docs/";

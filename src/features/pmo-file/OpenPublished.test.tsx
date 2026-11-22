@@ -15,8 +15,8 @@ import { PmoFilePage, PMO_TABS, type PmoTab } from "./PmoFilePage";
 import { workingPmoSessionOf } from "@/state";
 
 const ZENODO: ZenodoConfig = {
-  community: "plasmogenepi",
-  communityName: "PlasmoGenEpi",
+  community: "pmocommunity",
+  communityName: "PMO",
   clientId: "client-1",
 };
 

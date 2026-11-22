@@ -169,7 +169,7 @@ function Primitives() {
           <IconButton label="Settings" icon={Settings} />
           <IconButton label="Notifications" icon={Bell} variant="secondary" />
           <Link href="#/styleguide">Inline link</Link>
-          <Link href="https://plasmogenepi.org" external>
+          <Link href="https://zenodo.org" external>
             External link
           </Link>
           <ButtonLink href="#/styleguide" variant="secondary" size="sm">

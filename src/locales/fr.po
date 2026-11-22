@@ -1897,8 +1897,8 @@ msgid "Datasets"
 msgstr "Jeux de données"
 
 #: src/app/HomePage.tsx
-msgid "Datasets shared in the PlasmoGenEpi community on Zenodo, with their countries, years and panels."
-msgstr "Les jeux de données partagés dans la communauté PlasmoGenEpi sur Zenodo, avec leurs pays, leurs années et leurs panels."
+msgid "Datasets published on Zenodo, with their countries, years and panels."
+msgstr "Les jeux de données publiés sur Zenodo, avec leurs pays, leurs années et leurs panels."
 
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "Date and other details"
