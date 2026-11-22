@@ -2322,6 +2322,10 @@ msgid "Everything you type and every column you match."
 msgstr "Tout ce que vous saisissez et chaque colonne que vous associez."
 
 #: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Expected heterozygosity (0 to 1)"
+msgstr "Hétérozygotie attendue (de 0 à 1)"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
 msgid "Expected heterozygosity of each target in each group: 1 minus the sum of squared allele frequencies."
 msgstr "Hétérozygotie attendue de chaque cible dans chaque groupe : 1 moins la somme des carrés des fréquences alléliques."
 
@@ -3120,6 +3124,7 @@ msgstr "Liste"
 
 #: src/app/App.tsx
 #: src/app/privacy/PrivacyIndicator.tsx
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/published/CatalogueProblem.tsx
 #: src/ui/Spinner.tsx
 msgid "Loading"
@@ -3620,6 +3625,10 @@ msgstr "Aucune cible n’est encore cochée."
 #: src/app/privacy/UsageNotice.tsx
 msgid "No usage counts will be sent"
 msgstr "Aucune statistique d’utilisation ne sera envoyée"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "No value (unshaded)"
+msgstr "Aucune valeur (non ombré)"
 
 #. The choice of no column in a list of columns
 #: src/ui/Combobox.tsx

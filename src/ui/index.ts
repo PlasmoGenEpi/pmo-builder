@@ -19,6 +19,7 @@ export {
   CANVAS_TEXT,
   EMPTY_CELL,
   SEQUENTIAL,
+  SEQUENTIAL_CELL,
   SERIES,
   rampColour,
   type ChartTheme,

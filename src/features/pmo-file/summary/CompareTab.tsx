@@ -27,9 +27,11 @@ import {
   Field,
   SectionHeading,
   Select,
+  SEQUENTIAL_CELL,
   SERIES,
   Skeleton,
   formatCount,
+  rampColour,
 } from "@/ui";
 
 import { NoAnswer, type NoAnswerReason } from "../NoAnswer";
@@ -405,6 +407,7 @@ function Comparison({
   readonly maxReads: number | null;
   readonly onClearMinReads: () => void;
 }) {
+  const { resolved } = useTheme();
   const [target, setTarget] = useState<string | null>(null);
   const request = useMemo(
     (): WorkingPmoRequest<"groups"> => ({ kind: "groups", source, key: field.key, minReads }),
@@ -421,7 +424,13 @@ function Comparison({
   );
   const decimal = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 2 });
 
-  if (loaded.kind === "loading") return <Skeleton className="h-64 w-full" />;
+  if (loaded.kind === "loading") {
+    return (
+      <output aria-busy="true" aria-label={t`Loading`}>
+        <Skeleton className="h-64 w-full" />
+      </output>
+    );
+  }
   if (loaded.kind !== "ok") return <NoComparison reason={loaded.kind} />;
   const shown = loaded.value;
   if (minReads > 0 && shown.targets.length === 0) {
@@ -432,6 +441,7 @@ function Comparison({
   const present = formatCount(field.present);
   const total = formatCount(field.total);
   const name = specimenFieldLabel(field.key);
+  const heterozygosityRamp = SEQUENTIAL_CELL[resolved];
   return (
     <>
       {field.present < field.total ? (
@@ -470,6 +480,12 @@ function Comparison({
                 const value = row.heterozygosity[index];
                 return value === null || value === undefined ? "–" : decimal.format(value);
               },
+              cellStyle: (row) => {
+                const value = row.heterozygosity[index];
+                return value === null || value === undefined
+                  ? undefined
+                  : { backgroundColor: rampColour(heterozygosityRamp, value) };
+              },
               numeric: true,
             })),
           ]}
@@ -478,6 +494,31 @@ function Comparison({
           onRowSelect={(row) => setTarget(row.name)}
           selectedKey={shownTarget?.name ?? null}
         />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-text-muted">
+          <span className="inline-flex items-center gap-1.5">
+            <span aria-hidden="true" className="tabular-nums">
+              0
+            </span>
+            <span
+              aria-hidden="true"
+              className="inline-block h-3 w-32 rounded-sm border border-border"
+              style={{ background: `linear-gradient(to right, ${heterozygosityRamp.join(", ")})` }}
+            />
+            <span aria-hidden="true" className="tabular-nums">
+              1
+            </span>
+            <span>{t`Expected heterozygosity (0 to 1)`}</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className="inline-flex h-4 w-5 items-center justify-center rounded-sm border border-border bg-surface text-xs text-text-muted"
+            >
+              –
+            </span>
+            <span>{t`No value (unshaded)`}</span>
+          </span>
+        </div>
       </section>
 
       {shownTarget === null ? null : (
@@ -535,7 +576,13 @@ export function CompareTab({
   const fields = usePmoQuery(fieldsRequest);
   const [key, setKey] = useState<GroupKey | null>(null);
 
-  if (fields.kind === "loading") return <Skeleton className="h-40 w-full" />;
+  if (fields.kind === "loading") {
+    return (
+      <output aria-busy="true" aria-label={t`Loading`}>
+        <Skeleton className="h-40 w-full" />
+      </output>
+    );
+  }
   if (fields.kind !== "ok") return <NoComparison reason={fields.kind} />;
   const usable = fields.value;
   const chosen = usable.find((field) => field.key === key) ?? usable[0] ?? null;
