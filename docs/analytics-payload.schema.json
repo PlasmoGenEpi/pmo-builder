@@ -921,6 +921,7 @@
                   "metatable/null-values",
                   "metatable/plate-position-conflict",
                   "metatable/plate-row-col-mismatch",
+                  "mhap/builder-finished",
                   "mhap/duplicate-target-seq",
                   "mhap/incomplete-location",
                   "mhap/incomplete-location-columns",

@@ -223,36 +223,36 @@ Then open the address it prints.
 
 ## Commands
 
-| Command           | What it does                                                     |
-| ----------------- | ---------------------------------------------------------------- |
-| `pnpm dev`        | Dev server with hot reload                                       |
-| `pnpm build`      | Production build into `dist/`                                    |
-| `pnpm preview`    | Serves `dist/`                                                   |
-| `pnpm typecheck`  | TypeScript, no output                                            |
-| `pnpm lint`       | oxlint, type-aware                                               |
-| `pnpm format`     | oxfmt, writes files (`pnpm format:check` only checks)            |
-| `pnpm test`       | Unit tests with Vitest                                           |
-| `pnpm e2e`        | Builds, then runs the Playwright and axe tests against the build |
-| `pnpm check`      | Format check, lint, typecheck, unit tests and build              |
-| `pnpm harvest`    | Rebuilds the list of published PMOs from the Zenodo community    |
-| `pnpm lib:update` | Rebuilds pmotools-ts from `../pmotools-ts` and vendors it        |
+| Command          | What it does                                                     |
+| ---------------- | ---------------------------------------------------------------- |
+| `pnpm dev`       | Dev server with hot reload                                       |
+| `pnpm build`     | Production build into `dist/`                                    |
+| `pnpm preview`   | Serves `dist/`                                                   |
+| `pnpm typecheck` | TypeScript, no output                                            |
+| `pnpm lint`      | oxlint, type-aware                                               |
+| `pnpm format`    | oxfmt, writes files (`pnpm format:check` only checks)            |
+| `pnpm test`      | Unit tests with Vitest                                           |
+| `pnpm e2e`       | Builds, then runs the Playwright and axe tests against the build |
+| `pnpm check`     | Format check, lint, typecheck, unit tests and build              |
+| `pnpm harvest`   | Rebuilds the list of published PMOs from the Zenodo community    |
 
 A pre-commit hook formats and lints staged files. Typecheck and tests run in
 CI.
 
 ## The pmotools-ts dependency
 
-pmotools-ts is not on npm yet. The app depends on a tarball in `vendor/`
-(`"pmotools-ts": "file:vendor/pmotools-ts-0.0.0.tgz"`). To pick up changes,
-check out pmotools-ts next to this repository and run:
+The app reads and writes PMO files with
+[pmotools-ts](https://www.npmjs.com/package/pmotools-ts), an ordinary npm
+dependency. Dependabot proposes each new version in a pull request of its own.
+
+To try unreleased library changes, check out pmotools-ts next to this
+repository and link it:
 
 ```bash
-pnpm lib:update            # or: pnpm lib:update /path/to/pmotools-ts
+pnpm link ../pmotools-ts   # undo with: pnpm unlink pmotools-ts
 ```
 
-This builds the library, packs it into `vendor/` and reinstalls it. Commit the
-new tarball and `pnpm-lock.yaml` together. Once pmotools-ts is published, the
-dependency becomes an ordinary npm version and `vendor/` goes away.
+Release the library first, then move the app to the new version.
 
 ## Deploying
 

@@ -6,7 +6,6 @@
     "coverage",
     "playwright-report",
     "test-results",
-    "vendor",
     "reference",
     "pnpm-lock.yaml",
     "public/examples"

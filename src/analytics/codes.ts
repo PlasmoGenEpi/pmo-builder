@@ -14,7 +14,7 @@
 
 /**
  * Every code pmotools-ts raises, as `"<module>/<reason>"`. `codes.test.ts`
- * reads the vendored library and fails when this list falls behind it.
+ * reads the installed `pmotools-ts` package and fails when this list falls behind it.
  */
 export const PMOTOOLS_CODES = [
   "integrity/duplicate-library-sample-result",
@@ -61,6 +61,7 @@ export const PMOTOOLS_CODES = [
   "metatable/null-values",
   "metatable/plate-position-conflict",
   "metatable/plate-row-col-mismatch",
+  "mhap/builder-finished",
   "mhap/duplicate-target-seq",
   "mhap/incomplete-location",
   "mhap/incomplete-location-columns",

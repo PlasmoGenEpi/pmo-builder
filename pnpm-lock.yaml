@@ -188,8 +188,8 @@ importers:
         specifier: ^5.7.1
         version: 5.7.1
       pmotools-ts:
-        specifier: file:vendor/pmotools-ts-0.0.0.tgz
-        version: file:vendor/pmotools-ts-0.0.0.tgz
+        specifier: ^0.2.0
+        version: 0.2.0
       radix-ui:
         specifier: ^1.8.1
         version: 1.8.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -2516,10 +2516,9 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  pmotools-ts@file:vendor/pmotools-ts-0.0.0.tgz:
-    resolution: {integrity: sha512-a6tcsK1+58W4/zH93SEgDokpg4WWRP4gp3lM3JvKXMsCWcqeyx20DvIwkZtNYrepOtG0OBVXbew/pe4qRPv0Rg==, tarball: file:vendor/pmotools-ts-0.0.0.tgz}
-    version: 0.0.0
-    engines: {node: '>=20'}
+  pmotools-ts@0.2.0:
+    resolution: {integrity: sha512-infN+u3ZqQaMUQBYfur/eaTL1+VE71GM7msS+JaoivWVn7a823vVgV7CaW2aHjdXvD728A6PGohOas6xAfJ/wg==}
+    engines: {node: '>=22'}
 
   pofile-ts@4.0.3:
     resolution: {integrity: sha512-sz1pnjgEfPyZ+QvaeX3NtCmbYnEvG01LZRLoN/uXoLtPZtxCIH5IctL7yXXc0fFyk/fqV6K8g3hlNfr6IJwupA==}
@@ -4883,7 +4882,7 @@ snapshots:
     dependencies:
       playwright-core: 1.65.0
 
-  pmotools-ts@file:vendor/pmotools-ts-0.0.0.tgz: {}
+  pmotools-ts@0.2.0: {}
 
   pofile-ts@4.0.3: {}
 
