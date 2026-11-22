@@ -11,7 +11,16 @@ import type {
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
 import { useWorkingPmoQuery } from "@/state";
-import { Card, SectionHeading, Skeleton, Stat, Switch, formatCount } from "@/ui";
+import {
+  Button,
+  Card,
+  EmptyState,
+  SectionHeading,
+  Skeleton,
+  Stat,
+  Switch,
+  formatCount,
+} from "@/ui";
 
 import { AlleleBars } from "./AlleleBars";
 import {
@@ -233,6 +242,8 @@ export interface SummaryPanelProps {
   /** The minimum reads for a microhaplotype to count; `null` counts them all. */
   readonly minReads: number | null;
   readonly onMinReadsChange: (value: number | null) => void;
+  /** The most reads any microhaplotype has in the open file, shown when the minimum leaves nothing. */
+  readonly maxReads?: number;
 }
 
 /**
@@ -244,6 +255,7 @@ export function SummaryPanel({
   source,
   minReads: minReadsInput,
   onMinReadsChange,
+  maxReads,
 }: SummaryPanelProps) {
   const minReads = useSettled(Math.max(0, minReadsInput ?? 0), 400);
   const [allTargets, setAllTargets] = useState(false);
@@ -284,11 +296,15 @@ export function SummaryPanel({
     summary?.targets.toSorted((a, b) => b.samples - a.samples)[0] ??
     null;
 
+  const nothingPasses = summary !== null && minReads > 0 && summary.headline.samplesWithData === 0;
+  const minimum = formatCount(minReads);
+  const mostReads = maxReads === undefined ? null : formatCount(maxReads);
+
   return (
     <div className="flex flex-col gap-8">
       <ViewToolbar>
         <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
-        {summary === null ? null : <SectionJumps jumps={jumpsOf(summary)} />}
+        {summary === null || nothingPasses ? null : <SectionJumps jumps={jumpsOf(summary)} />}
       </ViewToolbar>
 
       {loaded.kind === "ok" || loaded.kind === "loading" ? null : (
@@ -307,6 +323,26 @@ export function SummaryPanel({
             <Skeleton className="h-64 w-full" />
           </output>
         ) : null
+      ) : nothingPasses ? (
+        <EmptyState
+          title={plural(minReads, {
+            one: `No microhaplotype has at least ${minimum} read`,
+            other: `No microhaplotype has at least ${minimum} reads`,
+          })}
+          description={
+            maxReads !== undefined && mostReads !== null && maxReads > 0 && maxReads < minReads
+              ? plural(maxReads, {
+                  one: `The most in this file is ${mostReads} read. Lower the minimum or clear it to see all microhaplotypes.`,
+                  other: `The most in this file is ${mostReads} reads. Lower the minimum or clear it to see all microhaplotypes.`,
+                })
+              : t`Lower the minimum or clear it to see all microhaplotypes.`
+          }
+          action={
+            <Button variant="primary" onClick={() => onMinReadsChange(null)}>
+              {t`Clear minimum reads`}
+            </Button>
+          }
+        />
       ) : (
         <>
           <Headline summary={summary} />

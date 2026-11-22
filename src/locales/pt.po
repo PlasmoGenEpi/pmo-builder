@@ -587,6 +587,11 @@ msgstr "{librarySamples, plural, one {# amostra de biblioteca} other {# amostras
 msgid "{mappedCount, plural, one {{missingCount, plural, one {{mappedFields} is mapped, but {missingFields} is not.} other {{mappedFields} is mapped, but {missingFields} are not.}}} other {{missingCount, plural, one {{mappedFields} are mapped, but {missingFields} is not.} other {{mappedFields} are mapped, but {missingFields} are not.}}}}"
 msgstr "{mappedCount, plural, one {{missingCount, plural, one {{mappedFields} está associado, mas {missingFields} não está.} other {{mappedFields} está associado, mas {missingFields} não estão.}}} other {{missingCount, plural, one {{mappedFields} estão associados, mas {missingFields} não está.} other {{mappedFields} estão associados, mas {missingFields} não estão.}}}}"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "{maxReads, plural, one {The most in this file is {mostReads} read. Lower the minimum or clear it to see all microhaplotypes.} other {The most in this file is {mostReads} reads. Lower the minimum or clear it to see all microhaplotypes.}}"
+msgstr "{maxReads, plural, one {O máximo neste ficheiro é {mostReads} leitura. Reduza o mínimo ou limpe-o para ver todos os micro-haplótipos.} other {O máximo neste ficheiro é {mostReads} leituras. Reduza o mínimo ou limpe-o para ver todos os micro-haplótipos.}}"
+
 #: src/features/pmo-file/summary/ReadsGrid.tsx
 msgid "{maxReads} reads (log scale)"
 msgstr "{maxReads} leituras (escala logarítmica)"
@@ -598,6 +603,11 @@ msgstr "{message} Recarregue a página para tentar novamente."
 #: src/features/review/reviewModel.ts
 msgid "{methods, plural, one {# method} other {# methods}}, {runs, plural, one {# run} other {# runs}}"
 msgstr "{methods, plural, one {# método} other {# métodos}}, {runs, plural, one {# execução} other {# execuções}}"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "{minReads, plural, one {No microhaplotype has at least {minimum} read} other {No microhaplotype has at least {minimum} reads}}"
+msgstr "{minReads, plural, one {Nenhum micro-haplótipo tem pelo menos {minimum} leitura} other {Nenhum micro-haplótipo tem pelo menos {minimum} leituras}}"
 
 #. Advice for fields that only work together: match the missing fields to columns too, or unmatch {mappedFields}.
 #: src/domain/build/notices.ts
@@ -1682,6 +1692,11 @@ msgstr "Cromossoma"
 #: src/domain/fields/records.ts
 msgid "Chromosomes"
 msgstr "Cromossomas"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Clear minimum reads"
+msgstr "Limpar o mínimo de leituras"
 
 #: src/features/published/PublishedPage.tsx
 msgid "Clear the filters"
@@ -3012,6 +3027,11 @@ msgstr "Localizações que terminam antes de começar"
 #: src/features/review/ReviewStep.tsx
 msgid "Look into your PMO"
 msgstr "Explorar o seu PMO"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Lower the minimum or clear it to see all microhaplotypes."
+msgstr "Reduza o mínimo ou limpe-o para ver todos os micro-haplótipos."
 
 #: src/features/pmo-file/summary/CompareTab.tsx
 msgid "Make one on the Subset tab. Until then, only the original can be compared."

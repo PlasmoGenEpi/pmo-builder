@@ -22,8 +22,10 @@ import type {
 import { intlLocale } from "@/i18n/languages";
 import { useWorkingPmoQuery } from "@/state";
 import {
+  Button,
   Callout,
   Combobox,
+  EmptyState,
   Field,
   SectionHeading,
   Select,
@@ -417,10 +419,14 @@ function Comparison({
   source,
   field,
   minReads,
+  maxReads,
+  onClearMinReads,
 }: {
   readonly source: WorkingSource;
   readonly field: GroupField;
   readonly minReads: number;
+  readonly maxReads?: number;
+  readonly onClearMinReads: () => void;
 }) {
   const [target, setTarget] = useState<string | null>(null);
   const request = useMemo(
@@ -441,8 +447,42 @@ function Comparison({
   if (loaded.kind === "loading") return <Skeleton className="h-64 w-full" />;
   if (loaded.kind !== "ok") return <NoComparison reason={loaded.kind} />;
   const shown = loaded.value;
+  if (minReads > 0 && shown.targets.length === 0) {
+    const minimum = formatCount(minReads);
+    const mostReads = maxReads === undefined ? null : formatCount(maxReads);
+    return (
+      <EmptyState
+        title={plural(minReads, {
+          one: `No microhaplotype has at least ${minimum} read`,
+          other: `No microhaplotype has at least ${minimum} reads`,
+        })}
+        description={
+          maxReads !== undefined && mostReads !== null && maxReads > 0 && maxReads < minReads
+            ? plural(maxReads, {
+                one: `The most in this file is ${mostReads} read. Lower the minimum or clear it to see all microhaplotypes.`,
+                other: `The most in this file is ${mostReads} reads. Lower the minimum or clear it to see all microhaplotypes.`,
+              })
+            : t`Lower the minimum or clear it to see all microhaplotypes.`
+        }
+        action={
+          <Button variant="primary" onClick={onClearMinReads}>
+            {t`Clear minimum reads`}
+          </Button>
+        }
+      />
+    );
+  }
+  const present = formatCount(field.present);
+  const total = formatCount(field.total);
+  const name = fieldName(field.key);
   return (
     <>
+      {field.present < field.total ? (
+        <p className="text-sm text-text-muted">
+          {t`${present} of ${total} specimens have a value for ${name}. The others are grouped as Not recorded.`}
+        </p>
+      ) : null}
+
       <section className="flex flex-col gap-4">
         <SectionHeading
           title={t`Groups`}
@@ -519,10 +559,17 @@ export interface CompareTabProps {
   /** The minimum reads for a microhaplotype to count; `null` counts them all. */
   readonly minReads: number | null;
   readonly onMinReadsChange: (value: number | null) => void;
+  /** The most reads any microhaplotype has in the open file, shown when the minimum leaves nothing. */
+  readonly maxReads?: number;
 }
 
 /** Specimens grouped by a field the file has, compared side by side. */
-export function CompareTab({ source, minReads: minReadsInput, onMinReadsChange }: CompareTabProps) {
+export function CompareTab({
+  source,
+  minReads: minReadsInput,
+  onMinReadsChange,
+  maxReads,
+}: CompareTabProps) {
   const minReads = useSettled(Math.max(0, minReadsInput ?? 0), 400);
   const fieldsRequest = useMemo(
     (): WorkingPmoRequest<"groupFields"> => ({ kind: "groupFields", source }),
@@ -545,10 +592,6 @@ export function CompareTab({ source, minReads: minReadsInput, onMinReadsChange }
       </Callout>
     );
   }
-
-  const present = formatCount(chosen.present);
-  const total = formatCount(chosen.total);
-  const name = fieldName(chosen.key);
 
   return (
     <div className="flex flex-col gap-8">
@@ -576,13 +619,13 @@ export function CompareTab({ source, minReads: minReadsInput, onMinReadsChange }
         <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
       </ViewToolbar>
 
-      {chosen.present < chosen.total ? (
-        <p className="text-sm text-text-muted">
-          {t`${present} of ${total} specimens have a value for ${name}. The others are grouped as Not recorded.`}
-        </p>
-      ) : null}
-
-      <Comparison source={source} field={chosen} minReads={minReads} />
+      <Comparison
+        source={source}
+        field={chosen}
+        minReads={minReads}
+        maxReads={maxReads}
+        onClearMinReads={() => onMinReadsChange(null)}
+      />
     </div>
   );
 }
