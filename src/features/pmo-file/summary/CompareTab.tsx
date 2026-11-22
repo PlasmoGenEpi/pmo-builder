@@ -444,26 +444,28 @@ export function CompareTab({ source, minReads: minReadsInput, onMinReadsChange }
   const name = fieldName(chosen.key);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <ViewToolbar>
-        <Field label={t`Group specimens by`} className="w-96">
+        <Field label={t`Group specimens by`} layout="compact" className="min-w-0 max-w-full">
           {(control) => (
-            <Select
-              {...control}
-              options={usable.map((field) => {
-                const fieldPresent = formatCount(field.present);
-                const fieldTotal = formatCount(field.total);
-                const label = fieldName(field.key);
-                return {
-                  value: field.key,
-                  label: t`${label} (${fieldPresent} of ${fieldTotal} specimens)`,
-                };
-              })}
-              value={chosen.key}
-              onValueChange={(value) =>
-                setKey(usable.find((field) => field.key === value)?.key ?? null)
-              }
-            />
+            <div className="w-full min-w-0 sm:w-72">
+              <Select
+                {...control}
+                options={usable.map((field) => {
+                  const fieldPresent = formatCount(field.present);
+                  const fieldTotal = formatCount(field.total);
+                  const label = fieldName(field.key);
+                  return {
+                    value: field.key,
+                    label: t`${label} (${fieldPresent} of ${fieldTotal} specimens)`,
+                  };
+                })}
+                value={chosen.key}
+                onValueChange={(value) =>
+                  setKey(usable.find((field) => field.key === value)?.key ?? null)
+                }
+              />
+            </div>
           )}
         </Field>
         <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />

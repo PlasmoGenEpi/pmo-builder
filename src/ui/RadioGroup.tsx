@@ -13,13 +13,15 @@ export interface RadioOption<V extends string = string> {
 
 /** Props for {@link RadioGroup}. */
 export interface RadioGroupProps<V extends string = string> {
-  /** The question the group answers, shown above the choices. */
+  /** The question the group answers, shown above the choices (or screen-reader only when `segmented`). */
   label: ReactNode;
   hint?: ReactNode;
   options: readonly RadioOption<V>[];
   value: V | undefined;
   onValueChange: (value: V) => void;
   orientation?: "vertical" | "horizontal";
+  /** `segmented` renders compact inline radio buttons inside a pill track, keeping `radiogroup` semantics. */
+  variant?: "default" | "segmented";
   disabled?: boolean;
   className?: string;
 }
@@ -32,12 +34,56 @@ export function RadioGroup<V extends string = string>({
   value,
   onValueChange,
   orientation = "vertical",
+  variant = "default",
   disabled,
   className,
 }: RadioGroupProps<V>) {
   const id = useId();
   const labelId = `radio-${id}-label`;
   const hintId = `radio-${id}-hint`;
+
+  if (variant === "segmented") {
+    return (
+      <div className={cn("inline-flex items-center", className)}>
+        <span id={labelId} className="sr-only">
+          {label}
+        </span>
+        {hint ? (
+          <span id={hintId} className="sr-only">
+            {hint}
+          </span>
+        ) : null}
+        <RadixRadioGroup.Root
+          aria-labelledby={labelId}
+          aria-describedby={hint ? hintId : undefined}
+          value={value}
+          onValueChange={(next) => {
+            const match = options.find((option) => option.value === next);
+            if (match) onValueChange(match.value);
+          }}
+          orientation="horizontal"
+          disabled={disabled}
+          className="inline-flex w-fit items-center gap-0.5 rounded-lg border border-border bg-surface-subtle p-0.5"
+        >
+          {options.map((option) => (
+            <RadixRadioGroup.Item
+              key={option.value}
+              value={option.value}
+              disabled={option.disabled}
+              className={cn(
+                "inline-flex h-6 cursor-pointer items-center justify-center rounded-md px-2.5 text-sm font-medium whitespace-nowrap text-text-muted transition-colors duration-100 hover:text-text",
+                "data-[state=checked]:bg-surface data-[state=checked]:text-text data-[state=checked]:shadow-sm",
+                "disabled:cursor-not-allowed disabled:opacity-50",
+              )}
+            >
+              {option.label}
+            </RadixRadioGroup.Item>
+          ))}
+        </RadixRadioGroup.Root>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <div className="flex flex-col gap-0.5">

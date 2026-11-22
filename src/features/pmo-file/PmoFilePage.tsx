@@ -1,6 +1,6 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { ArrowRight, Download, Hammer } from "lucide-react";
+import { ArrowRight, Download, FileSpreadsheet, Hammer } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link as RouterLink, useLocation, useParams } from "wouter";
 
@@ -27,6 +27,7 @@ import {
 import {
   Button,
   Callout,
+  FileDropActions,
   FileDropzone,
   Link,
   RadioGroup,
@@ -34,8 +35,10 @@ import {
   Tabs,
   buttonClassName,
   formatBytes,
+  useFileDrop,
 } from "@/ui";
 
+import { PmoHeaderBar } from "./PmoHeaderBar";
 import { PublishPanel } from "./PublishPanel";
 import { CompareTab } from "./summary/CompareTab";
 import { SummaryPanel } from "./summary/SummaryPanel";
@@ -252,6 +255,85 @@ function OpenBuilt() {
   );
 }
 
+const PMO_ACCEPT = [".json", ".json.gz", ".gz"] as const;
+
+/** The compact top bar shown when a working PMO is open: file name, size, source switch, Replace and Remove. */
+function WorkingPmoBar({
+  name,
+  size,
+  hasSubset,
+  hasZenodo,
+  source,
+  onSourceChange,
+  onFileSelect,
+  onRemove,
+}: {
+  readonly name: string;
+  readonly size: number;
+  readonly hasSubset: boolean;
+  readonly hasZenodo: boolean;
+  readonly source: WorkingSource;
+  readonly onSourceChange: (source: WorkingSource) => void;
+  readonly onFileSelect: (file: File) => void;
+  readonly onRemove: () => void;
+}) {
+  const { choose, dragHandlers, dragging, rejection, clearRejection, input } = useFileDrop({
+    label: "PMO",
+    accept: PMO_ACCEPT,
+    onFileSelect,
+  });
+
+  return (
+    <PmoHeaderBar
+      icon={<FileSpreadsheet aria-hidden="true" className="size-4" />}
+      title={name}
+      titleTooltip={name}
+      monoTitle
+      meta={formatBytes(size)}
+      tone={dragging ? "dragging" : rejection ? "error" : "default"}
+      dragHandlers={dragHandlers}
+      error={rejection}
+      actions={
+        <>
+          {hasSubset ? (
+            <RadioGroup<WorkingSource>
+              variant="segmented"
+              label={t`Work with`}
+              hint={
+                hasZenodo
+                  ? t`Summary, Compare, Tables and Publish use the PMO chosen here.`
+                  : t`Summary, Compare and Tables use the PMO chosen here.`
+              }
+              value={source}
+              onValueChange={onSourceChange}
+              options={[
+                {
+                  value: "original",
+                  label: t({ message: "Original", comment: "The PMO file as it was opened" }),
+                },
+                {
+                  value: "subset",
+                  label: t({ message: "Subset", comment: "A smaller PMO made from the original" }),
+                },
+              ]}
+            />
+          ) : null}
+          <FileDropActions
+            label="PMO"
+            onReplace={choose}
+            onRemove={() => {
+              clearRejection();
+              onRemove();
+            }}
+          />
+        </>
+      }
+    >
+      {input}
+    </PmoHeaderBar>
+  );
+}
+
 /** Props for {@link PmoFilePage}. */
 export interface PmoFilePageProps {
   /** The tab to show. Default the overview. */
@@ -289,75 +371,23 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
   const made = subset.kind === "made" ? subset.made : null;
   const shownFile = file.kind === "none" ? null : { name: file.name, size: file.size };
 
-  return (
-    // One width once a file is open, so the file and the tabs stay put when
-    // switching between the wide views (Summary, Compare) and the others.
-    <PageContainer width={file.kind === "opened" ? "full" : "reading"}>
-      <div className="flex flex-col gap-6">
-        <header className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-text">
-            <Trans>My PMO file</Trans>
-          </h1>
-          {file.kind === "opened" && made !== null ? (
-            <RadioGroup<WorkingSource>
-              label={t`Work with`}
-              hint={
-                zenodo === null
-                  ? t`Summary, Compare and Tables use the PMO chosen here.`
-                  : t`Summary, Compare, Tables and Publish use the PMO chosen here.`
-              }
-              orientation="horizontal"
-              value={source}
-              onValueChange={(next) => session.setSource(next)}
-              options={[
-                {
-                  value: "original",
-                  label: t({ message: "Original", comment: "The PMO file as it was opened" }),
-                  description: t`The file as it was opened`,
-                },
-                {
-                  value: "subset",
-                  label: t({ message: "Subset", comment: "A smaller PMO made from the original" }),
-                  description: t`The specimens and targets you kept`,
-                },
-              ]}
-            />
-          ) : null}
-          {file.kind === "opened" ? null : (
-            <p className="max-w-prose text-md text-text-muted">
-              <Trans>
-                Open a PMO file to see a summary of its samples and targets, compare groups of
-                specimens, download its tables as CSV or TSV, make a smaller PMO with only some
-                specimens, targets or reads, or publish it. The file stays in this browser.
-              </Trans>
-            </p>
-          )}
-        </header>
+  if (file.kind === "opened") {
+    return (
+      // One width once a file is open, so the bar and the tabs stay put when
+      // switching between the wide views (Summary, Compare) and the others.
+      <PageContainer width="full" compact>
+        <div className="flex flex-col gap-4">
+          <WorkingPmoBar
+            name={file.name}
+            size={file.size}
+            hasSubset={made !== null}
+            hasZenodo={zenodo !== null}
+            source={source}
+            onSourceChange={(next) => session.setSource(next)}
+            onFileSelect={open}
+            onRemove={() => void session.close()}
+          />
 
-        <FileDropzone
-          label="PMO"
-          description={t`A PMO file in version ${version}, saved as .json or .json.gz.`}
-          accept={[".json", ".json.gz", ".gz"]}
-          file={shownFile}
-          onFileSelect={open}
-          onRemove={() => void session.close()}
-          busy={file.kind === "opening" ? t`Opening the file` : false}
-          error={refusal(file)}
-        />
-
-        {file.kind === "none" && canOpenBuilt ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <Button icon={Hammer} onClick={() => navigate(OPEN_BUILT_PATH)}>
-              {t`Open the PMO you are building`}
-            </Button>
-          </div>
-        ) : null}
-
-        {file.kind === "refused" && file.check.kind === "invalid" ? (
-          <Invalid check={file.check} />
-        ) : null}
-
-        {file.kind === "opened" ? (
           <Tabs<PmoTab>
             label={t`What to do with the file`}
             value={zenodo === null && tab === "publish" ? "overview" : tab}
@@ -457,6 +487,48 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                   ]),
             ]}
           />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  return (
+    <PageContainer width="reading">
+      <div className="flex flex-col gap-6">
+        <header className="flex flex-col gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-text">
+            <Trans>My PMO file</Trans>
+          </h1>
+          <p className="max-w-prose text-md text-text-muted">
+            <Trans>
+              Open a PMO file to see a summary of its samples and targets, compare groups of
+              specimens, download its tables as CSV or TSV, make a smaller PMO with only some
+              specimens, targets or reads, or publish it. The file stays in this browser.
+            </Trans>
+          </p>
+        </header>
+
+        <FileDropzone
+          label="PMO"
+          description={t`A PMO file in version ${version}, saved as .json or .json.gz.`}
+          accept={PMO_ACCEPT}
+          file={shownFile}
+          onFileSelect={open}
+          onRemove={() => void session.close()}
+          busy={file.kind === "opening" ? t`Opening the file` : false}
+          error={refusal(file)}
+        />
+
+        {file.kind === "none" && canOpenBuilt ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button icon={Hammer} onClick={() => navigate(OPEN_BUILT_PATH)}>
+              {t`Open the PMO you are building`}
+            </Button>
+          </div>
+        ) : null}
+
+        {file.kind === "refused" && file.check.kind === "invalid" ? (
+          <Invalid check={file.check} />
         ) : null}
 
         {file.kind === "none" ? (
