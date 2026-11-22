@@ -323,6 +323,7 @@ export function mergeSections(results: SectionResults, options: MergeOptions = {
     const { result, warnings } = collectWarnings((onWarning) =>
       mergeToPmo(parts, {
         onWarning,
+        shareMicrohaplotypes: true,
         ...(options.creationDate === undefined ? {} : { creationDate: options.creationDate }),
       }),
     );
