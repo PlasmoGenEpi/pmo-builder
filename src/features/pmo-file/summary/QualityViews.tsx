@@ -5,7 +5,7 @@
  * the file has its data, and says how much of the file it covers.
  */
 import { plural, t } from "@lingui/core/macro";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { useTheme } from "@/app/theme";
 import type { PmoSummary, SampleSummary } from "@/domain/tools/types";
@@ -112,14 +112,78 @@ function stageCounted(summary: PmoSummary): SampleSummary[] {
   );
 }
 
+interface Box {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
+const TOOLTIP_GAP = 6;
+const VIEWPORT_MARGIN = 8;
+
+/**
+ * Places a plate well's tooltip beside the well, in coordinates relative to the
+ * container holding the plates, flipping or clamping so it stays inside the viewport.
+ */
+function placeWellTooltip(options: {
+  readonly well: Box;
+  readonly container: Box;
+  readonly tooltip: { readonly width: number; readonly height: number };
+  readonly viewport: { readonly width: number; readonly height: number };
+}): { readonly left: number; readonly top: number } {
+  const { well, container, tooltip, viewport } = options;
+
+  let vx = well.left;
+  if (vx + tooltip.width > viewport.width - VIEWPORT_MARGIN) {
+    vx = well.right - tooltip.width;
+  }
+  const maxX = Math.max(VIEWPORT_MARGIN, viewport.width - VIEWPORT_MARGIN - tooltip.width);
+  vx = Math.max(VIEWPORT_MARGIN, Math.min(vx, maxX));
+
+  let vy = well.bottom + TOOLTIP_GAP;
+  if (vy + tooltip.height > viewport.height - VIEWPORT_MARGIN) {
+    vy = well.top - TOOLTIP_GAP - tooltip.height;
+  }
+  const maxY = Math.max(VIEWPORT_MARGIN, viewport.height - VIEWPORT_MARGIN - tooltip.height);
+  vy = Math.max(VIEWPORT_MARGIN, Math.min(vy, maxY));
+
+  return {
+    left: vx - container.left,
+    top: vy - container.top,
+  };
+}
+
 /** Each plate as a grid of wells, coloured by how many targets have data. */
 export function PlateView({ summary, headingId }: QualityViewProps) {
   const { resolved } = useTheme();
+  const platesRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{
     readonly sample: SampleSummary;
-    readonly x: number;
-    readonly y: number;
+    readonly well: Box;
   } | null>(null);
+
+  useLayoutEffect(() => {
+    if (hover === null) return;
+    const container = platesRef.current;
+    const tooltip = tooltipRef.current;
+    if (container === null || tooltip === null) return;
+    const containerRect = container.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const pos = placeWellTooltip({
+      well: hover.well,
+      container: containerRect,
+      tooltip: { width: tooltipRect.width, height: tooltipRect.height },
+      viewport: {
+        width: document.documentElement.clientWidth || window.innerWidth,
+        height: document.documentElement.clientHeight || window.innerHeight,
+      },
+    });
+    tooltip.style.left = `${pos.left}px`;
+    tooltip.style.top = `${pos.top}px`;
+  }, [hover]);
+
   const placed = summary.samples.filter((sample) => sample.plate !== null);
   if (!showsPlates(summary)) return null;
   const plates = [...new Set(placed.map((sample) => sample.plate?.plate ?? ""))];
@@ -142,7 +206,7 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
       <Coverage have={have} total={total}>
         {t`Plate positions are given for ${haveCount} of ${totalCount} library samples.`}
       </Coverage>
-      <div className="relative flex flex-wrap gap-8">
+      <div ref={platesRef} className="relative flex min-w-0 flex-wrap gap-8">
         {plates.map((plate) => {
           const wells = placed.filter((sample) => sample.plate?.plate === plate);
           const rows = Math.max(
@@ -152,103 +216,118 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
           const cols = Math.max(12, ...wells.map((sample) => sample.plate?.col ?? 1));
           const wellCount = formatCount(wells.length);
           return (
-            <figure key={plate} className="flex flex-col gap-2">
+            <figure key={plate} className="flex min-w-0 max-w-full flex-col gap-2">
               <figcaption className="text-sm font-medium text-text">{plate}</figcaption>
               <p className="sr-only">{t`Plate ${plate}: ${wellCount} library samples. The sample table gives the same figures.`}</p>
-              <svg width={(cols + 1) * cell} height={(rows + 1) * cell} aria-hidden="true">
-                {Array.from({ length: cols }, (_, col) => (
-                  <text
-                    key={`c${col}`}
-                    x={(col + 1.5) * cell}
-                    y={cell * 0.65}
-                    textAnchor="middle"
-                    className="fill-text-muted text-[10px]"
-                  >
-                    {col + 1}
-                  </text>
-                ))}
-                {Array.from({ length: rows }, (_, row) => (
-                  <text
-                    key={`r${row}`}
-                    x={cell * 0.5}
-                    y={(row + 1.6) * cell}
-                    textAnchor="middle"
-                    className="fill-text-muted text-[10px]"
-                  >
-                    {ROW_LETTERS[row]}
-                  </text>
-                ))}
-                {Array.from({ length: rows * cols }, (_, index) => {
-                  const row = Math.floor(index / cols);
-                  const col = index % cols;
-                  const sample = wells.find(
-                    (item) => item.plate?.row === ROW_LETTERS[row] && item.plate?.col === col + 1,
-                  );
-                  const fill =
-                    sample === undefined
-                      ? "transparent"
-                      : sample.targets === 0
-                        ? EMPTY_CELL[resolved]
-                        : rampColour(ramp, sample.targets / maxTargets);
-                  return (
-                    <rect
-                      key={index}
-                      x={(col + 1) * cell + 2}
-                      y={(row + 1) * cell + 2}
-                      width={cell - 4}
-                      height={cell - 4}
-                      rx={4}
-                      fill={fill}
-                      className={sample === undefined ? "stroke-border" : undefined}
-                      strokeDasharray={sample === undefined ? "2 2" : undefined}
-                      onMouseEnter={(event) => {
-                        if (sample === undefined) return;
-                        const box = event.currentTarget.ownerSVGElement?.getBoundingClientRect();
-                        const parent = event.currentTarget
-                          .closest("section")
-                          ?.getBoundingClientRect();
-                        setHover({
-                          sample,
-                          x: (box?.left ?? 0) - (parent?.left ?? 0) + (col + 1.5) * cell,
-                          y: (box?.top ?? 0) - (parent?.top ?? 0) + (row + 2) * cell,
-                        });
-                      }}
-                      onMouseLeave={() => setHover(null)}
-                    />
-                  );
-                })}
-                {wells
-                  .filter((sample) => sample.targets === 0)
-                  .map((sample) => {
-                    const row = ROW_LETTERS.indexOf(sample.plate?.row ?? "A");
-                    const col = (sample.plate?.col ?? 1) - 1;
-                    const x = (col + 1) * cell + 8;
-                    const y = (row + 1) * cell + 8;
+              <section
+                aria-label={plate}
+                // Focusable so keyboard users can scroll wide plates.
+                // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+                tabIndex={0}
+                onScroll={() => setHover(null)}
+                className="max-w-full overflow-x-auto focus-visible:outline-offset-0"
+              >
+                <svg
+                  width={(cols + 1) * cell}
+                  height={(rows + 1) * cell}
+                  className="block"
+                  aria-hidden="true"
+                >
+                  {Array.from({ length: cols }, (_, col) => (
+                    <text
+                      key={`c${col}`}
+                      x={(col + 1.5) * cell}
+                      y={cell * 0.65}
+                      textAnchor="middle"
+                      className="fill-text-muted text-[10px]"
+                    >
+                      {col + 1}
+                    </text>
+                  ))}
+                  {Array.from({ length: rows }, (_, row) => (
+                    <text
+                      key={`r${row}`}
+                      x={cell * 0.5}
+                      y={(row + 1.6) * cell}
+                      textAnchor="middle"
+                      className="fill-text-muted text-[10px]"
+                    >
+                      {ROW_LETTERS[row]}
+                    </text>
+                  ))}
+                  {Array.from({ length: rows * cols }, (_, index) => {
+                    const row = Math.floor(index / cols);
+                    const col = index % cols;
+                    const sample = wells.find(
+                      (item) => item.plate?.row === ROW_LETTERS[row] && item.plate?.col === col + 1,
+                    );
+                    const fill =
+                      sample === undefined
+                        ? "transparent"
+                        : sample.targets === 0
+                          ? EMPTY_CELL[resolved]
+                          : rampColour(ramp, sample.targets / maxTargets);
                     return (
-                      <path
-                        key={`x${sample.libraryId}`}
-                        d={`M${x},${y} l${cell - 16},${cell - 16} M${x + cell - 16},${y} l${-(cell - 16)},${cell - 16}`}
-                        className="pointer-events-none stroke-text-muted"
-                        strokeWidth={1.5}
+                      <rect
+                        key={index}
+                        x={(col + 1) * cell + 2}
+                        y={(row + 1) * cell + 2}
+                        width={cell - 4}
+                        height={cell - 4}
+                        rx={4}
+                        fill={fill}
+                        className={sample === undefined ? "stroke-border" : undefined}
+                        strokeDasharray={sample === undefined ? "2 2" : undefined}
+                        onMouseEnter={(event) => {
+                          if (sample === undefined) return;
+                          const rect = event.currentTarget.getBoundingClientRect();
+                          setHover({
+                            sample,
+                            well: {
+                              left: rect.left,
+                              top: rect.top,
+                              right: rect.right,
+                              bottom: rect.bottom,
+                            },
+                          });
+                        }}
+                        onMouseLeave={() => setHover(null)}
                       />
                     );
                   })}
-              </svg>
+                  {wells
+                    .filter((sample) => sample.targets === 0)
+                    .map((sample) => {
+                      const row = ROW_LETTERS.indexOf(sample.plate?.row ?? "A");
+                      const col = (sample.plate?.col ?? 1) - 1;
+                      const x = (col + 1) * cell + 8;
+                      const y = (row + 1) * cell + 8;
+                      return (
+                        <path
+                          key={`x${sample.libraryId}`}
+                          d={`M${x},${y} l${cell - 16},${cell - 16} M${x + cell - 16},${y} l${-(cell - 16)},${cell - 16}`}
+                          className="pointer-events-none stroke-text-muted"
+                          strokeWidth={1.5}
+                        />
+                      );
+                    })}
+                </svg>
+              </section>
             </figure>
           );
         })}
-      </div>
-      {hover === null ? null : (
-        <div
-          className="pointer-events-none absolute z-10 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-text shadow-md"
-          style={{ left: hover.x, top: hover.y }}
-        >
-          <div className="font-medium">{hover.sample.name}</div>
-          <div className="text-text-muted">
-            {plural(hoverTargets, { one: "# target with data", other: "# targets with data" })}
+        {hover === null ? null : (
+          <div
+            ref={tooltipRef}
+            className="pointer-events-none absolute top-0 left-0 z-10 w-max max-w-64 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-text shadow-md"
+          >
+            <div className="font-medium break-all">{hover.sample.name}</div>
+            <div className="text-text-muted">
+              {plural(hoverTargets, { one: "# target with data", other: "# targets with data" })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
@@ -295,9 +374,16 @@ export function DensityView({ summary, headingId }: QualityViewProps) {
       <Coverage have={have} total={total}>
         {t`A density is given for ${haveCount} of ${totalCount} library samples.`}
       </Coverage>
-      <figure className="flex flex-col gap-2">
+      <figure className="flex min-w-0 flex-col gap-2">
         <p className="sr-only">{t`Targets with data against parasite density for ${pointCount} samples. The sample table gives the same figures.`}</p>
-        <svg width={width} height={height} aria-hidden="true">
+        <svg
+          width={width}
+          height={height}
+          viewBox={`0 0 ${width} ${height}`}
+          className="block h-auto w-full"
+          style={{ maxWidth: width }}
+          aria-hidden="true"
+        >
           {ticks.map((tick) => (
             <g key={tick}>
               <line

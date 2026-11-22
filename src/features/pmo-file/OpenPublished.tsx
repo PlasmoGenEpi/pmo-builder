@@ -312,6 +312,7 @@ function PublishedDatasetView({
             generation,
             source: "original",
             minReads,
+            maxReads: file.opened.choices.maxReads,
             onMinReadsChange: (next) => session.setMinReads(next),
             subsetTables: null,
           })}

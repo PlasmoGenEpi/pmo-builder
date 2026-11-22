@@ -2,7 +2,7 @@
  * The subset form: what the user has chosen, which specimens that matches,
  * and the request it makes. Pure.
  */
-import type { PmoChoices, SubsetRequest } from "@/domain/tools/types";
+import type { MetaFieldSource, PmoChoices, SubsetRequest } from "@/domain/tools/types";
 
 /** How specimens are chosen. */
 export type SpecimenMode = "all" | "metadata" | "names";
@@ -10,9 +10,10 @@ export type SpecimenMode = "all" | "metadata" | "names";
 /** How targets are chosen. */
 export type TargetMode = "all" | "names";
 
-/** One metadata condition: a field and the values it may have. */
+/** One metadata condition: a field, its source, and the values it may have. */
 export interface Condition {
   readonly field: string;
+  readonly source: MetaFieldSource;
   readonly values: readonly string[];
 }
 
@@ -32,7 +33,8 @@ export function initialForm(choices: PmoChoices): SubsetForm {
   const [first] = choices.metadata;
   return {
     specimenMode: "all",
-    conditions: first === undefined ? [] : [{ field: first.field, values: [] }],
+    conditions:
+      first === undefined ? [] : [{ field: first.field, source: first.source, values: [] }],
     specimenNames: [],
     targetMode: "all",
     targetNames: [],
@@ -78,6 +80,8 @@ export function formProblem(choices: PmoChoices, form: SubsetForm): FormProblem 
 /** The request the form makes. */
 export function requestOf(form: SubsetForm): SubsetRequest {
   const conditions = form.conditions.filter((condition) => condition.values.length > 0);
+  const yearCondition = conditions.find((condition) => condition.source === "collectionYear");
+  const rawConditions = conditions.filter((condition) => condition.source === "specimen");
   return {
     specimens:
       form.specimenMode === "all"
@@ -87,8 +91,9 @@ export function requestOf(form: SubsetForm): SubsetRequest {
           : {
               kind: "metadata",
               criteria: Object.fromEntries(
-                conditions.map((condition) => [condition.field, condition.values]),
+                rawConditions.map((condition) => [condition.field, condition.values]),
               ),
+              ...(yearCondition === undefined ? {} : { collectionYears: yearCondition.values }),
             },
     targets:
       form.targetMode === "all" ? { kind: "all" } : { kind: "names", names: form.targetNames },

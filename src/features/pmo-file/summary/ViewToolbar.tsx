@@ -1,7 +1,7 @@
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 import type { ReactNode } from "react";
 
-import { Button, NumberField, jumpToHeading } from "@/ui";
+import { Button, EmptyState, NumberField, formatCount, jumpToHeading } from "@/ui";
 
 /** The row of controls above the Summary and Compare views. */
 export function ViewToolbar({ children }: { readonly children: ReactNode }) {
@@ -36,6 +36,42 @@ export function MinReadsField({ value, onValueChange }: MinReadsFieldProps) {
       min={0}
       value={value}
       onValueChange={onValueChange}
+    />
+  );
+}
+
+/** Props for {@link NoReadsAboveMinimum}. */
+export interface NoReadsAboveMinimumProps {
+  /** The active minimum read threshold that excluded every microhaplotype. */
+  readonly minReads: number;
+  /** The most reads any microhaplotype has in the working PMO, or `null` when unknown. */
+  readonly maxReads: number | null;
+  readonly onClear: () => void;
+}
+
+/** Shown when the minimum read count leaves no microhaplotypes to display. */
+export function NoReadsAboveMinimum({ minReads, maxReads, onClear }: NoReadsAboveMinimumProps) {
+  const minimum = formatCount(minReads);
+  const mostReads = maxReads === null ? "" : formatCount(maxReads);
+  return (
+    <EmptyState
+      title={plural(minReads, {
+        one: `No microhaplotype has at least ${minimum} read`,
+        other: `No microhaplotype has at least ${minimum} reads`,
+      })}
+      description={
+        maxReads !== null && maxReads > 0 && maxReads < minReads
+          ? plural(maxReads, {
+              one: `The most in this file is ${mostReads} read. Lower the minimum or clear it to see all microhaplotypes.`,
+              other: `The most in this file is ${mostReads} reads. Lower the minimum or clear it to see all microhaplotypes.`,
+            })
+          : t`Lower the minimum or clear it to see all microhaplotypes.`
+      }
+      action={
+        <Button variant="primary" onClick={onClear}>
+          {t`Clear minimum reads`}
+        </Button>
+      }
     />
   );
 }

@@ -593,6 +593,10 @@ msgstr "{librarySamples, plural, one {# library sample} other {# library samples
 msgid "{mappedCount, plural, one {{missingCount, plural, one {{mappedFields} is mapped, but {missingFields} is not.} other {{mappedFields} is mapped, but {missingFields} are not.}}} other {{missingCount, plural, one {{mappedFields} are mapped, but {missingFields} is not.} other {{mappedFields} are mapped, but {missingFields} are not.}}}}"
 msgstr "{mappedCount, plural, one {{missingCount, plural, one {{mappedFields} is mapped, but {missingFields} is not.} other {{mappedFields} is mapped, but {missingFields} are not.}}} other {{missingCount, plural, one {{mappedFields} are mapped, but {missingFields} is not.} other {{mappedFields} are mapped, but {missingFields} are not.}}}}"
 
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "{maxReads, plural, one {The most in this file is {mostReads} read. Lower the minimum or clear it to see all microhaplotypes.} other {The most in this file is {mostReads} reads. Lower the minimum or clear it to see all microhaplotypes.}}"
+msgstr "{maxReads, plural, one {The most in this file is {mostReads} read. Lower the minimum or clear it to see all microhaplotypes.} other {The most in this file is {mostReads} reads. Lower the minimum or clear it to see all microhaplotypes.}}"
+
 #: src/features/pmo-file/summary/ReadsGrid.tsx
 msgid "{maxReads} reads (log scale)"
 msgstr "{maxReads} reads (log scale)"
@@ -604,6 +608,10 @@ msgstr "{message} Reload the page to try again."
 #: src/features/review/reviewModel.ts
 msgid "{methods, plural, one {# method} other {# methods}}, {runs, plural, one {# run} other {# runs}}"
 msgstr "{methods, plural, one {# method} other {# methods}}, {runs, plural, one {# run} other {# runs}}"
+
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "{minReads, plural, one {No microhaplotype has at least {minimum} read} other {No microhaplotype has at least {minimum} reads}}"
+msgstr "{minReads, plural, one {No microhaplotype has at least {minimum} read} other {No microhaplotype has at least {minimum} reads}}"
 
 #. Advice for fields that only work together: match the missing fields to columns too, or unmatch {mappedFields}.
 #: src/domain/build/notices.ts
@@ -922,6 +930,7 @@ msgstr "{total, plural, one {More than # method: {methodNames}, and more. Runs r
 msgid "{total, plural, one {More than # method: {methodNames}. Runs refer to a method by this name.} other {More than # methods: {methodNames}. Runs refer to a method by this name.}}"
 msgstr "{total, plural, one {More than # method: {methodNames}. Runs refer to a method by this name.} other {More than # methods: {methodNames}. Runs refer to a method by this name.}}"
 
+#: src/features/pmo-file/TablesPanel.tsx
 #: src/ui/DataTable.tsx
 msgid "{total, plural, one {Showing {shownCount} of {totalCount} row} other {Showing {shownCount} of {totalCount} rows}}"
 msgstr "{total, plural, one {Showing {shownCount} of {totalCount} row} other {Showing {shownCount} of {totalCount} rows}}"
@@ -1322,15 +1331,15 @@ msgstr "Add your allele table: the microhaplotypes found in each sample and thei
 msgid "Additional arguments"
 msgstr "Additional arguments"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Administrative area, level 1"
 msgstr "Administrative area, level 1"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Administrative area, level 2"
 msgstr "Administrative area, level 2"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Administrative area, level 3"
 msgstr "Administrative area, level 3"
 
@@ -1535,6 +1544,7 @@ msgid "blank"
 msgstr "blank"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Broad environment"
 msgstr "Broad environment"
 
@@ -1702,6 +1712,10 @@ msgstr "Chromosome"
 msgid "Chromosomes"
 msgstr "Chromosomes"
 
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Clear minimum reads"
+msgstr "Clear minimum reads"
+
 #: src/features/published/PublishedPage.tsx
 msgid "Clear the filters"
 msgstr "Clear the filters"
@@ -1709,6 +1723,10 @@ msgstr "Clear the filters"
 #: src/ui/Dialog.tsx
 msgid "Close"
 msgstr "Close"
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Close and open the preview again. If it fails again, open the file again."
+msgstr "Close and open the preview again. If it fails again, open the file again."
 
 #: src/app/Layout.tsx
 msgid "Close the step list"
@@ -1736,6 +1754,7 @@ msgid "Collection"
 msgstr "Collection"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Collection date"
 msgstr "Collection date"
 
@@ -1744,14 +1763,15 @@ msgid "Collection dates that name the day"
 msgstr "Collection dates that name the day"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Collection method"
 msgstr "Collection method"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Collection month"
 msgstr "Collection month"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Collection year"
 msgstr "Collection year"
 
@@ -1888,7 +1908,7 @@ msgstr "Counting"
 
 #. Field label: the country a specimen was collected in
 #: src/domain/fields/samples.ts
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 #: src/features/published/PublishedPage.tsx
 msgid "Country"
 msgstr "Country"
@@ -2176,6 +2196,7 @@ msgid "Enter the record's Zenodo address, such as https://zenodo.org/records/123
 msgstr "Enter the record's Zenodo address, such as https://zenodo.org/records/12345678, or its DOI."
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Environment medium"
 msgstr "Environment medium"
 
@@ -2518,6 +2539,14 @@ msgstr "Heterozygosity"
 msgid "Heterozygosity by target"
 msgstr "Heterozygosity by target"
 
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Hide preview"
+msgstr "Hide preview"
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Hide preview of {title}"
+msgstr "Hide preview of {title}"
+
 #: src/app/StepPage.tsx
 msgid "Home"
 msgstr "Home"
@@ -2537,6 +2566,7 @@ msgid "Host"
 msgstr "Host"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Host age"
 msgstr "Host age"
 
@@ -2545,10 +2575,12 @@ msgid "Host ID"
 msgstr "Host ID"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Host sex"
 msgstr "Host sex"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Host taxon ID"
 msgstr "Host taxon ID"
 
@@ -2984,6 +3016,10 @@ msgstr "Links that point at nothing"
 msgid "Loading"
 msgstr "Loading"
 
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Loading preview"
+msgstr "Loading preview"
+
 #: src/app/HomePage.tsx
 msgid "Loading the example tables"
 msgstr "Loading the example tables"
@@ -2994,6 +3030,7 @@ msgid "Loading the preview"
 msgstr "Loading the preview"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Local environment"
 msgstr "Local environment"
 
@@ -3036,6 +3073,10 @@ msgstr "Locations that end before they start"
 msgid "Look into your PMO"
 msgstr "Look into your PMO"
 
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Lower the minimum or clear it to see all microhaplotypes."
+msgstr "Lower the minimum or clear it to see all microhaplotypes."
+
 #: src/features/pmo-file/summary/CompareTab.tsx
 msgid "Make one on the Subset tab. Until then, only the original can be compared."
 msgstr "Make one on the Subset tab. Until then, only the original can be compared."
@@ -3051,6 +3092,10 @@ msgstr "Make one on the Subset tab. Until then, only the original can be summed 
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Make one on the Subset tab. Until then, only the original's tables can be downloaded."
 msgstr "Make one on the Subset tab. Until then, only the original's tables can be downloaded."
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Make one on the Subset tab. Until then, only the original's tables can be previewed."
+msgstr "Make one on the Subset tab. Until then, only the original's tables can be previewed."
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "Make the subset"
@@ -3679,6 +3724,10 @@ msgid "One row per bioinformatics run."
 msgstr "One row per bioinformatics run."
 
 #: src/features/pmo-file/TablesPanel.tsx
+msgid "One row per library sample, target and pipeline stage, with total raw reads."
+msgstr "One row per library sample, target and pipeline stage, with total raw reads."
+
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "One row per library sample, with its specimen, panel and sequencing run."
 msgstr "One row per library sample, with its specimen, panel and sequencing run."
 
@@ -3749,6 +3798,10 @@ msgstr "Open a PMO file to compare groups of its specimens."
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Open a PMO file to download its tables."
 msgstr "Open a PMO file to download its tables."
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Open a PMO file to preview its tables."
+msgstr "Open a PMO file to preview its tables."
 
 #: src/features/pmo-file/PublishPanel.tsx
 msgid "Open a PMO file to publish it."
@@ -4098,6 +4151,7 @@ msgstr "Pregnancy"
 
 #. Field label: whether the host was pregnant
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Pregnant"
 msgstr "Pregnant"
 
@@ -4114,10 +4168,25 @@ msgstr "Preparing the subset"
 msgid "Preview"
 msgstr "Preview"
 
+#. Verb: open a preview of a table's first rows
+#: src/features/pmo-file/TablesPanel.tsx
+msgctxt "verb"
+msgid "Preview"
+msgstr "Preview"
+
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Preview {title}"
+msgstr "Preview {title}"
+
 #. {tableName} is the table's name as shown in its heading, such as Allele table
 #: src/features/table-import/TablePreviewPanel.tsx
 msgid "Preview of “{tableName}”"
 msgstr "Preview of “{tableName}”"
+
+#. {title} is a table name such as Allele table
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "Preview of {title}"
+msgstr "Preview of {title}"
 
 #: src/features/review/PmoPreview.tsx
 msgid "Preview the PMO"
@@ -4128,6 +4197,7 @@ msgid "Previous and next step"
 msgstr "Previous and next step"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Previous pregnancies"
 msgstr "Previous pregnancies"
 
@@ -4157,7 +4227,7 @@ msgstr "Program link"
 #: src/domain/build/merge.ts
 #: src/domain/fields/samples.ts
 #: src/domain/fields/study.ts
-#: src/features/pmo-file/summary/CompareTab.tsx
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Project"
 msgstr "Project"
 
@@ -4304,6 +4374,7 @@ msgstr "Read counts"
 #. Step title, shown in the sidebar and as the page heading
 #: src/app/HomePage.tsx
 #: src/app/steps.ts
+#: src/features/pmo-file/TablesPanel.tsx
 msgid "Read counts by stage"
 msgstr "Read counts by stage"
 
@@ -4365,6 +4436,7 @@ msgstr "Reads at each pipeline stage"
 msgid "Reads at each stage"
 msgstr "Reads at each stage"
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Reads by sample and target"
 msgstr "Reads by sample and target"
@@ -4407,6 +4479,7 @@ msgid "Ready."
 msgstr "Ready."
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Recent blood meal"
 msgstr "Recent blood meal"
 
@@ -5112,6 +5185,7 @@ msgid "Specimen taxon ID"
 msgstr "Specimen taxon ID"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Specimen type"
 msgstr "Specimen type"
 
@@ -5255,6 +5329,7 @@ msgid "Storage plate row"
 msgstr "Storage plate row"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Storage site"
 msgstr "Storage site"
 
@@ -5957,6 +6032,10 @@ msgstr "The PMO has a problem in how its parts refer to each other."
 msgid "The PMO version and how the file was made."
 msgstr "The PMO version and how the file was made."
 
+#: src/features/pmo-file/TablesPanel.tsx
+msgid "The preview could not be loaded"
+msgstr "The preview could not be loaded"
+
 #: src/features/table-import/TablePreviewPanel.tsx
 msgid "The preview could not be shown"
 msgstr "The preview could not be shown"
@@ -6554,6 +6633,7 @@ msgid "Travel history"
 msgstr "Travel history"
 
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/specimenFieldNames.ts
 msgid "Travelled in last six months"
 msgstr "Travelled in last six months"
 

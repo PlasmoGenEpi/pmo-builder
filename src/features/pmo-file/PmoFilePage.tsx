@@ -238,6 +238,7 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
                 onDownload: () => saveFile(file.file, file.name),
                 generation,
                 source,
+                maxReads: source === "original" ? file.opened.choices.maxReads : null,
                 minReads,
                 onMinReadsChange: (next) => session.setMinReads(next),
                 subsetTables: made?.tables ?? null,

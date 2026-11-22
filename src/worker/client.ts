@@ -93,6 +93,11 @@ const WORKING_PMO_VALUES: {
   preview: (value): value is WorkingPmoValues["preview"] => isSubsetPreview(value),
   table: (value): value is WorkingPmoValues["table"] =>
     isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string",
+  tablePreview: (value): value is WorkingPmoValues["tablePreview"] =>
+    isRecord(value) &&
+    Array.isArray(value["columns"]) &&
+    Array.isArray(value["rows"]) &&
+    typeof value["totalRows"] === "number",
   tables: (value): value is WorkingPmoValues["tables"] => isMadeFile(value),
   file: (value): value is WorkingPmoValues["file"] => isMadeFile(value),
   groupFields: (value): value is WorkingPmoValues["groupFields"] =>

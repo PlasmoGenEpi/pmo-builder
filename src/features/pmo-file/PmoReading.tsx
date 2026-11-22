@@ -31,6 +31,8 @@ export interface ReadOnlyPmoTabsOptions {
   readonly generation: number;
   readonly source: WorkingSource;
   readonly minReads: number | null;
+  /** The most reads of one microhaplotype in what is shown, or `null` when not known. */
+  readonly maxReads: number | null;
   readonly onMinReadsChange: (value: number | null) => void;
   readonly subsetTables: WorkingPmoDetails["tables"] | null;
 }
@@ -46,6 +48,7 @@ export function readOnlyPmoTabs({
   generation,
   source,
   minReads,
+  maxReads,
   onMinReadsChange,
   subsetTables,
 }: ReadOnlyPmoTabsOptions): TabItem<PublishedTab>[] {
@@ -67,6 +70,7 @@ export function readOnlyPmoTabs({
           key={generation}
           source={source}
           minReads={minReads}
+          maxReads={maxReads}
           onMinReadsChange={onMinReadsChange}
         />
       ),
@@ -79,6 +83,7 @@ export function readOnlyPmoTabs({
           key={generation}
           source={source}
           minReads={minReads}
+          maxReads={maxReads}
           onMinReadsChange={onMinReadsChange}
         />
       ),
