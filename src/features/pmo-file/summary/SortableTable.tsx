@@ -1,6 +1,6 @@
 import { t } from "@lingui/core/macro";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 
 import { Button, cn } from "@/ui";
 
@@ -12,6 +12,8 @@ export interface SortableColumn<Row> {
   readonly value: (row: Row) => string | number | null;
   /** How a cell shows. Default: the value. */
   readonly render?: (row: Row) => ReactNode;
+  /** Inline style for a cell, such as value shading. Omit or return `undefined` to leave unstyled. */
+  readonly cellStyle?: (row: Row) => CSSProperties | undefined;
   /** Right-aligned, for numbers. */
   readonly numeric?: boolean;
   /** Secondary line rendered in the column heading below the sort button. */
@@ -127,6 +129,7 @@ export function SortableTable<Row>({
             return (
               <tr
                 key={key}
+                data-selected={selected || undefined}
                 onClick={onRowSelect === undefined ? undefined : () => onRowSelect(row)}
                 className={cn(
                   "border-b border-border last:border-b-0",
@@ -137,9 +140,14 @@ export function SortableTable<Row>({
                 {columns.map((column, index) => (
                   <td
                     key={column.key}
+                    style={column.cellStyle?.(row)}
                     className={cn(
                       "px-3 py-1.5 text-text",
                       column.numeric ? "text-right tabular-nums" : "break-all",
+                      selected &&
+                        (index === 0
+                          ? "bg-accent-subtle shadow-[inset_3px_0_0_var(--color-accent),inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
+                          : "shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"),
                     )}
                   >
                     {index === 0 && onRowSelect !== undefined ? (

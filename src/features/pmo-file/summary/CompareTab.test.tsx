@@ -1,7 +1,9 @@
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { stringifyPmo, type PortableMicrohaplotypeObject } from "pmotools-ts";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
+import { resetThemeForTests, setThemePreference } from "@/app/theme";
 import { buildExamplePmo } from "@/domain/build/testing";
 import { richPmo } from "@/domain/tools/testing";
 import { createTestStore, renderWithStore } from "@/features/shared/testing";
@@ -375,5 +377,165 @@ describe("CompareTab: group sizes and small-group marks", () => {
         /Alleles seen is the number of distinct alleles found in the group across targets\./,
       ),
     ).toBeInTheDocument();
+  });
+});
+
+/**
+ * Builds a PMO with two countries (Kenya, Mozambique) and two targets (t1, t2):
+ * - t1 has 3 equal alleles in Kenya (He = 0.67) and 1 allele in Mozambique (He = 0).
+ * - t2 has 1 allele in Kenya (He = 0) and no data in Mozambique (dash).
+ */
+function heterozygosityPmo(): PortableMicrohaplotypeObject {
+  return {
+    pmo_header: { pmo_version: "1.1.0" },
+    panel_info: [{ panel_name: "p", reactions: [{ reaction_name: "r1", panel_targets: [0, 1] }] }],
+    target_info: ["t1", "t2"].map((target_name) => ({
+      target_name,
+      forward_primer: { seq: "ACGT" },
+      reverse_primer: { seq: "TGCA" },
+    })),
+    specimen_info: [
+      { specimen_name: "k1", collection_country: "Kenya" },
+      { specimen_name: "k2", collection_country: "Kenya" },
+      { specimen_name: "k3", collection_country: "Kenya" },
+      { specimen_name: "m1", collection_country: "Mozambique" },
+    ],
+    library_sample_info: [
+      { library_sample_name: "K1", specimen_id: 0, panel_id: 0 },
+      { library_sample_name: "K2", specimen_id: 1, panel_id: 0 },
+      { library_sample_name: "K3", specimen_id: 2, panel_id: 0 },
+      { library_sample_name: "M1", specimen_id: 3, panel_id: 0 },
+    ],
+    bioinformatics_methods_info: [{ methods: [{ program: "x", program_version: "1" }] }],
+    bioinformatics_run_info: [{ bioinformatics_run_name: "runA", bioinformatics_methods_id: 0 }],
+    representative_microhaplotypes: {
+      targets: [
+        { target_id: 0, microhaplotypes: [{ seq: "AAAA" }, { seq: "AAAT" }, { seq: "AAAG" }] },
+        { target_id: 1, microhaplotypes: [{ seq: "CCCC" }] },
+      ],
+    },
+    detected_microhaplotypes: [
+      {
+        bioinformatics_run_id: 0,
+        library_samples: [
+          {
+            library_sample_id: 0,
+            target_results: [
+              { mhaps_target_id: 0, mhaps: [{ mhap_id: 0, reads: 50 }] },
+              { mhaps_target_id: 1, mhaps: [{ mhap_id: 0, reads: 50 }] },
+            ],
+          },
+          {
+            library_sample_id: 1,
+            target_results: [{ mhaps_target_id: 0, mhaps: [{ mhap_id: 1, reads: 50 }] }],
+          },
+          {
+            library_sample_id: 2,
+            target_results: [{ mhaps_target_id: 0, mhaps: [{ mhap_id: 2, reads: 50 }] }],
+          },
+          {
+            library_sample_id: 3,
+            target_results: [{ mhaps_target_id: 0, mhaps: [{ mhap_id: 0, reads: 50 }] }],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function rgbLuminance(rgb: string): number {
+  const match = /^rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)$/.exec(rgb);
+  if (match === null) throw new Error(`Expected rgb(...) colour, got "${rgb}"`);
+  const channels = [Number(match[1]), Number(match[2]), Number(match[3])].map((c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * (channels[0] ?? 0) + 0.7152 * (channels[1] ?? 0) + 0.0722 * (channels[2] ?? 0);
+}
+
+function contrastAgainstHex(rgb: string, hex: string): number {
+  const value = Number.parseInt(hex.slice(1), 16);
+  const textRgb = `rgb(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255})`;
+  const a = rgbLuminance(rgb);
+  const b = rgbLuminance(textRgb);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+function cellFor(table: HTMLElement, targetName: string, columnIndex: number): HTMLElement {
+  const row = within(table)
+    .getAllByRole("row")
+    .slice(1)
+    .find((candidate) => within(candidate).queryByRole("button", { name: targetName }) !== null);
+  if (row === undefined) throw new Error(`Missing row for ${targetName}`);
+  const cell = within(row).getAllByRole("cell")[columnIndex];
+  if (cell === undefined) throw new Error(`Missing cell ${columnIndex} for ${targetName}`);
+  return cell;
+}
+
+describe("CompareTab: heterozygosity table shading", () => {
+  afterEach(() => {
+    setThemePreference("light");
+    resetThemeForTests();
+  });
+
+  it.each([
+    { theme: "light" as const, textHex: "#171a21" },
+    { theme: "dark" as const, textHex: "#eceef2" },
+  ])(
+    "shades valued cells monotonically with WCAG AA contrast and leaves dash cells unshaded in the $theme theme",
+    async ({ theme, textHex }) => {
+      setThemePreference(theme);
+      await openAndRenderCompare(heterozygosityPmo());
+
+      const table = await screen.findByRole("table", { name: "Heterozygosity by target" });
+      // Column 1 is Kenya (3 specimens, sorted first), column 2 is Mozambique (1 specimen).
+      const highCell = cellFor(table, "t1", 1);
+      const zeroCell = cellFor(table, "t1", 2);
+      const dashCell = cellFor(table, "t2", 2);
+
+      // Numbers remain visible on top of the shading, and missing values stay a dash without shading.
+      expect(highCell).toHaveTextContent("0.67");
+      expect(zeroCell).toHaveTextContent("0");
+      expect(dashCell).toHaveTextContent("–");
+      expect(dashCell.style.backgroundColor).toBe("");
+
+      // Valued cells are shaded and pass WCAG AA (>= 4.5:1) against body text.
+      expect(highCell.style.backgroundColor).not.toBe("");
+      expect(zeroCell.style.backgroundColor).not.toBe("");
+      expect(contrastAgainstHex(highCell.style.backgroundColor, textHex)).toBeGreaterThanOrEqual(
+        4.5,
+      );
+      expect(contrastAgainstHex(zeroCell.style.backgroundColor, textHex)).toBeGreaterThanOrEqual(
+        4.5,
+      );
+
+      // Higher heterozygosity is visibly stronger than 0 (darker in light, brighter in dark).
+      const highLum = rgbLuminance(highCell.style.backgroundColor);
+      const zeroLum = rgbLuminance(zeroCell.style.backgroundColor);
+      const direction = theme === "light" ? -1 : 1;
+      expect((highLum - zeroLum) * direction).toBeGreaterThan(0);
+    },
+  );
+
+  it("shows a legend for the 0 to 1 scale and unshaded dashes, and keeps the chosen row marked", async () => {
+    const user = userEvent.setup();
+    await openAndRenderCompare(heterozygosityPmo());
+
+    const table = await screen.findByRole("table", { name: "Heterozygosity by target" });
+    const section = table.closest("section")?.parentElement;
+    if (section === null || section === undefined) throw new Error("Expected section wrapper");
+
+    // Legend under the table explains the 0 to 1 scale and unshaded missing cells.
+    expect(within(section).getByText(/Expected heterozygosity \(0 to 1\)/i)).toBeInTheDocument();
+    expect(within(section).getByText(/No value \(unshaded\)/i)).toBeInTheDocument();
+
+    // t1 has more alleles so it starts chosen; clicking t2 moves the chosen-row mark.
+    const t1Button = within(table).getByRole("button", { name: "t1", pressed: true });
+    expect(t1Button.closest("tr")).toHaveAttribute("data-selected", "true");
+
+    await user.click(within(table).getByRole("button", { name: "t2" }));
+    const t2Button = within(table).getByRole("button", { name: "t2", pressed: true });
+    expect(t2Button.closest("tr")).toHaveAttribute("data-selected", "true");
+    expect(t1Button.closest("tr")).not.toHaveAttribute("data-selected");
   });
 });
