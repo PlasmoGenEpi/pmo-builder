@@ -10,9 +10,16 @@ import { PUBLISHABLE_PMO_VERSION, type PmoFileCheck } from "@/domain/build/check
 import type { OpenState } from "@/state";
 import { Callout, buttonClassName, formatBytes } from "@/ui";
 
+/** Options for {@link refusal}. */
+export interface RefusalOptions {
+  /** Whether the file is a published PMO viewed by a third-party reader. */
+  readonly published?: boolean;
+}
+
 /** Why a file cannot be opened, as one sentence. Returns `null` when valid or when {@link Invalid} lists schema problems instead. */
-export function refusal(file: OpenState): string | null {
+export function refusal(file: OpenState, options: RefusalOptions = {}): string | null {
   const version = PUBLISHABLE_PMO_VERSION;
+  const published = options.published === true;
   if (file.kind === "failed")
     return file.cause === "lost"
       ? t`The file was closed, probably because the browser ran out of memory. Open the file again.`
@@ -32,6 +39,11 @@ export function refusal(file: OpenState): string | null {
       return t`This JSON file is not a PMO: it has no PMO header.`;
     case "wrong-version": {
       const declared = check.declared;
+      if (published) {
+        return declared === null
+          ? t`This file does not say which PMO version it is. Only version ${version} files can be opened here. Download it from Zenodo to inspect it on your computer.`
+          : t`This file is in PMO version ${declared}. Only version ${version} files can be opened here. Download it from Zenodo to inspect it on your computer.`;
+      }
       return declared === null
         ? t`This file does not say which PMO version it is. Only version ${version} files can be opened here. Build it again from your tables to get a ${version} file.`
         : t`This file is in PMO version ${declared}. Only version ${version} files can be opened here. Build it again from your tables to get a ${version} file.`;

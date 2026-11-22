@@ -77,7 +77,7 @@ export function SaveStatus() {
         <button
           type="button"
           className={cn(
-            "inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 text-sm transition-colors duration-100 hover:bg-surface-muted",
+            "inline-flex h-8 min-w-0 cursor-pointer items-center gap-1.5 rounded-full px-2 text-sm transition-colors duration-100 hover:bg-surface-muted",
             view.warning ? "text-warning-text" : "text-text-muted hover:text-text",
           )}
         >
@@ -89,7 +89,9 @@ export function SaveStatus() {
               view.icon === LoaderCircle && "motion-safe:animate-spin",
             )}
           />
-          <span className="sr-only lg:not-sr-only">{view.label}</span>
+          <span className={cn("truncate", view.warning ? "max-sm:sr-only" : "max-lg:sr-only")}>
+            {view.label}
+          </span>
         </button>
       }
     >

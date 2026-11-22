@@ -1338,6 +1338,11 @@ msgstr ""
 msgid "Age"
 msgstr ""
 
+#. Placeholder in the minimum reads input when empty, meaning all microhaplotypes count
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "All"
+msgstr ""
+
 #. {stepTitle} is a step's title, such as Project
 #: src/features/shared/NameCheck.tsx
 msgid "All found on the {stepTitle} step."
@@ -1805,8 +1810,7 @@ msgstr ""
 msgid "Comments"
 msgstr ""
 
-#: src/features/pmo-file/OpenPublished.tsx
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoReading.tsx
 msgid "Compare"
 msgstr ""
 
@@ -3893,8 +3897,7 @@ msgstr ""
 msgid "Other specimen identifiers"
 msgstr ""
 
-#: src/features/pmo-file/OpenPublished.tsx
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoReading.tsx
 msgid "Overview"
 msgstr ""
 
@@ -5290,8 +5293,7 @@ msgstr ""
 msgid "Such as the country or year of collection."
 msgstr ""
 
-#: src/features/pmo-file/OpenPublished.tsx
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoReading.tsx
 msgid "Summary"
 msgstr ""
 
@@ -5315,8 +5317,7 @@ msgstr ""
 msgid "Switching to this tab"
 msgstr ""
 
-#: src/features/pmo-file/OpenPublished.tsx
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoReading.tsx
 msgid "Tables"
 msgstr ""
 
@@ -6366,6 +6367,10 @@ msgstr ""
 msgid "This file does not say which PMO version it is. Only version {version} files can be opened here. Build it again from your tables to get a {version} file."
 msgstr ""
 
+#: src/features/pmo-file/FileRefusal.tsx
+msgid "This file does not say which PMO version it is. Only version {version} files can be opened here. Download it from Zenodo to inspect it on your computer."
+msgstr ""
+
 #: src/domain/import/messages.ts
 msgid "This file has a header row but no rows of data. Add the data below the header, or choose another file."
 msgstr ""
@@ -6401,6 +6406,10 @@ msgstr ""
 
 #: src/features/pmo-file/FileRefusal.tsx
 msgid "This file is in PMO version {declared}. Only version {version} files can be opened here. Build it again from your tables to get a {version} file."
+msgstr ""
+
+#: src/features/pmo-file/FileRefusal.tsx
+msgid "This file is in PMO version {declared}. Only version {version} files can be opened here. Download it from Zenodo to inspect it on your computer."
 msgstr ""
 
 #: src/features/pmo-file/FileRefusal.tsx

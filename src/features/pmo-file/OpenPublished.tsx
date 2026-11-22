@@ -15,6 +15,8 @@ import {
   usePublishedPmo,
   usePublishedPmoSession,
   useWorkingPmoSession,
+  type OpenState,
+  type WorkingPmoOrigin,
   type WorkingPmoSession,
 } from "@/state";
 import {
@@ -31,13 +33,8 @@ import {
 
 import { Invalid, refusal } from "./FileRefusal";
 import { PmoHeaderBar } from "./PmoHeaderBar";
-import { PmoOverview } from "./PmoOverview";
-import { isPublishedTab, PUBLISHED_TABS, type PublishedTab } from "./publishedTabs";
-import { CompareTab } from "./summary/CompareTab";
-import { SummaryPanel } from "./summary/SummaryPanel";
-import { TablesPanel } from "./TablesPanel";
-
-export { isPublishedTab, PUBLISHED_TABS, type PublishedTab };
+import { PmoReading, readOnlyPmoTabs } from "./PmoReading";
+import { isPublishedTab, type PublishedTab } from "./publishedTabs";
 
 /** The largest published file this opens: as much as the browser can check. */
 const MAX_BYTES = 300 * 1024 * 1024;
@@ -86,9 +83,23 @@ type Opening =
   /** The file was downloaded, but opening it in this browser failed. */
   | { readonly kind: "failed" };
 
-/** A tab's or notice's content at reading width under the full-width header. */
-function Reading({ children }: { readonly children: ReactNode }) {
-  return <div className="max-w-reading">{children}</div>;
+/** Where handing the published PMO off to My PMO file stands. */
+type HandOff =
+  | { readonly kind: "idle" }
+  | {
+      readonly kind: "confirming";
+      readonly workingName: string;
+      readonly subsetName: string | null;
+    }
+  | { readonly kind: "handing-off" };
+
+type OpenedPublished = Extract<OpenState, { kind: "opened" }> & {
+  readonly origin: Extract<WorkingPmoOrigin, { kind: "published" }>;
+};
+
+/** Whether `open` holds the published PMO with Zenodo record `id`. */
+function isPublishedDatasetOpen(open: OpenState, id: string): open is OpenedPublished {
+  return open.kind === "opened" && open.origin.kind === "published" && open.origin.id === id;
 }
 
 /** The slim header bar for a published PMO: title, authors, dataset page, Zenodo links and hand-off action. */
@@ -133,7 +144,7 @@ function PublishedHeaderBar({
  * read-only view (Overview, Summary, Compare and Tables). Never touches the
  * working PMO.
  */
-function OpenDataset({
+function PublishedDatasetView({
   dataset,
   fetcher,
   onRetry,
@@ -155,15 +166,16 @@ function OpenDataset({
   const [opening, setOpening] = useState<Opening>(() =>
     dataset.file.size > MAX_BYTES ? { kind: "too-large" } : { kind: "downloading" },
   );
-  const [handingOff, setHandingOff] = useState(false);
-  const [pendingReplace, setPendingReplace] = useState<{
-    readonly workingName: string;
-    readonly subsetName: string | null;
-  } | null>(null);
-  const handingOffRef = useRef(false);
+  const [handOffState, setHandOffState] = useState<HandOff>({ kind: "idle" });
+  const handOffRef = useRef<HandOff>({ kind: "idle" });
   const mountedRef = useRef(true);
   const fileName = dataset.file.name;
   const fileSize = formatBytes(dataset.file.size);
+
+  const updateHandOff = (next: HandOff): void => {
+    handOffRef.current = next;
+    setHandOffState(next);
+  };
 
   useEffect(() => {
     mountedRef.current = true;
@@ -172,11 +184,12 @@ function OpenDataset({
     };
   }, []);
 
-  const isThisOpen =
-    file.kind === "opened" && file.origin.kind === "published" && file.origin.id === dataset.id;
+  const isThisOpen = isPublishedDatasetOpen(file, dataset.id);
 
   useEffect(() => {
-    if (handingOffRef.current || session.isPublishedOpen(dataset.id)) return undefined;
+    if (handOffRef.current.kind === "handing-off" || session.isPublishedOpen(dataset.id)) {
+      return undefined;
+    }
     // Drop any previous published record right away before downloading (or rejecting as too large).
     if (session.state.getState().open.kind !== "none") {
       void session.close();
@@ -225,20 +238,13 @@ function OpenDataset({
   }, [session, dataset, fetcher]);
 
   async function handOff(): Promise<void> {
-    if (handingOffRef.current) return;
+    if (handOffRef.current.kind === "handing-off") return;
     const current = session.state.getState().open;
-    if (
-      current.kind !== "opened" ||
-      current.origin.kind !== "published" ||
-      current.origin.id !== dataset.id
-    ) {
-      return;
-    }
+    if (!isPublishedDatasetOpen(current, dataset.id)) return;
     const { file: blob, name, origin } = current;
     // Mark hand-off before closing `publishedSession`, so closing it while
     // still mounted cannot flash "Downloading" or re-trigger the Zenodo fetch.
-    handingOffRef.current = true;
-    setHandingOff(true);
+    updateHandOff({ kind: "handing-off" });
     // Free the published slot in the worker before parsing into the working
     // slot, avoiding a temporary 2x memory spike on large files.
     await session.close();
@@ -249,19 +255,28 @@ function OpenDataset({
     } else if (result.kind !== "superseded") {
       navigate("/pmo");
     } else {
-      handingOffRef.current = false;
-      setHandingOff(false);
+      // Another open superseded the hand-off into My PMO file. Re-open the
+      // already-downloaded bytes in the published slot instead of hanging.
+      const restored = await session.open({ kind: "file", file: blob, name, origin });
+      if (!mountedRef.current) return;
+      updateHandOff({ kind: "idle" });
+      if (restored.kind !== "opened" && restored.kind !== "superseded") {
+        onRetry();
+      }
     }
   }
 
   function requestWorkWith(): void {
-    if (handingOffRef.current || !isThisOpen) return;
-    const currentOpen = workingSession.state.getState().open;
-    if (currentOpen.kind === "opened") {
-      const currentSubset = workingSession.state.getState().subset;
-      setPendingReplace({
+    if (handOffRef.current.kind === "handing-off" || !isThisOpen) return;
+    const { open: currentOpen, subset: currentSubset } = workingSession.state.getState();
+    if (currentOpen.kind === "opened" || currentOpen.kind === "opening") {
+      updateHandOff({
+        kind: "confirming",
         workingName: currentOpen.name,
-        subsetName: currentSubset.kind === "made" ? currentSubset.made.fileName : null,
+        subsetName:
+          currentOpen.kind === "opened" && currentSubset.kind === "made"
+            ? currentSubset.made.fileName
+            : null,
       });
       return;
     }
@@ -273,6 +288,8 @@ function OpenDataset({
       <Trans>Download it from Zenodo instead</Trans>
     </ButtonLink>
   );
+
+  const handingOff = handOffState.kind === "handing-off";
 
   let body: ReactNode = null;
   if (handingOff) {
@@ -289,56 +306,21 @@ function OpenDataset({
           label={t`Published PMO views`}
           value={tab}
           onValueChange={(next) => navigate(`/published/${dataset.id}/${next}`)}
-          tabs={[
-            {
-              value: "overview",
-              label: t`Overview`,
-              content: (
-                <Reading>
-                  <PmoOverview opened={file.opened} origin={null} />
-                </Reading>
-              ),
-            },
-            {
-              value: "summary",
-              label: t`Summary`,
-              content: (
-                <SummaryPanel
-                  key={generation}
-                  source="original"
-                  minReads={minReads}
-                  onMinReadsChange={(next) => session.setMinReads(next)}
-                />
-              ),
-            },
-            {
-              value: "compare",
-              label: t`Compare`,
-              content: (
-                <CompareTab
-                  key={generation}
-                  source="original"
-                  minReads={minReads}
-                  onMinReadsChange={(next) => session.setMinReads(next)}
-                />
-              ),
-            },
-            {
-              value: "tables",
-              label: t`Tables`,
-              content: (
-                <Reading>
-                  <TablesPanel tables={file.opened.tables} subsetTables={null} source="original" />
-                </Reading>
-              ),
-            },
-          ]}
+          tabs={readOnlyPmoTabs({
+            opened: file.opened,
+            origin: null,
+            generation,
+            source: "original",
+            minReads,
+            onMinReadsChange: (next) => session.setMinReads(next),
+            subsetTables: null,
+          })}
         />
       </PmoSessionProvider>
     );
   } else if (file.kind === "failed" && file.cause === "lost") {
     body = (
-      <Reading>
+      <PmoReading>
         <Callout
           tone="error"
           live
@@ -352,9 +334,9 @@ function OpenDataset({
             </div>
           }
         >
-          {refusal(file)}
+          {refusal(file, { published: true })}
         </Callout>
-      </Reading>
+      </PmoReading>
     );
   } else {
     switch (opening.kind) {
@@ -368,7 +350,7 @@ function OpenDataset({
         break;
       case "too-large":
         body = (
-          <Reading>
+          <PmoReading>
             <Callout
               tone="error"
               title={t`This file is too large to open in the browser`}
@@ -379,12 +361,12 @@ function OpenDataset({
                 computer.
               </Trans>
             </Callout>
-          </Reading>
+          </PmoReading>
         );
         break;
       case "download-failed":
         body = (
-          <Reading>
+          <PmoReading>
             <Callout
               tone="error"
               live
@@ -400,12 +382,12 @@ function OpenDataset({
             >
               <Trans>Check your connection. Zenodo may also be busy for a moment.</Trans>
             </Callout>
-          </Reading>
+          </PmoReading>
         );
         break;
       case "refused":
         body = (
-          <Reading>
+          <PmoReading>
             {file.kind === "refused" && file.check.kind === "invalid" ? (
               <Invalid
                 check={file.check}
@@ -419,15 +401,17 @@ function OpenDataset({
                 title={t`The published file could not be opened`}
                 action={download}
               >
-                {refusal(file) ?? <Trans>It cannot be opened in this browser as it is.</Trans>}
+                {refusal(file, { published: true }) ?? (
+                  <Trans>It cannot be opened in this browser as it is.</Trans>
+                )}
               </Callout>
             )}
-          </Reading>
+          </PmoReading>
         );
         break;
       case "failed":
         body = (
-          <Reading>
+          <PmoReading>
             <Callout
               tone="error"
               live
@@ -443,7 +427,7 @@ function OpenDataset({
             >
               <Trans>Something went wrong in this browser while opening it. Try again.</Trans>
             </Callout>
-          </Reading>
+          </PmoReading>
         );
         break;
       default:
@@ -451,8 +435,8 @@ function OpenDataset({
     }
   }
 
-  const workingName = pendingReplace?.workingName ?? "";
-  const subsetName = pendingReplace?.subsetName ?? null;
+  const workingName = handOffState.kind === "confirming" ? handOffState.workingName : "";
+  const subsetName = handOffState.kind === "confirming" ? handOffState.subsetName : null;
 
   return (
     <PageContainer width="full" compact>
@@ -465,9 +449,11 @@ function OpenDataset({
         {body}
       </div>
       <ConfirmDialog
-        open={pendingReplace !== null}
+        open={handOffState.kind === "confirming"}
         onOpenChange={(open) => {
-          if (!open) setPendingReplace(null);
+          if (!open && handOffRef.current.kind === "confirming") {
+            updateHandOff({ kind: "idle" });
+          }
         }}
         title={t`Replace the file open in My PMO file?`}
         description={
@@ -525,7 +511,7 @@ export function OpenPublished({
 
   if (dataset !== undefined) {
     return (
-      <OpenDataset
+      <PublishedDatasetView
         key={`${dataset.id}:${attempt}`}
         dataset={dataset}
         fetcher={fetcher}

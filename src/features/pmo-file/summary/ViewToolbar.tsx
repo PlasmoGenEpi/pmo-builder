@@ -20,10 +20,17 @@ export interface MinReadsFieldProps {
 
 /** The minimum reads for a microhaplotype to count. Worded as on the Subset tab. */
 export function MinReadsField({ value, onValueChange }: MinReadsFieldProps) {
+  const hint = t`Leave empty to count them all.`;
   return (
     <NumberField
       label={t`Minimum reads per microhaplotype`}
-      hint={t`Leave empty to count them all.`}
+      hint={hint}
+      title={hint}
+      placeholder={t({
+        message: "All",
+        comment:
+          "Placeholder in the minimum reads input when empty, meaning all microhaplotypes count",
+      })}
       layout="compact"
       integer
       min={0}

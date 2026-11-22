@@ -1332,6 +1332,11 @@ msgstr "Divisão administrativa, nível 3"
 msgid "Age"
 msgstr "Idade"
 
+#. Placeholder in the minimum reads input when empty, meaning all microhaplotypes count
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "All"
+msgstr "Todos"
+
 #. {stepTitle} is a step's title, such as Project
 #: src/features/shared/NameCheck.tsx
 msgid "All found on the {stepTitle} step."
@@ -1799,8 +1804,7 @@ msgstr "A coluna «{runLike}» distingue essas linhas, por isso a tabela contém
 msgid "Comments"
 msgstr "Comentários"
 
-#: src/features/pmo-file/OpenPublished.tsx
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoReading.tsx
 msgid "Compare"
 msgstr "Comparar"
 
@@ -3887,8 +3891,7 @@ msgstr "Outros nomes do espécime, separados por vírgulas."
 msgid "Other specimen identifiers"
 msgstr "Outros identificadores de espécimes"
 
-#: src/features/pmo-file/OpenPublished.tsx
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoReading.tsx
 msgid "Overview"
 msgstr "Visão geral"
 
@@ -5284,8 +5287,7 @@ msgstr "Subconjunto"
 msgid "Such as the country or year of collection."
 msgstr "Por exemplo, o país ou o ano de colheita."
 
-#: src/features/pmo-file/OpenPublished.tsx
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoReading.tsx
 msgid "Summary"
 msgstr "Resumo"
 
@@ -5309,8 +5311,7 @@ msgstr "Mudar para o tema claro"
 msgid "Switching to this tab"
 msgstr "A mudar para este separador"
 
-#: src/features/pmo-file/OpenPublished.tsx
-#: src/features/pmo-file/PmoFilePage.tsx
+#: src/features/pmo-file/PmoReading.tsx
 msgid "Tables"
 msgstr "Tabelas"
 
@@ -6360,6 +6361,10 @@ msgstr "Este ficheiro não está conforme ao formato PMO"
 msgid "This file does not say which PMO version it is. Only version {version} files can be opened here. Build it again from your tables to get a {version} file."
 msgstr "Este ficheiro não indica a sua versão PMO. Só os ficheiros na versão {version} podem ser abertos aqui. Crie-o novamente a partir das suas tabelas para obter um ficheiro na versão {version}."
 
+#: src/features/pmo-file/FileRefusal.tsx
+msgid "This file does not say which PMO version it is. Only version {version} files can be opened here. Download it from Zenodo to inspect it on your computer."
+msgstr "Este ficheiro não indica a sua versão PMO. Só os ficheiros na versão {version} podem ser abertos aqui. Transfira-o do Zenodo para o inspecionar no seu computador."
+
 #: src/domain/import/messages.ts
 msgid "This file has a header row but no rows of data. Add the data below the header, or choose another file."
 msgstr "Este ficheiro tem uma linha de cabeçalho, mas nenhuma linha de dados. Adicione os dados por baixo do cabeçalho ou escolha outro ficheiro."
@@ -6396,6 +6401,10 @@ msgstr "Este ficheiro está vazio. Escolha um ficheiro com uma linha de cabeçal
 #: src/features/pmo-file/FileRefusal.tsx
 msgid "This file is in PMO version {declared}. Only version {version} files can be opened here. Build it again from your tables to get a {version} file."
 msgstr "Este ficheiro está na versão PMO {declared}. Só os ficheiros na versão {version} podem ser abertos aqui. Crie-o novamente a partir das suas tabelas para obter um ficheiro na versão {version}."
+
+#: src/features/pmo-file/FileRefusal.tsx
+msgid "This file is in PMO version {declared}. Only version {version} files can be opened here. Download it from Zenodo to inspect it on your computer."
+msgstr "Este ficheiro está na versão PMO {declared}. Só os ficheiros na versão {version} podem ser abertos aqui. Transfira-o do Zenodo para o inspecionar no seu computador."
 
 #: src/features/pmo-file/FileRefusal.tsx
 msgid "This file is larger than {sizeLimit}, more than this browser can open."

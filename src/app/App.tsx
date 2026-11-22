@@ -6,7 +6,6 @@ import { Redirect, Route, Router, Switch, useLocation, type BaseLocationHook } f
 import { useHashLocation as hashLocation } from "wouter/use-hash-location";
 
 import { recordPageOpened, recordStepOpened } from "@/analytics";
-import { isPublishedTab } from "@/features/pmo-file/publishedTabs";
 import { i18n } from "@/i18n";
 import { AppStoreProvider, type AppStore } from "@/state";
 import { Skeleton, ToastProvider } from "@/ui";
@@ -144,10 +143,7 @@ function Routes() {
           </Route>
           <Route path="/pmo/published/:id/:tab">
             {(params: { id: string; tab: string }) => (
-              <Redirect
-                to={`/published/${params.id}/${isPublishedTab(params.tab) ? params.tab : "overview"}`}
-                replace
-              />
+              <Redirect to={`/published/${params.id}/${params.tab}`} replace />
             )}
           </Route>
           <Route path="/pmo/:tab" component={PmoFile.component} />
