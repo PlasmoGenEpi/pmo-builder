@@ -36,7 +36,7 @@ export const MAX_FILE_BYTES = 500 * 1024 * 1024;
 /** Zenodo refuses a larger page to a client that is not signed in. */
 const PAGE_SIZE = 25;
 /** A guard against a listing that never ends. */
-const MAX_PAGES = 50;
+const MAX_PAGES = 1_000;
 
 /** What a harvest needs. */
 export interface HarvestOptions {
@@ -50,7 +50,7 @@ export interface HarvestOptions {
   readonly log?: (message: string) => void;
 }
 
-/** Raised when Zenodo cannot be read at all, as opposed to one record being left out. */
+/** Raised when the community's listing cannot be read to its end, as opposed to one record being left out. */
 export class HarvestError extends Error {
   constructor(message: string) {
     super(message);
@@ -204,6 +204,7 @@ export async function harvest(options: HarvestOptions): Promise<HarvestResult> {
   const headers = { Accept: RECORD_JSON };
 
   const records: unknown[] = [];
+  let reportedTotal: number | null = null;
   const query = new URLSearchParams({
     q: `metadata.subjects.subject:"${PMO_SUBJECT}"`,
     size: String(PAGE_SIZE),
@@ -211,7 +212,10 @@ export async function harvest(options: HarvestOptions): Promise<HarvestResult> {
   });
   let next: string | null =
     `${ZENODO}/api/communities/${encodeURIComponent(options.community)}/records?${query.toString()}`;
-  for (let page = 0; next !== null && page < MAX_PAGES; page += 1) {
+  for (let page = 0; next !== null; page += 1) {
+    if (page >= MAX_PAGES) {
+      throw new HarvestError(`Zenodo's listing did not end after ${MAX_PAGES} pages`);
+    }
     let response: Response;
     try {
       // oxlint-disable-next-line no-await-in-loop -- one page at a time, to go easy on Zenodo
@@ -225,8 +229,17 @@ export async function harvest(options: HarvestOptions): Promise<HarvestResult> {
     const hits = field(body, "hits", "hits");
     if (!Array.isArray(hits))
       throw new HarvestError("Zenodo's listing was not in the expected form");
+    const total = field(body, "hits", "total");
+    if (typeof total === "number" && Number.isFinite(total) && total >= 0) {
+      reportedTotal = reportedTotal === null ? total : Math.max(reportedTotal, total);
+    }
     records.push(...hits);
     next = text(field(body, "links", "next"));
+  }
+  if (reportedTotal !== null && records.length < reportedTotal) {
+    throw new HarvestError(
+      `Zenodo reported ${reportedTotal} ${reportedTotal === 1 ? "record" : "records"}, but the listing returned ${records.length}`,
+    );
   }
 
   const datasets: PublishedDataset[] = [];

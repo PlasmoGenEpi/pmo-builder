@@ -16,11 +16,19 @@ import { REPOSITORY_PATH, type HarvestResult } from "./types";
 /** Zenodo turns away clients that do not name themselves. */
 const USER_AGENT = "pmo-repository-harvester/1.0";
 
-const named: typeof fetch = (input, init) => {
-  const headers = new Headers(init?.headers);
-  headers.set("User-Agent", USER_AGENT);
-  return fetch(input, { ...init, headers });
-};
+/** Optional dependencies for {@link run}. */
+export interface RunOptions {
+  /** Default: the global `fetch`. */
+  readonly fetch?: typeof fetch;
+}
+
+function namedFetch(base: typeof fetch): typeof fetch {
+  return (input, init) => {
+    const headers = new Headers(init?.headers);
+    headers.set("User-Agent", USER_AGENT);
+    return base(input, { ...init, headers });
+  };
+}
 
 function option(args: readonly string[], name: string): string | undefined {
   const index = args.indexOf(`--${name}`);
@@ -51,7 +59,8 @@ async function report(result: HarvestResult): Promise<void> {
  * When Zenodo cannot be read and `--fallback` names the address of the last
  * published catalogue, that one is kept. Returns the exit code.
  */
-export async function run(args: readonly string[]): Promise<number> {
+export async function run(args: readonly string[], options: RunOptions = {}): Promise<number> {
+  const send = namedFetch(options.fetch ?? globalThis.fetch);
   const community = option(args, "community") ?? process.env["VITE_ZENODO_COMMUNITY"] ?? "";
   const out = option(args, "out") ?? path.join("public", REPOSITORY_PATH);
   const fallback = option(args, "fallback");
@@ -65,7 +74,7 @@ export async function run(args: readonly string[]): Promise<number> {
   try {
     const result = await harvest({
       community: community.trim(),
-      fetch: named,
+      fetch: send,
       log: (message) => console.warn(message),
     });
     await write(out, "index.json", result.index);
@@ -84,7 +93,7 @@ export async function run(args: readonly string[]): Promise<number> {
     const base = fallback.endsWith("/") ? fallback : `${fallback}/`;
     for (const name of ["index.json", "specimens.json"]) {
       // oxlint-disable-next-line no-await-in-loop -- two small files
-      const response = await named(new URL(name, base));
+      const response = await send(new URL(name, base));
       if (!response.ok) {
         console.error(
           `The last catalogue could not be read from ${base}${name} (${response.status}).`,

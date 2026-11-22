@@ -1,9 +1,46 @@
 import { gzipPmo } from "pmotools-ts";
 import { describe, expect, it, vi } from "vitest";
 
-import { buildExamplePmo as examplePmo } from "@/domain/build/testing";
+import { buildDraft } from "@/domain/build";
+import {
+  buildExamplePmo as examplePmo,
+  EXAMPLE_MAPPINGS,
+  mappedTable,
+  rawTable,
+  testContext,
+} from "@/domain/build/testing";
+import { createEmptyDraft, createPanelEntry } from "@/domain/draft";
 
 import { harvest, HarvestError, latestVersions, pmoFileOf } from "./harvest";
+
+/** A minimal valid PMO as UTF-8 JSON bytes, fast to parse across hundreds of records. */
+function minimalPmoBytes(): Uint8Array {
+  const alleles = rawTable([{ SampleID: "s1", Locus: "t1", ASV: "ACGT", Reads: "10" }]);
+  const panel = rawTable([{ amplicon: "t1", fwd_primer: "AAAA", rev_primer: "TTTT" }]);
+  const empty = createEmptyDraft();
+  const { merge } = buildDraft(
+    {
+      ...empty,
+      microhaplotypes: {
+        table: mappedTable("alleles", alleles, EXAMPLE_MAPPINGS.alleles),
+        runName: { mode: "fixed", fixedName: "run1", column: null },
+        representativeColumns: [],
+      },
+      panel: {
+        panels: [
+          {
+            ...createPanelEntry("Panel1"),
+            table: mappedTable("panel", panel, EXAMPLE_MAPPINGS.panel),
+          },
+        ],
+      },
+    },
+    testContext({ alleles, panel }),
+    { creationDate: "2026-01-01" },
+  );
+  if (merge.outcome.kind !== "built") throw new Error("minimal PMO did not build");
+  return new TextEncoder().encode(JSON.stringify(merge.outcome.pmo));
+}
 
 function record(id: string, files: readonly string[], title = `Dataset ${id}`): unknown {
   return {
@@ -44,6 +81,8 @@ function fakeZenodo(answers: Readonly<Record<string, unknown>>) {
 
 const LISTING =
   "https://zenodo.org/api/communities/pmocommunity/records?q=metadata.subjects.subject%3A%22Portable+Microhaplotype+Object%22&size=25&sort=newest";
+const listingPage = (page: number): string =>
+  page === 1 ? LISTING : `https://zenodo.org/api/communities/pmocommunity/records?page=${page}`;
 const file = (id: string, name: string): string =>
   `https://zenodo.org/api/records/${id}/files/${encodeURIComponent(name)}/content`;
 
@@ -109,6 +148,37 @@ describe("harvest", () => {
     expect(result.index.datasets.map((dataset) => dataset.id)).toEqual(["101", "102"]);
   });
 
+  it("reads every record past 1,250 across all listing pages", async () => {
+    const bytes = minimalPmoBytes();
+    const total = 1275;
+    const pageSize = 25;
+    const pageCount = total / pageSize;
+    const pages = new Map<string, unknown>();
+    for (let page = 1; page <= pageCount; page += 1) {
+      const start = (page - 1) * pageSize;
+      const hits = Array.from({ length: pageSize }, (_, offset) => {
+        const id = String(start + offset + 1);
+        return record(id, [`study-${id}.pmo.json`]);
+      });
+      pages.set(listingPage(page), {
+        hits: { hits, total },
+        links: page < pageCount ? { next: listingPage(page + 1) } : {},
+      });
+    }
+    const send = vi.fn<typeof fetch>((input) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      const page = pages.get(url);
+      if (page !== undefined) return Promise.resolve(new Response(JSON.stringify(page)));
+      if (url.endsWith("/content")) return Promise.resolve(new Response(Uint8Array.from(bytes)));
+      return Promise.resolve(new Response(null, { status: 404 }));
+    });
+
+    const result = await harvest({ community: "pmocommunity", fetch: send });
+    expect(result.index.datasets).toHaveLength(1275);
+    expect(result.index.datasets[0]?.id).toBe("1");
+    expect(result.index.datasets[1274]?.id).toBe("1275");
+  });
+
   it("leaves out records it cannot use and says why", async () => {
     const bytes = await gzipPmo(examplePmo());
     const text = new TextEncoder();
@@ -167,6 +237,46 @@ describe("harvest", () => {
     await expect(harvest({ community: "pmocommunity", fetch: offline })).rejects.toThrow(
       HarvestError,
     );
+  });
+
+  it("fails with both numbers when the listing reports more records than it returns", async () => {
+    const second = "https://zenodo.org/api/communities/pmocommunity/records?page=2";
+    const page1 = Array.from({ length: 25 }, (_, i) => record(String(i + 1), ["a.pmo.json"]));
+    const page2 = Array.from({ length: 10 }, (_, i) => record(String(i + 26), ["a.pmo.json"]));
+    const { send, asked } = fakeZenodo({
+      [LISTING]: { hits: { hits: page1, total: 60 }, links: { next: second } },
+      [second]: { hits: { hits: page2, total: 60 }, links: {} },
+    });
+
+    await expect(harvest({ community: "pmocommunity", fetch: send })).rejects.toSatisfy(
+      (error: unknown) =>
+        error instanceof HarvestError &&
+        /\b60\b/.test(error.message) &&
+        /\b35\b/.test(error.message),
+    );
+    expect(asked).toEqual([LISTING, second]);
+  });
+
+  it("fails instead of stopping quietly when the listing never ends", async () => {
+    let page = 1;
+    const endless = vi.fn<typeof fetch>(() => {
+      page += 1;
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            hits: { hits: [] },
+            links: {
+              next: `https://zenodo.org/api/communities/pmocommunity/records?page=${page}`,
+            },
+          }),
+        ),
+      );
+    });
+
+    await expect(harvest({ community: "pmocommunity", fetch: endless })).rejects.toThrow(
+      HarvestError,
+    );
+    expect(endless.mock.calls.length).toBeGreaterThan(50);
   });
 });
 
