@@ -19,8 +19,12 @@ export interface SelectProps {
   onValueChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
-  /** Needed when the select is not inside a `Field`. */
+  /** Wires a visible `<label htmlFor={id}>` when the select is not inside a `Field`. */
+  id?: string;
+  /** Needed when the select is not inside a `Field` and has no visible `<label>`. */
   "aria-label"?: string;
+  /** Associates an external visible label element when the select is not inside a `Field`. */
+  "aria-labelledby"?: string;
   className?: string;
 }
 
@@ -34,6 +38,7 @@ export function Select({
   onValueChange,
   placeholder = t`Choose`,
   disabled,
+  id,
   className,
   ...aria
 }: SelectProps) {
@@ -42,7 +47,9 @@ export function Select({
     <RadixSelect.Root value={value} onValueChange={onValueChange} disabled={disabled}>
       <RadixSelect.Trigger
         {...control}
+        id={id ?? control?.id}
         aria-label={aria["aria-label"]}
+        aria-labelledby={aria["aria-labelledby"]}
         className={cn(
           inputClassName,
           "inline-flex h-control cursor-pointer text-base items-center justify-between gap-2 text-left data-placeholder:text-text-subtle",

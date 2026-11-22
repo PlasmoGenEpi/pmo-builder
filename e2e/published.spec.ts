@@ -121,3 +121,64 @@ test("restores search, filters and scroll position when going Back from a datase
   const scrollAfterBack = await page.evaluate(() => window.scrollY);
   expect(Math.abs(scrollAfterBack - scrollBeforeOpen)).toBeLessThanOrEqual(20);
 });
+
+test("sorts the list from the keyboard, keeps sort in the address, and survives Back", async ({
+  page,
+}) => {
+  await serveLargeCatalogue(page);
+  await page.goto("/#/published");
+  await expect(page.getByText("150 datasets")).toBeVisible();
+
+  await expect(page.getByText("Sort by", { exact: true })).toBeVisible();
+  const sortControl = page.getByLabel("Sort by");
+  await expect(sortControl).toContainText("Newest published");
+
+  const firstTitle = () => page.locator("article h3").first().textContent();
+  expect(await firstTitle()).toBe(LARGE_CATALOGUE.datasets[0]?.title);
+
+  // Change sort using the keyboard alone: focus, open, move to "Most specimens", select.
+  await sortControl.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("listbox")).toBeVisible();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+
+  await expect(sortControl).toContainText("Most specimens");
+  await expect
+    .poll(() => page.evaluate(() => window.location.hash))
+    .toBe("#/published?sort=specimens");
+  const maxSpecimens = Math.max(
+    ...LARGE_CATALOGUE.datasets.map((entry) => entry.summary.specimens),
+  );
+  const mostSpecimensEntry = LARGE_CATALOGUE.datasets.find(
+    (entry) => entry.summary.specimens === maxSpecimens,
+  );
+  expect(await firstTitle()).toBe(mostSpecimensEntry?.title);
+
+  // Open the top dataset and press Back: sort stays in the address and list order.
+  await page.locator("article a").first().click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: mostSpecimensEntry?.title ?? "" }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("heading", { level: 1, name: "Published PMOs" })).toBeVisible();
+  expect(await page.evaluate(() => window.location.hash)).toBe("#/published?sort=specimens");
+  await expect(sortControl).toContainText("Most specimens");
+  expect(await firstTitle()).toBe(mostSpecimensEntry?.title);
+
+  // Check remaining orders and return to default clean address.
+  await chooseOption(page, "Sort by", "Latest collection year");
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#/published?sort=year");
+  const newest2026Entry = LARGE_CATALOGUE.datasets.find(
+    (entry) => entry.collectionYears?.last === 2026,
+  );
+  expect(await firstTitle()).toBe(newest2026Entry?.title);
+
+  await chooseOption(page, "Sort by", "Title");
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#/published?sort=title");
+  expect((await firstTitle()) ?? "").toMatch(/^Angola /);
+
+  await chooseOption(page, "Sort by", "Newest published");
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#/published");
+  expect(await firstTitle()).toBe(LARGE_CATALOGUE.datasets[0]?.title);
+});

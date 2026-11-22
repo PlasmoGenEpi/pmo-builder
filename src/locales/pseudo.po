@@ -2798,6 +2798,10 @@ msgstr ""
 msgid "Language"
 msgstr ""
 
+#: src/features/published/PublishedPage.tsx
+msgid "Latest collection year"
+msgstr ""
+
 #: src/domain/fields/samples.ts
 msgid "Latitude and longitude"
 msgstr ""
@@ -3258,6 +3262,10 @@ msgstr ""
 msgid "most common"
 msgstr ""
 
+#: src/features/published/PublishedPage.tsx
+msgid "Most specimens"
+msgstr ""
+
 #: src/features/records/RecordList.tsx
 msgid "Move {name} down"
 msgstr ""
@@ -3316,6 +3324,10 @@ msgstr ""
 #. A negative control
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Negative"
+msgstr ""
+
+#: src/features/published/PublishedPage.tsx
+msgid "Newest published"
 msgstr ""
 
 #: src/app/StepPage.tsx
@@ -5036,6 +5048,11 @@ msgstr ""
 msgid "Something went wrong while working out the PMO: {message}"
 msgstr ""
 
+#. Label for the published list order menu
+#: src/features/published/PublishedPage.tsx
+msgid "Sort by"
+msgstr ""
+
 #: src/features/pmo-file/summary/SortableTable.tsx
 msgid "Sort by {columnLabel}"
 msgstr ""
@@ -6477,6 +6494,7 @@ msgstr ""
 msgid "Tick all found"
 msgstr ""
 
+#: src/features/published/PublishedPage.tsx
 #: src/features/review/PublishToZenodo.tsx
 msgid "Title"
 msgstr ""

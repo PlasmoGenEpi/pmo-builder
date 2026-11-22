@@ -97,6 +97,59 @@ export function filterDatasets(
   });
 }
 
+/** The supported orders for the published PMOs list. */
+export const SORT_ORDERS = ["newest", "specimens", "year", "title"] as const;
+
+/** How the published PMOs list can be ordered. */
+export type SortOrder = (typeof SORT_ORDERS)[number];
+
+/** The default list order: newest published first. */
+export const DEFAULT_SORT: SortOrder = "newest";
+
+/** Checks whether a string is a supported {@link SortOrder}. */
+export function isSortOrder(value: string): value is SortOrder {
+  return SORT_ORDERS.some((order) => order === value);
+}
+
+function comparePublishedDesc(a: PublishedDataset, b: PublishedDataset): number {
+  if (a.published === b.published) return 0;
+  return b.published > a.published ? 1 : -1;
+}
+
+function compareLatestYearDesc(a: PublishedDataset, b: PublishedDataset): number {
+  const aLast = a.collectionYears?.last ?? null;
+  const bLast = b.collectionYears?.last ?? null;
+  if (aLast === null && bLast === null) return 0;
+  if (aLast === null) return 1;
+  if (bLast === null) return -1;
+  return bLast - aLast;
+}
+
+/**
+ * Returns the datasets in the chosen order without mutating the input.
+ * Ties in specimens, latest collection year or title fall back to newest published.
+ */
+export function sortDatasets(
+  datasets: readonly PublishedDataset[],
+  sort: SortOrder,
+): PublishedDataset[] {
+  if (sort === "newest") {
+    return datasets.toSorted(comparePublishedDesc);
+  }
+  const locale = intlLocale();
+  return datasets.toSorted((a, b) => {
+    let primary = 0;
+    if (sort === "specimens") {
+      primary = b.summary.specimens - a.summary.specimens;
+    } else if (sort === "year") {
+      primary = compareLatestYearDesc(a, b);
+    } else {
+      primary = a.title.localeCompare(b.title, locale, { sensitivity: "base", numeric: true });
+    }
+    return primary !== 0 ? primary : comparePublishedDesc(a, b);
+  });
+}
+
 /** The values the filters can take, each sorted. */
 export interface CatalogueFacets {
   readonly countries: readonly string[];

@@ -2792,6 +2792,10 @@ msgstr "Les étiquettes avec une position chromosomique sont les variants que le
 msgid "Language"
 msgstr "Langue"
 
+#: src/features/published/PublishedPage.tsx
+msgid "Latest collection year"
+msgstr "Année de collecte la plus récente"
+
 #: src/domain/fields/samples.ts
 msgid "Latitude and longitude"
 msgstr "Latitude et longitude"
@@ -3252,6 +3256,10 @@ msgstr "Allèles au maximum sur une cible"
 msgid "most common"
 msgstr "le plus fréquent"
 
+#: src/features/published/PublishedPage.tsx
+msgid "Most specimens"
+msgstr "Le plus de spécimens"
+
 #: src/features/records/RecordList.tsx
 msgid "Move {name} down"
 msgstr "Descendre {name}"
@@ -3311,6 +3319,10 @@ msgstr "Nécessaire pour cette étape. Une ligne par échantillon, avec le nom d
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Negative"
 msgstr "Négatif"
+
+#: src/features/published/PublishedPage.tsx
+msgid "Newest published"
+msgstr "Publication la plus récente"
 
 #: src/app/StepPage.tsx
 msgid "Next"
@@ -5030,6 +5042,11 @@ msgstr "Un problème est survenu lors de la lecture du {table}. Vérifiez l’as
 msgid "Something went wrong while working out the PMO: {message}"
 msgstr "Un problème est survenu lors de la génération du PMO : {message}"
 
+#. Label for the published list order menu
+#: src/features/published/PublishedPage.tsx
+msgid "Sort by"
+msgstr "Trier par"
+
 #: src/features/pmo-file/summary/SortableTable.tsx
 msgid "Sort by {columnLabel}"
 msgstr "Trier par {columnLabel}"
@@ -6471,6 +6488,7 @@ msgstr "Tout cocher"
 msgid "Tick all found"
 msgstr "Cocher tous les résultats"
 
+#: src/features/published/PublishedPage.tsx
 #: src/features/review/PublishToZenodo.tsx
 msgid "Title"
 msgstr "Titre"

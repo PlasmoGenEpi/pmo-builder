@@ -16,7 +16,7 @@ import { installDomPolyfills } from "@/ui/testPolyfills";
 import type { CatalogueLoad } from "./catalogue";
 import { DatasetPage } from "./DatasetPage";
 import { clearScrollPositionsForTests, PublishedPage } from "./PublishedPage";
-import { catalogue, DATASETS } from "./testing";
+import { catalogue, DATASETS, largeCatalogue } from "./testing";
 
 beforeAll(installDomPolyfills);
 
@@ -310,6 +310,119 @@ describe("PublishedPage", () => {
       } else {
         Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
       }
+    }
+  });
+
+  it("sorts the list with a visibly labelled control, updates the address, and works from the keyboard", async () => {
+    const user = userEvent.setup();
+    const { wrapper: listWrapper, location } = makeWrapper("/published");
+    render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper: listWrapper });
+    await screen.findByText("3 datasets");
+
+    const sortControl = screen.getByLabelText("Sort by");
+    expect(sortControl).toBe(screen.getByRole("combobox", { name: "Sort by" }));
+    expect(sortControl).toHaveTextContent("Newest published");
+
+    // Keyboard: focus the sort control, open it, move down to "Most specimens", and select.
+    sortControl.focus();
+    await user.keyboard("{Enter}");
+    await user.keyboard("{ArrowDown}{Enter}");
+
+    expect(sortControl).toHaveTextContent("Most specimens");
+    expect(location.history).toEqual(["/published", "/published?sort=specimens"]);
+    expect(titles()).toEqual([
+      "Northern Uganda cohort",
+      "Maputo surveillance 2015 to 2019",
+      "Border travellers, Mozambique and Eswatini",
+    ]);
+    // Sorting alone does not filter out entries.
+    expect(screen.getByText("3 datasets")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Clear the filters" })).not.toBeInTheDocument();
+
+    await choose(user, "Sort by", "Latest collection year");
+    expect(location.history.at(-1)).toBe("/published?sort=year");
+    expect(titles()).toEqual([
+      "Northern Uganda cohort",
+      "Maputo surveillance 2015 to 2019",
+      "Border travellers, Mozambique and Eswatini",
+    ]);
+
+    await choose(user, "Sort by", "Title");
+    expect(location.history.at(-1)).toBe("/published?sort=title");
+    expect(titles()).toEqual([
+      "Border travellers, Mozambique and Eswatini",
+      "Maputo surveillance 2015 to 2019",
+      "Northern Uganda cohort",
+    ]);
+
+    await choose(user, "Sort by", "Newest published");
+    expect(location.history.at(-1)).toBe("/published");
+    expect(titles()).toEqual([
+      "Maputo surveillance 2015 to 2019",
+      "Northern Uganda cohort",
+      "Border travellers, Mozambique and Eswatini",
+    ]);
+  });
+
+  it("orders a 150-entry catalogue by each sort choice and restores sort on Back", async () => {
+    const user = userEvent.setup();
+    const bigIndex = largeCatalogue(150);
+    const loadBig = gives({ kind: "ready", index: bigIndex });
+    window.history.replaceState(null, "", "/#/published");
+
+    try {
+      render(
+        <I18nProvider i18n={i18n}>
+          <Router hook={useHashLocation}>
+            <Switch>
+              <Route path="/published">
+                <PublishedPage load={loadBig} zenodo={ZENODO} />
+              </Route>
+              <Route path="/published/:id">
+                {(params) => <DatasetPage id={params.id} load={loadBig} />}
+              </Route>
+            </Switch>
+          </Router>
+        </I18nProvider>,
+      );
+
+      await screen.findByText("150 datasets");
+      expect(titles()[0]).toBe(bigIndex.datasets[0]?.title);
+
+      await choose(user, "Sort by", "Most specimens");
+      expect(window.location.hash).toBe("#/published?sort=specimens");
+      const maxSpecimens = Math.max(...bigIndex.datasets.map((entry) => entry.summary.specimens));
+      const mostSpecimensEntry = bigIndex.datasets.find(
+        (entry) => entry.summary.specimens === maxSpecimens,
+      );
+      expect(titles()[0]).toBe(mostSpecimensEntry?.title);
+
+      await choose(user, "Sort by", "Latest collection year");
+      expect(window.location.hash).toBe("#/published?sort=year");
+      const newest2026Entry = bigIndex.datasets.find(
+        (entry) => entry.collectionYears?.last === 2026,
+      );
+      expect(titles()[0]).toBe(newest2026Entry?.title);
+
+      await choose(user, "Sort by", "Title");
+      expect(window.location.hash).toBe("#/published?sort=title");
+      const firstTitle = titles()[0] ?? "";
+      expect(firstTitle.startsWith("Angola ")).toBe(true);
+
+      // Open the first dataset and press Back: sort order stays in place.
+      await user.click(screen.getByRole("link", { name: firstTitle }));
+      expect(
+        await screen.findByRole("heading", { level: 1, name: firstTitle }),
+      ).toBeInTheDocument();
+      expect(window.location.hash).toMatch(/^#\/published\/\d+$/);
+
+      window.history.back();
+      expect(await screen.findByText("150 datasets")).toBeInTheDocument();
+      expect(window.location.hash).toBe("#/published?sort=title");
+      expect(screen.getByRole("combobox", { name: "Sort by" })).toHaveTextContent("Title");
+      expect(titles()[0]).toBe(firstTitle);
+    } finally {
+      window.history.replaceState(null, "", "/");
     }
   });
 });
