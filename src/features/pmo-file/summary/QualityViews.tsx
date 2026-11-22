@@ -5,7 +5,7 @@
  * the file has its data, and says how much of the file it covers.
  */
 import { plural, t } from "@lingui/core/macro";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { useTheme } from "@/app/theme";
 import type { PmoSummary, SampleSummary } from "@/domain/tools/types";
@@ -112,14 +112,78 @@ function stageCounted(summary: PmoSummary): SampleSummary[] {
   );
 }
 
+interface Box {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
+const TOOLTIP_GAP = 6;
+const VIEWPORT_MARGIN = 8;
+
+/**
+ * Places a plate well's tooltip beside the well, in coordinates relative to the
+ * container holding the plates, flipping or clamping so it stays inside the viewport.
+ */
+function placeWellTooltip(options: {
+  readonly well: Box;
+  readonly container: Box;
+  readonly tooltip: { readonly width: number; readonly height: number };
+  readonly viewport: { readonly width: number; readonly height: number };
+}): { readonly left: number; readonly top: number } {
+  const { well, container, tooltip, viewport } = options;
+
+  let vx = well.left;
+  if (vx + tooltip.width > viewport.width - VIEWPORT_MARGIN) {
+    vx = well.right - tooltip.width;
+  }
+  const maxX = Math.max(VIEWPORT_MARGIN, viewport.width - VIEWPORT_MARGIN - tooltip.width);
+  vx = Math.max(VIEWPORT_MARGIN, Math.min(vx, maxX));
+
+  let vy = well.bottom + TOOLTIP_GAP;
+  if (vy + tooltip.height > viewport.height - VIEWPORT_MARGIN) {
+    vy = well.top - TOOLTIP_GAP - tooltip.height;
+  }
+  const maxY = Math.max(VIEWPORT_MARGIN, viewport.height - VIEWPORT_MARGIN - tooltip.height);
+  vy = Math.max(VIEWPORT_MARGIN, Math.min(vy, maxY));
+
+  return {
+    left: vx - container.left,
+    top: vy - container.top,
+  };
+}
+
 /** Each plate as a grid of wells, coloured by how many targets have data. */
 export function PlateView({ summary, headingId }: QualityViewProps) {
   const { resolved } = useTheme();
+  const platesRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{
     readonly sample: SampleSummary;
-    readonly x: number;
-    readonly y: number;
+    readonly well: Box;
   } | null>(null);
+
+  useLayoutEffect(() => {
+    if (hover === null) return;
+    const container = platesRef.current;
+    const tooltip = tooltipRef.current;
+    if (container === null || tooltip === null) return;
+    const containerRect = container.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const pos = placeWellTooltip({
+      well: hover.well,
+      container: containerRect,
+      tooltip: { width: tooltipRect.width, height: tooltipRect.height },
+      viewport: {
+        width: document.documentElement.clientWidth || window.innerWidth,
+        height: document.documentElement.clientHeight || window.innerHeight,
+      },
+    });
+    tooltip.style.left = `${pos.left}px`;
+    tooltip.style.top = `${pos.top}px`;
+  }, [hover]);
+
   const placed = summary.samples.filter((sample) => sample.plate !== null);
   if (!showsPlates(summary)) return null;
   const plates = [...new Set(placed.map((sample) => sample.plate?.plate ?? ""))];
@@ -142,7 +206,7 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
       <Coverage have={have} total={total}>
         {t`Plate positions are given for ${haveCount} of ${totalCount} library samples.`}
       </Coverage>
-      <div className="relative flex flex-wrap gap-8">
+      <div ref={platesRef} className="relative flex flex-wrap gap-8">
         {plates.map((plate) => {
           const wells = placed.filter((sample) => sample.plate?.plate === plate);
           const rows = Math.max(
@@ -203,14 +267,15 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
                       strokeDasharray={sample === undefined ? "2 2" : undefined}
                       onMouseEnter={(event) => {
                         if (sample === undefined) return;
-                        const box = event.currentTarget.ownerSVGElement?.getBoundingClientRect();
-                        const parent = event.currentTarget
-                          .closest("section")
-                          ?.getBoundingClientRect();
+                        const rect = event.currentTarget.getBoundingClientRect();
                         setHover({
                           sample,
-                          x: (box?.left ?? 0) - (parent?.left ?? 0) + (col + 1.5) * cell,
-                          y: (box?.top ?? 0) - (parent?.top ?? 0) + (row + 2) * cell,
+                          well: {
+                            left: rect.left,
+                            top: rect.top,
+                            right: rect.right,
+                            bottom: rect.bottom,
+                          },
                         });
                       }}
                       onMouseLeave={() => setHover(null)}
@@ -237,18 +302,18 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
             </figure>
           );
         })}
-      </div>
-      {hover === null ? null : (
-        <div
-          className="pointer-events-none absolute z-10 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-text shadow-md"
-          style={{ left: hover.x, top: hover.y }}
-        >
-          <div className="font-medium">{hover.sample.name}</div>
-          <div className="text-text-muted">
-            {plural(hoverTargets, { one: "# target with data", other: "# targets with data" })}
+        {hover === null ? null : (
+          <div
+            ref={tooltipRef}
+            className="pointer-events-none absolute top-0 left-0 z-10 w-max max-w-64 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-text shadow-md"
+          >
+            <div className="font-medium break-all">{hover.sample.name}</div>
+            <div className="text-text-muted">
+              {plural(hoverTargets, { one: "# target with data", other: "# targets with data" })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
