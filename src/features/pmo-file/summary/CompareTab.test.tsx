@@ -331,17 +331,18 @@ describe("CompareTab: group sizes and small-group marks", () => {
     }
   });
 
-  it("marks groups with fewer than 10 samples with data and explains the mark above the tables", async () => {
+  it("marks groups with fewer than 10 samples with data and explains the mark under the Groups table", async () => {
     await openAndRenderCompare(buildExamplePmo());
     const groupsTable = await screen.findByRole("table", { name: "Groups" });
     const heTable = screen.getByRole("table", { name: "Heterozygosity by target" });
     const alleleTable = screen.getByRole("table", { name: "Microhaplotype frequencies by group" });
 
-    // A line above the tables says what the small-group mark means.
+    // A line under the Groups table, the first to carry the mark, says what it means.
     const note = screen.getByText(/fewer than 10 samples with data/i, { selector: "p, p *" });
     expect(
-      note.compareDocumentPosition(groupsTable) & Node.DOCUMENT_POSITION_FOLLOWING,
+      groupsTable.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+    expect(note.compareDocumentPosition(heTable) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     const smallYears = ["2015", "2016", "2019"];
     const largerYears = ["2017", "2018"];

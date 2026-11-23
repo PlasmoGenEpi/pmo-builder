@@ -133,7 +133,11 @@ export interface Jump {
   readonly label: string;
 }
 
-/** Links to the sections of a long view, each scrolling to its heading. */
+/**
+ * Links to the sections of a long view, each scrolling to its heading. On a
+ * narrow screen they stay on one row that scrolls sideways, so they do not
+ * push the data down the page.
+ */
 export function SectionJumps({ jumps }: { readonly jumps: readonly Jump[] }) {
   return (
     <nav
@@ -141,9 +145,9 @@ export function SectionJumps({ jumps }: { readonly jumps: readonly Jump[] }) {
         message: "On this page",
         comment: "Name of the jump links to headings in the current view",
       })}
-      className="flex flex-wrap items-center gap-x-1 gap-y-1"
+      className="flex items-center gap-x-1 gap-y-1 max-sm:-m-0.5 max-sm:max-w-full max-sm:min-w-0 max-sm:overflow-x-auto max-sm:p-0.5 sm:flex-wrap"
     >
-      <span className="pr-1.5 text-sm text-text-subtle">
+      <span className="shrink-0 pr-1.5 text-sm text-text-subtle">
         {t({ message: "Jump to", comment: "Followed by links to the sections of the page" })}
       </span>
       {jumps.map((jump) => (

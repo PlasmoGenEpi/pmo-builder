@@ -674,21 +674,6 @@ function Comparison({ source, grouping, reads }: ComparisonProps) {
             </p>
           ) : null}
 
-          {hasSmallGroups ? (
-            <p className="flex items-start gap-1.5 text-sm text-text-muted">
-              <TriangleExclamationPoint
-                aria-hidden="true"
-                className="mt-0.5 size-4 shrink-0 text-warning-text"
-              />
-              <span>
-                {t({
-                  message: `Groups marked with a warning have fewer than ${threshold} samples with data. Read their percentages with care.`,
-                  comment: "{threshold} is a number of samples, such as 10",
-                })}
-              </span>
-            </p>
-          ) : null}
-
           <section className="flex flex-col gap-4">
             <SectionHeading
               id={HEADING.groups}
@@ -701,6 +686,21 @@ function Comparison({ source, grouping, reads }: ComparisonProps) {
               rows={loaded.value.groups}
               rowKey={(row) => row.name ?? "\u0000"}
             />
+            {/* Under the first table that carries the mark, so it does not push the data down. */}
+            {hasSmallGroups ? (
+              <p className="flex items-start gap-1.5 text-sm text-text-muted">
+                <TriangleExclamationPoint
+                  aria-hidden="true"
+                  className="mt-0.5 size-4 shrink-0 text-warning-text"
+                />
+                <span>
+                  {t({
+                    message: `Groups marked with a warning have fewer than ${threshold} samples with data. Read their percentages with care.`,
+                    comment: "{threshold} is a number of samples, such as 10",
+                  })}
+                </span>
+              </p>
+            ) : null}
           </section>
 
           <section className="flex flex-col gap-4">
