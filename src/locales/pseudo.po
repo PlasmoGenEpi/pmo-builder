@@ -1959,6 +1959,10 @@ msgstr ""
 msgid "Comments"
 msgstr ""
 
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Common minimum read counts"
+msgstr ""
+
 #: src/features/pmo-file/PmoReading.tsx
 msgid "Compare"
 msgstr ""
@@ -3023,6 +3027,10 @@ msgstr ""
 
 #: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Leave empty to count them all."
+msgstr ""
+
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Leave empty to count them all. The most in this file is {mostReads}."
 msgstr ""
 
 #: src/features/review/SectionChecklist.tsx
