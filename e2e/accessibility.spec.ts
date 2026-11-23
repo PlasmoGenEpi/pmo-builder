@@ -50,10 +50,11 @@ async function openDisclosures(page: Page): Promise<void> {
   // Each click can reveal more sections, so open the first closed one until none is left.
   for (let opened = 0; opened < 50; opened += 1) {
     // oxlint-disable-next-line no-await-in-loop -- each click can reveal more sections.
-    if ((await closed.count()) === 0) return;
+    if ((await closed.count()) === 0) break;
     // oxlint-disable-next-line no-await-in-loop -- each click can reveal more sections.
     await closed.first().click();
   }
+  expect(await closed.count(), "all collapsed sections expanded").toBe(0);
 }
 
 for (const colorScheme of ["light", "dark"] as const) {

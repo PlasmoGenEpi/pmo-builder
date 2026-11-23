@@ -5,7 +5,13 @@
  */
 import type { Locator, Page } from "@playwright/test";
 
+import { catalogue } from "../src/features/published/testing";
+
 import { expect, test } from "./fixtures/privacy";
+import { expectNoHorizontalOverflow, requireVisibleBox } from "./support/pmoFile";
+
+// Block the offline service worker so mocked catalogue responses always reach the page.
+test.use({ serviceWorkers: "block" });
 
 const PHONE = { width: 390, height: 844 } as const;
 const TABLET_SM = { width: 640, height: 800 } as const;
@@ -24,6 +30,7 @@ interface LocaleCase {
   readonly saveHeading: string;
   readonly privacy: string;
   readonly openSteps: string;
+  readonly emptyPublished: string;
   readonly headings: Readonly<Record<RouteKey, string>>;
 }
 
@@ -38,6 +45,7 @@ const LOCALES: readonly LocaleCase[] = [
     saveHeading: "Saved on this device",
     privacy: "Your data stays on this device",
     openSteps: "Open the step list",
+    emptyPublished: "No PMO has been published yet",
     headings: {
       build: "Microhaplotypes",
       pmo: "My PMO file",
@@ -54,6 +62,7 @@ const LOCALES: readonly LocaleCase[] = [
     saveHeading: "Enregistré sur cet appareil",
     privacy: "Vos données restent sur cet appareil",
     openSteps: "Ouvrir la liste des étapes",
+    emptyPublished: "Aucun PMO n’a encore été publié",
     headings: {
       build: "Microhaplotypes",
       pmo: "Mon fichier PMO",
@@ -70,6 +79,7 @@ const LOCALES: readonly LocaleCase[] = [
     saveHeading: "Guardado neste dispositivo",
     privacy: "Os seus dados ficam neste dispositivo",
     openSteps: "Abrir a lista de etapas",
+    emptyPublished: "Ainda não foi publicado nenhum PMO",
     headings: {
       build: "Micro-haplótipos",
       pmo: "O meu ficheiro PMO",
@@ -95,28 +105,22 @@ async function stubCatalogue(page: Page): Promise<void> {
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        version: 1,
-        harvestedAt: "2026-01-01T00:00:00.000Z",
-        community: "pmocommunity",
-        datasets: [],
-      }),
+      body: JSON.stringify(catalogue([])),
     }),
   );
 }
 
 /** Asserts that `locator` is visible and wholly inside `[0, width]`. */
-async function expectInsideViewport(
-  locator: Locator,
-  width: number,
-  description: string,
-): Promise<void> {
-  await expect(locator, `${description} visible`).toBeVisible();
-  const box = await locator.boundingBox();
-  expect(box, `${description} bounding box`).not.toBeNull();
-  if (box === null) return;
+async function expectHorizontalFit(options: {
+  readonly locator: Locator;
+  readonly width: number;
+  readonly description: string;
+}): Promise<void> {
+  const { locator, width, description } = options;
+  const box = await requireVisibleBox(locator, description);
   expect(box.x, `${description} left edge`).toBeGreaterThanOrEqual(-0.5);
   expect(box.width, `${description} width`).toBeGreaterThan(0);
+  expect(box.height, `${description} height`).toBeGreaterThan(0);
   expect(box.x + box.width, `${description} right edge`).toBeLessThanOrEqual(width + 0.5);
 }
 
@@ -132,22 +136,23 @@ for (const locale of LOCALES) {
       await expect(
         page.getByRole("heading", { level: 1, name: locale.headings[route.key] }),
       ).toBeVisible();
+      if (route.key === "published") {
+        // oxlint-disable-next-line no-await-in-loop -- verify empty catalogue renders instead of load error.
+        await expect(page.getByText(locale.emptyPublished)).toBeVisible();
+      }
       const header = page.getByRole("banner");
       // oxlint-disable-next-line no-await-in-loop -- wait for the top bar controls to be ready.
       await expect(header.getByRole("button", { name: locale.moreOptions })).toBeVisible();
 
       // oxlint-disable-next-line no-await-in-loop -- measure layout per route.
-      const overflow = await page.evaluate(() => ({
-        scrollWidth: document.documentElement.scrollWidth,
-        innerWidth: window.innerWidth,
-      }));
-      expect(
-        overflow.scrollWidth,
-        `${locale.name} ${route.name}: document scrollWidth`,
-      ).toBeLessThanOrEqual(overflow.innerWidth);
+      await expectNoHorizontalOverflow(page, `${locale.name} ${route.name}`);
 
       // oxlint-disable-next-line no-await-in-loop -- check header bounds per route.
-      await expectInsideViewport(header, PHONE.width, `${locale.name} ${route.name} header`);
+      await expectHorizontalFit({
+        locator: header,
+        width: PHONE.width,
+        description: `${locale.name} ${route.name} header`,
+      });
 
       // Every section link in the top bar stays on screen and unclipped without scrolling.
       const nav = header.getByRole("navigation");
@@ -168,39 +173,39 @@ for (const locale of LOCALES) {
       );
       for (let i = 0; i < linkCount; i += 1) {
         // oxlint-disable-next-line no-await-in-loop -- check each section link.
-        await expectInsideViewport(
-          links.nth(i),
-          PHONE.width,
-          `${locale.name} ${route.name} section link ${i}`,
-        );
+        await expectHorizontalFit({
+          locator: links.nth(i),
+          width: PHONE.width,
+          description: `${locale.name} ${route.name} section link ${i}`,
+        });
       }
 
       // Privacy control is on screen.
       const privacyButton = header.getByRole("button", { name: locale.privacy });
       // oxlint-disable-next-line no-await-in-loop -- check privacy control per route.
-      await expectInsideViewport(
-        privacyButton,
-        PHONE.width,
-        `${locale.name} ${route.name} privacy button`,
-      );
+      await expectHorizontalFit({
+        locator: privacyButton,
+        width: PHONE.width,
+        description: `${locale.name} ${route.name} privacy button`,
+      });
 
       // Options menu is on screen and opens.
       const moreButton = header.getByRole("button", { name: locale.moreOptions });
       // oxlint-disable-next-line no-await-in-loop -- check options menu per route.
-      await expectInsideViewport(
-        moreButton,
-        PHONE.width,
-        `${locale.name} ${route.name} options button`,
-      );
+      await expectHorizontalFit({
+        locator: moreButton,
+        width: PHONE.width,
+        description: `${locale.name} ${route.name} options button`,
+      });
       // oxlint-disable-next-line no-await-in-loop -- open and verify menu per route.
       await moreButton.click();
       const startOverItem = page.getByRole("menuitem", { name: locale.startOver });
       // oxlint-disable-next-line no-await-in-loop -- wait for menuitem per route.
-      await expectInsideViewport(
-        startOverItem,
-        PHONE.width,
-        `${locale.name} ${route.name} Start over menu item`,
-      );
+      await expectHorizontalFit({
+        locator: startOverItem,
+        width: PHONE.width,
+        description: `${locale.name} ${route.name} Start over menu item`,
+      });
       // oxlint-disable-next-line no-await-in-loop -- close menu before next check.
       await page.keyboard.press("Escape");
       // oxlint-disable-next-line no-await-in-loop -- wait for menu to finish closing.
@@ -209,19 +214,19 @@ for (const locale of LOCALES) {
       if (route.building) {
         const stepsButton = header.getByRole("button", { name: locale.openSteps });
         // oxlint-disable-next-line no-await-in-loop -- check steps trigger on Build.
-        await expectInsideViewport(
-          stepsButton,
-          PHONE.width,
-          `${locale.name} ${route.name} steps button`,
-        );
+        await expectHorizontalFit({
+          locator: stepsButton,
+          width: PHONE.width,
+          description: `${locale.name} ${route.name} steps button`,
+        });
 
         const saveButton = header.getByRole("button", { name: locale.saveStatus });
         // oxlint-disable-next-line no-await-in-loop -- check save status on Build.
-        await expectInsideViewport(
-          saveButton,
-          PHONE.width,
-          `${locale.name} ${route.name} save status`,
-        );
+        await expectHorizontalFit({
+          locator: saveButton,
+          width: PHONE.width,
+          description: `${locale.name} ${route.name} save status`,
+        });
         // oxlint-disable-next-line no-await-in-loop -- open save status popover on Build.
         await saveButton.click();
         const saveHeading = page.getByText(locale.saveHeading);
@@ -258,33 +263,33 @@ for (const locale of LOCALES) {
         await expect(
           page.getByRole("heading", { level: 1, name: locale.headings[route.key] }),
         ).toBeVisible();
+        if (route.key === "published") {
+          // oxlint-disable-next-line no-await-in-loop -- verify empty catalogue renders instead of load error.
+          await expect(page.getByText(locale.emptyPublished)).toBeVisible();
+        }
         const header = page.getByRole("banner");
         // oxlint-disable-next-line no-await-in-loop -- wait for top bar controls.
         await expect(header.getByRole("button", { name: locale.moreOptions })).toBeVisible();
 
         // oxlint-disable-next-line no-await-in-loop -- check document overflow.
-        const overflow = await page.evaluate(() => ({
-          scrollWidth: document.documentElement.scrollWidth,
-          innerWidth: window.innerWidth,
-        }));
-        expect(
-          overflow.scrollWidth,
-          `${locale.name} ${viewport.width}px ${route.name}: document scrollWidth`,
-        ).toBeLessThanOrEqual(overflow.innerWidth);
+        await expectNoHorizontalOverflow(page, `${locale.name} ${viewport.width}px ${route.name}`);
 
         // oxlint-disable-next-line no-await-in-loop -- check header stays inside viewport.
-        await expectInsideViewport(
-          header,
-          viewport.width,
-          `${locale.name} ${viewport.width}px ${route.name} header`,
-        );
+        await expectHorizontalFit({
+          locator: header,
+          width: viewport.width,
+          description: `${locale.name} ${viewport.width}px ${route.name} header`,
+        });
 
         // At 768 px (md) the top bar is single-row.
         if (viewport.width >= TABLET_MD.width) {
           // oxlint-disable-next-line no-await-in-loop -- measure single-row height at md.
-          const headerBox = await header.boundingBox();
+          const headerBox = await requireVisibleBox(
+            header,
+            `${locale.name} ${viewport.width}px ${route.name} header`,
+          );
           expect(
-            headerBox?.height ?? 999,
+            headerBox.height,
             `${locale.name} ${viewport.width}px ${route.name} header height`,
           ).toBeLessThanOrEqual(60);
         }
@@ -292,16 +297,19 @@ for (const locale of LOCALES) {
         if (route.building) {
           const warningButton = header.getByRole("button", { name: locale.saveWarning });
           // oxlint-disable-next-line no-await-in-loop -- check warning button stays on screen.
-          await expectInsideViewport(
-            warningButton,
-            viewport.width,
-            `${locale.name} ${viewport.width}px save warning`,
-          );
+          await expectHorizontalFit({
+            locator: warningButton,
+            width: viewport.width,
+            description: `${locale.name} ${viewport.width}px save warning`,
+          });
           // Warning text is visible from `sm:` (wider than an icon-only button).
           // oxlint-disable-next-line no-await-in-loop -- measure warning button width.
-          const warningBox = await warningButton.boundingBox();
+          const warningBox = await requireVisibleBox(
+            warningButton,
+            `${locale.name} ${viewport.width}px save warning`,
+          );
           expect(
-            warningBox?.width ?? 0,
+            warningBox.width,
             `${locale.name} ${viewport.width}px save warning text visible`,
           ).toBeGreaterThan(80);
         }

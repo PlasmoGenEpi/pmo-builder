@@ -17,8 +17,11 @@
  */
 import { readFile } from "node:fs/promises";
 
+import { INDEX_VERSION } from "../src/domain/repository/types";
+
 import { expect, test } from "./fixtures/privacy";
-import { BUILD_TIMEOUT, downloadFrom, loadExample } from "./support/review";
+import { openBuiltExample } from "./support/pmoFile";
+import { BUILD_TIMEOUT, downloadFrom } from "./support/review";
 
 // Block the offline service worker so `page.route` intercepts the fixture
 // catalogue and PMO bytes directly, including across `page.reload()`.
@@ -33,7 +36,7 @@ const DATASET_FILE_URL = `/fixtures/published/${DATASET_FILE_NAME}`;
 
 function fixtureCatalogue(fileSize: number) {
   return {
-    version: 2,
+    version: INDEX_VERSION,
     harvestedAt: "2026-11-15T03:00:00.000Z",
     community: "pmocommunity",
     datasets: [
@@ -82,10 +85,7 @@ test("published view keeps its address, shows header and 4 tabs, leaves working 
 
   // Build the example PMO and open it in My PMO file so we have both real PMO
   // bytes to serve as a fixture and an active working PMO + subset.
-  await loadExample(page);
-  await page.evaluate(() => {
-    globalThis.location.hash = "/pmo/open-built";
-  });
+  await openBuiltExample({ page, tab: "summary" });
   await expect(page.getByRole("tab", { name: "Summary", selected: true })).toBeVisible({
     timeout: BUILD_TIMEOUT,
   });

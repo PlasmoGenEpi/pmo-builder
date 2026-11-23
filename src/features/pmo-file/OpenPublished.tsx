@@ -187,7 +187,10 @@ function PublishedDatasetView({
   const isThisOpen = isPublishedDatasetOpen(file, dataset.id);
 
   useEffect(() => {
-    if (handOffRef.current.kind === "handing-off" || session.isPublishedOpen(dataset.id)) {
+    if (
+      handOffRef.current.kind === "handing-off" ||
+      isPublishedDatasetOpen(session.state.getState().open, dataset.id)
+    ) {
       return undefined;
     }
     // Drop any previous published record right away before downloading (or rejecting as too large).
@@ -295,7 +298,7 @@ function PublishedDatasetView({
   if (handingOff) {
     body = (
       <output className="flex items-center gap-2 text-base text-text-muted">
-        <Spinner />
+        <Spinner label={null} />
         {t`Opening in My PMO file`}
       </output>
     );
@@ -344,7 +347,7 @@ function PublishedDatasetView({
       case "downloading":
         body = (
           <output className="flex items-center gap-2 text-base text-text-muted">
-            <Spinner />
+            <Spinner label={null} />
             {t`Downloading ${fileName} (${fileSize}) from Zenodo`}
           </output>
         );
@@ -530,7 +533,7 @@ export function OpenPublished({
         </h1>
         {catalogue.kind === "loading" ? (
           <output className="flex items-center gap-2 text-base text-text-muted">
-            <Spinner />
+            <Spinner label={null} />
             {t`Finding the published PMO`}
           </output>
         ) : (

@@ -24,6 +24,24 @@ export async function requireBox(locator: Locator, label: string): Promise<Box> 
   return box;
 }
 
+/** Waits for `locator` to be visible and reads its bounding box. */
+export async function requireVisibleBox(locator: Locator, label: string): Promise<Box> {
+  await expect(locator, `${label} visible`).toBeVisible({ timeout: BUILD_TIMEOUT });
+  return requireBox(locator, label);
+}
+
+/** Asserts that the document does not overflow the viewport horizontally. */
+export async function expectNoHorizontalOverflow(page: Page, label?: string): Promise<void> {
+  const overflow = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth,
+  }));
+  expect(
+    overflow.scrollWidth,
+    label === undefined ? "document scrollWidth" : `${label}: document scrollWidth`,
+  ).toBeLessThanOrEqual(overflow.innerWidth);
+}
+
 /** Shortest Euclidean distance in pixels between two axis-aligned boxes. */
 export function boxDistance(a: Box, b: Box): number {
   const dx = Math.max(0, a.x - (b.x + b.width), b.x - (a.x + a.width));
@@ -31,11 +49,13 @@ export function boxDistance(a: Box, b: Box): number {
   return Math.hypot(dx, dy);
 }
 
-/** Asserts that `box` lies completely inside the current viewport. */
+/** Asserts that `box` has positive size and lies completely inside the current viewport. */
 export function expectInsideViewport(
   box: Box,
   viewport: { readonly width: number; readonly height: number },
 ): void {
+  expect(box.width, "positive width").toBeGreaterThan(0);
+  expect(box.height, "positive height").toBeGreaterThan(0);
   expect(box.x, "left inside viewport").toBeGreaterThanOrEqual(0);
   expect(box.y, "top inside viewport").toBeGreaterThanOrEqual(0);
   expect(box.x + box.width, "right inside viewport").toBeLessThanOrEqual(viewport.width);
@@ -99,7 +119,7 @@ export interface OpenSyntheticPmoOptions {
 export async function openSyntheticPmo(options: OpenSyntheticPmoOptions): Promise<void> {
   const { page, fileName, pmo, tab = "overview" } = options;
   await page.goto("/#/pmo");
-  await page.getByLabel("Choose pmo file").setInputFiles({
+  await page.getByLabel("Choose a PMO file").setInputFiles({
     name: fileName,
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(pmo)),

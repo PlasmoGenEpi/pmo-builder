@@ -7,27 +7,21 @@
  */
 import { readFile } from "node:fs/promises";
 
-import type { Locator, Page } from "@playwright/test";
-
 import { expect, test } from "./fixtures/privacy";
-import { BUILD_TIMEOUT, downloadFrom, loadExample } from "./support/review";
+import {
+  expectNoHorizontalOverflow,
+  openBuiltExample,
+  requireVisibleBox,
+  type Box,
+} from "./support/pmoFile";
+import { BUILD_TIMEOUT, downloadFrom } from "./support/review";
 
-/** Loads the example draft and opens its built PMO in My PMO file. */
-async function openExamplePmo(page: Page): Promise<void> {
-  await loadExample(page);
-  await page.evaluate(() => {
-    globalThis.location.hash = "/pmo/open-built";
-  });
-  await expect(page.getByRole("tab", { name: "Summary" })).toBeVisible({ timeout: BUILD_TIMEOUT });
-}
-
-/** Bounding box of a visible element, failing clearly if missing. */
-async function boxOf(locator: Locator) {
-  await expect(locator).toBeVisible({ timeout: BUILD_TIMEOUT });
-  const box = await locator.boundingBox();
-  expect(box).not.toBeNull();
-  if (box === null) throw new Error("Element has no bounding box");
-  return box;
+/** Asserts that two boxes share one horizontal row (at least half the shorter height overlaps). */
+function expectSameRow(a: Box, b: Box, label: string): void {
+  const overlap = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
+  const minHeight = Math.min(a.height, b.height);
+  expect(minHeight, `${label}: positive height`).toBeGreaterThan(0);
+  expect(overlap, `${label}: vertical overlap on same row`).toBeGreaterThanOrEqual(minHeight * 0.5);
 }
 
 test("at 1280x800 the Summary headline is on the first screen, toolbar is one row, and controls work", async ({
@@ -41,7 +35,7 @@ test("at 1280x800 the Summary headline is on the first screen, toolbar is one ro
     page.getByRole("button", { name: /PMO: Drag a file here or choose a file/ }),
   ).toBeVisible();
 
-  await openExamplePmo(page);
+  await openBuiltExample({ page, tab: "summary" });
 
   // Full drop area is gone; compact bar holds file name, size, Replace and Remove on one row.
   await expect(
@@ -49,50 +43,45 @@ test("at 1280x800 the Summary headline is on the first screen, toolbar is one ro
   ).toHaveCount(0);
   const bar = page.locator("main header").first();
   const title = bar.getByRole("heading", { level: 1, name: "Mad4hatter.pmo.json.gz" });
-  const replaceButton = bar.getByRole("button", { name: "Replace pmo file" });
-  const removeButton = bar.getByRole("button", { name: "Remove pmo file" });
+  const replaceButton = bar.getByRole("button", { name: "Replace this PMO file" });
+  const removeButton = bar.getByRole("button", { name: "Remove this PMO file" });
   await expect(title).toBeVisible();
   await expect(replaceButton).toBeVisible();
   await expect(removeButton).toBeVisible();
-  const titleBox = await boxOf(title);
-  const removeBox = await boxOf(removeButton);
-  expect(Math.max(titleBox.y, removeBox.y)).toBeLessThan(
-    Math.min(titleBox.y + titleBox.height, removeBox.y + removeBox.height),
-  );
+  const titleBox = await requireVisibleBox(title, "header title");
+  const removeBox = await requireVisibleBox(removeButton, "header remove button");
+  expectSameRow(titleBox, removeBox, "header title and remove button");
 
   // Summary tab: first headline number is within the first screen, and toolbar is one row.
   await page.getByRole("tab", { name: "Summary" }).click();
   const firstStat = page.getByText("Samples with data", { exact: true }).first().locator("..");
-  const firstStatBox = await boxOf(firstStat);
+  const firstStatBox = await requireVisibleBox(firstStat, "first headline stat");
   expect(firstStatBox.y + firstStatBox.height).toBeLessThanOrEqual(800);
 
   const minReadsInput = page.getByLabel("Minimum reads per microhaplotype");
   const showEmptyTargets = page.getByRole("switch", { name: "Show targets with no data" });
   const jumpsNav = page.getByRole("navigation", { name: "On this page" });
   const jumpButtons = jumpsNav.getByRole("button");
-  const inputBox = await boxOf(minReadsInput);
-  const toggleBox = await boxOf(showEmptyTargets);
-  const firstJumpBox = await boxOf(jumpButtons.first());
-  const lastJumpBox = await boxOf(jumpButtons.last());
+  const inputBox = await requireVisibleBox(minReadsInput, "min reads input");
+  const toggleBox = await requireVisibleBox(showEmptyTargets, "show empty targets toggle");
+  const firstJumpBox = await requireVisibleBox(jumpButtons.first(), "first jump button");
+  const lastJumpBox = await requireVisibleBox(jumpButtons.last(), "last jump button");
   // Input, empty-targets toggle and every jump link share one horizontal row.
   expect(Math.abs(firstJumpBox.y - lastJumpBox.y)).toBeLessThanOrEqual(4);
-  expect(Math.max(inputBox.y, toggleBox.y)).toBeLessThan(
-    Math.min(inputBox.y + inputBox.height, toggleBox.y + toggleBox.height),
-  );
-  expect(Math.max(inputBox.y, firstJumpBox.y)).toBeLessThan(
-    Math.min(inputBox.y + inputBox.height, firstJumpBox.y + firstJumpBox.height),
-  );
+  expectSameRow(inputBox, toggleBox, "min reads input and empty targets toggle");
+  expectSameRow(inputBox, firstJumpBox, "min reads input and jump links");
 
   // Compare tab: group selector and min reads share one horizontal row at 1280px.
   await page.getByRole("tab", { name: "Compare" }).click();
-  const groupSelectBox = await boxOf(page.getByRole("combobox", { name: "Group specimens by" }));
-  const compareMinReadsBox = await boxOf(page.getByLabel("Minimum reads per microhaplotype"));
-  expect(Math.max(groupSelectBox.y, compareMinReadsBox.y)).toBeLessThan(
-    Math.min(
-      groupSelectBox.y + groupSelectBox.height,
-      compareMinReadsBox.y + compareMinReadsBox.height,
-    ),
+  const groupSelectBox = await requireVisibleBox(
+    page.getByRole("combobox", { name: "Group specimens by" }),
+    "group selector",
   );
+  const compareMinReadsBox = await requireVisibleBox(
+    page.getByLabel("Minimum reads per microhaplotype"),
+    "compare min reads input",
+  );
+  expectSameRow(groupSelectBox, compareMinReadsBox, "Compare group selector and min reads");
 
   // Make a subset and confirm Original / Subset sits inside the same compact bar.
   await page.getByRole("tab", { name: "Subset" }).click();
@@ -108,7 +97,7 @@ test("at 1280x800 the Summary headline is on the first screen, toolbar is one ro
 
   // Switch back to Summary: headline still fits on the first screen with the switch visible.
   await page.getByRole("tab", { name: "Summary" }).click();
-  const subsetStatBox = await boxOf(firstStat);
+  const subsetStatBox = await requireVisibleBox(firstStat, "subset headline stat");
   expect(subsetStatBox.y + subsetStatBox.height).toBeLessThanOrEqual(800);
 
   // Switching Original / Subset updates the Summary count.
@@ -144,19 +133,16 @@ test("at 1280x800 the Summary headline is on the first screen, toolbar is one ro
 test("at 390x844 visible data appears on the first screen of Summary and Compare", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await openExamplePmo(page);
+  const viewportHeight = 844;
+  await page.setViewportSize({ width: 390, height: viewportHeight });
+  await openBuiltExample({ page, tab: "summary" });
 
   // Summary: toolbar wraps cleanly without horizontal overflow, and headline tiles fit on screen.
   await page.getByRole("tab", { name: "Summary" }).click();
   const showEmptyTargets = page.getByRole("switch", { name: "Show targets with no data" });
-  const toggleBox = await boxOf(showEmptyTargets);
+  const toggleBox = await requireVisibleBox(showEmptyTargets, "show empty targets toggle");
   expect(toggleBox.x + toggleBox.width).toBeLessThanOrEqual(390);
-  const summaryOverflow = await page.evaluate(() => ({
-    scrollWidth: document.documentElement.scrollWidth,
-    innerWidth: window.innerWidth,
-  }));
-  expect(summaryOverflow.scrollWidth).toBeLessThanOrEqual(summaryOverflow.innerWidth);
+  await expectNoHorizontalOverflow(page, "Summary at 390px");
 
   const firstStat = page.getByText("Samples with data", { exact: true }).first().locator("..");
   const secondStat = page.getByText("Targets with data", { exact: true }).first().locator("..");
@@ -168,11 +154,11 @@ test("at 390x844 visible data appears on the first screen of Summary and Compare
     .getByText("Samples with more than one clone", { exact: true })
     .first()
     .locator("..");
-  const firstStatBox = await boxOf(firstStat);
-  const secondStatBox = await boxOf(secondStat);
-  const thirdStatBox = await boxOf(thirdStat);
-  const fourthStatBox = await boxOf(fourthStat);
-  expect(firstStatBox.y + firstStatBox.height).toBeLessThanOrEqual(844);
+  const firstStatBox = await requireVisibleBox(firstStat, "first headline stat");
+  const secondStatBox = await requireVisibleBox(secondStat, "second headline stat");
+  const thirdStatBox = await requireVisibleBox(thirdStat, "third headline stat");
+  const fourthStatBox = await requireVisibleBox(fourthStat, "fourth headline stat");
+  expect(firstStatBox.y + firstStatBox.height).toBeLessThanOrEqual(viewportHeight);
   expect(Math.abs(firstStatBox.y - secondStatBox.y)).toBeLessThanOrEqual(4);
   expect(secondStatBox.x).toBeGreaterThan(firstStatBox.x);
   expect(secondStatBox.x + secondStatBox.width).toBeLessThanOrEqual(390);
@@ -182,19 +168,36 @@ test("at 390x844 visible data appears on the first screen of Summary and Compare
 
   // Choosing a headline tile moves to its section below the top bar and focuses the heading.
   await secondStat.click();
-  const topBarBox = await boxOf(page.getByRole("banner"));
+  const topBarBox = await requireVisibleBox(page.getByRole("banner"), "top bar");
+  const topBarBottom = topBarBox.y + topBarBox.height;
   const targetsHeading = page.getByRole("heading", { level: 2, name: "Targets" });
-  const targetsHeadingBox = await boxOf(targetsHeading);
-  expect(targetsHeadingBox.y).toBeGreaterThanOrEqual(topBarBox.y + topBarBox.height - 0.5);
+  await expect
+    .poll(async () => {
+      const box = await targetsHeading.boundingBox();
+      return box !== null && box.y >= topBarBottom && box.y < viewportHeight;
+    })
+    .toBe(true);
+  const targetsHeadingBox = await requireVisibleBox(targetsHeading, "Targets heading");
+  expect(targetsHeadingBox.y).toBeGreaterThanOrEqual(topBarBottom);
+  expect(targetsHeadingBox.y).toBeLessThan(viewportHeight);
   await expect(targetsHeading).toBeFocused();
 
   await page.evaluate(() => window.scrollTo(0, 0));
 
-  // Clicking a Summary jump link lands the heading below the sticky two-row top bar.
+  // Clicking a Summary jump link lands the heading below the sticky two-row top bar and focuses it.
   const jumpsNav = page.getByRole("navigation", { name: "On this page" });
   await jumpsNav.getByRole("button", { name: "Samples" }).click();
-  const samplesHeadingBox = await boxOf(page.getByRole("heading", { level: 2, name: "Samples" }));
-  expect(samplesHeadingBox.y).toBeGreaterThanOrEqual(topBarBox.y + topBarBox.height - 0.5);
+  const samplesHeading = page.getByRole("heading", { level: 2, name: "Samples" });
+  await expect
+    .poll(async () => {
+      const box = await samplesHeading.boundingBox();
+      return box !== null && box.y >= topBarBottom && box.y < viewportHeight;
+    })
+    .toBe(true);
+  const samplesHeadingBox = await requireVisibleBox(samplesHeading, "Samples heading");
+  expect(samplesHeadingBox.y).toBeGreaterThanOrEqual(topBarBottom);
+  expect(samplesHeadingBox.y).toBeLessThan(viewportHeight);
+  await expect(samplesHeading).toBeFocused();
 
   // Scroll back up so the tab strip is reachable before switching to Compare.
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -203,11 +206,11 @@ test("at 390x844 visible data appears on the first screen of Summary and Compare
   // and the group selector fits inside the 390px viewport.
   await page.getByRole("tab", { name: "Compare" }).click();
   const groupSelect = page.getByRole("combobox", { name: "Group specimens by" });
-  const selectBox = await boxOf(groupSelect);
+  const selectBox = await requireVisibleBox(groupSelect, "group selector");
   expect(selectBox.x + selectBox.width).toBeLessThanOrEqual(390);
 
   const groupsTable = page.getByRole("table", { name: "Groups" });
   const firstRow = groupsTable.getByRole("row").nth(1);
-  const firstRowBox = await boxOf(firstRow);
-  expect(firstRowBox.y + firstRowBox.height).toBeLessThanOrEqual(844);
+  const firstRowBox = await requireVisibleBox(firstRow, "first Groups row");
+  expect(firstRowBox.y + firstRowBox.height).toBeLessThanOrEqual(viewportHeight);
 });

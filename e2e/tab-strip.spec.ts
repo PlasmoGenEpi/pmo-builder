@@ -6,17 +6,15 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { expect, test } from "./fixtures/privacy";
-import { BUILD_TIMEOUT, loadExample } from "./support/review";
+import { openBuiltExample } from "./support/pmoFile";
+import { BUILD_TIMEOUT } from "./support/review";
 
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1280, height: 800 };
 
 /** Opens the example PMO in My PMO file and waits for its tab strip. */
 async function openExampleInMyPmo(page: Page): Promise<Locator> {
-  await loadExample(page);
-  await page.evaluate(() => {
-    globalThis.location.hash = "/pmo/open-built";
-  });
+  await openBuiltExample({ page, tab: "summary" });
   const tablist = page.getByRole("tablist", { name: "What to do with the file" });
   await expect(tablist).toBeVisible({ timeout: BUILD_TIMEOUT });
   return tablist;
@@ -90,6 +88,7 @@ test("390 px tab strip fades at edges with more tabs, clears at the end, and nev
     const fadeLeft = listRect.right - 32;
     const tabs = Array.from(list.querySelectorAll<HTMLElement>('[role="tab"]'));
     for (const tab of tabs) {
+      if (tab.getAttribute("aria-selected") === "true") continue;
       const rect = tab.getBoundingClientRect();
       const overlapStart = Math.max(rect.left, fadeLeft);
       const overlapEnd = Math.min(rect.right, listRect.right);
@@ -105,11 +104,10 @@ test("390 px tab strip fades at edges with more tabs, clears at the end, and nev
   });
   expect(overlappingTab).not.toBeNull();
   if (overlappingTab !== null) {
+    const targetTab = tablist.getByRole("tab", { name: overlappingTab.name });
+    await expect(targetTab).toHaveAttribute("aria-selected", "false");
     await page.mouse.click(overlappingTab.x, overlappingTab.y);
-    await expect(tablist.getByRole("tab", { name: overlappingTab.name })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    await expect(targetTab).toHaveAttribute("aria-selected", "true");
   }
 
   // Scrolling partway shows fades on both edges.

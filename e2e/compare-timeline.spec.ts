@@ -229,7 +229,7 @@ test("a long timeline with a >40 peak scrolls with cue and keeps its 1-specimen 
   if (barGeometry !== null) {
     expect(barGeometry.bars).toHaveLength(2);
     for (const bar of barGeometry.bars) {
-      expect(bar.bottom).toBeLessThanOrEqual(barGeometry.axisBottom + 1);
+      expect(bar.bottom).toBeLessThanOrEqual(barGeometry.axisBottom);
       expect(bar.height).toBeGreaterThanOrEqual(1);
       expect(bar.width).toBeGreaterThanOrEqual(2);
     }

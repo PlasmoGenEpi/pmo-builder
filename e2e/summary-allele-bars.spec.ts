@@ -87,13 +87,19 @@ function expectBarsToScale(rows: readonly MeasuredRow[]): void {
   }
 }
 
-/** Asserts that each row's label sits beside its track without overlapping. */
+/** Asserts that each row's label sits beside its track without overlapping and vertically aligned. */
 function expectLabelsBesideBars(rows: readonly MeasuredRow[]): void {
   for (const [index, row] of rows.entries()) {
     expect(
       row.labelBox.x + row.labelBox.width,
       `row ${index} label stays left of its bar track`,
-    ).toBeLessThanOrEqual(row.trackBox.x + 1);
+    ).toBeLessThanOrEqual(row.trackBox.x);
+    const labelCenterY = row.labelBox.y + row.labelBox.height / 2;
+    const trackCenterY = row.trackBox.y + row.trackBox.height / 2;
+    expect(
+      Math.abs(labelCenterY - trackCenterY),
+      `row ${index} label aligns vertically with its bar track`,
+    ).toBeLessThanOrEqual(Math.max(row.labelBox.height, row.trackBox.height) / 2);
   }
 }
 
@@ -140,7 +146,7 @@ test("keeps microhaplotype bars visible and to scale with labels above at 390 px
     expect(
       row.labelBox.y + row.labelBox.height,
       `row ${index} label sits above its bar at 390 px`,
-    ).toBeLessThanOrEqual(row.barBox.y + 1);
+    ).toBeLessThanOrEqual(row.barBox.y);
   }
 });
 

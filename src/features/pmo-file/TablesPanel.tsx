@@ -1,6 +1,6 @@
 import { plural, t } from "@lingui/core/macro";
 import { ChevronDown, ChevronUp, Download, FileArchive } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import {
   TABLE_PREVIEW_LIMIT,
@@ -140,7 +140,6 @@ function TablePreviewSection({ id, title, source }: TablePreviewSectionProps) {
       })}
       columns={columns}
       rows={recordRows}
-      totalRows={totalRows}
       caption={caption}
       height="sm"
     />
@@ -161,9 +160,29 @@ export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) 
   const session = usePmoSession();
   const idPrefix = useId();
   const format = usePmo((state) => state.tableFormat);
+  const [prevSource, setPrevSource] = useState(source);
   const [saving, setSaving] = useState<TableId | "all" | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [openPreviews, setOpenPreviews] = useState<ReadonlySet<TableId>>(() => new Set());
+  const requestTokenRef = useRef(0);
+  const activeSourceRef = useRef(source);
+  if (prevSource !== source) {
+    setPrevSource(source);
+    setSaving(null);
+    setProblem(null);
+  }
+  useEffect(() => {
+    if (activeSourceRef.current !== source) {
+      activeSourceRef.current = source;
+      requestTokenRef.current += 1;
+    }
+  }, [source]);
+  useEffect(
+    () => () => {
+      requestTokenRef.current += 1;
+    },
+    [],
+  );
   const shown = source === "subset" && subsetTables !== null ? subsetTables : tables;
   const failed = problem?.reason === "failed" ? problem.target : null;
 
@@ -177,9 +196,12 @@ export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) 
   }
 
   async function download(id: TableId): Promise<void> {
+    const token = requestTokenRef.current + 1;
+    requestTokenRef.current = token;
     setSaving(id);
     setProblem(null);
     const answer = await session.query({ kind: "table", source, id, format });
+    if (requestTokenRef.current !== token) return;
     setSaving(null);
     settleAnswer(answer, {
       ok: (file) => {
@@ -191,9 +213,12 @@ export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) 
   }
 
   async function downloadAll(): Promise<void> {
+    const token = requestTokenRef.current + 1;
+    requestTokenRef.current = token;
     setSaving("all");
     setProblem(null);
     const answer = await session.query({ kind: "tables", source, format });
+    if (requestTokenRef.current !== token) return;
     setSaving(null);
     settleAnswer(answer, {
       ok: (archive) => saveFile(archive.blob, archive.fileName),

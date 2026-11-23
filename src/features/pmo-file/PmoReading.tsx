@@ -93,7 +93,12 @@ export function readOnlyPmoTabs({
       label: t`Tables`,
       content: (
         <PmoReading>
-          <TablesPanel tables={opened.tables} subsetTables={subsetTables} source={source} />
+          <TablesPanel
+            key={generation}
+            tables={opened.tables}
+            subsetTables={subsetTables}
+            source={source}
+          />
         </PmoReading>
       ),
     },

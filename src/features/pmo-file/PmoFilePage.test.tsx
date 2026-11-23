@@ -76,7 +76,7 @@ async function renderPage(zenodo: ZenodoConfig | null = ZENODO, store = createTe
 
 async function open(file: File, zenodo: ZenodoConfig | null = ZENODO) {
   const rendered = await renderPage(zenodo);
-  await rendered.user.upload(screen.getByLabelText("Choose pmo file"), file);
+  await rendered.user.upload(screen.getByLabelText("Choose a PMO file"), file);
   return rendered;
 }
 
@@ -154,10 +154,10 @@ describe("PmoFilePage: opening", () => {
   it("says when a file is not a PMO at all, and lets the user choose another", async () => {
     const { user } = await open(pmoFile("sample,reads\ns1,10\n", "table.json"));
     expect(await screen.findByText(/This is not a PMO file/)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Remove pmo file" }));
+    await user.click(screen.getByRole("button", { name: "Remove this PMO file" }));
     await act(() => Promise.resolve());
     expect(screen.queryByText(/This is not a PMO file/)).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Choose pmo file")).toBeInTheDocument();
+    expect(screen.getByLabelText("Choose a PMO file")).toBeInTheDocument();
   });
 
   it("keeps the file open when the page is left and opened again", async () => {
@@ -176,7 +176,7 @@ describe("PmoFilePage: opening", () => {
     ).toBeInTheDocument();
 
     const file = pmoFile(ownPmo(), "lab-run.json");
-    await user.upload(screen.getByLabelText("Choose pmo file"), file);
+    await user.upload(screen.getByLabelText("Choose a PMO file"), file);
     await screen.findByText("This file is a valid PMO");
 
     expect(
@@ -188,8 +188,8 @@ describe("PmoFilePage: opening", () => {
     expect(bar).not.toBeNull();
     if (bar === null) return;
 
-    expect(within(bar).getByRole("button", { name: "Replace pmo file" })).toBeInTheDocument();
-    expect(within(bar).getByRole("button", { name: "Remove pmo file" })).toBeInTheDocument();
+    expect(within(bar).getByRole("button", { name: "Replace this PMO file" })).toBeInTheDocument();
+    expect(within(bar).getByRole("button", { name: "Remove this PMO file" })).toBeInTheDocument();
     expect(within(bar).queryByRole("radiogroup", { name: "Work with" })).not.toBeInTheDocument();
 
     // Once a subset exists, the Original/Subset choice sits in the same compact bar.
@@ -207,7 +207,7 @@ describe("PmoFilePage: opening", () => {
     expect(screen.getByRole("tab", { name: "Summary" })).toBeInTheDocument();
 
     // Removing closes the file and brings back the full drop area.
-    await user.click(within(bar).getByRole("button", { name: "Remove pmo file" }));
+    await user.click(within(bar).getByRole("button", { name: "Remove this PMO file" }));
     await act(() => Promise.resolve());
     expect(
       screen.getByRole("button", { name: /PMO: Drag a file here or choose a file/ }),
@@ -255,6 +255,7 @@ describe("PmoFilePage: opening the built PMO", () => {
       </Switch>
     );
     const opening = await renderWithStore(routes, { store, path: OPEN_BUILT_PATH });
+    expect(screen.getByRole("heading", { level: 1, name: "My PMO file" })).toBeInTheDocument();
     expect(screen.getByText("Opening the PMO built from your draft")).toBeInTheDocument();
     // Left before the open finishes.
     opening.unmount();
@@ -279,6 +280,7 @@ describe("PmoFilePage: when the built PMO cannot be opened", () => {
   it("says there is no built PMO when the draft builds none", async () => {
     await renderWithStore(ROUTES, { path: OPEN_BUILT_PATH });
     expect(await screen.findByText("There is no built PMO to open")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "My PMO file" })).toBeInTheDocument();
   });
 
   it("says the built PMO could not be opened when exporting it fails", async () => {
@@ -1058,7 +1060,7 @@ describe("PmoFilePage: original or subset", () => {
     await makeSubset(user, 3);
     expect(screen.getByRole("radiogroup", SWITCH)).toBeInTheDocument();
     // Straight over the first, without closing it.
-    await user.upload(screen.getByLabelText("Choose pmo file"), pmoFile(ownPmo(), "other.json"));
+    await user.upload(screen.getByLabelText("Choose a PMO file"), pmoFile(ownPmo(), "other.json"));
     await screen.findByText("other.json");
     await screen.findByRole("tab", { name: "Tables" });
     expect(screen.queryByRole("radiogroup", SWITCH)).not.toBeInTheDocument();
@@ -1821,7 +1823,7 @@ function watchedEngine(instead: (kind: WorkingPmoKind) => Instead = () => null):
 
 async function openWithEngine(file: File, engine: Engine) {
   const rendered = await renderPage(ZENODO, createTestStore({ engine }));
-  await rendered.user.upload(screen.getByLabelText("Choose pmo file"), file);
+  await rendered.user.upload(screen.getByLabelText("Choose a PMO file"), file);
   return rendered;
 }
 

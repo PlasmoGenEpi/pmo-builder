@@ -265,8 +265,11 @@ describe("makeSubset", () => {
 
   it("chooses specimens by metadata", () => {
     const field = choices.metadata.find((item) => item.field !== COLLECTION_YEAR_FIELD);
-    const [value] = field?.values ?? [];
-    if (field === undefined || value === undefined) return;
+    expect(field).toBeDefined();
+    if (field === undefined) throw new Error("expected a non-year metadata field in example PMO");
+    const [value] = field.values;
+    expect(value).toBeDefined();
+    if (value === undefined) throw new Error(`expected values for ${field.field}`);
     const { outcome } = makeSubset(
       EXAMPLE,
       {
@@ -277,6 +280,7 @@ describe("makeSubset", () => {
       "study.json",
     );
     if (outcome.kind !== "made") throw new Error(outcome.kind);
+    expect(outcome.summary.specimens).toBeGreaterThan(0);
     expect(outcome.summary.specimens).toBeLessThanOrEqual(value.count);
   });
 
