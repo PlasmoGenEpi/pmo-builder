@@ -3,8 +3,9 @@
  */
 import {
   addPmoExtension,
-  gzipPmo,
-  stringifyPmo,
+  pmoBlob,
+  pmoStream,
+  stringifyPmoChunks,
   type PortableMicrohaplotypeObject,
 } from "pmotools-ts";
 
@@ -30,29 +31,83 @@ export function pmoFileName(pmo: PortableMicrohaplotypeObject, gzip: boolean): s
   return addPmoExtension(`${safe}.pmo`, { gzip });
 }
 
-/** Serialises a PMO with `stringifyPmo`, or `gzipPmo` when gzipped, into a Blob with a file name. */
+/** Streams a PMO into a Blob with a file name, gzipped by default. */
 export async function exportPmo(
   pmo: PortableMicrohaplotypeObject,
   options: ExportOptions = {},
 ): Promise<PmoFile> {
   const gzip = options.gzip ?? true;
   const fileName = pmoFileName(pmo, gzip);
-  if (gzip) {
-    const bytes = await gzipPmo(pmo);
-    return { blob: new Blob([bytes], { type: "application/gzip" }), fileName };
-  }
-  return { blob: new Blob([stringifyPmo(pmo)], { type: "application/json" }), fileName };
+  const blob = await pmoBlob(pmo, { gzip });
+  return { blob, fileName };
 }
 
-/** The PMO as JSON text, cut at `maxLength` characters for a preview. */
-export function previewPmo(
+/** Counts the byte length of a PMO file by draining its stream without retaining a Blob. */
+export async function measurePmoSize(
   pmo: PortableMicrohaplotypeObject,
-  maxLength = 200_000,
-): { readonly text: string; readonly truncated: boolean; readonly length: number } {
-  const text = stringifyPmo(pmo, { ensureAscii: false });
-  return {
-    text: text.slice(0, maxLength),
-    truncated: text.length > maxLength,
-    length: text.length,
-  };
+  options: ExportOptions = {},
+): Promise<number> {
+  const gzip = options.gzip ?? true;
+  const reader = pmoStream(pmo, { gzip }).getReader();
+  let total = 0;
+  try {
+    for (;;) {
+      // oxlint-disable-next-line no-await-in-loop -- draining one ReadableStream sequentially
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      total += chunk.value.byteLength;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return total;
+}
+
+/** The start of a PMO's JSON text, for a preview. */
+export type PmoTextPreview =
+  | {
+      readonly text: string;
+      readonly truncated: false;
+      /** Length of the whole text. */
+      readonly length: number;
+    }
+  | {
+      readonly text: string;
+      readonly truncated: true;
+      /** `null` because previewing stopped early. */
+      readonly length: null;
+    };
+
+/**
+ * The PMO as JSON text, cut at `maxLength` characters for a preview.
+ *
+ * Reads chunks from `stringifyPmoChunks` and stops as soon as `maxLength`
+ * characters are collected and truncation is known, without walking or
+ * building the rest of the PMO.
+ */
+export function previewPmo(pmo: PortableMicrohaplotypeObject, maxLength = 200_000): PmoTextPreview {
+  const limit = Math.max(0, maxLength);
+  const parts: string[] = [];
+  let collected = 0;
+  let truncated = false;
+  for (const piece of stringifyPmoChunks(pmo, { ensureAscii: false })) {
+    if (piece.length === 0) continue;
+    const remaining = limit - collected;
+    if (remaining <= 0) {
+      truncated = true;
+      break;
+    }
+    if (piece.length > remaining) {
+      parts.push(piece.slice(0, remaining));
+      collected = limit;
+      truncated = true;
+      break;
+    }
+    parts.push(piece);
+    collected += piece.length;
+  }
+  const text = parts.join("");
+  return truncated
+    ? { text, truncated: true, length: null }
+    : { text, truncated: false, length: text.length };
 }

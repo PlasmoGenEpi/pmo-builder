@@ -36,14 +36,16 @@ export type ImportErrorDetail =
     };
 
 /**
- * The largest files the app reads. Beyond these the parsed table and the PMO
- * built from it need more memory than a browser tab can count on (see
- * `scripts/bench-large-files.mjs`), and above about 512 MB of text a browser
- * cannot hold the file as one string at all.
+ * The largest files the app reads. Beyond these the parsed table or the PMO
+ * built from it needs more memory than a browser tab can count on (see
+ * `scripts/bench-large-files.mjs`). The allele table is read in streaming
+ * chunks, so it accepts much larger files than tables read into memory whole.
  */
 export const IMPORT_LIMITS = {
-  /** A delimited text file, measured after unpacking a `.gz`. */
+  /** A delimited text file read into memory whole, measured after unpacking a `.gz`. */
   textBytes: 300 * 1024 * 1024,
+  /** A streamed allele table (delimited text), measured after unpacking a `.gz`. */
+  alleleTextBytes: 3 * 1024 * 1024 * 1024,
   /** An `.xlsx` workbook, measured as stored (it is compressed). */
   workbookBytes: 50 * 1024 * 1024,
 } as const;
@@ -77,7 +79,21 @@ export function isImportError(error: unknown): error is ImportError {
   return error instanceof ImportError;
 }
 
-/** The size in megabytes, rounded, for messages. */
-export function megabytes(bytes: number): string {
-  return `${Math.round(bytes / (1024 * 1024))} MB`;
+const BYTES_PER_MB = 1024 * 1024;
+const BYTES_PER_GB = 1024 * BYTES_PER_MB;
+
+/** Formats a size limit in GB (when at least 1 GB) or rounded MB, optionally using `locale`. */
+export function formatLimitBytes(bytes: number, locale?: string): string {
+  if (bytes >= BYTES_PER_GB) {
+    const gb = bytes / BYTES_PER_GB;
+    const value = Number.isInteger(gb) ? gb : Number(gb.toFixed(1));
+    const size =
+      locale === undefined
+        ? String(value)
+        : new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value);
+    return `${size} GB`;
+  }
+  const mb = Math.round(bytes / BYTES_PER_MB);
+  const size = locale === undefined ? String(mb) : new Intl.NumberFormat(locale).format(mb);
+  return `${size} MB`;
 }

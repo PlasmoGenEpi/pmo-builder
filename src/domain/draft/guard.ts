@@ -146,7 +146,7 @@ const tableRef: Check<TableRef> = object<TableRef>({
   sheetNames: nullable(arrayOf(string)),
   sheetName: nullable(string),
   columns: arrayOf(string),
-  rowCount: finiteNumber,
+  rowCount: nullable(finiteNumber),
 });
 
 const columnMapping: Check<ColumnMapping> = object<ColumnMapping>({

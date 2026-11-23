@@ -1,0 +1,4 @@
+# pnpm holds back versions released in the last day. pmotools-ts is released
+# by this project, so the app can take a new version as soon as it is out.
+minimumReleaseAgeExclude:
+  - pmotools-ts

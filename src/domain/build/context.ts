@@ -32,6 +32,8 @@ export type TableLookup = (tableId: string) => TableLookupResult;
 export interface BuildContext {
   readonly tables: TableLookup;
   readonly deps: BuildDeps;
+  /** Rows fed per chunk to `createMhapTableBuilder`. Defaults to `DEFAULT_MHAP_CHUNK_SIZE`. */
+  readonly mhapChunkSize?: number;
 }
 
 /** A context over a fixed set of tables, with the real dependencies unless others are given. */

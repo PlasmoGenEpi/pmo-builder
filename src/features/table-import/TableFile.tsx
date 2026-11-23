@@ -4,7 +4,7 @@ import { useState } from "react";
 import { fieldSetForSlot, type TableSlot } from "@/domain/draft";
 import { getFieldSet } from "@/domain/fields";
 import { importFailureMessage } from "@/domain/import/messages";
-import { useActions, useImportState, useSlotTable } from "@/state";
+import { useActions, useImportState, useSectionState, useSlotTable } from "@/state";
 import { ConfirmDialog, Field, FileDropzone, Select, type ChosenFile } from "@/ui";
 
 /** File endings the import reads. A `.gz` of a text file also works. */
@@ -34,6 +34,7 @@ export function TableFile({ slot, description, label, accept = TABLE_FILE_TYPES 
   const tableName = label ?? getFieldSet(fieldSetId).title;
   const mapped = useSlotTable(slot);
   const importState = useImportState(slot);
+  const microhaplotypesSummaryRows = useSectionState("microhaplotypes")?.summary?.rows;
   const actions = useActions();
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const [choosingSheet, setChoosingSheet] = useState<string | null>(null);
@@ -46,7 +47,9 @@ export function TableFile({ slot, description, label, accept = TABLE_FILE_TYPES 
       : {
           name: table.fileName,
           size: table.fileSize,
-          rows: table.rowCount,
+          rows:
+            table.rowCount ??
+            (slot.section === "microhaplotypes" ? microhaplotypesSummaryRows : undefined),
           columns: table.columns.length,
           detail:
             shownSheet !== null && (table.sheetNames?.length ?? 0) > 1

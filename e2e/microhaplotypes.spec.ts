@@ -4,6 +4,7 @@
  * fixture fails each test on any request to another origin or CSP violation.
  */
 import { fileURLToPath } from "node:url";
+import { gzipSync } from "node:zlib";
 
 import { expect, test } from "./fixtures/privacy";
 
@@ -95,4 +96,71 @@ test("runs the engine in a worker that reads Excel workbooks", async ({ page }) 
   );
   expect(workerScripts?.some(isExcelChunk)).toBe(true);
   expect(pageScripts.some(isExcelChunk)).toBe(false);
+});
+
+test("streams a gzipped allele table, rebuilds after remapping, and restores from IndexedDB", async ({
+  page,
+}) => {
+  // Build a >2,000-row gzipped allele table so the streaming import stops at the preview scan.
+  const lines = ["SampleID,Target,Seq,Reads,RunName"];
+  for (let i = 0; i < 2_200; i += 1) {
+    lines.push(
+      `S${Math.floor(i / 22)},T${i % 22},ACGT${String(i % 10).padStart(2, "0")},${10 + (i % 50)},run_${i % 2}`,
+    );
+  }
+  const gzipped = gzipSync(Buffer.from(`${lines.join("\n")}\n`, "utf8"));
+
+  await page.goto("/#/build/microhaplotypes");
+  await expect(page.getByRole("heading", { level: 1, name: "Microhaplotypes" })).toBeVisible();
+
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: /Drag a file here/ }).click();
+  await (
+    await chooser
+  ).setFiles({
+    name: "streamed_alleles.csv.gz",
+    mimeType: "application/gzip",
+    buffer: gzipped,
+  });
+
+  await expect(page.getByRole("heading", { name: "Match columns" })).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(page.getByText("streamed_alleles.csv.gz", { exact: true })).toBeVisible();
+  await expect(page.getByText("4 of 4 required fields matched")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Preview/ })).toBeVisible();
+
+  const result = page.getByRole("region", { name: "Result" });
+  await expect(result.getByText("Ready", { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(result.getByText("2,200")).toBeVisible();
+
+  // Change the bioinformatics run name to use the RunName column and confirm streaming rebuild.
+  await page.getByRole("radio", { name: /From a column/i }).click();
+  const runColumn = page.getByRole("combobox", { name: /Run name column/i });
+  await runColumn.click();
+  await page.getByRole("option", { name: "RunName" }).click();
+  await expect(result.getByText("Ready", { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(result.getByText("2 runs")).toBeVisible();
+
+  // Change a column mapping (unmap Reads -> Incomplete, remap Reads -> Ready).
+  const reads = page.getByRole("combobox", { name: "Reads" });
+  await reads.click();
+  await page.getByRole("option", { name: "Not in this table" }).click();
+  await expect(result.getByText("Incomplete", { exact: true })).toBeVisible({ timeout: 30_000 });
+  await reads.click();
+  await reads.fill("Reads");
+  await reads.press("Enter");
+  await expect(result.getByText("Ready", { exact: true })).toBeVisible({ timeout: 30_000 });
+
+  // Wait for save, reload, and verify the streamed gzipped draft restores cleanly from IndexedDB.
+  await expect(page.getByRole("button", { name: "Draft saved" })).toBeVisible();
+  await page.waitForTimeout(1_000);
+  await page.reload();
+  await expect(page.getByText("streamed_alleles.csv.gz", { exact: true })).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(
+    page.getByRole("region", { name: "Result" }).getByText("Ready", { exact: true }),
+  ).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole("region", { name: "Result" }).getByText("2,200")).toBeVisible();
 });

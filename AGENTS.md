@@ -43,12 +43,11 @@ tests. oxlint (type-aware) and oxfmt for linting and formatting.
 | `src/test/`                  | Test setup and shared test helpers                                                     | anything                                                                            |
 | `e2e/`                       | Playwright tests against the built app                                                 |                                                                                     |
 | `e2e/fixtures/`              | The privacy fixture: fails a test that contacts another origin                         |                                                                                     |
-| `scripts/`                   | Large-table generator and benchmark, `pmotools-ts` update, harvest                     |                                                                                     |
+| `scripts/`                   | Large-table generator and benchmark, harvest                                           |                                                                                     |
 | `receiver/`                  | The Cloudflare Worker: usage counts, and translation review. Its own project           |                                                                                     |
 | `vite/`                      | Build plugins (security policy, chunk rules, offline service worker), with their tests |                                                                                     |
 | `public/examples/`           | Example tables served with the app                                                     |                                                                                     |
 | `reference/`                 | Material from the old app, for reading only. Not bundled                               |                                                                                     |
-| `vendor/`                    | The `pmotools-ts` tarball. Do not edit                                                 |                                                                                     |
 
 `src/domain` and `src/worker` contain no React and never touch `document` or
 `window`. Import across folders with the `@/` alias (`@/domain/types`).
@@ -73,12 +72,14 @@ time, so a failure outside your folders is not yours to fix. Report it.
 
 ## Using pmotools-ts
 
-Import from `"pmotools-ts"`. Read its API in
-`node_modules/pmotools-ts/dist/index.d.ts` and the `.d.ts` files beside it.
-The source, README and tests are in
-[pmotools-ts](https://github.com/PlasmoGenEpi/pmotools-ts), checked out next
-to this repository as `../pmotools-ts` (read only). Do not copy its logic into this repo and do not work around its
-bugs silently: if it does something wrong, say so in your report.
+`pmotools-ts` is installed from npm (`package.json`). Import from `"pmotools-ts"`
+and read its API in `node_modules/pmotools-ts/dist/index.d.ts` and the `.d.ts`
+files beside it. The source, README and tests are in
+[pmotools-ts](https://github.com/PlasmoGenEpi/pmotools-ts). To test unreleased
+library changes locally, check it out next to this repository and link it with
+`pnpm link ../pmotools-ts` (undo with `pnpm unlink pmotools-ts`). Do not copy
+its logic into this repo and do not work around its bugs silently: if it does
+something wrong, say so in your report.
 
 Its tables are `readonly Row[]` (plain objects). Missing cells are `null`,
 `undefined` or `NaN`. Builders throw `PmoError` with a stable `code`; softer

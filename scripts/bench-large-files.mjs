@@ -13,7 +13,7 @@
 // Peak memory is the process's resident set size, sampled every 5 ms from a
 // separate thread while the stage runs, after a garbage collection.
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { openAsBlob, statSync } from "node:fs";
 import { register } from "node:module";
 import { join, resolve } from "node:path";
 import { getHeapStatistics } from "node:v8";
@@ -91,8 +91,7 @@ const files = {
   panel: join(dir, "large_panel_table.csv"),
   metadata: join(dir, "large_metadata_table.tsv"),
 };
-// An in-memory Blob: Node cannot post a file-backed one across a channel.
-const blob = async (path) => new Blob([readFileSync(path)]);
+const csvMb = +(statSync(files.alleles).size / MB).toFixed(1);
 
 const { createEmptyDraft, fieldSetForSlot } = await import("@/domain/draft");
 const { getFieldSet } = await import("@/domain/fields");
@@ -101,6 +100,7 @@ const { suggestMapping } = await import("@/domain/matching");
 const mappedFor = (slot, table) => ({
   table,
   mapping: suggestMapping(getFieldSet(fieldSetForSlot(slot)), table.columns).mapping,
+  confirmedMatches: {},
 });
 
 function draftFor(tables) {
@@ -121,21 +121,6 @@ function draftFor(tables) {
   };
 }
 
-/**
- * The engine behind a real message channel, as in the app: every call and
- * answer is structured-cloned, so the draft reaches the engine as a copy.
- */
-async function engineThroughChannel() {
-  const { createInThreadEngine } = await import("@/worker/engine");
-  const { createEngineClient, serveEngine } = await import("@/worker");
-  const { port1, port2 } = new MessageChannel();
-  port1.start();
-  port2.start();
-  serveEngine(createInThreadEngine(), port2);
-  const client = createEngineClient(port1);
-  return { engine: client, close: () => (port1.close(), port2.close()) };
-}
-
 /** Times `count` builds of the same draft, as the store sends after each change elsewhere. */
 async function unchangedBuilds(engine, draft, count) {
   const started = performance.now();
@@ -147,13 +132,23 @@ async function unchangedBuilds(engine, draft, count) {
 }
 
 async function enginePass() {
-  const { engine, close } = await engineThroughChannel();
-  const importOne = async (path) => {
-    const outcome = await engine.importFile({ file: await blob(path), fileName: path });
+  // Run createInThreadEngine() directly: Node cannot structured-clone a
+  // file-backed openAsBlob() over MessageChannel, while this still exercises
+  // the exact engine.ts streaming import, build, and export path.
+  const { createInThreadEngine } = await import("@/worker/engine");
+  const engine = createInThreadEngine();
+  const importOne = async (path, importOptions = {}) => {
+    const outcome = await engine.importFile({
+      file: await openAsBlob(path),
+      fileName: path,
+      ...importOptions,
+    });
     if (outcome.kind !== "imported") throw new Error(outcome.notice.message);
     return outcome.table;
   };
-  const alleles = await stage("import allele table", () => importOne(files.alleles));
+  const alleles = await stage("import allele table (stream)", () =>
+    importOne(files.alleles, { stream: true }),
+  );
   const panel = await stage("import panel table", () => importOne(files.panel));
   const specimens = await stage("import metadata table", () => importOne(files.metadata));
   const librarySamples = await importOne(files.metadata);
@@ -211,11 +206,18 @@ async function enginePass() {
     unchangedBuilds(engine, saved, 20),
   );
   const gz = await stage("export gzip", () => engine.getPmoFile({ gzip: true }));
-  const plain = await stage("export plain", () => engine.getPmoFile({ gzip: false }));
-  await stage("preview text (200,000 characters)", () => engine.getPmoText({ maxLength: 200_000 }));
+  const plainSize = await stage("plain JSON size (streamed)", () =>
+    engine.getPmoFileSize({ gzip: false }),
+  );
+  const preview = await stage("preview text (200,000 characters)", () =>
+    engine.getPmoText({ maxLength: 200_000 }),
+  );
   await stage("preview text again, same build", () => engine.getPmoText({ maxLength: 200_000 }));
-  close();
+  await engine.dispose();
   return {
+    rows: view.sections.microhaplotypes.summary?.rows ?? null,
+    csvMb,
+    peakRssMb: Math.max(...rows.map((row) => row.peakRssMb)),
     statuses: Object.fromEntries(
       Object.entries(view.sections).map(([id, section]) => [id, section.status]),
     ),
@@ -227,7 +229,8 @@ async function enginePass() {
     unchangedBuildMs: +perBuild.toFixed(2),
     savedFragmentKb: Math.round(JSON.stringify(fragment).length / 1024),
     gzipMb: gz === null ? null : +(gz.blob.size / MB).toFixed(1),
-    plainMb: plain === null ? null : +(plain.blob.size / MB).toFixed(1),
+    plainMb: plainSize === null ? null : +(plainSize.size / MB).toFixed(1),
+    previewTruncated: preview === null ? null : preview.truncated,
   };
 }
 
@@ -244,32 +247,53 @@ const ref = (id, file) => ({
 });
 
 async function breakdownPass() {
-  const { parseFile } = await import("@/domain/import");
-  const { createBuildContext, buildSection, mergeSections, exportPmo } =
-    await import("@/domain/build");
-  const { validatePmo, checkPmoIntegrity, stringifyPmo } = await import("pmotools-ts");
-  const parsed = await stage("parse allele table", async () =>
-    parseFile(await blob(files.alleles), "large_allele_table.csv"),
+  const { inspectDelimitedStream, parseFile } = await import("@/domain/import");
+  const {
+    buildMicrohaplotypesStream,
+    buildSection,
+    createBuildContext,
+    exportPmo,
+    measurePmoSize,
+    mergeSections,
+  } = await import("@/domain/build");
+  const { validatePmo, checkPmoIntegrity } = await import("pmotools-ts");
+  const alleleBlob = await openAsBlob(files.alleles);
+  const inspected = await stage("inspect allele table (stream)", () =>
+    inspectDelimitedStream(alleleBlob, { fileName: "large_allele_table.csv" }),
   );
-  const panel = await parseFile(await blob(files.panel), "large_panel_table.csv");
-  const metadata = await parseFile(await blob(files.metadata), "large_metadata_table.tsv");
+  if (inspected.kind !== "delimited") throw new Error(`expected delimited: ${inspected.kind}`);
+  const panel = await parseFile(await openAsBlob(files.panel), "large_panel_table.csv");
+  const metadata = await parseFile(await openAsBlob(files.metadata), "large_metadata_table.tsv");
   const tables = new Map([
-    ["alleles", parsed.table],
     ["panel", panel.table],
     ["specimens", metadata.table],
     ["librarySamples", metadata.table],
   ]);
   const draft = draftFor({
-    alleles: ref("alleles", parsed),
+    alleles: {
+      id: "alleles",
+      fileName: "large_allele_table.csv",
+      fileSize: alleleBlob.size,
+      format: "delimited",
+      sheetNames: null,
+      sheetName: null,
+      columns: inspected.meta.columns,
+      rowCount: inspected.meta.exactRowCount,
+    },
     panel: ref("panel", panel),
     specimens: ref("specimens", metadata),
     librarySamples: ref("librarySamples", metadata),
   });
   const context = createBuildContext(tables);
   const sections = {};
-  sections.microhaplotypes = await stage("section: microhaplotypes (type + build)", () =>
-    buildSection("microhaplotypes", draft, context),
+  const streamed = await stage("section: microhaplotypes (stream 2-pass)", () =>
+    buildMicrohaplotypesStream({
+      section: draft.microhaplotypes,
+      source: { kind: "ready", blob: alleleBlob, meta: inspected.meta },
+    }),
   );
+  if (streamed.kind !== "done") throw new Error("superseded");
+  sections.microhaplotypes = streamed.result;
   for (const id of ["panel", "specimens", "librarySamples"]) {
     sections[id] = buildSection(id, draft, context);
   }
@@ -283,9 +307,19 @@ async function breakdownPass() {
   const pmo = merged.outcome.pmo;
   await stage("validatePmo alone", () => validatePmo(pmo));
   await stage("checkPmoIntegrity alone", () => checkPmoIntegrity(pmo));
-  await stage("stringifyPmo", () => stringifyPmo(pmo));
-  await stage("exportPmo gzip", () => exportPmo(pmo, { gzip: true }));
-  return { status: merged.status, valid: merged.outcome.valid };
+  const plainBytes = await stage("measurePmoSize plain", () =>
+    measurePmoSize(pmo, { gzip: false }),
+  );
+  const gz = await stage("exportPmo gzip", () => exportPmo(pmo, { gzip: true }));
+  return {
+    rows: streamed.totalRows,
+    csvMb,
+    peakRssMb: Math.max(...rows.map((row) => row.peakRssMb)),
+    status: merged.status,
+    valid: merged.outcome.valid,
+    plainMb: +(plainBytes / MB).toFixed(1),
+    gzipMb: +(gz.blob.size / MB).toFixed(1),
+  };
 }
 
 const summary = pass === "breakdown" ? await breakdownPass() : await enginePass();

@@ -6,7 +6,7 @@
  * Nothing else crosses: no functions, no class instances other than `Blob`.
  * The client checks the shape of every answer before handing it on.
  */
-import type { Engine } from "./types";
+import type { BuildProgress, Engine } from "./types";
 
 /** The engine methods that can be called across the boundary. */
 export const ENGINE_METHODS = [
@@ -47,6 +47,12 @@ export type ResultMessage =
   | { readonly type: "result"; readonly id: number; readonly ok: true; readonly value: unknown }
   | { readonly type: "result"; readonly id: number; readonly ok: false; readonly error: string };
 
+/** Streaming build progress sent from the worker to the main thread. */
+export interface ProgressMessage {
+  readonly type: "progress";
+  readonly progress: BuildProgress;
+}
+
 /** The part of `Worker`, `MessagePort` or a worker's `self` the protocol uses. */
 export interface Endpoint {
   postMessage(message: unknown): void;
@@ -84,6 +90,26 @@ export function isResultMessage(value: unknown): value is ResultMessage {
   return value["ok"] === true
     ? "value" in value
     : value["ok"] === false && typeof value["error"] === "string";
+}
+
+function isBuildProgress(value: unknown): value is BuildProgress {
+  if (!isRecord(value)) return false;
+  if (value["phase"] === "idle") return true;
+  return (
+    value["phase"] === "reading" &&
+    (value["stage"] === "checking" || value["stage"] === "building") &&
+    typeof value["bytesRead"] === "number" &&
+    Number.isFinite(value["bytesRead"]) &&
+    typeof value["totalBytes"] === "number" &&
+    Number.isFinite(value["totalBytes"]) &&
+    typeof value["rowsRead"] === "number" &&
+    Number.isFinite(value["rowsRead"])
+  );
+}
+
+/** Whether a message carries streaming build progress. */
+export function isProgressMessage(value: unknown): value is ProgressMessage {
+  return isRecord(value) && value["type"] === "progress" && isBuildProgress(value["progress"]);
 }
 
 type Handlers = { readonly [M in EngineMethod]: (args: EngineArgs<M>) => Promise<EngineResult<M>> };

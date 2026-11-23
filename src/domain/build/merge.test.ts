@@ -1,4 +1,4 @@
-import { PmoError, validatePmo } from "pmotools-ts";
+import { PmoError, mergeToPmo, stringifyPmo, validatePmo } from "pmotools-ts";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -773,5 +773,118 @@ describe("wording the library's own messages", () => {
     expect(result.sections.panel.notices[0]?.message).toMatch(
       /The saved panel "Old" is damaged .* import the panel's target table again.* Details: /,
     );
+  });
+});
+
+describe("sharing microhaplotype arrays when merging", () => {
+  it("shares representative microhaplotypes and detected target results with the built fragment", () => {
+    const sections = buildAllSections(exampleDraft(), testContext(tables));
+    const mhapFragment = sections.microhaplotypes.fragment;
+    const panelFragment = sections.panel.fragment;
+    const bioFragment = sections.bioinformatics.fragment;
+    if (mhapFragment === null || panelFragment === null || bioFragment === null) {
+      throw new Error("example sections did not build");
+    }
+
+    const merge = mergeSections(sections, { creationDate: "2026-01-01" });
+    if (merge.outcome.kind !== "built") throw new Error("not built");
+    const { pmo } = merge.outcome;
+
+    expect(pmo.representative_microhaplotypes.targets.length).toBeGreaterThan(0);
+    pmo.representative_microhaplotypes.targets.forEach((target, index) => {
+      expect(target.microhaplotypes).toBe(
+        mhapFragment.representative_microhaplotypes.targets[index]?.microhaplotypes,
+      );
+    });
+
+    expect(pmo.detected_microhaplotypes.length).toBeGreaterThan(0);
+    pmo.detected_microhaplotypes.forEach((run, runIndex) => {
+      expect(run.library_samples.length).toBeGreaterThan(0);
+      run.library_samples.forEach((sample, sampleIndex) => {
+        expect(sample.target_results).toBe(
+          mhapFragment.detected_microhaplotypes[runIndex]?.library_samples[sampleIndex]
+            ?.target_results,
+        );
+      });
+    });
+
+    const unshared = mergeToPmo(
+      {
+        mhapInfo: mhapFragment,
+        panelTargetInfo: panelFragment.merged,
+        specimenInfo: sections.specimens.fragment,
+        librarySampleInfo: sections.librarySamples.fragment,
+        sequencingInfo: sections.sequencing.fragment,
+        projectInfo: sections.project.fragment,
+        bioinfoMethodInfo: bioFragment.methods,
+        bioinfoRunInfo: bioFragment.runs,
+        readCountsByStageInfo: sections.readCounts.fragment,
+      },
+      { creationDate: "2026-01-01", shareMicrohaplotypes: false },
+    );
+    expect(stringifyPmo(pmo)).toBe(stringifyPmo(unshared));
+  });
+
+  it("leaves the cached microhaplotypes fragment unmutated across repeated merges", () => {
+    const sections = buildAllSections(exampleDraft(), testContext(tables));
+    const mhapFragment = sections.microhaplotypes.fragment;
+    const panelFragment = sections.panel.fragment;
+    if (mhapFragment === null || panelFragment === null) {
+      throw new Error("example sections did not build");
+    }
+    const snapshotBefore = JSON.stringify(mhapFragment);
+
+    const first = mergeSections(sections, { creationDate: "2026-01-01" });
+    if (first.outcome.kind !== "built") throw new Error("first merge failed");
+    const firstTargetId = first.outcome.pmo.representative_microhaplotypes.targets[0]?.target_id;
+    expect(firstTargetId).toBeTypeOf("number");
+    expect(JSON.stringify(mhapFragment)).toBe(snapshotBefore);
+
+    const extraTarget = {
+      target_name: "extra_prepended_target",
+      forward_primer: { seq: "AAAA" },
+      reverse_primer: { seq: "CCCC" },
+    };
+    const updatedPanelInfo = [];
+    for (const entry of panelFragment.merged.panel_info) {
+      const reactions = [];
+      for (const [reactionIndex, reaction] of entry.reactions.entries()) {
+        reactions.push({
+          ...reaction,
+          panel_targets: [
+            ...(reactionIndex === 0 ? [0] : []),
+            ...reaction.panel_targets.map((id) => id + 1),
+          ],
+        });
+      }
+      updatedPanelInfo.push({ ...entry, reactions });
+    }
+    const updatedPanel = {
+      ...panelFragment,
+      merged: {
+        ...panelFragment.merged,
+        target_info: [extraTarget, ...panelFragment.merged.target_info],
+        panel_info: updatedPanelInfo,
+      },
+    };
+    const second = mergeSections(
+      {
+        ...sections,
+        panel: { ...sections.panel, fragment: updatedPanel },
+      },
+      { creationDate: "2026-01-01" },
+    );
+    if (second.outcome.kind !== "built") throw new Error("second merge failed");
+    expect(second.status).toBe("ready");
+    expect(second.outcome.valid).toBe(true);
+    expect(validatePmo(second.outcome.pmo).valid).toBe(true);
+    expect(second.outcome.pmo.representative_microhaplotypes.targets[0]?.target_id).toBe(
+      (firstTargetId ?? 0) + 1,
+    );
+    // Neither the first PMO nor the cached fragment was mutated by the second merge.
+    expect(first.outcome.pmo.representative_microhaplotypes.targets[0]?.target_id).toBe(
+      firstTargetId,
+    );
+    expect(JSON.stringify(mhapFragment)).toBe(snapshotBefore);
   });
 });

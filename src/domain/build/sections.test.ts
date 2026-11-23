@@ -1,4 +1,4 @@
-import { panelInfoTableToPmo } from "pmotools-ts";
+import { mhapTableToPmo, panelInfoTableToPmo, stringifyPmo } from "pmotools-ts";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -20,7 +20,8 @@ import { buildBioinformatics } from "./bioinformatics";
 import { typeTable } from "@/domain/import";
 
 import { createBuildContext, type BuildContext } from "./context";
-import { buildMicrohaplotypes } from "./microhaplotypes";
+import { buildAllSections, mergeSections } from "./merge";
+import { buildMicrohaplotypes, DEFAULT_MHAP_CHUNK_SIZE } from "./microhaplotypes";
 import { buildPanel } from "./panel";
 import { buildReadCounts } from "./readCounts";
 import { buildProject, buildSequencing } from "./records";
@@ -228,6 +229,150 @@ describe("microhaplotypes with extra columns", () => {
       s.target_results.flatMap((t) => t.mhaps.map((m) => m["lot"])),
     );
     expect(detected).toEqual(["007", "NA"]);
+  });
+});
+
+describe("microhaplotypes chunked building", () => {
+  const exampleAlleles = readExample("mad4hatter_allele_data_example.csv");
+  const examplePanel = readExample("mad4hatter_panel_info_example.csv");
+  const exampleMetadata = readExample("mad4hatter_metadata_example.tsv");
+
+  it("produces identical PMOs for the example table across chunk sizes", () => {
+    const context = testContext({
+      alleles: exampleAlleles,
+      panel: examplePanel,
+      metadata: exampleMetadata,
+    });
+    const draft: Draft = {
+      ...empty,
+      microhaplotypes: {
+        ...empty.microhaplotypes,
+        table: mappedTable("alleles", exampleAlleles, EXAMPLE_MAPPINGS.alleles),
+      },
+      panel: {
+        panels: [
+          {
+            ...createPanelEntry("Mad4hatter"),
+            table: mappedTable("panel", examplePanel, EXAMPLE_MAPPINGS.panel),
+          },
+        ],
+      },
+      specimens: {
+        table: mappedTable("metadata", exampleMetadata, EXAMPLE_MAPPINGS.specimens),
+      },
+      librarySamples: {
+        table: mappedTable("metadata", exampleMetadata, EXAMPLE_MAPPINGS.librarySamples),
+      },
+    };
+    const baseSections = buildAllSections(draft, context);
+    const referenceFragment = mhapTableToPmo(
+      TEST_DEPS.typeTable(exampleAlleles, {
+        textColumns: ["SampleID", "Locus", "ASV"],
+        booleanColumns: [],
+      }),
+      {
+        librarySampleNameCol: "SampleID",
+        targetNameCol: "Locus",
+        seqCol: "ASV",
+        readsCol: "Reads",
+      },
+    );
+    const referenceMerge = mergeSections(
+      {
+        ...baseSections,
+        microhaplotypes: {
+          ...baseSections.microhaplotypes,
+          fragment: referenceFragment,
+        },
+      },
+      { creationDate: "2026-01-01" },
+    );
+    if (referenceMerge.outcome.kind !== "built") throw new Error("reference did not build");
+    const expectedJson = stringifyPmo(referenceMerge.outcome.pmo);
+
+    const chunkSizes = [1, 2, 7, 64, DEFAULT_MHAP_CHUNK_SIZE, exampleAlleles.rows.length + 50];
+    for (const chunkSize of chunkSizes) {
+      const mhap = buildMicrohaplotypes(draft.microhaplotypes, {
+        ...context,
+        mhapChunkSize: chunkSize,
+      });
+      expect(mhap.status).toBe("ready");
+      const merged = mergeSections(
+        { ...baseSections, microhaplotypes: mhap },
+        { creationDate: "2026-01-01" },
+      );
+      if (merged.outcome.kind !== "built") throw new Error(`chunkSize ${chunkSize} did not build`);
+      expect(stringifyPmo(merged.outcome.pmo)).toBe(expectedJson);
+    }
+  });
+
+  it("matches across chunk sizes for multi-run tables with extra columns and duplicate-seq warnings", () => {
+    const table = rawTable([
+      { sample: "S1", target: "t1", seq: "ACGT", reads: "5", run: "r2", note: "first", lot: "L1" },
+      { sample: "S2", target: "t1", seq: "ACGT", reads: "8", run: "r2", note: "second", lot: "L2" },
+      { sample: "S1", target: "t2", seq: "TTGG", reads: "3", run: "r1", note: "a", lot: "L3" },
+      { sample: "S3", target: "t1", seq: "ACGA", reads: "11", run: "r1", note: "b", lot: "L4" },
+      { sample: "S2", target: "t2", seq: "TTGC", reads: "9", run: "r2", note: "c", lot: "L5" },
+      { sample: "S3", target: "t2", seq: "TTGG", reads: "4", run: "r1", note: "a", lot: "L6" },
+    ]);
+    const section: Draft["microhaplotypes"] = {
+      table: mappedTable("multi", table, mapping(ALLELE_MAPPING.fields, ["note", "lot"])),
+      runName: { mode: "column", fixedName: "", column: "run" },
+      representativeColumns: ["note"],
+    };
+    const context = realTyping({ multi: table });
+    const baseline = buildMicrohaplotypes(section, context);
+    expect(baseline.status).toBe("ready");
+    expect(codes(baseline)).toEqual(["mhap/duplicate-target-seq"]);
+
+    for (const chunkSize of [1, 2, 3, 5, DEFAULT_MHAP_CHUNK_SIZE, 100]) {
+      const result = buildMicrohaplotypes(section, { ...context, mhapChunkSize: chunkSize });
+      expect(result.status).toBe("ready");
+      expect(result.fragment).toEqual(baseline.fragment);
+      expect(result.summary).toEqual(baseline.summary);
+      expect(result.notices).toEqual(baseline.notices);
+    }
+  });
+
+  it("builds a zero-row allele table cleanly across chunk sizes", () => {
+    const emptyTable: RawTable = { columns: ["sample", "target", "seq", "reads"], rows: [] };
+    const section: Draft["microhaplotypes"] = {
+      ...empty.microhaplotypes,
+      table: mappedTable("empty", emptyTable, ALLELE_MAPPING),
+    };
+    const context = testContext({ empty: emptyTable });
+    for (const chunkSize of [1, DEFAULT_MHAP_CHUNK_SIZE]) {
+      const result = buildMicrohaplotypes(section, { ...context, mhapChunkSize: chunkSize });
+      expect(result.status).toBe("ready");
+      expect(result.summary).toEqual({
+        rows: 0,
+        librarySamples: 0,
+        targets: 0,
+        microhaplotypes: 0,
+        runNames: [],
+      });
+      expect(result.fragment).toEqual({
+        representative_microhaplotypes: { targets: [] },
+        detected_microhaplotypes: [{ library_samples: [] }],
+      });
+    }
+  });
+
+  it("rejects a non-positive or non-integer mhapChunkSize", () => {
+    const context = testContext({ alleles: ALLELES });
+    const section: Draft["microhaplotypes"] = {
+      ...empty.microhaplotypes,
+      table: mappedTable("alleles", ALLELES, ALLELE_MAPPING),
+    };
+    expect(() => buildMicrohaplotypes(section, { ...context, mhapChunkSize: 0 })).toThrow(
+      RangeError,
+    );
+    expect(() => buildMicrohaplotypes(section, { ...context, mhapChunkSize: -5 })).toThrow(
+      RangeError,
+    );
+    expect(() => buildMicrohaplotypes(section, { ...context, mhapChunkSize: 2.5 })).toThrow(
+      RangeError,
+    );
   });
 });
 

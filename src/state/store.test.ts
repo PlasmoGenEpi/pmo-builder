@@ -543,4 +543,142 @@ describe("app store", () => {
       specimenName: "specimen_id",
     });
   });
+
+  it("opens column matching and preview immediately for large streamed allele tables while saveFile finishes in background", async () => {
+    const lines = ["SampleID,Target,Seq,Reads"];
+    for (let i = 0; i < 2_100; i += 1) {
+      lines.push(`S${Math.floor(i / 25)},T${i % 25},ACGT${i % 10},${10 + (i % 90)}`);
+    }
+    const largeCsv = `${lines.join("\n")}\n`;
+
+    // 1. Slow saveFile that succeeds: draft, mapping and preview appear BEFORE saveFile resolves.
+    const real = storage();
+    const saveGate: {
+      resolve:
+        | ((
+            result: { readonly ok: true } | { readonly ok: false; readonly reason: string },
+          ) => void)
+        | null;
+    } = { resolve: null };
+    let saveCalls = 0;
+    const deferredStorage: DraftStorage = {
+      ...real,
+      saveFile: (id, blob) => {
+        saveCalls += 1;
+        return new Promise((resolve) => {
+          saveGate.resolve = (result) => {
+            if (result.ok) {
+              void real.saveFile(id, blob).then(resolve);
+            } else {
+              resolve(result);
+            }
+          };
+        });
+      },
+    };
+    const store = createAppStore({
+      engine: createInThreadEngine(),
+      storage: deferredStorage,
+      rebuildDelayMs: 60_000,
+      saveDelayMs: 60_000,
+    });
+    await store.getState().actions.initialise();
+
+    const outcome = await store
+      .getState()
+      .actions.importFile({ section: "microhaplotypes" }, testFile([largeCsv], "huge.csv"));
+    expect(outcome.kind).toBe("imported");
+    if (outcome.kind !== "imported") throw new Error("import failed");
+    expect(outcome.table.rowCount).toBeNull();
+    expect(saveCalls).toBe(1);
+
+    // Draft table, suggested mapping and preview are already ready before saveFile resolves.
+    const mapped = store.getState().draft.microhaplotypes.table;
+    expect(mapped?.table.id).toBe(outcome.table.id);
+    expect(mapped?.mapping.fields).toMatchObject({
+      librarySampleName: "SampleID",
+      targetName: "Target",
+      seq: "Seq",
+      reads: "Reads",
+    });
+    expect(store.getState().imports).toEqual({});
+    const preview = await store.getState().actions.previewRows({
+      tableId: outcome.table.id,
+      offset: 0,
+      limit: 2,
+    });
+    expect(preview).toMatchObject({ kind: "ready", totalRows: null });
+
+    // Resolving saveFile allows flush() to finish and persists the file.
+    const flushing = store.getState().actions.flush();
+    saveGate.resolve?.({ ok: true });
+    await flushing;
+    expect(await real.loadFile(outcome.table.id)).not.toBeNull();
+    expect(store.getState().persistence.kind).toBe("saved");
+
+    // 2. Failing background saveFile updates persistence to failed.
+    const failingReal = storage();
+    const failGate: {
+      resolve: ((result: { readonly ok: false; readonly reason: string }) => void) | null;
+    } = { resolve: null };
+    const failingStorage: DraftStorage = {
+      ...failingReal,
+      saveFile: () =>
+        new Promise((resolve) => {
+          failGate.resolve = resolve;
+        }),
+    };
+    const failStore = createAppStore({
+      engine: createInThreadEngine(),
+      storage: failingStorage,
+      rebuildDelayMs: 60_000,
+      saveDelayMs: 60_000,
+    });
+    await failStore.getState().actions.initialise();
+    await failStore
+      .getState()
+      .actions.importFile({ section: "microhaplotypes" }, testFile([largeCsv], "huge-fail.csv"));
+    expect(failStore.getState().draft.microhaplotypes.table?.table.fileName).toBe("huge-fail.csv");
+    const failFlush = failStore.getState().actions.flush();
+    failGate.resolve?.({ ok: false, reason: "Quota exceeded" });
+    await failFlush;
+    expect(failStore.getState().persistence).toEqual({
+      kind: "failed",
+      reason: "Quota exceeded",
+    });
+
+    // 3. Dropping the table before background saveFile finishes deletes the orphan file.
+    const dropReal = storage();
+    const deleted: string[] = [];
+    const dropGate: { resolve: (() => void) | null } = { resolve: null };
+    const dropStorage: DraftStorage = {
+      ...dropReal,
+      saveFile: (id, blob) =>
+        new Promise((resolve) => {
+          dropGate.resolve = () => {
+            void dropReal.saveFile(id, blob).then(resolve);
+          };
+        }),
+      deleteFile: (id) => {
+        deleted.push(id);
+        return dropReal.deleteFile(id);
+      },
+    };
+    const dropStore = createAppStore({
+      engine: createInThreadEngine(),
+      storage: dropStorage,
+      rebuildDelayMs: 60_000,
+      saveDelayMs: 60_000,
+    });
+    await dropStore.getState().actions.initialise();
+    const dropOutcome = await dropStore
+      .getState()
+      .actions.importFile({ section: "microhaplotypes" }, testFile([largeCsv], "huge-drop.csv"));
+    if (dropOutcome.kind !== "imported") throw new Error("import failed");
+    dropStore.getState().actions.removeTable({ section: "microhaplotypes" });
+    dropGate.resolve?.();
+    await dropStore.getState().actions.saveNow();
+    expect(deleted).toContain(dropOutcome.table.id);
+    expect(await dropReal.loadFile(dropOutcome.table.id)).toBeNull();
+  });
 });

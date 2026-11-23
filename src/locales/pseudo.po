@@ -359,7 +359,7 @@ msgstr ""
 msgid "{columnCount, plural, one {The {issueTable} has no column {columns}. Check the column mapping.} other {The {issueTable} has no columns {columns}. Check the column mapping.}}"
 msgstr ""
 
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "{columnCount, plural, one {The allele table has no column {columns}, chosen to carry onto each microhaplotype. Untick it.} other {The allele table has no columns {columns}, chosen to carry onto each microhaplotype. Untick them.}}"
 msgstr ""
 
@@ -840,12 +840,12 @@ msgid "{rowCount, plural, one {{totalRows} row} other {{totalRows} rows}}"
 msgstr ""
 
 #. {rowList} is such as 'rows 5 and 9'.
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "{rowCount, plural, one {# row repeats the sample, target and sequence of an earlier row in the same run: {rowList} (sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.} other {# rows repeat the sample, target and sequence of an earlier row in the same run: {rowList} (such as sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.}}"
 msgstr ""
 
 #. {rowList} is such as 'rows 5 and 9'.
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "{rowCount, plural, one {# row repeats the sample, target and sequence of an earlier row: {rowList} (sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.} other {# rows repeat the sample, target and sequence of an earlier row: {rowList} (such as sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.}}"
 msgstr ""
 
@@ -946,6 +946,10 @@ msgstr ""
 
 #: src/ui/DataTable.tsx
 msgid "{shown, plural, one {{shownCount} row} other {{shownCount} rows}}"
+msgstr ""
+
+#: src/features/table-import/TablePreviewPanel.tsx
+msgid "{shownCount, plural, one {First {shownRows} row} other {First {shownRows} rows}}"
 msgstr ""
 
 #: src/domain/build/merge.ts
@@ -1494,7 +1498,7 @@ msgid "Allele name"
 msgstr ""
 
 #. The table of microhaplotypes: a table name in lower case, used inside other messages, such as 'The allele table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "allele table"
 msgstr ""
 
@@ -1701,6 +1705,10 @@ msgstr ""
 msgid "Build one in this app from <0><1>your tables</1></0>, or open one of the <2><3>published PMOs</3></2>."
 msgstr ""
 
+#: src/features/shared/SectionResult.tsx
+msgid "Building the allele table"
+msgstr ""
+
 #. The table of reads per sample, target and processing stage: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #. The table of reads per sample, target and processing stage: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
@@ -1748,6 +1756,10 @@ msgstr ""
 
 #: src/features/pmo-file/OpenPublished.tsx
 msgid "Check your connection. Zenodo may also be busy for a moment."
+msgstr ""
+
+#: src/features/shared/SectionResult.tsx
+msgid "Checking the allele table"
 msgstr ""
 
 #: src/features/review/VerdictCard.tsx
@@ -1975,7 +1987,7 @@ msgid "Column \"{column}\" of the {issueTable} needs a whole number, but holds \
 msgstr ""
 
 #. "Bioinformatics run name" is the label of a field on the page; use the same words as there.
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "Column \"{runLike}\" tells them apart, so the table probably holds several analysis runs. Choose that column under \"Bioinformatics run name\"."
 msgstr ""
 
@@ -2909,6 +2921,7 @@ msgid "If your browser does not let the app store data, as in some private windo
 msgstr ""
 
 #: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesStream.ts
 msgid "Import the allele table."
 msgstr ""
 
@@ -4828,12 +4841,12 @@ msgstr ""
 msgid "Remove the panel \"{title}\"?"
 msgstr ""
 
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "Remove the repeated rows."
 msgstr ""
 
 #. "Bioinformatics run name" is the label of a field on the page; use the same words as there.
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "Remove the repeated rows. If the table holds several analysis runs, choose the column that names the run under \"Bioinformatics run name\"."
 msgstr ""
 
@@ -6109,10 +6122,6 @@ msgstr ""
 msgid "The file could not be opened. Reload the page and try again."
 msgstr ""
 
-#: src/features/review/PmoPreviewBody.tsx
-msgid "The file is {fileSize}. The first {shownSize} are shown here; the download has all of it."
-msgstr ""
-
 #: src/features/review/PublishToZenodo.tsx
 msgid "The file is larger than Zenodo accepts."
 msgstr ""
@@ -6127,6 +6136,10 @@ msgstr ""
 
 #: src/app/privacy/PrivacyDetails.tsx
 msgid "The files you open and everything in them."
+msgstr ""
+
+#: src/features/review/PmoPreviewBody.tsx
+msgid "The first {shownSize} are shown here; the download has all of it."
 msgstr ""
 
 #: src/domain/fields/panel.ts

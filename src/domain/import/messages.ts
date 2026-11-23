@@ -10,7 +10,7 @@ import { t } from "@lingui/core/macro";
 
 import { intlLocale } from "@/i18n/languages";
 
-import type { ImportErrorCode, ImportErrorDetail } from "./errors";
+import { formatLimitBytes, type ImportErrorCode, type ImportErrorDetail } from "./errors";
 
 /**
  * Why an import failed.
@@ -27,9 +27,8 @@ export type ImportFailure =
 /** Every reason an import can fail, for exhaustive checks. */
 export type ImportFailureCode = ImportFailure["code"];
 
-function megabytes(bytes: number): string {
-  const size = new Intl.NumberFormat(intlLocale()).format(Math.round(bytes / (1024 * 1024)));
-  return `${size} MB`;
+function formatLimit(bytes: number): string {
+  return formatLimitBytes(bytes, intlLocale());
 }
 
 /**
@@ -71,7 +70,7 @@ export function importFailureMessage(failure: ImportFailure, fileName?: string):
         : t`That sheet is not in this file any more. Choose another sheet, or add the file again.`;
     case "too-large": {
       if (failure.detail.kind === "too-large" && failure.detail.measure === "workbook") {
-        const limit = megabytes(failure.detail.limitBytes);
+        const limit = formatLimit(failure.detail.limitBytes);
         return named
           ? t({
               message: `"${file}" is a workbook over ${limit}, too large to open in the browser. Save the sheet as a .csv or .tsv file and add that instead.`,
@@ -83,7 +82,7 @@ export function importFailureMessage(failure: ImportFailure, fileName?: string):
             });
       }
       if (failure.detail.kind === "too-large") {
-        const limit = megabytes(failure.detail.limitBytes);
+        const limit = formatLimit(failure.detail.limitBytes);
         return named
           ? t({
               message: `"${file}" is too large to open in the browser (the limit is ${limit} of text). Split it into smaller files, or remove columns you do not need, and try again.`,

@@ -353,7 +353,7 @@ msgstr "{column} doit contenir des nombres entiers, mais la cible « {target} 
 msgid "{columnCount, plural, one {The {issueTable} has no column {columns}. Check the column mapping.} other {The {issueTable} has no columns {columns}. Check the column mapping.}}"
 msgstr "{columnCount, plural, one {Le {issueTable} n’a pas de colonne {columns}. Vérifiez l’association des colonnes.} other {Le {issueTable} n’a pas les colonnes {columns}. Vérifiez l’association des colonnes.}}"
 
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "{columnCount, plural, one {The allele table has no column {columns}, chosen to carry onto each microhaplotype. Untick it.} other {The allele table has no columns {columns}, chosen to carry onto each microhaplotype. Untick them.}}"
 msgstr "{columnCount, plural, one {Le tableau des allèles n’a pas de colonne {columns}, choisie pour être reportée sur chaque microhaplotype. Décochez-la.} other {Le tableau des allèles n’a pas les colonnes {columns}, choisies pour être reportées sur chaque microhaplotype. Décochez-les.}}"
 
@@ -834,12 +834,12 @@ msgid "{rowCount, plural, one {{totalRows} row} other {{totalRows} rows}}"
 msgstr "{rowCount, plural, one {{totalRows} ligne} other {{totalRows} lignes}}"
 
 #. {rowList} is such as 'rows 5 and 9'.
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "{rowCount, plural, one {# row repeats the sample, target and sequence of an earlier row in the same run: {rowList} (sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.} other {# rows repeat the sample, target and sequence of an earlier row in the same run: {rowList} (such as sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.}}"
 msgstr "{rowCount, plural, one {# ligne reprend l’échantillon, la cible et la séquence d’une ligne précédente du même run : {rowList} (échantillon « {sampleName} », cible « {targetName} ») ; ses lectures seraient donc comptées deux fois.} other {# lignes reprennent l’échantillon, la cible et la séquence d’une ligne précédente du même run : {rowList} (par exemple échantillon « {sampleName} », cible « {targetName} ») ; leurs lectures seraient donc comptées deux fois.}}"
 
 #. {rowList} is such as 'rows 5 and 9'.
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "{rowCount, plural, one {# row repeats the sample, target and sequence of an earlier row: {rowList} (sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.} other {# rows repeat the sample, target and sequence of an earlier row: {rowList} (such as sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.}}"
 msgstr "{rowCount, plural, one {# ligne reprend l’échantillon, la cible et la séquence d’une ligne précédente : {rowList} (échantillon « {sampleName} », cible « {targetName} ») ; ses lectures seraient donc comptées deux fois.} other {# lignes reprennent l’échantillon, la cible et la séquence d’une ligne précédente : {rowList} (par exemple échantillon « {sampleName} », cible « {targetName} ») ; leurs lectures seraient donc comptées deux fois.}}"
 
@@ -941,6 +941,10 @@ msgstr "{selectedCount} cochés sur {totalCount}"
 #: src/ui/DataTable.tsx
 msgid "{shown, plural, one {{shownCount} row} other {{shownCount} rows}}"
 msgstr "{shown, plural, one {{shownCount} ligne} other {{shownCount} lignes}}"
+
+#: src/features/table-import/TablePreviewPanel.tsx
+msgid "{shownCount, plural, one {First {shownRows} row} other {First {shownRows} rows}}"
+msgstr "{shownCount, plural, one {{shownRows} première ligne} other {{shownRows} premières lignes}}"
 
 #: src/domain/build/merge.ts
 msgid "{specimenCount, plural, one {Project \"{project}\" is applied to all # specimen, because the specimen table names no project.} other {Project \"{project}\" is applied to all # specimens, because the specimen table names no project.}}"
@@ -1488,7 +1492,7 @@ msgid "Allele name"
 msgstr "Nom de l’allèle"
 
 #. The table of microhaplotypes: a table name in lower case, used inside other messages, such as 'The allele table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "allele table"
 msgstr "tableau des allèles"
 
@@ -1695,6 +1699,10 @@ msgstr "Générez un PMO à partir de vos tableaux, ou publiez un fichier PMO qu
 msgid "Build one in this app from <0><1>your tables</1></0>, or open one of the <2><3>published PMOs</3></2>."
 msgstr "Générez-en un dans cette application à partir de <0><1>vos tableaux</1></0>, ou ouvrez l’un des <2><3>PMO publiés</3></2>."
 
+#: src/features/shared/SectionResult.tsx
+msgid "Building the allele table"
+msgstr "Construction du tableau des allèles"
+
 #. The table of reads per sample, target and processing stage: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #. The table of reads per sample, target and processing stage: a table name in lower case, used inside other messages. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
@@ -1743,6 +1751,10 @@ msgstr "Vérifiez votre connexion et rechargez la page."
 #: src/features/pmo-file/OpenPublished.tsx
 msgid "Check your connection. Zenodo may also be busy for a moment."
 msgstr "Vérifiez votre connexion. Zenodo est peut-être aussi momentanément surchargé."
+
+#: src/features/shared/SectionResult.tsx
+msgid "Checking the allele table"
+msgstr "Vérification du tableau des allèles"
 
 #: src/features/review/VerdictCard.tsx
 msgid "Checking your draft"
@@ -1969,7 +1981,7 @@ msgid "Column \"{column}\" of the {issueTable} needs a whole number, but holds \
 msgstr "La colonne « {column} » du {issueTable} doit contenir un nombre entier, mais contient « {value} »."
 
 #. "Bioinformatics run name" is the label of a field on the page; use the same words as there.
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "Column \"{runLike}\" tells them apart, so the table probably holds several analysis runs. Choose that column under \"Bioinformatics run name\"."
 msgstr "La colonne « {runLike} » les distingue : le tableau contient donc probablement plusieurs runs d’analyse. Choisissez cette colonne sous « Nom du run bioinformatique »."
 
@@ -2903,6 +2915,7 @@ msgid "If your browser does not let the app store data, as in some private windo
 msgstr "Si votre navigateur ne permet pas à l’application de stocker des données, comme dans certaines fenêtres de navigation privée, le brouillon ne dure que jusqu’à la fermeture ou au rechargement de la page."
 
 #: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesStream.ts
 msgid "Import the allele table."
 msgstr "Importez le tableau des allèles."
 
@@ -4822,12 +4835,12 @@ msgstr "Supprimer la condition sur {fieldName}"
 msgid "Remove the panel \"{title}\"?"
 msgstr "Supprimer le panel « {title} » ?"
 
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "Remove the repeated rows."
 msgstr "Supprimez les lignes en double."
 
 #. "Bioinformatics run name" is the label of a field on the page; use the same words as there.
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "Remove the repeated rows. If the table holds several analysis runs, choose the column that names the run under \"Bioinformatics run name\"."
 msgstr "Supprimez les lignes en double. Si le tableau contient plusieurs runs d’analyse, choisissez la colonne qui indique le run sous « Nom du run bioinformatique »."
 
@@ -6103,10 +6116,6 @@ msgstr "Le fichier n’a pas pu être créé"
 msgid "The file could not be opened. Reload the page and try again."
 msgstr "Le fichier n’a pas pu être ouvert. Rechargez la page et réessayez."
 
-#: src/features/review/PmoPreviewBody.tsx
-msgid "The file is {fileSize}. The first {shownSize} are shown here; the download has all of it."
-msgstr "Le fichier fait {fileSize}. Les {shownSize} premiers sont affichés ici ; le fichier téléchargé est complet."
-
 #: src/features/review/PublishToZenodo.tsx
 msgid "The file is larger than Zenodo accepts."
 msgstr "Le fichier dépasse la taille acceptée par Zenodo."
@@ -6122,6 +6131,10 @@ msgstr "Le fichier a été fermé, probablement parce que le navigateur a manqu�
 #: src/app/privacy/PrivacyDetails.tsx
 msgid "The files you open and everything in them."
 msgstr "Les fichiers que vous ouvrez et tout leur contenu."
+
+#: src/features/review/PmoPreviewBody.tsx
+msgid "The first {shownSize} are shown here; the download has all of it."
+msgstr "Les {shownSize} premiers sont affichés ici ; le fichier téléchargé est complet."
 
 #: src/domain/fields/panel.ts
 msgid "The gene the target covers, if any."

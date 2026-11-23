@@ -13,7 +13,7 @@ max_line_length = 100
 # Two trailing spaces can mean a line break in Markdown.
 trim_trailing_whitespace = false
 
-[{vendor,public/examples,reference}/**]
+[{public/examples,reference}/**]
 # Files copied from elsewhere. Keep them byte for byte.
 charset = unset
 end_of_line = unset

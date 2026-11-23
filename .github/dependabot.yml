@@ -5,9 +5,6 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
-    ignore:
-      # Vendored tarball, refreshed with `pnpm lib:update`.
-      - dependency-name: pmotools-ts
     groups:
       dev-dependencies:
         dependency-type: development
@@ -15,6 +12,9 @@ updates:
       dependencies:
         dependency-type: production
         update-types: [minor, patch]
+        # Before 1.0 a minor version of pmotools-ts can break the API, so it
+        # gets a pull request of its own.
+        exclude-patterns: ["pmotools-ts"]
 
   - package-ecosystem: github-actions
     directory: /

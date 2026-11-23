@@ -9,15 +9,17 @@ import type {
   MergeSummary,
   PublicationSummary,
   PmoFile,
+  PmoTextPreview,
   SectionSummaries,
   Suggestions,
   BuildDeps,
 } from "@/domain/build";
 import type { Draft, JsonValue, TableRef } from "@/domain/draft";
 import type { WorkingPmoAnswer, WorkingPmoCall, WorkingPmoKind } from "@/domain/tools/types";
-import type { ImportFailure, parseFile } from "@/domain/import";
+import type { ImportFailure, StreamReadProgress, parseFile } from "@/domain/import";
 import type { Notice, RawRow, SectionId, SectionStatus } from "@/domain/types";
 
+export type { PmoTextPreview } from "@/domain/build";
 export type { ImportFailure, ImportFailureCode } from "@/domain/import";
 
 /** A file to import. */
@@ -26,6 +28,8 @@ export interface ImportFileInput {
   readonly fileName: string;
   /** Which sheet of a workbook to read. Defaults to the first. */
   readonly sheetName?: string;
+  /** Read delimited files as a stream instead of loading all rows into memory. */
+  readonly stream?: boolean;
 }
 
 /** What importing a file gives: its metadata for the draft, or why it could not be read. */
@@ -45,6 +49,8 @@ export interface RestoreFileInput {
   readonly file: Blob;
   readonly fileName: string;
   readonly sheetName: string | null;
+  /** Read delimited files as a stream instead of loading all rows into memory. */
+  readonly stream?: boolean;
 }
 
 /** Which rows of a table to preview. */
@@ -63,10 +69,20 @@ export type TablePreview =
       readonly columns: readonly string[];
       readonly rows: readonly RawRow[];
       readonly offset: number;
-      readonly totalRows: number;
+      /** Total rows in the file, or `null` when a large streamed file has not been counted yet. */
+      readonly totalRows: number | null;
     }
   | { readonly kind: "missing" }
   | { readonly kind: "failed"; readonly message: string };
+
+/** Active reading/building progress while streaming a large allele table. */
+export interface ReadingBuildProgress extends StreamReadProgress {
+  readonly phase: "reading";
+  readonly stage: "checking" | "building";
+}
+
+/** Live progress reported while streaming and building the allele table. */
+export type BuildProgress = { readonly phase: "idle" } | ReadingBuildProgress;
 
 /** Which column's values to list. */
 export interface DistinctValuesRequest {
@@ -134,14 +150,6 @@ export interface BuildRequestOptions {
   readonly sectionTokens?: Readonly<Partial<Record<SectionId, string>>>;
 }
 
-/** A preview of the PMO's JSON text. */
-export interface PmoTextPreview {
-  readonly text: string;
-  readonly truncated: boolean;
-  /** Length of the whole text. */
-  readonly length: number;
-}
-
 /**
  * The engine's interface. The in-thread engine and the worker client both
  * implement it, so callers do not know which they have.
@@ -168,8 +176,9 @@ export interface Engine {
   getPmoFile(options?: { readonly gzip?: boolean }): Promise<PmoFile | null>;
   /**
    * The name and size in bytes of the file {@link Engine.getPmoFile} would
-   * give, or `null` when no PMO was built. The file is made once per build and
-   * format and kept, so a download after this reuses it.
+   * give, or `null` when no PMO was built. Counted from the stream without
+   * keeping a copy of the file, or taken from a file already made for this
+   * build.
    */
   getPmoFileSize(options?: {
     readonly gzip?: boolean;
@@ -199,4 +208,6 @@ export interface InThreadEngineOptions {
   readonly deps?: BuildDeps;
   /** Lets queued messages run between build stages, so a newer build can supersede. Default: a zero timeout. */
   readonly yieldToQueue?: () => Promise<void>;
+  /** Called with progress updates while streaming and building a table. */
+  readonly onProgress?: (progress: BuildProgress) => void;
 }
