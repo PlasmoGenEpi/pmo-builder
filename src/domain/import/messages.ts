@@ -10,7 +10,7 @@ import { t } from "@lingui/core/macro";
 
 import { intlLocale } from "@/i18n/languages";
 
-import type { ImportErrorCode, ImportErrorDetail } from "./errors";
+import { formatLimitBytes, type ImportErrorCode, type ImportErrorDetail } from "./errors";
 
 /**
  * Why an import failed.
@@ -27,18 +27,8 @@ export type ImportFailure =
 /** Every reason an import can fail, for exhaustive checks. */
 export type ImportFailureCode = ImportFailure["code"];
 
-const BYTES_PER_MB = 1024 * 1024;
-const BYTES_PER_GB = 1024 * BYTES_PER_MB;
-
 function formatLimit(bytes: number): string {
-  if (bytes >= BYTES_PER_GB) {
-    const gb = bytes / BYTES_PER_GB;
-    const value = Number.isInteger(gb) ? gb : Number(gb.toFixed(1));
-    const size = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 1 }).format(value);
-    return `${size} GB`;
-  }
-  const size = new Intl.NumberFormat(intlLocale()).format(Math.round(bytes / BYTES_PER_MB));
-  return `${size} MB`;
+  return formatLimitBytes(bytes, intlLocale());
 }
 
 /**

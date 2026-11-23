@@ -231,7 +231,7 @@ In Node (`scripts/bench-large-files.mjs`, Node v26.13.1, default 4,192 MB heap l
 | 1M (999,997)    | 259.0 MB   | 6.0 s                                   | 547 MB (142 MB)                      | 911 MB (6.9 s)                   | 0.7 s (5.5 MB)    | 0.4 s (131.5 MB)         | 5 ms                 |
 | 2M (1,999,995)  | 518.0 MB   | 9.9 s                                   | 738 MB (273 MB)                      | 1,653 MB (8.6 s)                 | 1.4 s (10.9 MB)   | 0.8 s (262.4 MB)         | 6 ms                 |
 | 5M (5,000,000)  | 1,295.0 MB | 22.1 s                                  | 1,144 MB (664 MB)                    | 2,890 MB (19.3 s)                | 3.4 s (27.2 MB)   | 2.0 s (655.2 MB)         | 8 ms                 |
-| 10M (9,999,986) | 2,589.9 MB | 38.4 s                                  | 2,240 MB (1,315 MB)                  | 4,332 MB (39.0 s)                | 7.3 s (54.4 MB)   | 4.1 s (1,309.7 MB)       | 9 ms                 |
+| 10M (9,999,986) | 2,589.9 MB | 39.8 s                                  | 2,566 MB (1,316 MB)                  | 2,508 MB (39.9 s)                | 6.6 s (54.4 MB)   | 3.8 s (1,309.7 MB)       | 9 ms                 |
 
 In Chromium (`e2e/large-allele-table.spec.ts`, Playwright Desktop Chrome, full upload,
 matching, build, validation and `.json.gz` download):

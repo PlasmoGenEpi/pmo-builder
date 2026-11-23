@@ -6,7 +6,7 @@ import { plural, t } from "@lingui/core/macro";
 import type { Table } from "pmotools-ts";
 
 import { mappedColumns, type MappedTable } from "@/domain/draft";
-import { readBooleanCell } from "@/domain/import";
+import { TEXT_KINDS, readBooleanCell } from "@/domain/import";
 import type {
   FieldSetId,
   FieldSetSpec,
@@ -69,10 +69,8 @@ export interface PrepareTableInput {
   readonly extraTextColumns?: readonly string[];
 }
 
-const TEXT_KINDS: ReadonlySet<string> = new Set(["text", "date", "list"]);
-
-/** Problems that only need more mapping, as opposed to a wrong mapping. */
-const INCOMPLETE_KINDS: ReadonlySet<MappingProblem["kind"]> = new Set([
+/** Mapping problems that only need more mapping, as opposed to a wrong mapping. */
+export const INCOMPLETE_KINDS: ReadonlySet<MappingProblem["kind"]> = new Set([
   "missing-required",
   "incomplete-group",
 ]);

@@ -78,7 +78,7 @@ type TableState =
   | { readonly kind: "ready"; readonly parsed: ParsedFile }
   | {
       readonly kind: "streamed";
-      readonly meta: DelimitedStreamMeta;
+      meta: DelimitedStreamMeta;
       exactRowCount: number | null;
       runNameValues: { readonly column: string; readonly values: readonly string[] } | null;
     }
@@ -329,6 +329,28 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       entry.sheetName === null ? undefined : { sheetName: entry.sheetName },
     );
 
+  const inspectOrParseStreamed = async (entry: TableEntry): Promise<TableRef> => {
+    if (entry.stream) {
+      const inspection = await inspectDelimitedStream(entry.source, {
+        fileName: entry.fileName,
+      });
+      if (inspection.kind === "delimited") {
+        entry.state = {
+          kind: "streamed",
+          meta: inspection.meta,
+          exactRowCount: inspection.meta.exactRowCount,
+          runNameValues: null,
+        };
+        entry.sheetName = null;
+        return toStreamedRef(entry, inspection.meta);
+      }
+    }
+    const parsed = await parseEntry(entry);
+    entry.state = { kind: "ready", parsed };
+    entry.sheetName = parsed.sheetName;
+    return toRef(entry, parsed);
+  };
+
   const ensureParsed = async (id: string): Promise<void> => {
     const entry = tables.get(id);
     if (entry === undefined) return;
@@ -339,25 +361,7 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     if (entry.state.kind !== "pending") return;
     const promise = (async () => {
       try {
-        if (entry.stream) {
-          const inspection = await inspectDelimitedStream(entry.source, {
-            fileName: entry.fileName,
-          });
-          if (inspection.kind === "delimited") {
-            entry.state = {
-              kind: "streamed",
-              meta: inspection.meta,
-              exactRowCount: inspection.meta.exactRowCount,
-              runNameValues: null,
-            };
-          } else {
-            const parsed = await parseEntry(entry);
-            entry.state = { kind: "ready", parsed };
-          }
-        } else {
-          const parsed = await parseEntry(entry);
-          entry.state = { kind: "ready", parsed };
-        }
+        await inspectOrParseStreamed(entry);
       } catch (error) {
         entry.state = {
           kind: "failed",
@@ -438,27 +442,9 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
         state: { kind: "pending" },
       };
       try {
-        if (entry.stream) {
-          const inspection = await inspectDelimitedStream(entry.source, {
-            fileName: entry.fileName,
-          });
-          if (inspection.kind === "delimited") {
-            entry.state = {
-              kind: "streamed",
-              meta: inspection.meta,
-              exactRowCount: inspection.meta.exactRowCount,
-              runNameValues: null,
-            };
-            entry.sheetName = null;
-            tables.set(entry.id, entry);
-            return { kind: "imported", table: toStreamedRef(entry, inspection.meta) };
-          }
-        }
-        const parsed = await parseEntry(entry);
-        entry.state = { kind: "ready", parsed };
-        entry.sheetName = parsed.sheetName;
+        const table = await inspectOrParseStreamed(entry);
         tables.set(entry.id, entry);
-        return { kind: "imported", table: toRef(entry, parsed) };
+        return { kind: "imported", table };
       } catch (error) {
         return importFailed(failureOf(error), input.fileName);
       }
@@ -517,25 +503,70 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
           };
         }
         const rows: RawRow[] = [];
-        let seen = 0;
+        const previewScan: {
+          seen: number;
+          resolvedEncoding: DelimitedStreamMeta["encoding"];
+          refreshedPreview: RawRow[] | null;
+        } = {
+          seen: 0,
+          resolvedEncoding: meta.encoding,
+          refreshedPreview: null,
+        };
         try {
-          for await (const chunk of streamDelimitedChunks(entry.source, {
+          const generator = streamDelimitedChunks(entry.source, {
             fileName: entry.fileName,
             delimiter: meta.delimiter,
             encoding: meta.encoding,
             columns: meta.columns,
             chunkSize: Math.max(limit, 1_000),
-          })) {
-            const chunkEnd = seen + chunk.length;
-            if (chunkEnd > offset) {
-              const start = Math.max(0, offset - seen);
-              for (let i = start; i < chunk.length && rows.length < limit; i += 1) {
-                const row = chunk[i];
-                if (row !== undefined) rows.push(row);
+            onRestart: (nextEncoding) => {
+              previewScan.resolvedEncoding = nextEncoding;
+              previewScan.refreshedPreview = [];
+              rows.length = 0;
+              previewScan.seen = 0;
+            },
+          });
+          try {
+            for (;;) {
+              // oxlint-disable-next-line no-await-in-loop -- consuming stream chunks sequentially
+              const step = await generator.next();
+              if (step.done) {
+                previewScan.resolvedEncoding = step.value;
+                break;
               }
+              const chunk = step.value;
+              const refreshed = previewScan.refreshedPreview;
+              if (refreshed !== null && refreshed.length < meta.previewRows.length) {
+                const need = meta.previewRows.length - refreshed.length;
+                for (let i = 0; i < chunk.length && i < need; i += 1) {
+                  const row = chunk[i];
+                  if (row !== undefined) refreshed.push(row);
+                }
+              }
+              const chunkEnd = previewScan.seen + chunk.length;
+              if (chunkEnd > offset) {
+                const start = Math.max(0, offset - previewScan.seen);
+                for (let i = start; i < chunk.length && rows.length < limit; i += 1) {
+                  const row = chunk[i];
+                  if (row !== undefined) rows.push(row);
+                }
+              }
+              previewScan.seen = chunkEnd;
+              if (rows.length >= limit) break;
             }
-            seen = chunkEnd;
-            if (rows.length >= limit) break;
+          } finally {
+            await generator.return(previewScan.resolvedEncoding);
+          }
+          if (previewScan.resolvedEncoding !== meta.encoding) {
+            entry.state.meta = {
+              ...meta,
+              encoding: previewScan.resolvedEncoding,
+              previewRows:
+                previewScan.refreshedPreview !== null &&
+                previewScan.refreshedPreview.length >= meta.previewRows.length
+                  ? previewScan.refreshedPreview
+                  : meta.previewRows,
+            };
           }
         } catch (error) {
           return {
@@ -602,20 +633,41 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
         await yieldToQueue();
         if (superseded()) return { kind: "superseded" };
 
+        const cachedSection = (
+          section: SectionId,
+          input: SectionInput,
+          tableKeys: string,
+        ): SectionResult<SectionId> | undefined => {
+          const memo = memos.get(section);
+          return memo !== undefined && memo.tables === tableKeys && sameInput(memo.input, input)
+            ? memo.result
+            : undefined;
+        };
+
         const context = { tables: lookup, deps };
         const rebuilt: SectionId[] = [];
         const results = new Map<SectionId, SectionResult<SectionId>>();
         for (const section of SECTION_IDS) {
           const input = sectionInput(draft, section, buildOptions);
           const tableKeys = sectionTableIds(draft, section).map(tableKey).join(",");
-          const memo = memos.get(section);
-          if (memo !== undefined && memo.tables === tableKeys && sameInput(memo.input, input)) {
-            results.set(section, memo.result);
+          const cached = cachedSection(section, input, tableKeys);
+          if (cached !== undefined) {
+            results.set(section, cached);
             continue;
           }
           if (section === "microhaplotypes" && draft.microhaplotypes.table !== null) {
             const entry = tables.get(draft.microhaplotypes.table.table.id);
             if (entry !== undefined && entry.state.kind === "streamed") {
+              // Release the stale microhaplotypes fragment and derived PMO caches before
+              // Pass 2 allocates the new fragment, avoiding two multi-hundred-MB copies at once.
+              memos.delete("microhaplotypes");
+              mergeMemo = null;
+              latestPmo = null;
+              fileCache.clear();
+              sizeCache.clear();
+              previewMemo = null;
+              suggestionsMemo = null;
+
               const streamedState = entry.state;
               // oxlint-disable-next-line no-await-in-loop -- sections build in order; only a streamed allele table is async
               const streamed = await buildMicrohaplotypesStream({
