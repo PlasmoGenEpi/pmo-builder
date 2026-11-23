@@ -37,6 +37,14 @@ export const CANVAS_TEXT: Readonly<Record<ChartTheme, string>> = {
   dark: "#a3aab5",
 };
 
+/** Dual-stroke outline for a chosen canvas cell, high contrast over empty and filled cells. */
+export const CANVAS_SELECTION: Readonly<
+  Record<ChartTheme, { readonly outer: string; readonly inner: string }>
+> = {
+  light: { outer: "#171a21", inner: "#ffffff" },
+  dark: { outer: "#eceef2", inner: "#0e1014" },
+};
+
 function hexToRgb(hex: string): [number, number, number] {
   const value = Number.parseInt(hex.slice(1), 16);
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255];

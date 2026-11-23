@@ -286,9 +286,17 @@ msgstr "{activeTargets, plural, one {{activePlate}, poço {activeCoord}, {active
 msgid "{alleleCalls, plural, one {# allele call} other {# allele calls}} for {samples, plural, one {# sample} other {# samples}} at {targets, plural, one {# target} other {# targets}}, {alleles, plural, one {# distinct allele} other {# distinct alleles}}"
 msgstr "{alleleCalls, plural, one {# identificação de alelo} other {# identificações de alelos}} para {samples, plural, one {# amostra} other {# amostras}} em {targets, plural, one {# alvo} other {# alvos}}, {alleles, plural, one {# alelo distinto} other {# alelos distintos}}"
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "{alleleCount, plural, one {# microhaplotype} other {# microhaplotypes}}"
+msgstr "{alleleCount, plural, one {# micro-haplótipo} other {# micro-haplótipos}}"
+
 #: src/features/pmo-file/summary/SequenceLabel.tsx
 msgid "{baseCount, plural, one {# base} other {# bases}}"
 msgstr "{baseCount, plural, one {# base} other {# bases}}"
+
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "{chosenSampleName} at {chosenTargetName}: {chosenReadsLabel}, {chosenAllelesLabel}."
+msgstr "{chosenSampleName} em {chosenTargetName}: {chosenReadsLabel}, {chosenAllelesLabel}."
 
 #. {column} starts the sentence and names a column, with any article, such as 'Column "Host taxon"'. {row} is one row without an article, such as 'row 5'.
 #: src/domain/build/notices.ts
@@ -551,10 +559,6 @@ msgstr "{hiddenSize} não mostrados"
 msgid "{hoverCount, plural, one {{hoverPeriod}: # specimen} other {{hoverPeriod}: # specimens}}"
 msgstr "{hoverCount, plural, one {{hoverPeriod}: # espécime} other {{hoverPeriod}: # espécimes}}"
 
-#: src/features/pmo-file/summary/ReadsGrid.tsx
-msgid "{hoveredReads} reads"
-msgstr "{hoveredReads} leituras"
-
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "{hoverName}: {hoverDensity} per µL, {hoverTargets} targets with data."
 msgstr "{hoverName}: {hoverDensity} por µL, {hoverTargets} alvos com dados."
@@ -747,6 +751,10 @@ msgstr "{projectCount, plural, one {Há # projeto, por isso cada espécime tem d
 #: src/domain/build/merge.ts
 msgid "{projectCount, plural, one {There is # project, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.} other {There are # projects, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.}}"
 msgstr "{projectCount, plural, one {Há # projeto, por isso cada espécime tem de indicar o seu projeto. Escolha a coluna do nome do projeto da tabela de espécimes e preencha-a para todos os espécimes.} other {Há # projetos, por isso cada espécime tem de indicar o seu projeto. Escolha a coluna do nome do projeto da tabela de espécimes e preencha-a para todos os espécimes.}}"
+
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "{readCount, plural, one {# read} other {# reads}}"
+msgstr "{readCount, plural, one {# leitura} other {# leituras}}"
 
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "{reads, plural, one {Negative control {name} has # read.} other {Negative control {name} has # reads.}}"
@@ -1174,8 +1182,8 @@ msgid "A draft was started. You can finish it on Zenodo, or delete it there and 
 msgstr "Foi iniciado um rascunho. Pode concluí-lo no Zenodo, ou eliminá-lo lá e tentar novamente."
 
 #: src/features/pmo-file/summary/ReadsGrid.tsx
-msgid "A grid of reads for {sampleCount} samples at {targetCount} targets. The tables below give the same figures."
-msgstr "Uma grelha de leituras para {sampleCount} amostras e {targetCount} alvos. As tabelas abaixo dão os mesmos números."
+msgid "A grid of reads for {sampleCount} samples at {targetCount} targets. Use the arrow keys to move between cells and read each sample and target's figures. The tables below give totals per sample and per target, not individual cells."
+msgstr "Uma grelha de leituras para {sampleCount} amostras e {targetCount} alvos. Utilize as teclas de seta para se mover entre células e ler os números de cada amostra e alvo. As tabelas abaixo dão os totais por amostra e por alvo, não as células individuais."
 
 #: src/features/librarySamples/LibrarySamplesStep.tsx
 msgid "A library sample is one sequencing library made from a specimen. A specimen sequenced twice has two library samples. The library sample name is the sample name in your allele table."
@@ -1734,6 +1742,10 @@ msgstr "Escolher"
 msgid "Choose {fileLabel} file"
 msgstr "Escolher o ficheiro de {fileLabel}"
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "Choose a cell or use the arrow keys to inspect a sample and target."
+msgstr "Escolha uma célula ou utilize as teclas de seta para consultar uma amostra e um alvo."
+
 #: src/features/bioinformatics/RunsPart.tsx
 #: src/features/shared/RunNameChoice.tsx
 #: src/features/table-import/FieldRow.tsx
@@ -2271,8 +2283,8 @@ msgid "Each program the pipeline ran, in order. Most pipelines need only the mai
 msgstr "Cada programa que o pipeline executou, por ordem. A maioria dos pipelines só precisa do principal."
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "Each row is a library sample and each column a target. The colour shows the reads, as in the legend below the grid. Hover over a cell to see its numbers."
-msgstr "Cada linha é uma amostra de biblioteca e cada coluna um alvo. A cor mostra as leituras, de acordo com a legenda por baixo da grelha. Passe o cursor sobre uma célula para ver os seus números."
+msgid "Each row is a library sample and each column a target. The colour shows the reads, as in the legend below the grid. Choose a cell to see its numbers and find its sample and target below."
+msgstr "Cada linha é uma amostra de biblioteca e cada coluna um alvo. A cor mostra as leituras, de acordo com a legenda por baixo da grelha. Escolha uma célula para ver os seus números e encontrar a amostra e o alvo abaixo."
 
 #: src/features/librarySamples/LibrarySamplesStep.tsx
 msgid "Each row links to other steps by name:"
@@ -3620,6 +3632,11 @@ msgstr "Ainda não há projeto"
 #: src/features/published/PublishedPage.tsx
 msgid "No published PMO matches"
 msgstr "Nenhum PMO publicado corresponde à pesquisa"
+
+#. Part of a chosen reads-grid cell summary
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "no reads"
+msgstr "sem leituras"
 
 #: src/features/pmo-file/summary/ReadsGrid.tsx
 msgid "No reads"
@@ -5657,6 +5674,10 @@ msgstr "O alvo «{target}» tem um pseudo-CIGAR, mas o cromossoma, o início ou 
 msgid "Target \"{targetName}\" is defined differently in panel \"{panelName}\" than in an earlier panel. The first definition is kept."
 msgstr "O alvo «{targetName}» está definido no painel «{panelName}» de forma diferente da de um painel anterior. É mantida a primeira definição."
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "Target {startNumber}"
+msgstr "Alvo {startNumber}"
+
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #: src/domain/fields/panel.ts
@@ -5704,6 +5725,10 @@ msgstr "Tipo de alvo"
 #: src/features/review/PmoContents.tsx
 msgid "Targets"
 msgstr "Alvos"
+
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "Targets {startNumber}–{endNumber}"
+msgstr "Alvos {startNumber}–{endNumber}"
 
 #. Short name of the Targets section
 #: src/features/pmo-file/summary/SummaryPanel.tsx

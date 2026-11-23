@@ -24,7 +24,7 @@ import {
   showsPlates,
   showsStages,
 } from "./QualityViews";
-import { ReadsGrid } from "./ReadsGrid";
+import { ReadsGrid, sampleRowKey } from "./ReadsGrid";
 import { SortableTable, type SortableColumn } from "./SortableTable";
 import { NoAnswer } from "../NoAnswer";
 import { useSettled } from "../useSettled";
@@ -300,6 +300,15 @@ export function SummaryPanel({
   const [allTargets, setAllTargets] = useState(false);
   const [grouped, setGrouped] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
+  const [selectedSample, setSelectedSample] = useState<string | null>(null);
+  const [sampleScroll, setSampleScroll] = useState<{
+    readonly key: string;
+    readonly seq: number;
+  } | null>(null);
+  const [targetScroll, setTargetScroll] = useState<{
+    readonly key: string;
+    readonly seq: number;
+  } | null>(null);
   const tableFormat = usePmo((state) => state.tableFormat);
   const openName = usePmo((state) => (state.open.kind === "opened" ? state.open.name : null));
   const fileBase = pmoBaseName(openName, source);
@@ -340,6 +349,16 @@ export function SummaryPanel({
 
   const nothingPasses = summary !== null && minReads > 0 && summary.headline.samplesWithData === 0;
 
+  function selectTargetFromGrid(targetName: string): void {
+    setSelected(targetName);
+    setTargetScroll((before) => ({ key: targetName, seq: (before?.seq ?? 0) + 1 }));
+  }
+
+  function selectSampleFromGrid(sampleKey: string): void {
+    setSelectedSample(sampleKey);
+    setSampleScroll((before) => ({ key: sampleKey, seq: (before?.seq ?? 0) + 1 }));
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <ViewToolbar>
@@ -378,7 +397,7 @@ export function SummaryPanel({
             <SectionHeading
               id={HEADING.reads}
               title={t`Reads by sample and target`}
-              description={t`Each row is a library sample and each column a target. The colour shows the reads, as in the legend below the grid. Hover over a cell to see its numbers.`}
+              description={t`Each row is a library sample and each column a target. The colour shows the reads, as in the legend below the grid. Choose a cell to see its numbers and find its sample and target below.`}
               actions={
                 <div className="flex flex-wrap items-center gap-4">
                   {reactionsWithData > 1 ? (
@@ -399,7 +418,15 @@ export function SummaryPanel({
             {summary.samples.length === 0 ? (
               <p className="text-base text-text-muted">{t`No sample has any reads to show.`}</p>
             ) : (
-              <ReadsGrid summary={summary} columns={grid.columns} groups={grid.groups} />
+              <ReadsGrid
+                summary={summary}
+                columns={grid.columns}
+                groups={grid.groups}
+                selectedTarget={chosenTarget?.name ?? null}
+                selectedSampleKey={selectedSample}
+                onTargetSelect={selectTargetFromGrid}
+                onSampleSelect={selectSampleFromGrid}
+              />
             )}
           </section>
 
@@ -413,7 +440,9 @@ export function SummaryPanel({
               label={t`Samples`}
               columns={sampleColumns(summary)}
               rows={summary.samples}
-              rowKey={(row) => `${row.run}\u0000${row.name}`}
+              rowKey={sampleRowKey}
+              selectedKey={selectedSample}
+              scrollToRow={sampleScroll}
               initialSort={{ key: "reads", descending: false }}
               searchableColumns={["name", "specimen"]}
               searchPlaceholder={t`Search sample or specimen`}
@@ -439,6 +468,7 @@ export function SummaryPanel({
                 rowKey={(row) => row.name}
                 onRowSelect={(row) => setSelected(row.name)}
                 selectedKey={chosenTarget?.name ?? null}
+                scrollToRow={targetScroll}
                 initialSort={{ key: "samples", descending: true }}
                 searchableColumns={["name"]}
                 searchPlaceholder={t`Search target`}

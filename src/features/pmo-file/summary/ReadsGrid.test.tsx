@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 
 import type { PmoSummary } from "@/domain/tools/types";
 
@@ -13,7 +14,7 @@ function makeSummary(sampleCount: number, targetCount: number): PmoSummary {
     run: "run1",
     targets: targetCount,
     reads: targetCount * 10,
-    maxAlleles: 1,
+    maxAlleles: 2,
     control: null,
     plate: null,
     density: null,
@@ -27,6 +28,9 @@ function makeSummary(sampleCount: number, targetCount: number): PmoSummary {
     heterozygosity: null,
   }));
   const reads = Array.from({ length: sampleCount * targetCount }, (_, index) => (index + 1) * 5);
+  const alleles = Array.from({ length: sampleCount * targetCount }, (_, index) =>
+    index % 2 === 0 ? 1 : 2,
+  );
   return {
     minReads: 0,
     librarySamples: sampleCount,
@@ -42,12 +46,12 @@ function makeSummary(sampleCount: number, targetCount: number): PmoSummary {
     targets,
     reactions: [],
     stages: [],
-    grid: { columns: targetCount, reads },
+    grid: { columns: targetCount, reads, alleles },
   };
 }
 
 describe("ReadsGrid", () => {
-  it("renders a focusable scroll region with an accessible summary, legend, and hover details for many targets", () => {
+  it("shows group names when columns are narrow, gives an accurate hidden description, and reports hover details", () => {
     const summary = makeSummary(4, 276);
     const columns = summary.targets.map((_, index) => index);
     render(<ReadsGrid summary={summary} columns={columns} />);
@@ -56,11 +60,16 @@ describe("ReadsGrid", () => {
     expect(region).toHaveAttribute("tabindex", "0");
     expect(
       screen.getByText(
-        "A grid of reads for 4 samples at 276 targets. The tables below give the same figures.",
+        "A grid of reads for 4 samples at 276 targets. Use the arrow keys to move between cells and read each sample and target's figures. The tables below give totals per sample and per target, not individual cells.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("No reads")).toBeInTheDocument();
     expect(screen.getByText(/5,520 reads \(log scale\)/)).toBeInTheDocument();
+
+    // With 276 targets the columns are too narrow for target names, so group names appear instead.
+    expect(within(region).queryByRole("button", { name: "target_1" })).not.toBeInTheDocument();
+    expect(region).toHaveTextContent("Targets 1–50");
+    expect(region).toHaveTextContent("Targets 251–276");
 
     const cellsCanvas = region.querySelectorAll("canvas")[1];
     if (cellsCanvas === undefined) throw new Error("Expected cells canvas");
@@ -78,31 +87,48 @@ describe("ReadsGrid", () => {
 
     // Hover the first target in row 0.
     fireEvent.mouseMove(cellsCanvas, { clientX: 140 + 1, clientY: 5 });
-    expect(screen.getByText("sample_1")).toBeInTheDocument();
-    expect(screen.getByText("target_1")).toBeInTheDocument();
-    expect(screen.getByText("5 reads")).toBeInTheDocument();
+    const tooltip = screen.getByRole("tooltip");
+    expect(within(tooltip).getByText("sample_1")).toBeInTheDocument();
+    expect(within(tooltip).getByText("target_1")).toBeInTheDocument();
+    expect(within(tooltip).getByText("5 reads")).toBeInTheDocument();
 
     // Hover the last target (target_276) in row 0.
     fireEvent.mouseMove(cellsCanvas, { clientX: 140 + 659, clientY: 5 });
-    expect(screen.getByText("target_276")).toBeInTheDocument();
-    expect(screen.getByText("1,380 reads")).toBeInTheDocument();
+    const updatedTooltip = screen.getByRole("tooltip");
+    expect(within(updatedTooltip).getByText("target_276")).toBeInTheDocument();
+    expect(within(updatedTooltip).getByText("1,380 reads")).toBeInTheDocument();
 
     fireEvent.mouseLeave(cellsCanvas);
-    expect(screen.queryByText("target_276")).not.toBeInTheDocument();
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
-  it("places reaction group headers inside the scroll region and resolves hover across group gaps", () => {
+  it("shows reaction group headers and clickable target headers when columns are wide enough, and resolves hover across group gaps", async () => {
+    const user = userEvent.setup();
     const summary = makeSummary(2, 4);
     const columns = [0, 1, 2, 3];
     const groups = [
       { label: "pool-1", count: 2 },
       { label: "pool-2", count: 2 },
     ];
-    render(<ReadsGrid summary={summary} columns={columns} groups={groups} />);
+    const onTargetSelect = vi.fn<(targetName: string) => void>();
+    render(
+      <ReadsGrid
+        summary={summary}
+        columns={columns}
+        groups={groups}
+        selectedTarget="target_2"
+        onTargetSelect={onTargetSelect}
+      />,
+    );
 
     const region = screen.getByRole("region", { name: "Reads by sample and target" });
     expect(region).toHaveTextContent("pool-1");
     expect(region).toHaveTextContent("pool-2");
+
+    // Target names appear along the top and can be chosen.
+    expect(within(region).getByRole("button", { name: "target_2", pressed: true })).toBeVisible();
+    await user.click(within(region).getByRole("button", { name: "target_3" }));
+    expect(onTargetSelect).toHaveBeenCalledWith("target_3");
 
     const cellsCanvas = region.querySelectorAll("canvas")[1];
     if (cellsCanvas === undefined) throw new Error("Expected cells canvas");
@@ -121,12 +147,135 @@ describe("ReadsGrid", () => {
 
     // Hover column 2 (first column of pool-2): starts at 2 * 163.5 + 6 = 333 inside cellsCanvas.
     fireEvent.mouseMove(cellsCanvas, { clientX: 140 + 340, clientY: 20 + 20 });
-    expect(screen.getByText("sample_2")).toBeInTheDocument();
-    expect(screen.getByText("target_3")).toBeInTheDocument();
-    expect(screen.getByText("35 reads")).toBeInTheDocument();
+    const tooltip = screen.getByRole("tooltip");
+    expect(within(tooltip).getByText("sample_2")).toBeInTheDocument();
+    expect(within(tooltip).getByText("target_3")).toBeInTheDocument();
+    expect(within(tooltip).getByText("35 reads")).toBeInTheDocument();
 
     // Hover inside the 6 px gap between pool-1 and pool-2 (x = 329): clears hover.
     fireEvent.mouseMove(cellsCanvas, { clientX: 140 + 329, clientY: 20 + 20 });
-    expect(screen.queryByText("target_3")).not.toBeInTheDocument();
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("chooses a cell on click, keeps its details on screen, and lets row labels choose a sample", () => {
+    const summary = makeSummary(3, 4);
+    const columns = [0, 1, 2, 3];
+    const onTargetSelect = vi.fn<(targetName: string) => void>();
+    const onSampleSelect = vi.fn<(sampleKey: string) => void>();
+    render(
+      <ReadsGrid
+        summary={summary}
+        columns={columns}
+        onTargetSelect={onTargetSelect}
+        onSampleSelect={onSampleSelect}
+      />,
+    );
+
+    const region = screen.getByRole("region", { name: "Reads by sample and target" });
+    const [labelsCanvas, cellsCanvas] = region.querySelectorAll("canvas");
+    if (labelsCanvas === undefined || cellsCanvas === undefined) {
+      throw new Error("Expected labels and cells canvases");
+    }
+    labelsCanvas.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 140,
+      bottom: 42,
+      width: 140,
+      height: 42,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    cellsCanvas.getBoundingClientRect = () => ({
+      left: 140,
+      top: 0,
+      right: 800,
+      bottom: 42,
+      width: 660,
+      height: 42,
+      x: 140,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    // Click row 1, column 1 (sample_2, target_2: index 5 -> reads 30, alleles 2).
+    fireEvent.click(cellsCanvas, { clientX: 140 + 170, clientY: 20 });
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("sample_2");
+    expect(status).toHaveTextContent("target_2");
+    expect(status).toHaveTextContent("30 reads");
+    expect(status).toHaveTextContent("2 microhaplotypes");
+    expect(onTargetSelect).toHaveBeenCalledWith("target_2");
+    expect(onSampleSelect).toHaveBeenCalledWith("run1\u0000sample_2");
+
+    // Moving the mouse away leaves the chosen details strip intact.
+    fireEvent.mouseLeave(cellsCanvas);
+    expect(status).toHaveTextContent("sample_2");
+    expect(status).toHaveTextContent("target_2");
+
+    // Clicking row 2's label selects sample_3.
+    fireEvent.click(labelsCanvas, { clientX: 40, clientY: 32 });
+    expect(onSampleSelect).toHaveBeenLastCalledWith("run1\u0000sample_3");
+  });
+
+  it("moves the chosen cell with arrow keys, Home and End while keeping focus on the grid", () => {
+    const summary = makeSummary(3, 4);
+    const columns = [0, 1, 2, 3];
+    const onTargetSelect = vi.fn<(targetName: string) => void>();
+    const onSampleSelect = vi.fn<(sampleKey: string) => void>();
+    render(
+      <ReadsGrid
+        summary={summary}
+        columns={columns}
+        onTargetSelect={onTargetSelect}
+        onSampleSelect={onSampleSelect}
+      />,
+    );
+
+    const region = screen.getByRole("region", { name: "Reads by sample and target" });
+    region.focus();
+    expect(region).toHaveFocus();
+
+    // First arrow press selects cell (0, 0): sample_1, target_1 (5 reads, 1 microhaplotype).
+    fireEvent.keyDown(region, { key: "ArrowRight" });
+    const status = screen.getByRole("status");
+    expect(region).toHaveFocus();
+    expect(status).toHaveTextContent("sample_1");
+    expect(status).toHaveTextContent("target_1");
+    expect(status).toHaveTextContent("5 reads");
+    expect(status).toHaveTextContent("1 microhaplotype");
+    expect(onTargetSelect).toHaveBeenLastCalledWith("target_1");
+    expect(onSampleSelect).toHaveBeenLastCalledWith("run1\u0000sample_1");
+
+    // ArrowRight moves to (0, 1): sample_1, target_2 (10 reads, 2 microhaplotypes).
+    fireEvent.keyDown(region, { key: "ArrowRight" });
+    expect(status).toHaveTextContent("sample_1");
+    expect(status).toHaveTextContent("target_2");
+    expect(status).toHaveTextContent("10 reads");
+    expect(status).toHaveTextContent("2 microhaplotypes");
+
+    // ArrowDown moves to (1, 1): sample_2, target_2 (30 reads, 2 microhaplotypes).
+    fireEvent.keyDown(region, { key: "ArrowDown" });
+    expect(status).toHaveTextContent("sample_2");
+    expect(status).toHaveTextContent("target_2");
+    expect(status).toHaveTextContent("30 reads");
+    expect(onSampleSelect).toHaveBeenLastCalledWith("run1\u0000sample_2");
+
+    // End jumps to the last column of the current row: (1, 3): sample_2, target_4.
+    fireEvent.keyDown(region, { key: "End" });
+    expect(status).toHaveTextContent("sample_2");
+    expect(status).toHaveTextContent("target_4");
+
+    // Home jumps back to the first column of the current row: (1, 0): sample_2, target_1.
+    fireEvent.keyDown(region, { key: "Home" });
+    expect(status).toHaveTextContent("sample_2");
+    expect(status).toHaveTextContent("target_1");
+
+    // ArrowUp moves to (0, 0): sample_1, target_1.
+    fireEvent.keyDown(region, { key: "ArrowUp" });
+    expect(status).toHaveTextContent("sample_1");
+    expect(status).toHaveTextContent("target_1");
+    expect(region).toHaveFocus();
   });
 });

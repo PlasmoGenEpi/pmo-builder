@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { stringifyPmo, type PortableMicrohaplotypeObject } from "pmotools-ts";
 import { describe, expect, it, vi } from "vitest";
@@ -94,5 +94,94 @@ describe("SummaryPanel: headline tiles", () => {
     expect(within(polyclonalTile).getByText("0")).toBeVisible();
     expect(polyclonalTile.textContent).not.toContain("NaN");
     expect(polyclonalTile.textContent).not.toContain("%");
+  });
+});
+
+describe("SummaryPanel: reads grid links to tables", () => {
+  it("choosing a cell in the reads grid selects its target and finds its sample in the tables below", async () => {
+    const user = userEvent.setup();
+    const example = buildExamplePmo();
+    await openAndRenderSummary(example);
+
+    const gridRegion = screen.getByRole("region", { name: "Reads by sample and target" });
+    const samplesTable = screen.getByRole("table", { name: "Samples" });
+    const targetsTable = screen.getByRole("table", { name: "Targets" });
+
+    // Filter the Samples table so most rows are hidden before choosing a cell.
+    const samplesSearch = screen.getByRole("searchbox", { name: "Search Samples" });
+    await user.type(samplesSearch, "no-such-sample-filter");
+    expect(within(samplesTable).getByText("Nothing matches the search.")).toBeVisible();
+
+    // Move to the second column of row 0 via keyboard on the grid.
+    gridRegion.focus();
+    fireEvent.keyDown(gridRegion, { key: "ArrowRight" });
+    fireEvent.keyDown(gridRegion, { key: "ArrowRight" });
+
+    // Extract the chosen sample and target from the grid's status strip.
+    const readsSection = gridRegion.closest("section")?.parentElement?.closest("section");
+    if (readsSection === null || readsSection === undefined) {
+      throw new Error("Expected reads section");
+    }
+    const status = within(readsSection).getByRole("status");
+    const match = /^(.+?) at (.+?):/.exec(status.textContent ?? "");
+    const chosenSample = match?.[1] ?? "";
+    const chosenTarget = match?.[2] ?? "";
+    expect(chosenSample).not.toBe("");
+    expect(chosenTarget).not.toBe("");
+
+    // The Targets table selects the chosen target and AlleleBars shows its microhaplotypes.
+    expect(
+      within(targetsTable).getByRole("button", { name: chosenTarget, pressed: true }),
+    ).toBeVisible();
+    expect(screen.getByText(new RegExp(`Microhaplotypes at ${chosenTarget}`))).toBeVisible();
+
+    // The Samples search was cleared and the chosen sample row is marked.
+    expect(samplesSearch).toHaveValue("");
+    const sampleRow = within(samplesTable).getByText(chosenSample).closest("tr");
+    if (sampleRow === null) throw new Error("Expected sample row");
+    expect(sampleRow).toHaveAttribute("aria-current", "true");
+  });
+
+  it("choosing a target header selects that target and choosing a row label marks that sample", async () => {
+    const user = userEvent.setup();
+    const example = buildExamplePmo();
+    await openAndRenderSummary(example);
+
+    const gridRegion = screen.getByRole("region", { name: "Reads by sample and target" });
+    const targetsTable = screen.getByRole("table", { name: "Targets" });
+    const samplesTable = screen.getByRole("table", { name: "Samples" });
+
+    // Click the third target column header along the top of the grid.
+    const targetButtons = within(gridRegion).getAllByRole("button");
+    expect(targetButtons.length).toBeGreaterThan(2);
+    const targetButton = targetButtons[2];
+    if (targetButton === undefined) throw new Error("Expected a third target button");
+    const targetName = targetButton.textContent ?? "";
+    await user.click(targetButton);
+
+    expect(
+      within(targetsTable).getByRole("button", { name: targetName, pressed: true }),
+    ).toBeVisible();
+    expect(screen.getByText(new RegExp(`Microhaplotypes at ${targetName}`))).toBeVisible();
+
+    // Click row 1 on the labels canvas to mark the second sample in the Samples table.
+    const labelsCanvas = gridRegion.querySelectorAll("canvas")[0];
+    if (labelsCanvas === undefined) throw new Error("Expected labels canvas");
+    labelsCanvas.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 140,
+      bottom: 600,
+      width: 140,
+      height: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    // Example PMO has 50 samples => rowHeight = min(14, floor(640 / 50)) = 12 px; row 1 is y = 18.
+    fireEvent.click(labelsCanvas, { clientX: 40, clientY: 18 });
+
+    const markedRows = Array.from(samplesTable.querySelectorAll('tbody tr[aria-current="true"]'));
+    expect(markedRows).toHaveLength(1);
   });
 });

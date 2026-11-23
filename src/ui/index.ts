@@ -16,6 +16,7 @@ export {
 export { Callout, type CalloutProps, type CalloutTone } from "./Callout";
 export { Card, type CardProps } from "./Card";
 export {
+  CANVAS_SELECTION,
   CANVAS_TEXT,
   EMPTY_CELL,
   SEQUENTIAL,
