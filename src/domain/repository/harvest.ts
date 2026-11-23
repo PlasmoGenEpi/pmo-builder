@@ -325,7 +325,6 @@ export async function harvest(options: HarvestOptions): Promise<HarvestResult> {
     if (
       prior !== undefined &&
       fingerprint !== null &&
-      fingerprint !== "" &&
       prior.fingerprint === fingerprint &&
       priorSpecimens.length === prior.summary.specimens
     ) {

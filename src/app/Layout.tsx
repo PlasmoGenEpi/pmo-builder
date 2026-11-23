@@ -10,6 +10,7 @@ import { BUILD_PATH } from "./steps";
 import { StepNav } from "./StepNav";
 import { LanguagePreviewNotice } from "./LanguagePreviewNotice";
 import { OtherTabNotice } from "./OtherTabNotice";
+import { pageIdentity } from "./pageIdentity";
 import { UsageNotice } from "./privacy/UsageNotice";
 import { TopBar } from "./TopBar";
 
@@ -42,7 +43,7 @@ export function Layout({ children }: { children: ReactNode }) {
       >
         {t`Skip to content`}
       </a>
-      <ScrollReset key={location} />
+      <ScrollReset key={pageIdentity(location)} />
       <TopBar onOpenNav={() => setNavOpen(true)} />
       <LanguagePreviewNotice />
       <div className="flex flex-1">

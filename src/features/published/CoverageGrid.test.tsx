@@ -66,10 +66,12 @@ describe("CoverageGrid", () => {
     expect(within(grid).getByRole("rowheader", { name: "Kenya" })).toBeInTheDocument();
     expect(within(grid).getByRole("rowheader", { name: "Uganda" })).toBeInTheDocument();
 
-    // Every cell exposes its figure as text, not colour alone.
-    expect(
-      within(grid).getByRole("button", { name: "Kenya, 2019: 400 specimens in 1 published PMO" }),
-    ).toBeInTheDocument();
+    // Every cell exposes its figure via aria-label without duplicating it in an sr-only span.
+    const kenya2019 = within(grid).getByRole("button", {
+      name: "Kenya, 2019: 400 specimens in 1 published PMO",
+    });
+    expect(kenya2019).toBeInTheDocument();
+    expect(kenya2019.textContent).toBe("");
     expect(
       within(grid).getByRole("button", {
         name: "Kenya, 2020: 1,240 specimens in 2 published PMOs",

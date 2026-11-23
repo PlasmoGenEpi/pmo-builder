@@ -63,6 +63,7 @@ describe("PublishedTable", () => {
 
     const scrollRegion = screen.getByRole("region", { name: "Published PMOs table" });
     expect(scrollRegion).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("table", { name: "Published PMOs" })).toBeInTheDocument();
 
     const headers = screen.getAllByRole("columnheader").map((header) => header.textContent?.trim());
     expect(headers).toEqual([

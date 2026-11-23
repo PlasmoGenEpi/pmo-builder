@@ -100,10 +100,11 @@ Track.
 ## Checking for yourself
 
 The app tells your browser, through a Content Security Policy, that it may
-connect only to its own site and, if usage counts are on, to the one service
-that receives them. Your browser blocks any other connection. You can see
-this policy in the page source and watch every request in your browser's
-developer tools.
+connect only to its own site, to `https://zenodo.org` when a Zenodo community
+is configured (for opening published PMOs and deposits you ask for), and, if
+usage counts are on, to the one service that receives them. Your browser blocks
+any other connection. You can see this policy in the page source and watch
+every request in your browser's developer tools.
 
 The source code is public. `docs/analytics.md` describes the usage counts in
 detail.

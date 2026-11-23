@@ -43,22 +43,38 @@ async function write(directory: string, name: string, value: unknown): Promise<v
   await writeFile(path.join(directory, name), `${JSON.stringify(value)}\n`);
 }
 
-async function loadPreviousFromUrl(
-  fallback: string,
-  send: typeof fetch,
-): Promise<PreviousCatalogue | undefined> {
+type FallbackLoad =
+  | { readonly kind: "ok"; readonly indexText: string; readonly specimensText: string }
+  | { readonly kind: "http-error"; readonly name: string; readonly status: number }
+  | { readonly kind: "error"; readonly error: unknown };
+
+async function fetchFallback(fallback: string, send: typeof fetch): Promise<FallbackLoad> {
+  const base = baseUrl(fallback);
   try {
-    const base = baseUrl(fallback);
     const [indexResponse, specimensResponse] = await Promise.all([
       send(new URL("index.json", base)),
       send(new URL("specimens.json", base)),
     ]);
-    if (!indexResponse.ok || !specimensResponse.ok) return undefined;
-    const [index, specimens]: [unknown, unknown] = await Promise.all([
-      indexResponse.json(),
-      specimensResponse.json(),
+    if (!indexResponse.ok) {
+      return { kind: "http-error", name: "index.json", status: indexResponse.status };
+    }
+    if (!specimensResponse.ok) {
+      return { kind: "http-error", name: "specimens.json", status: specimensResponse.status };
+    }
+    const [indexText, specimensText] = await Promise.all([
+      indexResponse.text(),
+      specimensResponse.text(),
     ]);
-    return { index, specimens };
+    return { kind: "ok", indexText, specimensText };
+  } catch (error) {
+    return { kind: "error", error };
+  }
+}
+
+function parseFallbackPrevious(loaded: FallbackLoad): PreviousCatalogue | undefined {
+  if (loaded.kind !== "ok") return undefined;
+  try {
+    return { index: JSON.parse(loaded.indexText), specimens: JSON.parse(loaded.specimensText) };
   } catch {
     return undefined;
   }
@@ -111,10 +127,12 @@ export async function run(args: readonly string[], options: RunOptions = {}): Pr
     return 0;
   }
   await mkdir(out, { recursive: true });
+  const fallbackLoad =
+    !full && fallback !== undefined ? await fetchFallback(fallback, send) : undefined;
   const previous = full
     ? undefined
-    : fallback !== undefined
-      ? await loadPreviousFromUrl(fallback, send)
+    : fallbackLoad !== undefined
+      ? parseFallbackPrevious(fallbackLoad)
       : await loadPreviousFromDisk(out);
   try {
     const result = await harvest({
@@ -137,18 +155,19 @@ export async function run(args: readonly string[], options: RunOptions = {}): Pr
     // Keep the catalogue that is already published, so a deploy while Zenodo
     // is down does not empty the page.
     const base = baseUrl(fallback);
-    for (const name of ["index.json", "specimens.json"]) {
-      // oxlint-disable-next-line no-await-in-loop -- two small files
-      const response = await send(new URL(name, base));
-      if (!response.ok) {
-        console.error(
-          `The last catalogue could not be read from ${base}${name} (${response.status}).`,
-        );
-        return 1;
-      }
-      // oxlint-disable-next-line no-await-in-loop
-      await writeFile(path.join(out, name), await response.text());
+    const kept = fallbackLoad ?? (await fetchFallback(fallback, send));
+    if (kept.kind === "http-error") {
+      console.error(
+        `The last catalogue could not be read from ${base}${kept.name} (${kept.status}).`,
+      );
+      return 1;
     }
+    if (kept.kind === "error") {
+      console.error(`The last catalogue could not be read from ${base}: ${String(kept.error)}`);
+      return 1;
+    }
+    await writeFile(path.join(out, "index.json"), kept.indexText);
+    await writeFile(path.join(out, "specimens.json"), kept.specimensText);
     console.warn(`Kept the last published catalogue from ${base}.`);
     return 0;
   }

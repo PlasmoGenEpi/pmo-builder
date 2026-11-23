@@ -56,10 +56,17 @@ describe("loadCatalogue", () => {
 });
 
 describe("isRepositoryIndex", () => {
-  it("accepts this version only", () => {
-    expect(catalogue().version).toBe(2);
+  it("accepts version 1 catalogues with or without file fingerprints", () => {
+    expect(catalogue().version).toBe(1);
     expect(isRepositoryIndex(catalogue())).toBe(true);
-    expect(isRepositoryIndex({ ...catalogue(), version: 1 })).toBe(false);
+    const withoutFingerprints = catalogue(
+      DATASETS.map((entry) => {
+        const { fingerprint: _, ...file } = entry.file;
+        return { ...entry, file };
+      }),
+    );
+    expect(isRepositoryIndex(withoutFingerprints)).toBe(true);
+    expect(isRepositoryIndex({ ...catalogue(), version: 2 })).toBe(false);
     expect(isRepositoryIndex({ ...catalogue(), version: 3 })).toBe(false);
     expect(isRepositoryIndex({ ...catalogue(), datasets: null })).toBe(false);
     expect(isRepositoryIndex(null)).toBe(false);

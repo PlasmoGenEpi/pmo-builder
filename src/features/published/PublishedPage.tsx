@@ -12,7 +12,7 @@ import {
   Table2,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type Ref } from "react";
 import { Link as RouterLink, useLocation, useSearch } from "wouter";
 
 import { lastNavigationKind } from "@/app/hashLocation";
@@ -24,13 +24,12 @@ import {
   Badge,
   Button,
   buttonClassName,
-  cn,
   EmptyState,
   formatCount,
-  inputClassName,
   Link,
   SegmentedControl,
   Select,
+  TextField,
 } from "@/ui";
 
 import {
@@ -116,6 +115,8 @@ function DatasetRow({
   const authorLine = [shortAuthors(dataset.creators), year]
     .filter((part) => part !== undefined && part !== "")
     .join(" · ");
+  const specimens = dataset.summary.specimens;
+  const targets = dataset.summary.targets;
   return (
     <article
       data-dataset-id={dataset.id}
@@ -135,7 +136,7 @@ function DatasetRow({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-text-muted">
           {authorLine === "" ? null : <span className="max-w-full truncate">{authorLine}</span>}
           <span className="font-medium text-text tabular-nums sm:hidden">
-            {plural(dataset.summary.specimens, { one: "# specimen", other: "# specimens" })}
+            {plural(specimens, { one: "# specimen", other: "# specimens" })}
           </span>
           {dataset.panels.length === 0 ? null : (
             <Fact icon={FlaskConical} label={t`Panel`}>
@@ -157,14 +158,14 @@ function DatasetRow({
       <div className="flex shrink-0 flex-col items-end text-right max-sm:hidden">
         <span className="flex items-baseline gap-1">
           <span className="text-base font-semibold tracking-tight text-text tabular-nums">
-            {formatCount(dataset.summary.specimens)}
+            {formatCount(specimens)}
           </span>
           <span className="text-sm text-text-muted">
-            {plural(dataset.summary.specimens, { one: "specimen", other: "specimens" })}
+            {plural(specimens, { one: "specimen", other: "specimens" })}
           </span>
         </span>
         <span className="text-xs text-text-subtle tabular-nums">
-          {plural(dataset.summary.targets, { one: "# target", other: "# targets" })}
+          {plural(targets, { one: "# target", other: "# targets" })}
         </span>
       </div>
       <ChevronRight
@@ -184,21 +185,24 @@ function Totals({
   readonly filtered: boolean;
 }) {
   const totals = useMemo(() => totalsOf(datasets), [datasets]);
+  const publishedPmoCount = totals.datasets;
+  const specimenCount = totals.specimens;
+  const countryCount = totals.countries;
   const items = [
     {
       id: "datasets",
-      label: plural(totals.datasets, { one: "Dataset", other: "Datasets" }),
-      value: totals.datasets,
+      label: plural(publishedPmoCount, { one: "Published PMO", other: "Published PMOs" }),
+      value: publishedPmoCount,
     },
     {
       id: "specimens",
-      label: plural(totals.specimens, { one: "Specimen", other: "Specimens" }),
-      value: totals.specimens,
+      label: plural(specimenCount, { one: "Specimen", other: "Specimens" }),
+      value: specimenCount,
     },
     {
       id: "countries",
-      label: plural(totals.countries, { one: "Country", other: "Countries" }),
-      value: totals.countries,
+      label: plural(countryCount, { one: "Country", other: "Countries" }),
+      value: countryCount,
     },
   ];
   return (
@@ -244,10 +248,12 @@ function choiceWithCount(name: string, count: number): string {
 function Filters({
   datasets,
   filters,
+  searchInputRef,
   onChange,
 }: {
   readonly datasets: readonly PublishedDataset[];
   readonly filters: CatalogueFilters;
+  readonly searchInputRef: Ref<HTMLInputElement>;
   readonly onChange: (filters: CatalogueFilters, options?: { readonly replace?: boolean }) => void;
 }) {
   const facets = useMemo(() => facetsOf(datasets), [datasets]);
@@ -270,22 +276,18 @@ function Filters({
       : facets.years;
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-center">
-      <div className="relative col-span-2 min-w-0 sm:flex-1 sm:basis-48">
-        <Search
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-text-subtle"
-        />
-        <input
-          type="search"
-          aria-label={t`Search`}
-          placeholder={t`Search datasets`}
-          value={filters.search}
-          onChange={(event) =>
-            onChange({ ...filters, search: event.target.value }, { replace: true })
-          }
-          className={cn(inputClassName, "h-control pl-9 text-base")}
-        />
-      </div>
+      <TextField
+        ref={searchInputRef}
+        type="search"
+        label={t`Search`}
+        hideLabel
+        placeholder={t`Search published PMOs`}
+        value={filters.search}
+        onChange={(event) =>
+          onChange({ ...filters, search: event.target.value }, { replace: true })
+        }
+        className="col-span-2 min-w-0 sm:flex-1 sm:basis-48"
+      />
       <div className="min-w-0 sm:w-44">
         <CountryFilter
           countries={countries}
@@ -479,9 +481,12 @@ function Catalogue({
     [datasets, listState, showCoverage],
   );
   const entriesRef = useRef<HTMLElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const pendingFocusIdRef = useRef<string | null>(null);
   const filtered = isFiltered(listState);
-  const matchingCount = formatCount(matching.length);
+  const totalCount = datasets.length;
+  const totalMatching = matching.length;
+  const matchingCount = formatCount(totalMatching);
   const shownCount = formatCount(visible.length);
 
   useEffect(() => {
@@ -570,13 +575,14 @@ function Catalogue({
         className="flex min-w-0 flex-col gap-3"
       >
         <h2 id="published-list-heading" className="sr-only">
-          <Trans>Datasets</Trans>
+          <Trans>Published PMOs</Trans>
         </h2>
-        {/* With a single dataset there is nothing to narrow down. */}
-        {datasets.length > 1 ? (
+        {/* With a single published PMO there is nothing to narrow down. */}
+        {totalCount > 1 ? (
           <Filters
             datasets={datasets}
             filters={listState}
+            searchInputRef={searchInputRef}
             onChange={(nextFilters, options) =>
               updateListState({ ...listState, ...nextFilters, shown: PAGE_SIZE }, options)
             }
@@ -592,31 +598,32 @@ function Catalogue({
             onOpenChange={onCoverageOpenChange}
           />
         ) : null}
-        {datasets.length > 1 ? (
+        {totalCount > 1 ? (
           <div className="flex min-h-6 flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <output aria-live="polite" aria-atomic="true" className="text-sm text-text-muted">
                 {filtered
-                  ? plural(datasets.length, {
-                      one: `${matchingCount} of # dataset`,
-                      other: `${matchingCount} of # datasets`,
+                  ? plural(totalCount, {
+                      one: `${matchingCount} of # published PMO`,
+                      other: `${matchingCount} of # published PMOs`,
                     })
-                  : plural(datasets.length, { one: "# dataset", other: "# datasets" })}
+                  : plural(totalCount, { one: "# published PMO", other: "# published PMOs" })}
               </output>
               {filtered ? (
-                <button
-                  type="button"
-                  onClick={() =>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
                     updateListState({
                       ...DEFAULT_LIST_STATE,
                       sort: listState.sort,
                       view: listState.view,
-                    })
-                  }
-                  className="cursor-pointer rounded-sm text-sm font-medium text-accent-text underline-offset-2 hover:underline"
+                    });
+                    searchInputRef.current?.focus();
+                  }}
                 >
                   <Trans>Clear the filters</Trans>
-                </button>
+                </Button>
               ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -628,7 +635,7 @@ function Catalogue({
             </div>
           </div>
         ) : null}
-        {matching.length === 0 ? (
+        {totalMatching === 0 ? (
           <EmptyState
             icon={Search}
             title={t`No published PMO matches`}
@@ -650,10 +657,10 @@ function Catalogue({
             ))}
           </ul>
         )}
-        {matching.length > PAGE_SIZE ? (
+        {totalMatching > PAGE_SIZE ? (
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <p className="text-sm text-text-muted tabular-nums">
-              {plural(matching.length, {
+              {plural(totalMatching, {
                 one: `Showing ${shownCount} of # published PMO`,
                 other: `Showing ${shownCount} of # published PMOs`,
               })}

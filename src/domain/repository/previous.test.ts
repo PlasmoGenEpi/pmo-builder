@@ -89,13 +89,26 @@ describe("parsePrevious", () => {
     expect(parsed?.specimens.get("301")).toEqual([SPECIMEN]);
   });
 
-  it("returns null for wrong version, wrong community, or invalid collectionYears", () => {
+  it("returns null for wrong version, wrong community, missing fingerprint, or invalid collectionYears", () => {
     const base = validPrevious();
     expect(parsePrevious(undefined, "pmocommunity")).toBeNull();
     expect(
-      parsePrevious({ ...base, index: { ...base.index, version: 1 } }, "pmocommunity"),
+      parsePrevious({ ...base, index: { ...base.index, version: 2 } }, "pmocommunity"),
     ).toBeNull();
     expect(parsePrevious(base, "other")).toBeNull();
+
+    // Earlier v1 catalogues without file.fingerprint are rejected so the next harvest populates them.
+    const { fingerprint: _, ...fileWithoutFingerprint } = previousDataset({ id: "301" }).file;
+    const withoutFingerprint = {
+      ...previousDataset({ id: "301" }),
+      file: fileWithoutFingerprint,
+    };
+    expect(
+      parsePrevious(
+        { index: { ...base.index, datasets: [withoutFingerprint] }, specimens: [SPECIMEN] },
+        "pmocommunity",
+      ),
+    ).toBeNull();
 
     for (const badYears of ["2015-2019", { first: "2015", last: 2019 }, { first: 2015 }, 42]) {
       const badEntry = { ...previousDataset({ id: "301" }), collectionYears: badYears };

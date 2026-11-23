@@ -1,7 +1,7 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { ChevronDown } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { Button, Checkbox, cn, formatCount, Popover, TextField } from "@/ui";
 
@@ -24,6 +24,7 @@ export interface CountryFilterProps {
 export function CountryFilter({ countries, selected, counts, onChange }: CountryFilterProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const filterInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedSet = useMemo(() => new Set(selected), [selected]);
   const visible = useMemo(() => {
@@ -33,12 +34,13 @@ export function CountryFilter({ countries, selected, counts, onChange }: Country
   }, [countries, query]);
 
   const firstSelected = selected[0];
+  const selectedCount = selected.length;
   const summary =
-    selected.length === 0
+    selectedCount === 0
       ? t`Any country`
-      : selected.length === 1 && firstSelected !== undefined
+      : selectedCount === 1 && firstSelected !== undefined
         ? firstSelected
-        : plural(selected.length, { one: "# country", other: "# countries" });
+        : plural(selectedCount, { one: "# country", other: "# countries" });
 
   function toggleCountry(country: string, checked: boolean) {
     if (checked) {
@@ -62,8 +64,8 @@ export function CountryFilter({ countries, selected, counts, onChange }: Country
         if (!nextOpen) setQuery("");
       }}
       align="start"
+      padding="sm"
       label={t`Filter by country`}
-      className="w-72 p-3"
       trigger={
         <Button
           variant="secondary"
@@ -81,6 +83,7 @@ export function CountryFilter({ countries, selected, counts, onChange }: Country
     >
       <div className="flex flex-col gap-2.5">
         <TextField
+          ref={filterInputRef}
           type="search"
           label={t`Filter countries`}
           hideLabel
@@ -88,12 +91,19 @@ export function CountryFilter({ countries, selected, counts, onChange }: Country
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-        {selected.length > 0 ? (
+        {selectedCount > 0 ? (
           <div className="flex items-center justify-between gap-2 border-b border-border pb-2">
             <span className="text-sm text-text-muted">
-              {plural(selected.length, { one: "# selected", other: "# selected" })}
+              {plural(selectedCount, { one: "# selected", other: "# selected" })}
             </span>
-            <Button variant="ghost" size="sm" onClick={() => onChange([])}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onChange([]);
+                filterInputRef.current?.focus();
+              }}
+            >
               <Trans>Clear countries</Trans>
             </Button>
           </div>

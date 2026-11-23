@@ -15,6 +15,7 @@ import { HomePage } from "./HomePage";
 import { Layout } from "./Layout";
 import { NotFoundPage } from "./NotFoundPage";
 import { PageContainer } from "./PageContainer";
+import { pageIdentity } from "./pageIdentity";
 import { RestoreNotice } from "./RestoreNotice";
 import {
   BUILD_PATH,
@@ -119,7 +120,7 @@ function Routes() {
   useRecordStepOpened(location);
   usePreloadNextStep(location);
   return (
-    <ErrorBoundary key={location}>
+    <ErrorBoundary key={pageIdentity(location)}>
       <Suspense fallback={<PageSkeleton />}>
         <Switch>
           <Route path="/">

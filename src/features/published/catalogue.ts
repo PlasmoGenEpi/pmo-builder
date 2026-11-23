@@ -227,10 +227,13 @@ export function facetsOf(datasets: readonly PublishedDataset[]): CatalogueFacets
     for (const taxon of dataset.taxa) species.add(taxon);
     for (const year of coveredYears(dataset)) years.add(year);
   }
+  const locale = intlLocale();
   return {
-    countries: [...countries].toSorted((a, b) => a.localeCompare(b)),
-    panels: [...panels].toSorted((a, b) => a.localeCompare(b)),
-    species: [...species].toSorted((a, b) => taxonName(a).localeCompare(taxonName(b)) || a - b),
+    countries: [...countries].toSorted((a, b) => a.localeCompare(b, locale)),
+    panels: [...panels].toSorted((a, b) => a.localeCompare(b, locale)),
+    species: [...species].toSorted(
+      (a, b) => taxonName(a).localeCompare(taxonName(b), locale) || a - b,
+    ),
     years: [...years].toSorted((a, b) => b - a),
   };
 }

@@ -18,11 +18,13 @@ import type { CatalogueLoad } from "./catalogue";
 import { DatasetPage } from "./DatasetPage";
 import { clearScrollPositionsForTests, PublishedPage } from "./PublishedPage";
 import { catalogue, dataset, DATASETS, largeCatalogue } from "./testing";
+import { resetSharedCatalogueForTests } from "./useCatalogue";
 
 beforeAll(installDomPolyfills);
 
 afterEach(() => {
   clearScrollPositionsForTests();
+  resetSharedCatalogueForTests();
   vi.restoreAllMocks();
 });
 
@@ -57,6 +59,7 @@ const ZENODO: ZenodoConfig = {
 };
 
 const gives = (load: CatalogueLoad) => () => Promise.resolve(load);
+const PENDING = () => new Promise<CatalogueLoad>(() => undefined);
 const READY = gives({ kind: "ready", index: catalogue() });
 
 function titles(): string[] {
@@ -85,7 +88,7 @@ function countryButton() {
 describe("PublishedPage", () => {
   it("lists the datasets with totals, each linking to its page", async () => {
     render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
-    expect(await screen.findByText("3 datasets")).toBeInTheDocument();
+    expect(await screen.findByText("3 published PMOs")).toBeInTheDocument();
     expect(titles()).toEqual([
       "Maputo surveillance 2015 to 2019",
       "Northern Uganda cohort",
@@ -114,22 +117,22 @@ describe("PublishedPage", () => {
   it("narrows the list by search, countries, panel, species and year, showing cross-filter counts", async () => {
     const user = userEvent.setup();
     render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
-    await screen.findByText("3 datasets");
+    await screen.findByText("3 published PMOs");
 
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("3 datasets");
+    expect(status).toHaveTextContent("3 published PMOs");
     expect(status).toHaveAttribute("aria-live", "polite");
     expect(status).toHaveAttribute("aria-atomic", "true");
 
     // Searching by species name and by covered collection year.
     await user.type(screen.getByRole("searchbox", { name: "Search" }), "vivax");
     expect(titles()).toEqual(["Border travellers, Mozambique and Eswatini"]);
-    expect(status).toHaveTextContent("1 of 3 datasets");
+    expect(status).toHaveTextContent("1 of 3 published PMOs");
     await user.clear(screen.getByRole("searchbox", { name: "Search" }));
 
     await user.type(screen.getByRole("searchbox", { name: "Search" }), "2017");
     expect(titles()).toEqual(["Maputo surveillance 2015 to 2019"]);
-    expect(status).toHaveTextContent("1 of 3 datasets");
+    expect(status).toHaveTextContent("1 of 3 published PMOs");
     await user.clear(screen.getByRole("searchbox", { name: "Search" }));
 
     // Choosing two countries lists published PMOs from either.
@@ -141,7 +144,7 @@ describe("PublishedPage", () => {
       "Northern Uganda cohort",
       "Border travellers, Mozambique and Eswatini",
     ]);
-    expect(status).toHaveTextContent("2 of 3 datasets");
+    expect(status).toHaveTextContent("2 of 3 published PMOs");
 
     // Panel counts reflect the two chosen countries (AMPLseq: 2, Mad4hatter: 1).
     await choose(user, "Panel", "AMPLseq (2)");
@@ -159,7 +162,7 @@ describe("PublishedPage", () => {
     // Species filter lists species by name with counts reflecting AMPLseq (falciparum: 2, vivax: 1).
     await choose(user, "Species", "Plasmodium vivax (1)");
     expect(titles()).toEqual(["Border travellers, Mozambique and Eswatini"]);
-    expect(status).toHaveTextContent("1 of 3 datasets");
+    expect(status).toHaveTextContent("1 of 3 published PMOs");
 
     await choose(user, "Species", "Any species");
     await choose(user, "Panel", "Any panel");
@@ -170,7 +173,7 @@ describe("PublishedPage", () => {
   it("shows whole-catalogue totals without a filtered indicator, then updates them when filtered and clears back", async () => {
     const user = userEvent.setup();
     render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
-    await screen.findByText("3 datasets");
+    await screen.findByText("3 published PMOs");
 
     const totals = screen.getByRole("region", { name: "Totals" });
     expect(within(totals).queryByText("Filtered list")).not.toBeInTheDocument();
@@ -232,7 +235,7 @@ describe("PublishedPage", () => {
       <PublishedPage load={gives({ kind: "ready", index: largeCatalogue(150) })} zenodo={ZENODO} />,
       { wrapper },
     );
-    await screen.findByText("150 datasets");
+    await screen.findByText("150 published PMOs");
 
     const totals = screen.getByRole("region", { name: "Totals" });
     expect(within(totals).queryByText("Filtered list")).not.toBeInTheDocument();
@@ -261,14 +264,16 @@ describe("PublishedPage", () => {
   it("offers to clear the filters when nothing matches and announces zero results", async () => {
     const user = userEvent.setup();
     render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
-    await screen.findByText("3 datasets");
+    await screen.findByText("3 published PMOs");
     await user.type(screen.getByRole("searchbox", { name: "Search" }), "nothing like this");
     expect(screen.getByText("No published PMO matches")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("0 of 3 datasets");
+    expect(screen.getByRole("status")).toHaveTextContent("0 of 3 published PMOs");
     expect(screen.queryByRole("article")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Clear the filters" }));
     expect(titles()).toHaveLength(3);
-    expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("");
+    const search = screen.getByRole("searchbox", { name: "Search" });
+    expect(search).toHaveValue("");
+    expect(search).toHaveFocus();
   });
 
   it("leaves the filters out when there is only one dataset", async () => {
@@ -337,7 +342,7 @@ describe("PublishedPage", () => {
     const { unmount } = render(<PublishedPage load={READY} zenodo={ZENODO} />, {
       wrapper: listWrapper,
     });
-    await screen.findByText("3 datasets");
+    await screen.findByText("3 published PMOs");
     expect(location.history).toEqual(["/published"]);
 
     await user.type(screen.getByRole("searchbox", { name: "Search" }), "mozambique");
@@ -362,7 +367,7 @@ describe("PublishedPage", () => {
     unmount();
     const { wrapper: copiedWrapper } = makeWrapper(copiedAddress);
     render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper: copiedWrapper });
-    expect(await screen.findByText("1 of 3 datasets")).toBeInTheDocument();
+    expect(await screen.findByText("1 of 3 published PMOs")).toBeInTheDocument();
     expect(titles()).toEqual(["Border travellers, Mozambique and Eswatini"]);
     expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("mozambique");
     expect(countryButton()).toHaveTextContent("2 countries");
@@ -370,7 +375,9 @@ describe("PublishedPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Clear the filters" }));
     expect(titles()).toHaveLength(3);
-    expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("");
+    const search = screen.getByRole("searchbox", { name: "Search" });
+    expect(search).toHaveValue("");
+    expect(search).toHaveFocus();
   });
 
   it("clears the address when clicking Clear the filters", async () => {
@@ -379,7 +386,7 @@ describe("PublishedPage", () => {
       "/published?q=maputo&country=Mozambique",
     );
     render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper: listWrapper });
-    await screen.findByText("1 of 3 datasets");
+    await screen.findByText("1 of 3 published PMOs");
 
     await user.click(screen.getByRole("button", { name: "Clear the filters" }));
     expect(location.history.at(-1)).toBe("/published");
@@ -423,7 +430,7 @@ describe("PublishedPage", () => {
         </I18nProvider>,
       );
 
-      await screen.findByText("3 datasets");
+      await screen.findByText("3 published PMOs");
       await user.type(screen.getByRole("searchbox", { name: "Search" }), "mozambique");
       await choose(user, "Panel", "Mad4hatter (2)");
       expect(window.location.hash).toBe("#/published?q=mozambique&panel=Mad4hatter");
@@ -441,7 +448,7 @@ describe("PublishedPage", () => {
       currentScrollY = 0;
       window.history.back();
 
-      expect(await screen.findByText("2 of 3 datasets")).toBeInTheDocument();
+      expect(await screen.findByText("2 of 3 published PMOs")).toBeInTheDocument();
       expect(window.location.hash).toBe("#/published?q=mozambique&panel=Mad4hatter");
       expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("mozambique");
       expect(titles()).toEqual([
@@ -465,7 +472,7 @@ describe("PublishedPage", () => {
     const user = userEvent.setup();
     const { wrapper: listWrapper, location } = makeWrapper("/published");
     render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper: listWrapper });
-    await screen.findByText("3 datasets");
+    await screen.findByText("3 published PMOs");
 
     const sortControl = screen.getByLabelText("Sort by");
     expect(sortControl).toBe(screen.getByRole("combobox", { name: "Sort by" }));
@@ -484,7 +491,7 @@ describe("PublishedPage", () => {
       "Border travellers, Mozambique and Eswatini",
     ]);
     // Sorting alone does not filter out entries.
-    expect(screen.getByText("3 datasets")).toBeInTheDocument();
+    expect(screen.getByText("3 published PMOs")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Clear the filters" })).not.toBeInTheDocument();
 
     await choose(user, "Sort by", "Latest collection year");
@@ -534,7 +541,7 @@ describe("PublishedPage", () => {
         </I18nProvider>,
       );
 
-      await screen.findByText("150 datasets");
+      await screen.findByText("150 published PMOs");
       expect(titles()[0]).toBe(bigIndex.datasets[0]?.title);
 
       await choose(user, "Sort by", "Most specimens");
@@ -565,7 +572,7 @@ describe("PublishedPage", () => {
       expect(window.location.hash).toMatch(/^#\/published\/\d+$/);
 
       window.history.back();
-      expect(await screen.findByText("150 datasets")).toBeInTheDocument();
+      expect(await screen.findByText("150 published PMOs")).toBeInTheDocument();
       expect(window.location.hash).toBe("#/published?sort=title");
       expect(screen.getByRole("combobox", { name: "Sort by" })).toHaveTextContent("Title");
       expect(titles()[0]).toBe(firstTitle);
@@ -576,7 +583,7 @@ describe("PublishedPage", () => {
 
   it("hides the coverage grid when the catalogue has fewer than 5 entries", async () => {
     render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
-    await screen.findByText("3 datasets");
+    await screen.findByText("3 published PMOs");
     expect(
       screen.queryByRole("button", { name: /Coverage by country and year/ }),
     ).not.toBeInTheDocument();
@@ -589,7 +596,7 @@ describe("PublishedPage", () => {
     render(<PublishedPage load={gives({ kind: "ready", index: bigIndex })} zenodo={ZENODO} />, {
       wrapper: listWrapper,
     });
-    await screen.findByText("150 datasets");
+    await screen.findByText("150 published PMOs");
 
     const toggle = screen.getByRole("button", { name: /Coverage by country and year/ });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
@@ -634,14 +641,14 @@ describe("PublishedPage", () => {
       String(targetYear),
     );
     expect(screen.getByRole("status")).toHaveTextContent(
-      `${expectedMatching.length} of 150 datasets`,
+      `${expectedMatching.length} of 150 published PMOs`,
     );
     expect(cellButton).toHaveAttribute("aria-pressed", "true");
 
     // Choosing the same selected cell again clears country and year.
     await user.click(cellButton);
     expect(location.history.at(-1)).toBe("/published");
-    expect(screen.getByRole("status")).toHaveTextContent("150 datasets");
+    expect(screen.getByRole("status")).toHaveTextContent("150 published PMOs");
 
     // Filtering by species updates the coverage grid figures while preserving the grid for country/year choice.
     await choose(user, "Species", /^Plasmodium vivax \(\d+\)$/);
@@ -704,7 +711,7 @@ describe("PublishedPage", () => {
       <PublishedPage load={gives({ kind: "ready", index: catalogue(entries) })} zenodo={ZENODO} />,
       { wrapper },
     );
-    await screen.findByText("2 datasets");
+    await screen.findByText("2 published PMOs");
 
     const link = screen.getByRole("link", { name: longTitle });
     expect(link).toHaveAttribute("title", longTitle);
@@ -732,7 +739,7 @@ describe("PublishedPage", () => {
         </I18nProvider>,
       );
 
-      await screen.findByText("3 datasets");
+      await screen.findByText("3 published PMOs");
       const listButton = screen.getByRole("radio", { name: "List" });
       const tableButton = screen.getByRole("radio", { name: "Table" });
       expect(listButton).toHaveAttribute("aria-checked", "true");
@@ -806,7 +813,7 @@ describe("PublishedPage", () => {
       <PublishedPage load={gives({ kind: "ready", index: bigIndex })} zenodo={ZENODO} />,
       { wrapper: listWrapper },
     );
-    await screen.findByText("150 datasets");
+    await screen.findByText("150 published PMOs");
 
     expect(screen.getAllByRole("article")).toHaveLength(50);
     expect(screen.getByText("Showing 50 of 150 published PMOs")).toBeInTheDocument();
@@ -840,13 +847,13 @@ describe("PublishedPage", () => {
       <PublishedPage load={gives({ kind: "ready", index: largeCatalogue(50) })} zenodo={ZENODO} />,
       { wrapper },
     );
-    await screen.findByText("50 datasets");
+    await screen.findByText("50 published PMOs");
     expect(screen.getAllByRole("article")).toHaveLength(50);
     expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
 
     unmountFifty();
     render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper });
-    await screen.findByText("3 datasets");
+    await screen.findByText("3 published PMOs");
     expect(screen.getAllByRole("article")).toHaveLength(3);
     expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
   });
@@ -858,7 +865,7 @@ describe("PublishedPage", () => {
     render(<PublishedPage load={gives({ kind: "ready", index: bigIndex })} zenodo={ZENODO} />, {
       wrapper: tableWrapper,
     });
-    await screen.findByText("150 datasets");
+    await screen.findByText("150 published PMOs");
 
     const table = screen.getByRole("table");
     const bodyRows = () => within(table).getAllByRole("row").slice(1);
@@ -887,7 +894,7 @@ describe("PublishedPage", () => {
     render(<PublishedPage load={gives({ kind: "ready", index: bigIndex })} zenodo={ZENODO} />, {
       wrapper: listWrapper,
     });
-    await screen.findByText("150 datasets");
+    await screen.findByText("150 published PMOs");
 
     await user.click(screen.getByRole("button", { name: "Show more" }));
     expect(screen.getAllByRole("article")).toHaveLength(100);
@@ -975,7 +982,7 @@ describe("PublishedPage", () => {
         </I18nProvider>,
       );
 
-      await screen.findByText("150 datasets");
+      await screen.findByText("150 published PMOs");
       await user.click(screen.getByRole("button", { name: "Show more" }));
       expect(window.location.hash).toBe("#/published?shown=100");
       expect(screen.getAllByRole("article")).toHaveLength(100);
@@ -1054,7 +1061,7 @@ describe("PublishedPage", () => {
         </I18nProvider>,
       );
 
-      await screen.findByText("150 datasets");
+      await screen.findByText("150 published PMOs");
       const toggle = screen.getByRole("button", { name: /Coverage by country and year/ });
       expect(toggle).toHaveAttribute("aria-expanded", "false");
       await user.click(toggle);
@@ -1076,7 +1083,7 @@ describe("PublishedPage", () => {
       currentScrollY = 0;
       window.history.back();
 
-      expect(await screen.findByText("150 datasets")).toBeInTheDocument();
+      expect(await screen.findByText("150 published PMOs")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /Coverage by country and year/ })).toHaveAttribute(
         "aria-expanded",
         "true",
@@ -1100,7 +1107,7 @@ describe("PublishedPage", () => {
     const user = userEvent.setup();
     const { wrapper: listWrapper, location } = makeWrapper("/published");
     render(<PublishedPage load={READY} zenodo={ZENODO} />, { wrapper: listWrapper });
-    await screen.findByText("3 datasets");
+    await screen.findByText("3 published PMOs");
 
     // CountryFilter: open via Enter, filter by typing, select with Tab + Space, close with Escape.
     const trigger = countryButton();
@@ -1205,9 +1212,34 @@ describe("DatasetPage", () => {
     );
   });
 
-  it("says so when the PMO is not in the list", async () => {
+  it("says so when the PMO is not in the list and renders an h1 heading", async () => {
     render(<DatasetPage id="999" load={READY} />, { wrapper });
     expect(await screen.findByText("This PMO is not in the list")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Published PMO" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "All published PMOs" })).toBeInTheDocument();
+  });
+
+  it("renders a Published PMO h1 in loading, missing and error fallback states", async () => {
+    const { unmount: unmountLoading } = render(<DatasetPage id="301" load={PENDING} />, {
+      wrapper,
+    });
+    expect(screen.getByRole("heading", { level: 1, name: "Published PMO" })).toBeInTheDocument();
+    unmountLoading();
+
+    const { unmount: unmountMissing } = render(
+      <DatasetPage id="301" load={gives({ kind: "missing" })} />,
+      { wrapper },
+    );
+    expect(
+      await screen.findByText("This copy of PMO Builder has no list of published PMOs"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Published PMO" })).toBeInTheDocument();
+    unmountMissing();
+
+    render(<DatasetPage id="301" load={gives({ kind: "failed" })} />, { wrapper });
+    expect(
+      await screen.findByText("The list of published PMOs could not be loaded"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Published PMO" })).toBeInTheDocument();
   });
 });

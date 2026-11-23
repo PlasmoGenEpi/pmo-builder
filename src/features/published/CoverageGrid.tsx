@@ -1,5 +1,5 @@
 import { plural, t } from "@lingui/core/macro";
-import { Trans } from "@lingui/react/macro";
+import { Plural, Trans } from "@lingui/react/macro";
 import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 
 import { useTheme } from "@/app/theme";
@@ -37,27 +37,17 @@ interface CellKey {
   readonly year: number;
 }
 
-function cellFigureSummary(cell: CoverageCell): string {
-  if (cell.datasets === 0) {
+function cellAccessibleLabel(cell: CoverageCell): string {
+  const { country, year, specimens, datasets } = cell;
+  if (datasets === 0) {
     return t({
-      message: "0 specimens",
-      comment: "Specimen count for an empty cell in the coverage grid",
+      message: `${country}, ${year}: 0 specimens`,
+      comment: "Accessible description of an empty cell in the coverage grid",
     });
   }
-  const specimensText = plural(cell.specimens, { one: "# specimen", other: "# specimens" });
-  const pmosText = plural(cell.datasets, { one: "# published PMO", other: "# published PMOs" });
   return t({
-    message: `${specimensText} in ${pmosText}`,
-    comment: "Specimen and published PMO counts for a populated cell in the coverage grid",
-  });
-}
-
-function cellAccessibleLabel(cell: CoverageCell): string {
-  const { country, year } = cell;
-  const summary = cellFigureSummary(cell);
-  return t({
-    message: `${country}, ${year}: ${summary}`,
-    comment: "Accessible description of a cell in the coverage grid",
+    message: `${country}, ${year}: ${plural(specimens, { one: "# specimen", other: "# specimens" })} in ${plural(datasets, { one: "# published PMO", other: "# published PMOs" })}`,
+    comment: "Accessible description of a populated cell in the coverage grid",
   });
 }
 
@@ -74,19 +64,28 @@ function Readout({ cell }: { readonly cell: CoverageCell | null }) {
       </p>
     );
   }
-  const { country, year } = cell;
-  const summary = cellFigureSummary(cell);
+  const { country, year, specimens, datasets } = cell;
   return (
     <p
       data-testid="coverage-readout"
       className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-muted tabular-nums"
     >
-      <Trans>
-        <strong className="font-medium text-text">
-          {country}, {year}:
-        </strong>{" "}
-        {summary}
-      </Trans>
+      {datasets === 0 ? (
+        <Trans>
+          <strong className="font-medium text-text">
+            {country}, {year}:
+          </strong>{" "}
+          0 specimens
+        </Trans>
+      ) : (
+        <Trans>
+          <strong className="font-medium text-text">
+            {country}, {year}:
+          </strong>{" "}
+          <Plural value={specimens} one="# specimen" other="# specimens" /> in{" "}
+          <Plural value={datasets} one="# published PMO" other="# published PMOs" />
+        </Trans>
+      )}
     </p>
   );
 }
@@ -137,17 +136,14 @@ export function CoverageGrid({
 
   const firstYear = matrix.years[0];
   const lastYear = matrix.years.at(-1);
+  const countryCount = matrix.countries.length;
   const summaryText = (() => {
     if (rowCount === 0 || firstYear === undefined || lastYear === undefined) {
       return t`No matching data`;
     }
-    const countriesLabel = plural(matrix.countries.length, {
-      one: "# country",
-      other: "# countries",
-    });
     const yearsRange = formatYearRange(firstYear, lastYear);
     return t({
-      message: `${countriesLabel}, ${yearsRange}`,
+      message: `${plural(countryCount, { one: "# country", other: "# countries" })}, ${yearsRange}`,
       comment: "Summary in the coverage grid header: country count and collection year range",
     });
   })();
@@ -210,7 +206,8 @@ export function CoverageGrid({
 
   const ramp = SEQUENTIAL[resolved];
   const emptyFill = EMPTY_CELL[resolved];
-  const maxSpecimensText = formatCount(matrix.maxSpecimens);
+  const maxSpecimens = matrix.maxSpecimens;
+  const maxSpecimensText = formatCount(maxSpecimens);
 
   return (
     <Disclosure
@@ -320,9 +317,7 @@ export function CoverageGrid({
                                 ? "z-10 border-text ring-2 ring-text ring-offset-1 ring-offset-surface"
                                 : "border-border/60",
                             )}
-                          >
-                            <span className="sr-only">{label}</span>
-                          </button>
+                          />
                         </td>
                       );
                     })}
@@ -341,7 +336,7 @@ export function CoverageGrid({
                 />
                 <Trans>0 specimens</Trans>
               </span>
-              {matrix.maxSpecimens > 0 ? (
+              {maxSpecimens > 0 ? (
                 <span className="inline-flex items-center gap-1.5">
                   <span className="tabular-nums">1</span>
                   <span
@@ -350,7 +345,7 @@ export function CoverageGrid({
                     style={{ background: `linear-gradient(to right, ${ramp.join(", ")})` }}
                   />
                   <span className="tabular-nums">
-                    {plural(matrix.maxSpecimens, {
+                    {plural(maxSpecimens, {
                       one: `${maxSpecimensText} specimen (log scale)`,
                       other: `${maxSpecimensText} specimens (log scale)`,
                     })}

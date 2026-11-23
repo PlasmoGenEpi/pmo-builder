@@ -51,15 +51,16 @@ function SortHeader({
       <Button
         variant="ghost"
         size="sm"
+        wrap
         aria-label={t`Sort by ${columnLabel}`}
         onClick={() => onSortChange(order)}
-        className={cn(
-          "-mx-2 h-auto px-2 py-0.5 font-medium",
-          active ? "text-text" : "text-text-muted",
-        )}
+        className={cn("-mx-2 font-medium", active ? "text-text" : "text-text-muted")}
       >
         {label}
-        <Icon aria-hidden="true" className={cn("size-3.5", active && "text-accent-text")} />
+        <Icon
+          aria-hidden="true"
+          className={cn("size-3.5 shrink-0", active && "text-accent-text")}
+        />
       </Button>
     </th>
   );
@@ -87,7 +88,7 @@ export function PublishedTable({
       tabIndex={0}
       className="overflow-x-auto rounded-xl border border-border bg-surface shadow-xs focus-visible:outline-offset-0"
     >
-      <table className="w-full border-collapse text-sm">
+      <table aria-label={t`Published PMOs`} className="w-full border-collapse text-sm">
         <thead className="bg-surface-subtle">
           <tr>
             <SortHeader

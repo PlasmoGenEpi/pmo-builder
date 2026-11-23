@@ -61,6 +61,7 @@ describe("CountryFilter", () => {
 
     await user.click(screen.getByRole("button", { name: "Clear countries" }));
     expect(screen.getByRole("button", { name: "Country: Any country" })).toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: "Filter countries" })).toHaveFocus();
   });
 
   it("filters the list of countries inside the popover and reports when none match", async () => {

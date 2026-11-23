@@ -38,9 +38,11 @@ describe("run", () => {
     if (out !== "") await rm(out, { recursive: true, force: true });
   });
 
-  it("keeps the last published catalogue when Zenodo reports more records than it returns", async () => {
+  it("keeps the last published catalogue when Zenodo reports more records than it returns, fetching fallback once", async () => {
+    const asked: string[] = [];
     const fakeFetch = vi.fn<typeof fetch>((input) => {
       const url = requestUrl(input);
+      asked.push(url);
       if (url.startsWith(LISTING_PREFIX)) {
         return Promise.resolve(
           new Response(JSON.stringify({ hits: { hits: [], total: 10 }, links: {} })),
@@ -58,6 +60,8 @@ describe("run", () => {
     );
 
     expect(exitCode).toBe(0);
+    expect(asked.filter((url) => url === `${FALLBACK}/index.json`)).toHaveLength(1);
+    expect(asked.filter((url) => url === `${FALLBACK}/specimens.json`)).toHaveLength(1);
     expect(await readFile(path.join(out, "index.json"), "utf8")).toBe(LAST_INDEX);
     expect(await readFile(path.join(out, "specimens.json"), "utf8")).toBe(LAST_SPECIMENS);
   });

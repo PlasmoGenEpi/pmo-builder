@@ -7,8 +7,8 @@
  */
 import type { MergeSummary, YearRange } from "@/domain/build";
 
-/** Bumped when the shape of the index changes. */
-export const INDEX_VERSION = 2;
+/** Bumped when the shape of the index changes incompatibly. */
+export const INDEX_VERSION = 1;
 
 /** Where the harvester writes, under `public/`, and the pages read from. */
 export const REPOSITORY_PATH = "repository";
@@ -23,9 +23,9 @@ export interface PublishedFile {
   /**
    * Identifies this file from Zenodo's listing so a later harvest can carry
    * unchanged records over, or `null` when the listing lacked both checksum
-   * and revision markers.
+   * and revision markers. Omitted in earlier v1 catalogues.
    */
-  readonly fingerprint: string | null;
+  readonly fingerprint?: string | null;
 }
 
 /** The licence a record was published under. */

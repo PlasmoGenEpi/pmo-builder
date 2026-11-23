@@ -48,7 +48,7 @@ describe("harvest", () => {
     expect(result.carriedOver).toBe(0);
     expect(result.downloaded).toBe(1);
     expect(result.index).toMatchObject({
-      version: 2,
+      version: 1,
       harvestedAt: "2026-11-15T03:00:00.000Z",
       community: "pmocommunity",
     });
@@ -469,8 +469,17 @@ describe("harvest", () => {
       }).send,
     });
 
+    const firstEntry = first.index.datasets[0];
+    if (firstEntry === undefined) throw new Error("missing first dataset");
+    const { fingerprint: _, ...fileWithoutFingerprint } = firstEntry.file;
+    const withoutFingerprint = {
+      ...first.index,
+      datasets: [{ ...firstEntry, file: fileWithoutFingerprint }],
+    };
+
     const unusable = [
-      { index: { ...first.index, version: 1 }, specimens: first.specimens },
+      { index: { ...first.index, version: 2 }, specimens: first.specimens },
+      { index: withoutFingerprint, specimens: first.specimens },
       { index: { ...first.index, community: "other" }, specimens: first.specimens },
       { index: "not an object", specimens: first.specimens },
       { index: first.index, specimens: "not an array" },

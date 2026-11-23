@@ -19,6 +19,7 @@ export function OtherTabNotice() {
     <div className="px-4 pt-4 sm:px-6">
       <Callout
         tone="warning"
+        live
         title={t`This draft is open in another tab`}
         action={
           <Button

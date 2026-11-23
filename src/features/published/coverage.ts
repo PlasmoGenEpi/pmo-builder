@@ -3,6 +3,7 @@
  * Published PMOs list.
  */
 import type { PublishedDataset } from "@/domain/repository/types";
+import { intlLocale } from "@/i18n/languages";
 
 import { clampYearRange } from "./catalogue";
 
@@ -96,7 +97,8 @@ export function buildCoverage(datasets: readonly PublishedDataset[]): CoverageMa
   const years: number[] = [];
   for (let year = clampedMinYear; year <= span.last; year += 1) years.push(year);
 
-  const countries = [...countrySet].toSorted((a, b) => a.localeCompare(b));
+  const locale = intlLocale();
+  const countries = [...countrySet].toSorted((a, b) => a.localeCompare(b, locale));
   const countryIndex = new Map<string, number>();
   countries.forEach((country, index) => countryIndex.set(country, index));
 
