@@ -145,16 +145,21 @@ function fallbackGroups(options: {
     }
   }
 
-  return ranges.map((range) => {
+  return ranges.map((range, index) => {
     const startX = xs[range.first] ?? 0;
     const endX = (xs[range.last] ?? startX) + cellWidth;
     const startNumber = formatCount(range.first + 1);
     const endNumber = formatCount(range.last + 1);
-    return {
-      label:
-        range.first === range.last
+    const label =
+      index === 0
+        ? range.first === range.last
           ? t`Target ${startNumber}`
-          : t`Targets ${startNumber}–${endNumber}`,
+          : t`Targets ${startNumber}–${endNumber}`
+        : range.first === range.last
+          ? startNumber
+          : `${startNumber}–${endNumber}`;
+    return {
+      label,
       x: startX,
       width: Math.max(0, endX - startX),
     };
@@ -233,6 +238,7 @@ export function ReadsGrid({
   const { resolved } = useTheme();
   const descriptionId = useId();
   const wrapper = useRef<HTMLElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const labelsCanvas = useRef<HTMLCanvasElement>(null);
   const cellsCanvas = useRef<HTMLCanvasElement>(null);
@@ -240,6 +246,7 @@ export function ReadsGrid({
   const [width, setWidth] = useState(800);
   const [hover, setHover] = useState<Hover | null>(null);
   const [chosen, setChosen] = useState<ChosenKey | null>(null);
+  const hasHover = hover !== null;
   const rows = summary.samples.length;
   const rowHeight = Math.max(3, Math.min(14, Math.floor(MAX_HEIGHT / Math.max(1, rows))));
   const showLabels = rowHeight >= 10;
@@ -488,8 +495,23 @@ export function ReadsGrid({
     };
   }
 
+  useEffect(() => {
+    if (!hasHover) return undefined;
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setHover(null);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [hasHover]);
+
   function handleGridKeyDown(event: KeyboardEvent<HTMLElement>): void {
-    if (event.target !== wrapper.current || rows === 0 || columns.length === 0) return;
+    if (event.key === "Escape") {
+      setHover(null);
+      return;
+    }
+    if (rows === 0 || columns.length === 0) return;
     const current = chosenCoords;
     let nextRow: number;
     let nextColumn: number;
@@ -528,163 +550,188 @@ export function ReadsGrid({
   const hovered = hover === null ? null : cellAt(hover);
   const chosenDetails = chosenCoords === null ? null : cellAt(chosenCoords);
 
-  const maxReads = formatCount(Math.round(10 ** maxLog - 1));
-  const sampleCount = formatCount(rows);
-  const targetCount = formatCount(columns.length);
+  const maxReadsCount = Math.round(10 ** maxLog - 1);
+  const sampleCount = rows;
+  const targetCount = columns.length;
   const ramp = SEQUENTIAL[resolved];
   const hasHeader = headerGroups.length > 0 || showTargetNames;
 
   return (
     <div className="flex min-w-0 flex-col gap-3">
       <p id={descriptionId} className="sr-only">
-        {t`A grid of reads for ${sampleCount} samples at ${targetCount} targets. Use the arrow keys to move between cells and read each sample and target's figures. The tables below give totals per sample and per target, not individual cells.`}
+        {t`A grid of reads for ${plural(sampleCount, {
+          one: "# sample",
+          other: "# samples",
+        })} at ${plural(targetCount, {
+          one: "# target",
+          other: "# targets",
+        })}. Use the arrow keys to move between cells and read each sample and target's figures. The tables below give totals per sample and per target, not individual cells.`}
       </p>
       <div className="relative min-w-0">
-        {/* Focusable scroll region that also handles arrow-key cell navigation as one control. */}
-        {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
         <section
           ref={wrapper}
           aria-label={t`Reads by sample and target`}
-          aria-describedby={descriptionId}
-          // Focusable so keyboard users can scroll and step through cells with the arrow keys.
-          // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-          tabIndex={0}
-          className="isolate max-h-[40rem] min-w-0 overflow-auto focus-visible:outline-offset-0"
+          className="isolate max-h-160 min-w-0 overflow-auto"
           onScroll={() => setHover(null)}
-          onKeyDown={handleGridKeyDown}
         >
-          {hasHeader ? (
-            <div
-              ref={headerRef}
-              className="sticky top-0 z-20 flex flex-col bg-canvas"
-              style={{ width: `${left + cellsWidth}px` }}
-            >
-              {headerGroups.length > 0 ? (
-                <div className="flex pb-1.5">
-                  {showLabels ? (
+          {/* Interactive grid widget distinct from the scrollable section landmark so screen readers enter focus mode for arrow keys. */}
+          {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          <div
+            ref={gridRef}
+            role="application"
+            aria-roledescription={t`reads grid`}
+            aria-label={t`Reads by sample and target`}
+            aria-describedby={descriptionId}
+            // Focusable so keyboard users step through cells with arrow keys as one widget.
+            // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+            tabIndex={0}
+            className="w-fit min-w-full focus-visible:-outline-offset-2"
+            onKeyDown={handleGridKeyDown}
+          >
+            {hasHeader ? (
+              <div
+                ref={headerRef}
+                className="sticky top-0 z-20 flex flex-col bg-surface"
+                style={{ width: `${left + cellsWidth}px` }}
+              >
+                {headerGroups.length > 0 ? (
+                  <div className="flex pb-1.5">
+                    {showLabels ? (
+                      <div
+                        className="sticky left-0 z-10 shrink-0 bg-surface"
+                        style={{ width: `${left}px` }}
+                      />
+                    ) : null}
                     <div
-                      className="sticky left-0 z-10 shrink-0 bg-canvas"
-                      style={{ width: `${left}px` }}
-                    />
-                  ) : null}
-                  <div
-                    className="relative h-5 shrink-0 overflow-hidden text-xs text-text-muted"
-                    style={{ width: `${cellsWidth}px` }}
-                  >
-                    {headerGroups.map((group) => (
-                      <span
-                        key={`${group.label}${group.x}`}
-                        className="absolute top-0 truncate border-l border-border pl-1 first:border-l-0 first:pl-0"
-                        style={{
-                          left: group.x,
-                          maxWidth: Math.max(0, group.width - 4),
-                        }}
-                      >
-                        {group.label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              {showTargetNames ? (
-                <div className="flex border-b border-border pb-1">
-                  {showLabels ? (
-                    <div
-                      className="sticky left-0 z-10 shrink-0 bg-canvas"
-                      style={{ width: `${left}px` }}
-                    />
-                  ) : null}
-                  <div
-                    className="relative h-36 shrink-0 overflow-hidden"
-                    style={{ width: `${cellsWidth}px` }}
-                  >
-                    {columns.map((targetIndex, index) => {
-                      const target = summary.targets[targetIndex];
-                      if (target === undefined) return null;
-                      const isSelected = selectedTarget === target.name;
-                      return (
-                        <Button
-                          key={target.name}
-                          variant="ghost"
-                          size="sm"
-                          wrap
-                          tabIndex={-1}
-                          aria-pressed={isSelected}
-                          title={target.name}
-                          onClick={() => onTargetSelect?.(target.name)}
-                          style={{ left: `${xs[index] ?? 0}px`, width: `${cellWidth}px` }}
-                          className={cn(
-                            "absolute inset-y-0 min-w-0 rotate-180 justify-start rounded-none pl-0.5 pr-0.5 text-xs font-normal [writing-mode:vertical-rl]",
-                            isSelected
-                              ? "bg-accent-subtle font-medium text-accent-text"
-                              : "text-text-muted hover:text-text",
-                          )}
+                      className="relative h-5 shrink-0 overflow-hidden text-xs text-text-muted"
+                      style={{ width: `${cellsWidth}px` }}
+                    >
+                      {headerGroups.map((group) => (
+                        <span
+                          key={`${group.label}${group.x}`}
+                          title={group.label}
+                          className="absolute top-0 truncate border-l border-border pl-1 first:border-l-0 first:pl-0"
+                          style={{
+                            left: group.x,
+                            maxWidth: Math.max(0, group.width - 4),
+                          }}
                         >
-                          <span className="truncate">{target.name}</span>
-                        </Button>
-                      );
-                    })}
+                          {group.label}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ) : null}
+                {showTargetNames ? (
+                  <div className="flex border-b border-border pb-1">
+                    {showLabels ? (
+                      <div
+                        className="sticky left-0 z-10 shrink-0 bg-surface"
+                        style={{ width: `${left}px` }}
+                      />
+                    ) : null}
+                    <div
+                      className="relative h-36 shrink-0 overflow-hidden"
+                      style={{ width: `${cellsWidth}px` }}
+                    >
+                      {columns.map((targetIndex, index) => {
+                        const target = summary.targets[targetIndex];
+                        if (target === undefined) return null;
+                        const isSelected = selectedTarget === target.name;
+                        return (
+                          <Button
+                            key={target.name}
+                            variant="ghost"
+                            size="sm"
+                            wrap
+                            tabIndex={-1}
+                            aria-pressed={isSelected}
+                            title={target.name}
+                            onClick={() => {
+                              onTargetSelect?.(target.name);
+                              gridRef.current?.focus({ preventScroll: true });
+                            }}
+                            style={{
+                              left: `${xs[index] ?? 0}px`,
+                              width: `${cellWidth}px`,
+                              height: "100%",
+                              paddingInline: 0,
+                            }}
+                            className={cn(
+                              "absolute top-0 min-w-0 overflow-hidden rounded-none text-xs font-normal",
+                              isSelected
+                                ? "bg-accent-subtle font-medium text-accent-text"
+                                : "text-text-muted hover:text-text",
+                            )}
+                          >
+                            <span className="block h-full max-h-full rotate-180 overflow-hidden text-ellipsis whitespace-nowrap text-start [writing-mode:vertical-rl]">
+                              {target.name}
+                            </span>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            <div className="flex" style={{ width: `${left + cellsWidth}px` }}>
+              {showLabels ? (
+                <canvas
+                  ref={labelsCanvas}
+                  aria-hidden="true"
+                  style={{ width: `${left}px`, height: `${height}px` }}
+                  className="sticky left-0 z-10 block shrink-0 cursor-pointer bg-surface"
+                  onClick={(event) => {
+                    const box = event.currentTarget.getBoundingClientRect();
+                    const row = Math.floor((event.clientY - box.top) / rowHeight);
+                    const sample = summary.samples[row];
+                    if (row >= 0 && row < rows && sample !== undefined) {
+                      onSampleSelect?.(sampleRowKey(sample));
+                    }
+                  }}
+                />
               ) : null}
-            </div>
-          ) : null}
-          <div className="flex" style={{ width: `${left + cellsWidth}px` }}>
-            {showLabels ? (
               <canvas
-                ref={labelsCanvas}
+                ref={cellsCanvas}
                 aria-hidden="true"
-                style={{ width: `${left}px`, height: `${height}px` }}
-                className="sticky left-0 z-10 block shrink-0 cursor-pointer bg-canvas"
-                onClick={(event) => {
+                style={{ width: `${cellsWidth}px`, height: `${height}px` }}
+                className="block shrink-0 cursor-pointer"
+                onPointerDown={(event) => {
+                  lastPointerType.current = event.pointerType;
+                  if (event.pointerType === "touch") setHover(null);
+                }}
+                onPointerMove={(event) => {
+                  lastPointerType.current = event.pointerType;
+                }}
+                onMouseMove={(event) => {
+                  if (lastPointerType.current === "touch") return;
                   const box = event.currentTarget.getBoundingClientRect();
-                  const row = Math.floor((event.clientY - box.top) / rowHeight);
-                  const sample = summary.samples[row];
-                  if (row >= 0 && row < rows && sample !== undefined) {
-                    onSampleSelect?.(sampleRowKey(sample));
+                  const cell = locateCell({ clientX: event.clientX, clientY: event.clientY, box });
+                  if (cell === null) {
+                    setHover(null);
+                  } else {
+                    const container = wrapper.current?.getBoundingClientRect();
+                    const viewX =
+                      container === undefined
+                        ? left + (event.clientX - box.left)
+                        : event.clientX - container.left;
+                    const viewY =
+                      container === undefined
+                        ? event.clientY - box.top
+                        : event.clientY - container.top;
+                    const viewHeight = container?.height ?? height;
+                    setHover({ row: cell.row, column: cell.column, viewX, viewY, viewHeight });
                   }
                 }}
+                onMouseLeave={() => setHover(null)}
+                onClick={(event) => {
+                  const box = event.currentTarget.getBoundingClientRect();
+                  const cell = locateCell({ clientX: event.clientX, clientY: event.clientY, box });
+                  if (cell !== null) selectCell({ row: cell.row, column: cell.column });
+                }}
               />
-            ) : null}
-            <canvas
-              ref={cellsCanvas}
-              aria-hidden="true"
-              style={{ width: `${cellsWidth}px`, height: `${height}px` }}
-              className="block shrink-0 cursor-pointer"
-              onPointerDown={(event) => {
-                lastPointerType.current = event.pointerType;
-                if (event.pointerType === "touch") setHover(null);
-              }}
-              onPointerMove={(event) => {
-                lastPointerType.current = event.pointerType;
-              }}
-              onMouseMove={(event) => {
-                if (lastPointerType.current === "touch") return;
-                const box = event.currentTarget.getBoundingClientRect();
-                const cell = locateCell({ clientX: event.clientX, clientY: event.clientY, box });
-                if (cell === null) {
-                  setHover(null);
-                } else {
-                  const container = wrapper.current?.getBoundingClientRect();
-                  const viewX =
-                    container === undefined
-                      ? left + (event.clientX - box.left)
-                      : event.clientX - container.left;
-                  const viewY =
-                    container === undefined
-                      ? event.clientY - box.top
-                      : event.clientY - container.top;
-                  const viewHeight = container?.height ?? height;
-                  setHover({ row: cell.row, column: cell.column, viewX, viewY, viewHeight });
-                }
-              }}
-              onMouseLeave={() => setHover(null)}
-              onClick={(event) => {
-                const box = event.currentTarget.getBoundingClientRect();
-                const cell = locateCell({ clientX: event.clientX, clientY: event.clientY, box });
-                if (cell !== null) selectCell({ row: cell.row, column: cell.column });
-              }}
-            />
+            </div>
           </div>
         </section>
         {hovered === null || hover === null ? null : (
@@ -725,7 +772,10 @@ export function ReadsGrid({
               className="inline-block h-3 w-32 rounded-sm"
               style={{ background: `linear-gradient(to right, ${ramp.join(", ")})` }}
             />
-            {t`${maxReads} reads (log scale)`}
+            {plural(maxReadsCount, {
+              one: "# read (log scale)",
+              other: "# reads (log scale)",
+            })}
           </span>
         </div>
         <output

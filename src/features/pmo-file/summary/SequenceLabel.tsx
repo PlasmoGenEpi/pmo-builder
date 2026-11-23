@@ -84,11 +84,17 @@ function SequencePopoverBody({
             : t({ message: "Copy", comment: "Button: copy the value to the clipboard" })}
         </Button>
       </div>
-      <div className="max-h-60 overflow-y-auto rounded-md border border-border bg-surface-subtle p-2.5">
+      <section
+        aria-label={t`Sequence`}
+        // Focusable so keyboard users can scroll long sequences.
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+        className="max-h-60 overflow-y-auto rounded-md border border-border bg-surface-subtle p-2.5 focus-visible:outline-offset-0"
+      >
         <code className="block font-mono text-xs leading-5 break-all text-text select-all">
           {seq}
         </code>
-      </div>
+      </section>
       {note !== null && note !== "" ? <p className="text-xs text-text-muted">{note}</p> : null}
       <output aria-live="polite" className={failed ? "text-xs text-warning-text" : "sr-only"}>
         {copied
@@ -110,8 +116,8 @@ export function SequenceLabel({ label, seq, note = null, className }: SequenceLa
   return (
     <Popover
       align="start"
+      size="lg"
       label={t`Sequence for ${label}`}
-      className="w-96"
       trigger={
         <Button
           variant="ghost"
