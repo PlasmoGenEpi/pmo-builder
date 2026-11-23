@@ -202,17 +202,35 @@ export type PublishingEvent =
 
 const eventListeners = new WeakMap<AppStore, Set<(event: AppEvent) => void>>();
 
-/** Each store's working PMO session, made beside it on the same engine. */
-const sessions = new WeakMap<AppStore, WorkingPmoSession>();
+/** Each store's PMO sessions, made beside it on the same engine: working and published. */
+const sessions = new WeakMap<
+  AppStore,
+  { readonly working: WorkingPmoSession; readonly published: WorkingPmoSession }
+>();
+
+function sessionsOf(store: AppStore): {
+  readonly working: WorkingPmoSession;
+  readonly published: WorkingPmoSession;
+} {
+  const pair = sessions.get(store);
+  if (pair === undefined) throw new Error("This store was not made by createAppStore.");
+  return pair;
+}
 
 /**
  * The working PMO session made beside `store`, on its engine, building its
  * draft before opening the built PMO and reporting to its usage counts.
  */
 export function workingPmoSessionOf(store: AppStore): WorkingPmoSession {
-  const session = sessions.get(store);
-  if (session === undefined) throw new Error("This store was not made by createAppStore.");
-  return session;
+  return sessionsOf(store).working;
+}
+
+/**
+ * The published view's PMO session made beside `store`, on its engine, kept
+ * apart from the working PMO and dropped on leaving the published view.
+ */
+export function publishedPmoSessionOf(store: AppStore): WorkingPmoSession {
+  return sessionsOf(store).published;
 }
 
 /** Calls `listener` with every {@link AppEvent} of a store. Returns a function that stops. */
@@ -1202,10 +1220,11 @@ export function createAppStore(options: AppStoreOptions): AppStore {
     scheduleSave();
   });
 
-  sessions.set(
-    store,
-    createWorkingPmoSession({ engine, flush: () => store.getState().actions.flush(), emit }),
-  );
+  const flush = () => store.getState().actions.flush();
+  sessions.set(store, {
+    working: createWorkingPmoSession({ engine, flush, emit, slot: "working" }),
+    published: createWorkingPmoSession({ engine, flush, emit, slot: "published" }),
+  });
   return store;
 }
 

@@ -12,14 +12,20 @@ export interface SelectOption {
   disabled?: boolean;
 }
 
+/** Height and text size of a {@link Select}. */
+export type SelectSize = "sm" | "md";
+
 /** Props for {@link Select}. */
 export interface SelectProps {
   options: readonly SelectOption[];
   value: string | undefined;
   onValueChange: (value: string) => void;
   placeholder?: string;
+  size?: SelectSize;
   disabled?: boolean;
-  /** Needed when the select is not inside a `Field`. */
+  /** Wires a visible `<label htmlFor={id}>` when the select is not inside a `Field`. */
+  id?: string;
+  /** Needed when the select is not inside a `Field` and has no visible `<label>`. */
   "aria-label"?: string;
   className?: string;
 }
@@ -33,7 +39,9 @@ export function Select({
   value,
   onValueChange,
   placeholder = t`Choose`,
+  size = "md",
   disabled,
+  id,
   className,
   ...aria
 }: SelectProps) {
@@ -42,10 +50,12 @@ export function Select({
     <RadixSelect.Root value={value} onValueChange={onValueChange} disabled={disabled}>
       <RadixSelect.Trigger
         {...control}
+        id={id ?? control?.id}
         aria-label={aria["aria-label"]}
         className={cn(
           inputClassName,
-          "inline-flex h-control cursor-pointer text-base items-center justify-between gap-2 text-left data-placeholder:text-text-subtle",
+          "inline-flex cursor-pointer items-center justify-between gap-2 text-left data-placeholder:text-text-subtle",
+          size === "sm" ? "h-control-sm text-sm" : "h-control text-base",
           className,
         )}
       >

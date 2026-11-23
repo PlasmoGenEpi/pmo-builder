@@ -54,7 +54,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </aside>
         ) : null}
         <main id="main" tabIndex={-1} className="min-w-0 flex-1 outline-none">
-          <OtherTabNotice />
+          {building ? <OtherTabNotice /> : null}
           {children}
         </main>
       </div>

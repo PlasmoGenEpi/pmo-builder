@@ -16,6 +16,7 @@ export const TABLE_IDS = [
   "librarySamples",
   "targets",
   "panels",
+  "readCounts",
   "travel",
   "projects",
   "sequencing",
@@ -44,9 +45,13 @@ export interface MetaValue {
   readonly count: number;
 }
 
+/** Where a specimen metadata field's values come from: a raw specimen property, or the derived collection year. */
+export type MetaFieldSource = "specimen" | "collectionYear";
+
 /** A specimen metadata field that specimens can be chosen by. */
 export interface MetaField {
   readonly field: string;
+  readonly source: MetaFieldSource;
   readonly values: readonly MetaValue[];
 }
 
@@ -74,6 +79,9 @@ export interface PmoChoices {
 /** The most distinct values a metadata field may have to be offered as a choice. */
 export const MAX_META_VALUES = 60;
 
+/** Synthetic metadata field key for choosing specimens by their collection year. */
+export const COLLECTION_YEAR_FIELD = "collection_year";
+
 /** What opening a PMO file gave. */
 export type OpenOutcome =
   | {
@@ -94,8 +102,12 @@ export type OpenOutcome =
 export type SpecimenChoice =
   | { readonly kind: "all" }
   | { readonly kind: "names"; readonly names: readonly string[] }
-  /** Specimens matching every field, each to one of its values. */
-  | { readonly kind: "metadata"; readonly criteria: Readonly<Record<string, readonly string[]>> };
+  /** Specimens matching every field, each to one of its values, and any chosen collection years. */
+  | {
+      readonly kind: "metadata";
+      readonly criteria: Readonly<Record<string, readonly string[]>>;
+      readonly collectionYears?: readonly string[];
+    };
 
 /** Which targets a subset keeps. */
 export type TargetChoice =
@@ -164,6 +176,19 @@ export interface TablesArchive {
 
 /** The delimited formats a table can be written in. */
 export type TableFormat = "csv" | "tsv";
+
+/** How many rows a table preview shows at most. */
+export const TABLE_PREVIEW_LIMIT = 20;
+
+/** One cell in a table preview. */
+export type TablePreviewCell = string | number | boolean | null;
+
+/** The column names and first rows of a table, for looking over before downloading. */
+export interface TablePreview {
+  readonly columns: readonly string[];
+  readonly rows: readonly (readonly TablePreviewCell[])[];
+  readonly totalRows: number;
+}
 
 /** What kind of control a specimen is, from its `specimen_type`. */
 export type ControlKind = "negative" | "positive" | "other";
@@ -363,6 +388,12 @@ export interface WorkingPmoRequests {
     readonly id: TableId;
     readonly format: TableFormat;
   };
+  /** The column names and first rows of one table of the original or the subset. */
+  readonly tablePreview: {
+    readonly source: WorkingSource;
+    readonly id: TableId;
+    readonly limit?: number;
+  };
   /** Every table of the original or the subset, as files in one zip. */
   readonly tables: { readonly source: WorkingSource; readonly format: TableFormat };
   /** The subset as a PMO file, gzipped or not, named after the opened file with "-subset". */
@@ -400,14 +431,20 @@ export interface WorkingPmoValues {
   readonly subset: SubsetMade;
   readonly preview: SubsetPreview;
   readonly table: TableFile;
+  readonly tablePreview: TablePreview;
   readonly tables: TablesArchive;
   readonly file: PmoFile;
   readonly groupFields: readonly GroupField[];
   readonly groups: GroupComparison;
 }
 
-/** A request, with the generation of the working PMO it is meant for. */
+/** Which held PMO slot a request targets. */
+export type PmoSlot = "working" | "published";
+
+/** A request, with the generation of the PMO slot it is meant for. */
 export interface WorkingPmoCall<K extends WorkingPmoKind = WorkingPmoKind> {
+  /** Which held PMO slot this targets. Defaults to `"working"`. */
+  readonly slot?: PmoSlot;
   /** Goes up with every open or close. A request for an older generation is answered as stale. */
   readonly generation: number;
   readonly request: WorkingPmoRequest<K>;

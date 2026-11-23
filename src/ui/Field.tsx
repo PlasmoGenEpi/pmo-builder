@@ -40,8 +40,10 @@ export interface FieldProps {
    * `stacked` (default) puts the label above the control. `inline` puts the
    * label and hint on the left and the control on the right from the `sm`
    * breakpoint, for long lists of similar fields such as column matches.
+   * `compact` puts the label beside the control on one row for slim toolbars,
+   * keeping any hint available to screen readers.
    */
-  layout?: "stacked" | "inline";
+  layout?: "stacked" | "inline" | "compact";
   className?: string;
   /** The control. Primitives inside read the wiring from context; others can use the render form. */
   children: ReactNode | ((control: FieldControlProps) => ReactNode);
@@ -85,6 +87,34 @@ export function Field({
     }),
     [controlId, describedBy, hasError, required],
   );
+
+  if (layout === "compact") {
+    return (
+      <div className={cn("flex flex-col gap-1", className)}>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <label
+            htmlFor={controlId}
+            className={cn("text-sm font-medium text-text-muted", hideLabel && "sr-only")}
+          >
+            {label}
+          </label>
+          <FieldContext.Provider value={control}>
+            {typeof children === "function" ? children(control) : children}
+          </FieldContext.Provider>
+        </div>
+        {hint ? (
+          <span id={hintId} className="sr-only">
+            {hint}
+          </span>
+        ) : null}
+        {hasError ? (
+          <p id={errorId} className="flex items-start gap-1.5 text-sm text-danger-text">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
 
   const inline = layout === "inline";
   const controlAndError = (

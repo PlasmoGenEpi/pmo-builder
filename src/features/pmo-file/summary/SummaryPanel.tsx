@@ -10,7 +10,7 @@ import type {
   WorkingSource,
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
-import { useWorkingPmoQuery } from "@/state";
+import { usePmoQuery } from "@/state";
 import { Card, SectionHeading, Skeleton, Stat, Switch, formatCount } from "@/ui";
 
 import { AlleleBars } from "./AlleleBars";
@@ -28,7 +28,13 @@ import { SortableTable, type SortableColumn } from "./SortableTable";
 import { NoAnswer } from "../NoAnswer";
 import { useSettled } from "../useSettled";
 
-import { MinReadsField, SectionJumps, ViewToolbar, type Jump } from "./ViewToolbar";
+import {
+  MinReadsField,
+  NoReadsAboveMinimum,
+  SectionJumps,
+  ViewToolbar,
+  type Jump,
+} from "./ViewToolbar";
 
 function sampleColumns(summary: PmoSummary): SortableColumn<SampleSummary>[] {
   return [
@@ -233,6 +239,8 @@ export interface SummaryPanelProps {
   /** The minimum reads for a microhaplotype to count; `null` counts them all. */
   readonly minReads: number | null;
   readonly onMinReadsChange: (value: number | null) => void;
+  /** The most reads any microhaplotype has in the working PMO, or `null` when unknown. */
+  readonly maxReads: number | null;
 }
 
 /**
@@ -244,6 +252,7 @@ export function SummaryPanel({
   source,
   minReads: minReadsInput,
   onMinReadsChange,
+  maxReads,
 }: SummaryPanelProps) {
   const minReads = useSettled(Math.max(0, minReadsInput ?? 0), 400);
   const [allTargets, setAllTargets] = useState(false);
@@ -253,7 +262,7 @@ export function SummaryPanel({
     (): WorkingPmoRequest<"summary"> => ({ kind: "summary", source, minReads }),
     [source, minReads],
   );
-  const loaded = useWorkingPmoQuery(request);
+  const loaded = usePmoQuery(request);
 
   const summary = loaded.kind === "ok" ? loaded.value : null;
   const columns = useMemo(
@@ -284,11 +293,13 @@ export function SummaryPanel({
     summary?.targets.toSorted((a, b) => b.samples - a.samples)[0] ??
     null;
 
+  const nothingPasses = summary !== null && minReads > 0 && summary.headline.samplesWithData === 0;
+
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <ViewToolbar>
         <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
-        {summary === null ? null : <SectionJumps jumps={jumpsOf(summary)} />}
+        {summary === null || nothingPasses ? null : <SectionJumps jumps={jumpsOf(summary)} />}
       </ViewToolbar>
 
       {loaded.kind === "ok" || loaded.kind === "loading" ? null : (
@@ -307,6 +318,12 @@ export function SummaryPanel({
             <Skeleton className="h-64 w-full" />
           </output>
         ) : null
+      ) : nothingPasses ? (
+        <NoReadsAboveMinimum
+          minReads={minReads}
+          maxReads={maxReads}
+          onClear={() => onMinReadsChange(null)}
+        />
       ) : (
         <>
           <Headline summary={summary} />
