@@ -13,7 +13,7 @@ import type {
 import { readBooleanCell } from "./boolean";
 import { decodeText, gunzip, isGzip, isOle, isZip } from "./bytes";
 import { detectDelimiter, parseDelimited, type Delimiter } from "./delimited";
-import { IMPORT_LIMITS, ImportError, megabytes } from "./errors";
+import { IMPORT_LIMITS, ImportError, formatLimitBytes } from "./errors";
 import { gridToRawTable } from "./rawTable";
 import { readWorkbook, xlsNotSupported } from "./xlsx";
 
@@ -152,8 +152,8 @@ function tooLarge(fileName: string, measure: "text" | "workbook", limits: Limits
   return new ImportError(
     "too-large",
     measure === "text"
-      ? `${fileName} is larger than ${megabytes(limitBytes)} of text, too large to open in the browser. Split it into smaller files, or remove columns you do not need, and try again.`
-      : `${fileName} is a workbook larger than ${megabytes(limitBytes)}, too large to open in the browser. Save the sheet as a .csv or .tsv file and import that instead.`,
+      ? `${fileName} is larger than ${formatLimitBytes(limitBytes)} of text, too large to open in the browser. Split it into smaller files, or remove columns you do not need, and try again.`
+      : `${fileName} is a workbook larger than ${formatLimitBytes(limitBytes)}, too large to open in the browser. Save the sheet as a .csv or .tsv file and import that instead.`,
     { detail: { kind: "too-large", measure, limitBytes } },
   );
 }

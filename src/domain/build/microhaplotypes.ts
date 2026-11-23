@@ -149,7 +149,7 @@ export interface StreamMicrohaplotypesInput {
   readonly deps?: BuildDeps;
   /** Rows per chunk for streaming and `createMhapTableBuilder`. Defaults to {@link DEFAULT_MHAP_CHUNK_SIZE}. */
   readonly chunkSize?: number;
-  /** Maximum unpacked text bytes. Defaults to `IMPORT_LIMITS.textBytes`. */
+  /** Maximum unpacked text bytes. Defaults to `IMPORT_LIMITS.alleleTextBytes`. */
   readonly maxTextBytes?: number;
   /** Throttled progress updates across Pass 1 (`checking`) and Pass 2 (`building`). */
   readonly onProgress?: (progress: MicrohaplotypesStreamProgress) => void;
@@ -1145,7 +1145,7 @@ export async function buildMicrohaplotypesStream(
     });
   } catch (error) {
     if (isImportError(error)) {
-      const reason = importFailureMessage({ code: error.code, detail: error.detail }, fileName);
+      const reason = importFailureMessage({ code: error.code, detail: error.detail });
       return {
         kind: "done",
         result: notReady("microhaplotypes", "error", [
@@ -1311,7 +1311,7 @@ export async function buildMicrohaplotypesStream(
     };
   } catch (error) {
     if (isImportError(error)) {
-      const reason = importFailureMessage({ code: error.code, detail: error.detail }, fileName);
+      const reason = importFailureMessage({ code: error.code, detail: error.detail });
       return {
         kind: "done",
         result: notReady("microhaplotypes", "error", [

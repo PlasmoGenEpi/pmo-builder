@@ -7,7 +7,9 @@ import type { RawRow } from "@/domain/types";
 
 import { exampleBlob, exampleNames } from "./exampleFiles.testing";
 import {
+  IMPORT_LIMITS,
   ImportError,
+  importFailureMessage,
   inspectDelimitedStream,
   parseFile,
   streamDelimitedChunks,
@@ -559,5 +561,123 @@ describe("streamDistinctValues", () => {
     });
     expect(result).toEqual({ values: ["r1", "r2", "r3"], truncated: true });
     expect(bytesPulled).toBeLessThan(base.size / 10);
+  });
+});
+
+/** A tiny Blob reporting a synthetic byte size without allocating gigabytes. */
+function fakeSizedBlob(content: string, reportedSize: number): Blob {
+  const blob = new Blob([content]);
+  Object.defineProperty(blob, "size", { configurable: true, value: reportedSize });
+  return blob;
+}
+
+describe("allele table size limit and limit formatting", () => {
+  it("raises the streamed allele table limit to 3 GB while keeping 300 MB for other tables and 50 MB for workbooks", async () => {
+    expect(IMPORT_LIMITS.alleleTextBytes).toBe(3 * 1024 * 1024 * 1024);
+    expect(IMPORT_LIMITS.textBytes).toBe(300 * 1024 * 1024);
+    expect(IMPORT_LIMITS.workbookBytes).toBe(50 * 1024 * 1024);
+
+    // 500 MB passes the streamed allele table limit, but parseFile rejects it at 300 MB.
+    const midSized = fakeSizedBlob("a,b\n1,2\n", 500 * 1024 * 1024);
+    const inspected = await inspectDelimitedStream(midSized, { fileName: "alleles.csv" });
+    expect(inspected.kind).toBe("delimited");
+
+    const wholeTableError = await parseFile(midSized, "metadata.tsv").catch(
+      (error: unknown) => error,
+    );
+    expect(wholeTableError).toMatchObject({
+      code: "too-large",
+      detail: { kind: "too-large", measure: "text", limitBytes: IMPORT_LIMITS.textBytes },
+    });
+    expect(wholeTableError instanceof ImportError ? wholeTableError.message : "").toContain(
+      "300 MB",
+    );
+
+    // Over 3 GB fails inspectDelimitedStream, streamDelimitedChunks, and streamDistinctValues with "3 GB".
+    const overAlleleLimit = fakeSizedBlob("a,b\n1,2\n", IMPORT_LIMITS.alleleTextBytes + 1);
+    const inspectError = await inspectDelimitedStream(overAlleleLimit, {
+      fileName: "huge.csv",
+    }).catch((error: unknown) => error);
+    expect(inspectError).toMatchObject({
+      code: "too-large",
+      detail: { kind: "too-large", measure: "text", limitBytes: IMPORT_LIMITS.alleleTextBytes },
+    });
+    expect(inspectError instanceof ImportError ? inspectError.message : "").toContain("3 GB");
+
+    const streamChunksError = await (async () => {
+      let seen = 0;
+      for await (const chunk of streamDelimitedChunks(overAlleleLimit, {
+        fileName: "huge.csv",
+        delimiter: ",",
+      })) {
+        seen += chunk.length;
+      }
+      return seen;
+    })().catch((error: unknown) => error);
+    expect(streamChunksError).toMatchObject({
+      code: "too-large",
+      detail: { kind: "too-large", measure: "text", limitBytes: IMPORT_LIMITS.alleleTextBytes },
+    });
+
+    const distinctError = await streamDistinctValues(overAlleleLimit, {
+      fileName: "huge.csv",
+      delimiter: ",",
+      column: "a",
+    }).catch((error: unknown) => error);
+    expect(distinctError).toMatchObject({
+      code: "too-large",
+      detail: { kind: "too-large", measure: "text", limitBytes: IMPORT_LIMITS.alleleTextBytes },
+    });
+
+    // Workbooks still enforce the 50 MB limit.
+    const zipHead = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0, 0, 0, 0]);
+    const bigWorkbook = new Blob([zipHead]);
+    Object.defineProperty(bigWorkbook, "size", {
+      configurable: true,
+      value: IMPORT_LIMITS.workbookBytes + 1,
+    });
+    const wbError = await parseFile(bigWorkbook, "big.xlsx").catch((error: unknown) => error);
+    expect(wbError).toMatchObject({
+      code: "too-large",
+      detail: { kind: "too-large", measure: "workbook", limitBytes: IMPORT_LIMITS.workbookBytes },
+    });
+    expect(wbError instanceof ImportError ? wbError.message : "").toContain("50 MB");
+  });
+
+  it("formats gigabyte and megabyte limits cleanly in importFailureMessage", () => {
+    const alleleNamed = importFailureMessage(
+      {
+        code: "too-large",
+        detail: { kind: "too-large", measure: "text", limitBytes: IMPORT_LIMITS.alleleTextBytes },
+      },
+      "huge.csv",
+    );
+    expect(alleleNamed).toContain('"huge.csv"');
+    expect(alleleNamed).toContain("3 GB");
+    expect(alleleNamed).not.toContain("3,072 MB");
+
+    const alleleUnnamed = importFailureMessage({
+      code: "too-large",
+      detail: { kind: "too-large", measure: "text", limitBytes: IMPORT_LIMITS.alleleTextBytes },
+    });
+    expect(alleleUnnamed).toContain("3 GB");
+
+    const otherTable = importFailureMessage(
+      {
+        code: "too-large",
+        detail: { kind: "too-large", measure: "text", limitBytes: IMPORT_LIMITS.textBytes },
+      },
+      "samples.tsv",
+    );
+    expect(otherTable).toContain("300 MB");
+
+    const workbook = importFailureMessage(
+      {
+        code: "too-large",
+        detail: { kind: "too-large", measure: "workbook", limitBytes: IMPORT_LIMITS.workbookBytes },
+      },
+      "samples.xlsx",
+    );
+    expect(workbook).toContain("50 MB");
   });
 });

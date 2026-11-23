@@ -654,4 +654,32 @@ describe("buildMicrohaplotypesStream", () => {
     );
     expect(streamed.result).toEqual(syncResult);
   });
+
+  it("reports a gzipped allele table exceeding maxTextBytes during Pass 1 naming the file once and the limit", async () => {
+    const header = "sample,target,seq,reads\n";
+    const row = "S1,t1,ACGTACGTACGTACGTACGTACGTACGTACGT,10\n";
+    // ~1.5 MB unpacked, compresses to a few kilobytes so inspection succeeds and Pass 1 hits the 1 MB cap.
+    const packed = gzipSync(Buffer.from(header + row.repeat(40_000), "utf8"));
+    const blob = new Blob([new Uint8Array(packed)]);
+    const fileName = "oversized.csv.gz";
+    const meta = await inspectOrThrow(blob, fileName);
+
+    const out = expectDone(
+      await buildMicrohaplotypesStream({
+        section: {
+          ...empty.microhaplotypes,
+          table: mappedFromMeta("big", fileName, blob, meta, SIMPLE_MAPPING),
+        },
+        source: { kind: "ready", blob, meta },
+        maxTextBytes: 1024 * 1024,
+      }),
+    );
+
+    expect(out.result.status).toBe("error");
+    expect(out.result.notices).toHaveLength(1);
+    const notice = out.result.notices[0];
+    expect(notice?.code).toBe("table/unreadable");
+    expect(notice?.message).toContain("1 MB");
+    expect(notice?.message.split(fileName)).toHaveLength(2);
+  });
 });
