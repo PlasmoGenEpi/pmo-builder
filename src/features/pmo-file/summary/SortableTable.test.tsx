@@ -50,6 +50,21 @@ function SelectableTargets() {
   );
 }
 
+function SelectableStickyTargets() {
+  const [selected, setSelected] = useState<string>("t-mid");
+  return (
+    <SortableTable
+      label="Sticky targets"
+      columns={TARGET_COLUMNS}
+      rows={TARGET_ROWS}
+      rowKey={(row) => row.name}
+      onRowSelect={(row) => setSelected(row.name)}
+      selectedKey={selected}
+      stickyFirstColumn
+    />
+  );
+}
+
 describe("SortableTable", () => {
   it("keeps rows with missing numeric values last when sorting descending and ascending", async () => {
     const user = userEvent.setup();
@@ -179,5 +194,115 @@ describe("SortableTable", () => {
 
     await user.click(within(table).getByText("0.10"));
     expect(within(table).getByRole("button", { name: "t-low", pressed: true })).toBeInTheDocument();
+  });
+
+  it("renders headerNote inside the column header without overriding the sort button label", async () => {
+    const user = userEvent.setup();
+    const columnsWithNote: readonly SortableColumn<TargetRow>[] = [
+      { key: "name", label: "Target", value: (row) => row.name },
+      {
+        key: "heterozygosity",
+        label: "2015",
+        headerNote: (
+          <span>
+            <span aria-hidden="true">n = 5</span>
+            <span className="sr-only">5 samples with data</span>
+          </span>
+        ),
+        value: (row) => row.heterozygosity,
+        numeric: true,
+      },
+    ];
+
+    render(
+      <SortableTable
+        label="Heterozygosity"
+        columns={columnsWithNote}
+        rows={TARGET_ROWS}
+        rowKey={(row) => row.name}
+      />,
+    );
+    const table = screen.getByRole("table", { name: "Heterozygosity" });
+    const header = within(table).getByRole("columnheader", { name: /2015.*5 samples with data/ });
+    expect(header).toHaveTextContent("n = 5");
+
+    const sortButton = within(header).getByRole("button", { name: "Sort by 2015" });
+    await user.click(sortButton);
+    expect(header).toHaveAttribute("aria-sort", "descending");
+  });
+
+  it("applies cellStyle to valued cells, leaves missing cells unshaded, and keeps the chosen row marked", async () => {
+    const user = userEvent.setup();
+    const shadedColumns: readonly SortableColumn<TargetRow>[] = [
+      { key: "name", label: "Target", value: (row) => row.name },
+      {
+        key: "heterozygosity",
+        label: "Heterozygosity",
+        value: (row) => row.heterozygosity,
+        render: (row) => (row.heterozygosity === null ? "–" : row.heterozygosity.toFixed(2)),
+        cellStyle: (row) =>
+          row.heterozygosity === null ? undefined : { backgroundColor: "rgb(158, 197, 244)" },
+        numeric: true,
+      },
+    ];
+
+    function SelectableShadedTargets() {
+      const [selected, setSelected] = useState<string>("t-high");
+      return (
+        <SortableTable
+          label="Shaded targets"
+          columns={shadedColumns}
+          rows={TARGET_ROWS}
+          rowKey={(row) => row.name}
+          onRowSelect={(row) => setSelected(row.name)}
+          selectedKey={selected}
+        />
+      );
+    }
+
+    render(<SelectableShadedTargets />);
+    const table = screen.getByRole("table", { name: "Shaded targets" });
+    const rows = within(table).getAllByRole("row").slice(1);
+    const emptyRow = rows.find((row) => within(row).queryByText("t-empty-a") !== null);
+    const highRow = rows.find((row) => within(row).queryByText("t-high") !== null);
+    if (emptyRow === undefined || highRow === undefined) throw new Error("Expected test rows");
+
+    const emptyValueCell = within(emptyRow).getAllByRole("cell")[1];
+    const highValueCell = within(highRow).getAllByRole("cell")[1];
+    if (emptyValueCell === undefined || highValueCell === undefined) {
+      throw new Error("Expected value cells");
+    }
+
+    expect(emptyValueCell).toHaveTextContent("–");
+    expect(emptyValueCell.style.backgroundColor).toBe("");
+    expect(highValueCell).toHaveTextContent("0.85");
+    expect(highValueCell.style.backgroundColor).toBe("rgb(158, 197, 244)");
+
+    // The chosen row is marked on the row itself and on its target button.
+    expect(highRow).toHaveAttribute("data-selected", "true");
+    expect(emptyRow).not.toHaveAttribute("data-selected");
+    expect(
+      within(highRow).getByRole("button", { name: "t-high", pressed: true }),
+    ).toBeInTheDocument();
+
+    // Choosing another row by clicking its shaded cell moves the mark.
+    await user.click(within(table).getByText("0.50"));
+    expect(within(table).getByRole("button", { name: "t-mid", pressed: true })).toBeInTheDocument();
+    expect(highRow).not.toHaveAttribute("data-selected");
+  });
+
+  it("supports stickyFirstColumn without breaking sorting or row selection", async () => {
+    const user = userEvent.setup();
+    render(<SelectableStickyTargets />);
+    const table = screen.getByRole("table", { name: "Sticky targets" });
+    expect(within(table).getByRole("columnheader", { name: /Target/ })).toBeInTheDocument();
+
+    await user.click(within(table).getByRole("button", { name: "Sort by Heterozygosity" }));
+    expect(firstColumnValues(table)[0]).toBe("t-high");
+
+    await user.click(within(table).getByRole("button", { name: "t-high" }));
+    expect(
+      within(table).getByRole("button", { name: "t-high", pressed: true }),
+    ).toBeInTheDocument();
   });
 });

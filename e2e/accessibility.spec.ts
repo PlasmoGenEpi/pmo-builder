@@ -93,6 +93,12 @@ for (const colorScheme of ["light", "dark"] as const) {
     for (const tab of ["Summary", "Overview", "Compare", "Tables", "Subset"]) {
       // oxlint-disable-next-line no-await-in-loop -- tabs are checked one at a time.
       await page.getByRole("tab", { name: tab }).click();
+      if (tab === "Compare") {
+        // oxlint-disable-next-line no-await-in-loop -- wait for the shaded table before axe runs.
+        await expect(page.getByRole("heading", { name: "Heterozygosity by target" })).toBeVisible({
+          timeout: BUILD_TIMEOUT,
+        });
+      }
       // oxlint-disable-next-line no-await-in-loop -- let the tab settle before checking.
       await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: BUILD_TIMEOUT });
       // oxlint-disable-next-line no-await-in-loop -- tabs are checked one at a time.

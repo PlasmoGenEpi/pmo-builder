@@ -6,7 +6,7 @@
  */
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUp, ChevronLeft, ChevronRight, TriangleExclamationPoint } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useTheme } from "@/app/theme";
@@ -22,14 +22,20 @@ import type {
 import { intlLocale } from "@/i18n/languages";
 import { usePmoQuery } from "@/state";
 import {
+  Button,
   Callout,
   Combobox,
   Field,
   SectionHeading,
   Select,
+  SEQUENTIAL_CELL,
   SERIES,
   Skeleton,
+  Switch,
+  cn,
   formatCount,
+  jumpToHeading,
+  rampColour,
 } from "@/ui";
 
 import { NoAnswer, type NoAnswerReason } from "../NoAnswer";
@@ -37,11 +43,104 @@ import { specimenFieldLabel } from "../specimenFieldNames";
 import { useSettled } from "../useSettled";
 
 import { SortableTable, type SortableColumn } from "./SortableTable";
-import { MinReadsField, NoReadsAboveMinimum, ViewToolbar } from "./ViewToolbar";
+import {
+  MinReadsField,
+  NoReadsAboveMinimum,
+  SectionJumps,
+  ViewToolbar,
+  type Jump,
+} from "./ViewToolbar";
+
+/** The ids of the Compare tab's section headings. */
+const HEADING = {
+  groups: "compare-groups",
+  heterozygosity: "compare-heterozygosity",
+  alleles: "compare-alleles",
+  timeline: "compare-timeline",
+} as const;
+
+/** The sections this comparison shows, to jump to. */
+function jumpsOf(comparison: GroupComparison, hasTarget: boolean): Jump[] {
+  return [
+    { id: HEADING.groups, label: t`Groups` },
+    { id: HEADING.heterozygosity, label: t`Heterozygosity by target` },
+    ...(hasTarget ? [{ id: HEADING.alleles, label: t`Microhaplotypes by group` }] : []),
+    ...(comparison.timeline.length > 0
+      ? [
+          {
+            id: HEADING.timeline,
+            label: t({
+              message: "Collection timeline",
+              comment: "Short name of the section 'When specimens were collected'",
+            }),
+          },
+        ]
+      : []),
+  ];
+}
 
 function groupName(row: { readonly name: string | null }): string {
   return (
     row.name ?? t({ message: "Not recorded", comment: "Specimens with no value for the field" })
+  );
+}
+
+const SMALL_GROUP_THRESHOLD = 10;
+
+function isSmallGroup(group: GroupRow): boolean {
+  return group.withData < SMALL_GROUP_THRESHOLD;
+}
+
+function smallGroupLabel(): string {
+  const threshold = formatCount(SMALL_GROUP_THRESHOLD);
+  return t({
+    message: `Small group (fewer than ${threshold} samples with data)`,
+    comment:
+      "Accessible explanation on a warning mark next to a small group; {threshold} is a sample count such as 10",
+  });
+}
+
+/** Warning mark shown beside groups with fewer than {@link SMALL_GROUP_THRESHOLD} samples with data. */
+function SmallGroupMark() {
+  const label = smallGroupLabel();
+  return (
+    <span className="inline-flex items-center text-warning-text" title={label}>
+      <TriangleExclamationPoint aria-hidden="true" className="size-3.5 shrink-0" />
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
+/** Sample count and small-group mark shown under a group's column heading. */
+function GroupSizeNote({ group }: { readonly group: GroupRow }) {
+  const sampleCount = group.withData;
+  const count = formatCount(sampleCount);
+  const fullCount = plural(sampleCount, {
+    one: "# sample with data",
+    other: "# samples with data",
+  });
+  const small = isSmallGroup(group);
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 whitespace-nowrap font-normal tabular-nums",
+        small ? "text-warning-text" : "text-text-subtle",
+      )}
+    >
+      <span aria-hidden="true">
+        {t({
+          message: `n = ${count}`,
+          comment: "Compact sample count in a table column heading, e.g. n = 14",
+        })}
+      </span>
+      <span className="sr-only">{fullCount}</span>
+      {small ? (
+        <>
+          <span className="sr-only">, </span>
+          <SmallGroupMark />
+        </>
+      ) : null}
+    </span>
   );
 }
 
@@ -52,7 +151,21 @@ function groupColumns(): SortableColumn<GroupRow>[] {
   });
   const decimal = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 2 });
   return [
-    { key: "name", label: t`Group`, value: (row) => row.name, render: groupName },
+    {
+      key: "name",
+      label: t`Group`,
+      value: (row) => row.name,
+      render: (row) =>
+        isSmallGroup(row) ? (
+          <span className="inline-flex items-center gap-1.5">
+            <span>{groupName(row)}</span>
+            <span className="sr-only">, </span>
+            <SmallGroupMark />
+          </span>
+        ) : (
+          groupName(row)
+        ),
+    },
     { key: "specimens", label: t`Specimens`, value: (row) => row.specimens, numeric: true },
     { key: "withData", label: t`Samples with data`, value: (row) => row.withData, numeric: true },
     {
@@ -74,6 +187,12 @@ function groupColumns(): SortableColumn<GroupRow>[] {
   ];
 }
 
+const MAX_ALLELES = 20;
+
+function isAbsentFromAllGroups(freqs: readonly (number | null)[]): boolean {
+  return freqs.every((freq) => freq === null || freq === 0);
+}
+
 /** One target's microhaplotypes, with their frequency in each group as a bar. */
 function AllelesByGroup({
   target,
@@ -83,77 +202,134 @@ function AllelesByGroup({
   readonly groups: readonly GroupRow[];
 }) {
   const { resolved } = useTheme();
+  const [showAbsent, setShowAbsent] = useState(false);
   const percent = new Intl.NumberFormat(intlLocale(), {
     style: "percent",
     maximumFractionDigits: 0,
   });
+  const presentAlleles = useMemo(
+    () => target.alleles.filter((allele) => !isAbsentFromAllGroups(allele.freqs)),
+    [target.alleles],
+  );
+  const absentCount = target.alleles.length - presentAlleles.length;
+  const showingAll = showAbsent && absentCount > 0;
+  const shown = showingAll ? target.alleles : presentAlleles.slice(0, MAX_ALLELES);
+  const hiddenByLimit = showingAll ? 0 : presentAlleles.length - shown.length;
+  const maxFreq = shown.reduce((largest, allele) => {
+    let next = largest;
+    for (const freq of allele.freqs) {
+      if (freq !== null && freq > next) next = freq;
+    }
+    return next;
+  }, 0);
+
   return (
-    <section
-      aria-label={t`Microhaplotype frequencies by group`}
-      // Focusable so keyboard users can scroll it.
-      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-      tabIndex={0}
-      className="overflow-x-auto rounded-lg border border-border focus-visible:outline-offset-0"
-    >
-      <table
-        className="w-full border-collapse text-sm"
-        aria-label={t`Microhaplotype frequencies by group`}
-      >
-        <thead className="bg-surface-subtle">
-          <tr>
-            <th
-              scope="col"
-              className="border-b border-border px-3 py-2 text-left font-medium text-text-muted"
-            >
-              {t`Microhaplotype`}
-            </th>
-            {groups.map((group) => (
-              <th
-                key={group.name ?? ""}
-                scope="col"
-                className="border-b border-border px-3 py-2 text-left font-medium text-text-muted"
-              >
-                {groupName(group)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {target.alleles.slice(0, 20).map((allele) => (
-            <tr key={allele.mhapId} className="border-b border-border last:border-b-0">
-              <th
-                scope="row"
-                className="px-3 py-1.5 text-left font-mono text-xs font-normal text-text-muted"
-                title={allele.seq}
-              >
-                {allele.label.label}
-              </th>
-              {allele.freqs.map((freq, index) => (
-                <td key={groups[index]?.name ?? `none${index}`} className="px-3 py-1.5">
-                  {freq === null ? (
-                    <span className="text-text-subtle">–</span>
-                  ) : freq === 0 ? (
-                    <span className="tabular-nums text-text-subtle">{percent.format(0)}</span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <span
-                        aria-hidden="true"
-                        className="h-2.5 rounded-r-[4px]"
-                        style={{
-                          width: `${Math.max(2, freq * 64)}px`,
-                          background: SERIES[resolved],
-                        }}
-                      />
-                      <span className="tabular-nums text-text">{percent.format(freq)}</span>
-                    </span>
-                  )}
-                </td>
+    <div className="flex flex-col gap-3">
+      {absentCount > 0 ? (
+        <Switch
+          label={t`Show microhaplotypes absent from every group`}
+          description={plural(absentCount, {
+            one: "# microhaplotype is absent from every group shown.",
+            other: "# microhaplotypes are absent from every group shown.",
+          })}
+          checked={showAbsent}
+          onCheckedChange={setShowAbsent}
+          className="max-w-md"
+        />
+      ) : null}
+      {shown.length === 0 ? (
+        <p className="text-sm text-text-muted">
+          {t`No microhaplotypes of this target were seen in the groups shown.`}
+        </p>
+      ) : (
+        <section
+          aria-label={t`Microhaplotype frequencies by group`}
+          // Focusable so keyboard users can scroll it.
+          // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+          tabIndex={0}
+          className="max-h-112 overflow-auto rounded-lg border border-border bg-surface focus-visible:outline-offset-0"
+        >
+          <table
+            className="w-full border-separate border-spacing-0 text-sm"
+            aria-label={t`Microhaplotype frequencies by group`}
+          >
+            <thead className="bg-surface-subtle">
+              <tr>
+                <th
+                  scope="col"
+                  className="sticky top-0 left-0 z-30 min-w-32 border-r border-b border-border bg-surface-subtle px-3 py-2 align-bottom text-left font-medium text-text-muted"
+                >
+                  {t`Microhaplotype`}
+                </th>
+                {groups.map((group) => (
+                  <th
+                    key={group.name ?? ""}
+                    scope="col"
+                    className="sticky top-0 z-20 min-w-32 border-b border-border bg-surface-subtle px-3 py-2 align-bottom text-left font-medium text-text-muted"
+                  >
+                    <div>{groupName(group)}</div>
+                    <div className="mt-0.5 text-xs font-normal">
+                      <GroupSizeNote group={group} />
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((allele) => (
+                <tr key={allele.mhapId} className="group">
+                  <th
+                    scope="row"
+                    className="sticky left-0 z-10 min-w-32 border-r border-b border-border bg-surface px-3 py-1.5 text-left font-mono text-xs font-normal text-text-muted group-last:border-b-0"
+                    title={allele.seq}
+                  >
+                    {allele.label.label}
+                  </th>
+                  {allele.freqs.map((freq, index) => (
+                    <td
+                      key={groups[index]?.name ?? `none${index}`}
+                      className="min-w-32 border-b border-border bg-surface px-3 py-1.5 group-last:border-b-0"
+                    >
+                      {freq === null ? (
+                        <span className="block text-right text-text-subtle">–</span>
+                      ) : freq === 0 ? (
+                        <span className="block text-right tabular-nums text-text-subtle">
+                          {percent.format(0)}
+                        </span>
+                      ) : (
+                        <span className="flex w-full items-center gap-2">
+                          <span className="block h-2.5 flex-1 overflow-hidden rounded-sm bg-surface-subtle">
+                            <span
+                              aria-hidden="true"
+                              className="block h-full min-w-0.5 rounded-r-sm"
+                              style={{
+                                width: `${maxFreq > 0 ? (freq / maxFreq) * 100 : 0}%`,
+                                background: SERIES[resolved],
+                              }}
+                            />
+                          </span>
+                          <span className="w-11 shrink-0 text-right tabular-nums text-text">
+                            {percent.format(freq)}
+                          </span>
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
+            </tbody>
+          </table>
+        </section>
+      )}
+      {hiddenByLimit > 0 ? (
+        <p className="text-sm text-text-muted">
+          {plural(hiddenByLimit, {
+            one: "# rarer microhaplotype is not shown.",
+            other: "# rarer microhaplotypes are not shown.",
+          })}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -181,9 +357,11 @@ function timelineBarPath(options: {
 function Timeline({
   comparison,
   total,
+  headingId,
 }: {
   readonly comparison: GroupComparison;
   readonly total: number;
+  readonly headingId?: string;
 }) {
   const { resolved } = useTheme();
   const [hover, setHover] = useState<number | null>(null);
@@ -256,6 +434,7 @@ function Timeline({
   return (
     <section className="flex min-w-0 flex-col gap-4">
       <SectionHeading
+        id={headingId}
         title={t`When specimens were collected`}
         description={
           comparison.timelineUnit === "month"
@@ -391,20 +570,30 @@ function NoComparison({ reason }: { readonly reason: NoAnswerReason }) {
   );
 }
 
-/** The groups of one field, side by side, counted in the worker. */
-function Comparison({
-  source,
-  field,
-  minReads,
-  maxReads,
-  onClearMinReads,
-}: {
-  readonly source: WorkingSource;
+interface ComparisonGrouping {
+  readonly fields: readonly GroupField[];
   readonly field: GroupField;
-  readonly minReads: number;
-  readonly maxReads: number | null;
-  readonly onClearMinReads: () => void;
-}) {
+  readonly onChange: (key: GroupKey | null) => void;
+}
+
+interface ComparisonReads {
+  readonly min: number;
+  readonly input: number | null;
+  readonly max: number | null;
+  readonly onChange: (value: number | null) => void;
+}
+
+interface ComparisonProps {
+  readonly source: WorkingSource;
+  readonly grouping: ComparisonGrouping;
+  readonly reads: ComparisonReads;
+}
+
+/** The groups of one field, side by side, counted in the worker. */
+function Comparison({ source, grouping, reads }: ComparisonProps) {
+  const { fields, field, onChange: onFieldChange } = grouping;
+  const { min: minReads, input: minReadsInput, max: maxReads, onChange: onMinReadsChange } = reads;
+  const { resolved } = useTheme();
   const [target, setTarget] = useState<string | null>(null);
   const request = useMemo(
     (): WorkingPmoRequest<"groups"> => ({ kind: "groups", source, key: field.key, minReads }),
@@ -420,92 +609,200 @@ function Comparison({
     [comparison, target],
   );
   const decimal = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 2 });
-
-  if (loaded.kind === "loading") return <Skeleton className="h-64 w-full" />;
-  if (loaded.kind !== "ok") return <NoComparison reason={loaded.kind} />;
-  const shown = loaded.value;
-  if (minReads > 0 && shown.targets.length === 0) {
-    return (
-      <NoReadsAboveMinimum minReads={minReads} maxReads={maxReads} onClear={onClearMinReads} />
-    );
-  }
+  const nothingPasses = comparison !== null && minReads > 0 && comparison.targets.length === 0;
   const present = formatCount(field.present);
   const total = formatCount(field.total);
   const name = specimenFieldLabel(field.key);
+  const hasSmallGroups = comparison?.groups.some(isSmallGroup) ?? false;
+  const threshold = formatCount(SMALL_GROUP_THRESHOLD);
+  const heterozygosityRamp = SEQUENTIAL_CELL[resolved];
+
   return (
-    <>
-      {field.present < field.total ? (
-        <p className="text-sm text-text-muted">
-          {t`${present} of ${total} specimens have a value for ${name}. The others are grouped as Not recorded.`}
-        </p>
-      ) : null}
-
-      <section className="flex flex-col gap-4">
-        <SectionHeading
-          title={t`Groups`}
-          description={t`More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group.`}
-        />
-        <SortableTable
-          label={t`Groups`}
-          columns={groupColumns()}
-          rows={shown.groups}
-          rowKey={(row) => row.name ?? "\u0000"}
-        />
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <SectionHeading
-          title={t`Heterozygosity by target`}
-          description={t`Expected heterozygosity of each target in each group: 1 minus the sum of squared allele frequencies.`}
-        />
-        <SortableTable
-          label={t`Heterozygosity by target`}
-          columns={[
-            { key: "target", label: t`Target`, value: (row: TargetAcrossGroups) => row.name },
-            ...shown.groups.map((group, index): SortableColumn<TargetAcrossGroups> => ({
-              key: `g${index}`,
-              label: groupName(group),
-              value: (row) => row.heterozygosity[index] ?? null,
-              render: (row) => {
-                const value = row.heterozygosity[index];
-                return value === null || value === undefined ? "–" : decimal.format(value);
-              },
-              numeric: true,
-            })),
-          ]}
-          rows={shown.targets}
-          rowKey={(row) => row.name}
-          onRowSelect={(row) => setTarget(row.name)}
-          selectedKey={shownTarget?.name ?? null}
-        />
-      </section>
-
-      {shownTarget === null ? null : (
-        <section className="flex flex-col gap-4">
-          <SectionHeading
-            title={t`Microhaplotypes by group`}
-            description={t`How often each microhaplotype of the chosen target is seen in each group. Choose a target in the table above, or here.`}
-          />
-          <Field label={t`Target`} className="max-w-md">
-            {(control) => (
-              <Combobox
+    <div className="flex flex-col gap-6">
+      <ViewToolbar>
+        <Field label={t`Group specimens by`} layout="compact" className="min-w-0 max-w-full">
+          {(control) => (
+            <div className="w-full min-w-0 sm:w-72">
+              <Select
                 {...control}
-                options={shown.targets.map((item) => ({
-                  value: item.name,
-                  label: item.name,
-                }))}
-                value={shownTarget.name}
-                onChange={(value) => setTarget(value)}
-                noneLabel={false}
+                size="sm"
+                options={fields.map((candidate) => {
+                  const fieldPresent = formatCount(candidate.present);
+                  const fieldTotal = formatCount(candidate.total);
+                  const label = specimenFieldLabel(candidate.key);
+                  return {
+                    value: candidate.key,
+                    label: t`${label} (${fieldPresent} of ${fieldTotal} specimens)`,
+                  };
+                })}
+                value={field.key}
+                onValueChange={(value) =>
+                  onFieldChange(fields.find((candidate) => candidate.key === value)?.key ?? null)
+                }
               />
-            )}
-          </Field>
-          <AllelesByGroup target={shownTarget} groups={shown.groups} />
-        </section>
-      )}
+            </div>
+          )}
+        </Field>
+        <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
+        {comparison === null || nothingPasses ? null : (
+          <SectionJumps jumps={jumpsOf(comparison, shownTarget !== null)} />
+        )}
+      </ViewToolbar>
 
-      <Timeline comparison={shown} total={field.total} />
-    </>
+      {loaded.kind === "loading" ? (
+        <output aria-busy="true" aria-label={t`Loading`}>
+          <Skeleton className="h-64 w-full" />
+        </output>
+      ) : loaded.kind !== "ok" ? (
+        <NoComparison reason={loaded.kind} />
+      ) : nothingPasses ? (
+        <NoReadsAboveMinimum
+          minReads={minReads}
+          maxReads={maxReads}
+          onClear={() => onMinReadsChange(null)}
+        />
+      ) : (
+        <>
+          {field.present < field.total ? (
+            <p className="text-sm text-text-muted">
+              {t`${present} of ${total} specimens have a value for ${name}. The others are grouped as Not recorded.`}
+            </p>
+          ) : null}
+
+          {hasSmallGroups ? (
+            <p className="flex items-start gap-1.5 text-sm text-text-muted">
+              <TriangleExclamationPoint
+                aria-hidden="true"
+                className="mt-0.5 size-4 shrink-0 text-warning-text"
+              />
+              <span>
+                {t({
+                  message: `Groups marked with a warning have fewer than ${threshold} samples with data. Read their percentages with care.`,
+                  comment: "{threshold} is a number of samples, such as 10",
+                })}
+              </span>
+            </p>
+          ) : null}
+
+          <section className="flex flex-col gap-4">
+            <SectionHeading
+              id={HEADING.groups}
+              title={t`Groups`}
+              description={t`More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group. Alleles seen is the number of distinct alleles found in the group across targets.`}
+            />
+            <SortableTable
+              label={t`Groups`}
+              columns={groupColumns()}
+              rows={loaded.value.groups}
+              rowKey={(row) => row.name ?? "\u0000"}
+            />
+          </section>
+
+          <section className="flex flex-col gap-4">
+            <SectionHeading
+              id={HEADING.heterozygosity}
+              title={t`Heterozygosity by target`}
+              description={t`Expected heterozygosity of each target in each group: 1 minus the sum of squared allele frequencies.`}
+            />
+            <SortableTable
+              label={t`Heterozygosity by target`}
+              stickyFirstColumn
+              columns={[
+                { key: "target", label: t`Target`, value: (row: TargetAcrossGroups) => row.name },
+                ...loaded.value.groups.map((group, index): SortableColumn<TargetAcrossGroups> => ({
+                  key: `g${index}`,
+                  label: groupName(group),
+                  headerNote: <GroupSizeNote group={group} />,
+                  value: (row) => row.heterozygosity[index] ?? null,
+                  render: (row) => {
+                    const value = row.heterozygosity[index];
+                    return value === null || value === undefined ? "–" : decimal.format(value);
+                  },
+                  cellStyle: (row) => {
+                    const value = row.heterozygosity[index];
+                    return value === null || value === undefined
+                      ? undefined
+                      : { backgroundColor: rampColour(heterozygosityRamp, value) };
+                  },
+                  numeric: true,
+                })),
+              ]}
+              rows={loaded.value.targets}
+              rowKey={(row) => row.name}
+              onRowSelect={(row) => {
+                setTarget(row.name);
+                jumpToHeading(HEADING.alleles);
+              }}
+              selectedKey={shownTarget?.name ?? null}
+            />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-text-muted">
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden="true" className="tabular-nums">
+                  0
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-3 w-32 rounded-sm border border-border"
+                  style={{
+                    background: `linear-gradient(to right, ${heterozygosityRamp.join(", ")})`,
+                  }}
+                />
+                <span aria-hidden="true" className="tabular-nums">
+                  1
+                </span>
+                <span>{t`Expected heterozygosity (0 to 1)`}</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className="inline-flex h-4 w-5 items-center justify-center rounded-sm border border-border bg-surface text-xs text-text-muted"
+                >
+                  –
+                </span>
+                <span>{t`No value (unshaded)`}</span>
+              </span>
+            </div>
+          </section>
+
+          {shownTarget === null ? null : (
+            <section className="flex flex-col gap-4">
+              <SectionHeading
+                id={HEADING.alleles}
+                title={t`Microhaplotypes by group`}
+                description={t`How often each microhaplotype of the chosen target is seen in each group. Choose a target in the table above, or here.`}
+                actions={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={ArrowUp}
+                    onClick={() => jumpToHeading(HEADING.heterozygosity)}
+                  >
+                    {t`Back to heterozygosity`}
+                  </Button>
+                }
+              />
+              <Field label={t`Target`} className="max-w-md">
+                {(control) => (
+                  <Combobox
+                    {...control}
+                    options={loaded.value.targets.map((item) => ({
+                      value: item.name,
+                      label: item.name,
+                    }))}
+                    value={shownTarget.name}
+                    onChange={(value) => setTarget(value)}
+                    noneLabel={false}
+                  />
+                )}
+              </Field>
+              <AllelesByGroup target={shownTarget} groups={loaded.value.groups} />
+            </section>
+          )}
+
+          <Timeline comparison={loaded.value} total={field.total} headingId={HEADING.timeline} />
+        </>
+      )}
+    </div>
   );
 }
 
@@ -535,7 +832,13 @@ export function CompareTab({
   const fields = usePmoQuery(fieldsRequest);
   const [key, setKey] = useState<GroupKey | null>(null);
 
-  if (fields.kind === "loading") return <Skeleton className="h-40 w-full" />;
+  if (fields.kind === "loading") {
+    return (
+      <output aria-busy="true" aria-label={t`Loading`}>
+        <Skeleton className="h-40 w-full" />
+      </output>
+    );
+  }
   if (fields.kind !== "ok") return <NoComparison reason={fields.kind} />;
   const usable = fields.value;
   const chosen = usable.find((field) => field.key === key) ?? usable[0] ?? null;
@@ -551,40 +854,10 @@ export function CompareTab({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <ViewToolbar>
-        <Field label={t`Group specimens by`} layout="compact" className="min-w-0 max-w-full">
-          {(control) => (
-            <div className="w-full min-w-0 sm:w-72">
-              <Select
-                {...control}
-                options={usable.map((field) => {
-                  const fieldPresent = formatCount(field.present);
-                  const fieldTotal = formatCount(field.total);
-                  const label = specimenFieldLabel(field.key);
-                  return {
-                    value: field.key,
-                    label: t`${label} (${fieldPresent} of ${fieldTotal} specimens)`,
-                  };
-                })}
-                value={chosen.key}
-                onValueChange={(value) =>
-                  setKey(usable.find((field) => field.key === value)?.key ?? null)
-                }
-              />
-            </div>
-          )}
-        </Field>
-        <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
-      </ViewToolbar>
-
-      <Comparison
-        source={source}
-        field={chosen}
-        minReads={minReads}
-        maxReads={maxReads}
-        onClearMinReads={() => onMinReadsChange(null)}
-      />
-    </div>
+    <Comparison
+      source={source}
+      grouping={{ fields: usable, field: chosen, onChange: setKey }}
+      reads={{ min: minReads, input: minReadsInput, max: maxReads, onChange: onMinReadsChange }}
+    />
   );
 }
