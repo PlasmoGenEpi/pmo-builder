@@ -300,10 +300,6 @@ msgstr "{alleleCount, plural, one {# microhaplotype} other {# microhaplotypes}}"
 msgid "{baseCount, plural, one {# base} other {# bases}}"
 msgstr "{baseCount, plural, one {# base} other {# bases}}"
 
-#: src/features/pmo-file/summary/ReadsGrid.tsx
-msgid "{chosenSampleName} at {chosenTargetName}: {chosenReadsLabel}, {chosenAllelesLabel}."
-msgstr "{chosenSampleName} at {chosenTargetName}: {chosenReadsLabel}, {chosenAllelesLabel}."
-
 #. {column} starts the sentence and names a column, with any article, such as 'Column "Host taxon"'. {row} is one row without an article, such as 'row 5'.
 #: src/domain/build/notices.ts
 msgid "{column} must hold NCBI taxonomy numbers such as 5833, separated by commas, but {row} holds \"{value}\". Correct it, or unmap the column if the field is optional."
@@ -910,6 +906,14 @@ msgstr "{sampleCount, plural, one {Sequencing run \"{run}\" is applied to all # 
 #: src/domain/build/merge.ts
 msgid "{sampleCount, plural, one {Sequencing run \"{run}\" is applied to all # library sample, because there is no library sample table to name a run for each.} other {Sequencing run \"{run}\" is applied to all # library samples, because there is no library sample table to name a run for each.}}"
 msgstr "{sampleCount, plural, one {Sequencing run \"{run}\" is applied to all # library sample, because there is no library sample table to name a run for each.} other {Sequencing run \"{run}\" is applied to all # library samples, because there is no library sample table to name a run for each.}}"
+
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "{sampleName} at {targetName}: {reads, plural, one {# read} other {# reads}}, {alleles, plural, one {# microhaplotype} other {# microhaplotypes}}."
+msgstr "{sampleName} at {targetName}: {reads, plural, one {# read} other {# reads}}, {alleles, plural, one {# microhaplotype} other {# microhaplotypes}}."
+
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "{sampleName} at {targetName}: no reads, {alleles, plural, one {# microhaplotype} other {# microhaplotypes}}."
+msgstr "{sampleName} at {targetName}: no reads, {alleles, plural, one {# microhaplotype} other {# microhaplotypes}}."
 
 #: src/features/review/reviewModel.ts
 msgid "{samples, plural, one {# sample} other {# samples}} over {stages, plural, one {# stage} other {# stages}}"
@@ -3646,11 +3650,6 @@ msgstr "No project yet"
 #: src/features/published/PublishedPage.tsx
 msgid "No published PMO matches"
 msgstr "No published PMO matches"
-
-#. Part of a chosen reads-grid cell summary
-#: src/features/pmo-file/summary/ReadsGrid.tsx
-msgid "no reads"
-msgstr "no reads"
 
 #: src/features/pmo-file/summary/ReadsGrid.tsx
 msgid "No reads"

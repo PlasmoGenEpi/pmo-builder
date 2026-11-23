@@ -174,6 +174,13 @@ interface ChosenKey {
   readonly targetName: string;
 }
 
+interface CellDetails {
+  readonly sample: SampleSummary;
+  readonly target: PmoSummary["targets"][number];
+  readonly reads: number;
+  readonly alleles: number;
+}
+
 const LABEL_WIDTH = 140;
 const MIN_CELL_WIDTH = 2;
 const MAX_HEIGHT = 640;
@@ -186,6 +193,26 @@ function readsText(readCount: number): string {
 
 function allelesText(alleleCount: number): string {
   return plural(alleleCount, { one: "# microhaplotype", other: "# microhaplotypes" });
+}
+
+function chosenCellSummary(details: CellDetails): string {
+  const sampleName = details.sample.name;
+  const targetName = details.target.name;
+  const reads = details.reads;
+  const alleles = details.alleles;
+  if (reads === 0) {
+    return t`${sampleName} at ${targetName}: no reads, ${plural(alleles, {
+      one: "# microhaplotype",
+      other: "# microhaplotypes",
+    })}.`;
+  }
+  return t`${sampleName} at ${targetName}: ${plural(reads, {
+    one: "# read",
+    other: "# reads",
+  })}, ${plural(alleles, {
+    one: "# microhaplotype",
+    other: "# microhaplotypes",
+  })}.`;
 }
 
 /**
@@ -415,7 +442,12 @@ export function ReadsGrid({
     }
   }
 
-  function selectCell(row: number, column: number, options?: { readonly scroll?: boolean }): void {
+  function selectCell(options: {
+    readonly row: number;
+    readonly column: number;
+    readonly scroll?: boolean;
+  }): void {
+    const { row, column, scroll = false } = options;
     const sample = summary.samples[row];
     const targetIndex = columns[column];
     const target = targetIndex === undefined ? undefined : summary.targets[targetIndex];
@@ -424,14 +456,15 @@ export function ReadsGrid({
     setChosen({ sampleKey: key, targetName: target.name });
     onTargetSelect?.(target.name);
     onSampleSelect?.(key);
-    if (options?.scroll) scrollCellIntoView(row, column);
+    if (scroll) scrollCellIntoView(row, column);
   }
 
-  function locateCell(
-    clientX: number,
-    clientY: number,
-    box: DOMRect,
-  ): { readonly row: number; readonly column: number } | null {
+  function locateCell(options: {
+    readonly clientX: number;
+    readonly clientY: number;
+    readonly box: DOMRect;
+  }): { readonly row: number; readonly column: number } | null {
+    const { clientX, clientY, box } = options;
     const x = clientX - box.left;
     const y = clientY - box.top;
     const column = xs.findLastIndex((start) => start <= x);
@@ -439,6 +472,20 @@ export function ReadsGrid({
     const inCell = column >= 0 && x < (xs[column] ?? 0) + cellWidth;
     if (!inCell || row < 0 || row >= rows) return null;
     return { row, column };
+  }
+
+  function cellAt(coords: { readonly row: number; readonly column: number }): CellDetails | null {
+    const sample = summary.samples[coords.row];
+    const targetIndex = columns[coords.column];
+    const target = targetIndex === undefined ? undefined : summary.targets[targetIndex];
+    if (sample === undefined || targetIndex === undefined || target === undefined) return null;
+    const cellIndex = coords.row * summary.grid.columns + targetIndex;
+    return {
+      sample,
+      target,
+      reads: summary.grid.reads[cellIndex] ?? 0,
+      alleles: summary.grid.alleles[cellIndex] ?? 0,
+    };
   }
 
   function handleGridKeyDown(event: KeyboardEvent<HTMLElement>): void {
@@ -475,57 +522,17 @@ export function ReadsGrid({
         return;
     }
     event.preventDefault();
-    selectCell(nextRow, nextColumn, { scroll: true });
+    selectCell({ row: nextRow, column: nextColumn, scroll: true });
   }
 
-  const hovered =
-    hover === null
-      ? null
-      : (() => {
-          const targetIndex = columns[hover.column] ?? -1;
-          const cellIndex = hover.row * summary.grid.columns + targetIndex;
-          return {
-            sample: summary.samples[hover.row],
-            target: summary.targets[targetIndex],
-            reads: targetIndex < 0 ? 0 : (summary.grid.reads[cellIndex] ?? 0),
-            alleles: targetIndex < 0 ? 0 : (summary.grid.alleles[cellIndex] ?? 0),
-          };
-        })();
-
-  const chosenDetails =
-    chosenCoords === null
-      ? null
-      : (() => {
-          const targetIndex = columns[chosenCoords.column];
-          const sample = summary.samples[chosenCoords.row];
-          const target = targetIndex === undefined ? undefined : summary.targets[targetIndex];
-          if (sample === undefined || target === undefined || targetIndex === undefined) {
-            return null;
-          }
-          const cellIndex = chosenCoords.row * summary.grid.columns + targetIndex;
-          return {
-            sample,
-            target,
-            reads: summary.grid.reads[cellIndex] ?? 0,
-            alleles: summary.grid.alleles[cellIndex] ?? 0,
-          };
-        })();
+  const hovered = hover === null ? null : cellAt(hover);
+  const chosenDetails = chosenCoords === null ? null : cellAt(chosenCoords);
 
   const maxReads = formatCount(Math.round(10 ** maxLog - 1));
   const sampleCount = formatCount(rows);
   const targetCount = formatCount(columns.length);
   const ramp = SEQUENTIAL[resolved];
   const hasHeader = headerGroups.length > 0 || showTargetNames;
-
-  const chosenSampleName = chosenDetails?.sample.name ?? "";
-  const chosenTargetName = chosenDetails?.target.name ?? "";
-  const chosenReadsLabel =
-    chosenDetails === null
-      ? ""
-      : chosenDetails.reads === 0
-        ? t({ message: "no reads", comment: "Part of a chosen reads-grid cell summary" })
-        : readsText(chosenDetails.reads);
-  const chosenAllelesLabel = chosenDetails === null ? "" : allelesText(chosenDetails.alleles);
 
   return (
     <div className="flex min-w-0 flex-col gap-3">
@@ -600,12 +607,14 @@ export function ReadsGrid({
                           key={target.name}
                           variant="ghost"
                           size="sm"
+                          wrap
+                          tabIndex={-1}
                           aria-pressed={isSelected}
                           title={target.name}
                           onClick={() => onTargetSelect?.(target.name)}
                           style={{ left: `${xs[index] ?? 0}px`, width: `${cellWidth}px` }}
                           className={cn(
-                            "absolute inset-y-0 h-auto! min-w-0 rotate-180 justify-start rounded-none px-0.5 py-1 text-xs font-normal [writing-mode:vertical-rl]",
+                            "absolute inset-y-0 min-w-0 rotate-180 justify-start rounded-none pl-0.5 pr-0.5 text-xs font-normal [writing-mode:vertical-rl]",
                             isSelected
                               ? "bg-accent-subtle font-medium text-accent-text"
                               : "text-text-muted hover:text-text",
@@ -652,7 +661,7 @@ export function ReadsGrid({
               onMouseMove={(event) => {
                 if (lastPointerType.current === "touch") return;
                 const box = event.currentTarget.getBoundingClientRect();
-                const cell = locateCell(event.clientX, event.clientY, box);
+                const cell = locateCell({ clientX: event.clientX, clientY: event.clientY, box });
                 if (cell === null) {
                   setHover(null);
                 } else {
@@ -672,8 +681,8 @@ export function ReadsGrid({
               onMouseLeave={() => setHover(null)}
               onClick={(event) => {
                 const box = event.currentTarget.getBoundingClientRect();
-                const cell = locateCell(event.clientX, event.clientY, box);
-                if (cell !== null) selectCell(cell.row, cell.column);
+                const cell = locateCell({ clientX: event.clientX, clientY: event.clientY, box });
+                if (cell !== null) selectCell({ row: cell.row, column: cell.column });
               }}
             />
           </div>
@@ -690,8 +699,8 @@ export function ReadsGrid({
                   : hover.viewY + 12,
             }}
           >
-            <div className="font-medium break-all">{hovered.sample?.name}</div>
-            <div className="text-text-muted break-all">{hovered.target?.name}</div>
+            <div className="font-medium break-all">{hovered.sample.name}</div>
+            <div className="text-text-muted break-all">{hovered.target.name}</div>
             <div>{hovered.reads === 0 ? t`No reads` : readsText(hovered.reads)}</div>
             {hovered.alleles > 0 ? (
               <div className="text-xs text-text-muted">{allelesText(hovered.alleles)}</div>
@@ -731,7 +740,7 @@ export function ReadsGrid({
         >
           {chosenDetails === null
             ? t`Choose a cell or use the arrow keys to inspect a sample and target.`
-            : t`${chosenSampleName} at ${chosenTargetName}: ${chosenReadsLabel}, ${chosenAllelesLabel}.`}
+            : chosenCellSummary(chosenDetails)}
         </output>
       </div>
     </div>

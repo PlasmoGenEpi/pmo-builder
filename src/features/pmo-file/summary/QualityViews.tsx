@@ -5,7 +5,7 @@
  * the file has its data, and says how much of the file it covers.
  */
 import { plural, t } from "@lingui/core/macro";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { useTheme } from "@/app/theme";
 import type { PmoSummary, SampleSummary } from "@/domain/tools/types";
@@ -166,6 +166,36 @@ function targetsWithDataLabel(targets: number): string {
   return plural(targets, { one: "# target with data", other: "# targets with data" });
 }
 
+function positionWellTooltip(options: {
+  readonly wellId: string;
+  readonly container: HTMLElement | null;
+  readonly tooltip: HTMLElement | null;
+}): void {
+  const { wellId, container, tooltip } = options;
+  if (container === null || tooltip === null) return;
+  const wellElement = container.querySelector(`[data-plate-well="${wellId}"]`);
+  if (wellElement === null) return;
+  const wellRect = wellElement.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const pos = placeWellTooltip({
+    well: {
+      left: wellRect.left,
+      top: wellRect.top,
+      right: wellRect.right,
+      bottom: wellRect.bottom,
+    },
+    container: containerRect,
+    tooltip: { width: tooltipRect.width, height: tooltipRect.height },
+    viewport: {
+      width: document.documentElement.clientWidth || window.innerWidth,
+      height: document.documentElement.clientHeight || window.innerHeight,
+    },
+  });
+  tooltip.style.left = `${pos.left}px`;
+  tooltip.style.top = `${pos.top}px`;
+}
+
 /** Each plate as a grid of wells, coloured by how many targets have data. */
 export function PlateView({ summary, headingId }: QualityViewProps) {
   const { resolved } = useTheme();
@@ -186,11 +216,11 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
   const activeId = rawActive === null || activeSample === null ? null : rawActive.id;
   const hasPinned = pinned !== null;
 
-  const clearSelection = () => {
+  const clearSelection = useCallback(() => {
     setPinned(null);
     setFocused(null);
     setHovered(null);
-  };
+  }, []);
 
   const togglePinned = (well: ActiveWell) => {
     if (pinned?.id === well.id) {
@@ -204,55 +234,32 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
     if (activeId === null) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setPinned(null);
-        setFocused(null);
-        setHovered(null);
+        clearSelection();
       }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [activeId]);
+  }, [activeId, clearSelection]);
 
   useEffect(() => {
     if (!hasPinned) return undefined;
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof Element) || target.closest("[data-plate-well]") === null) {
-        setPinned(null);
-        setFocused(null);
-        setHovered(null);
+        clearSelection();
       }
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [hasPinned]);
+  }, [hasPinned, clearSelection]);
 
   useLayoutEffect(() => {
     if (activeId === null) return;
-    const container = platesRef.current;
-    const tooltip = tooltipRef.current;
-    if (container === null || tooltip === null) return;
-    const wellElement = container.querySelector(`[data-plate-well="${activeId}"]`);
-    if (wellElement === null) return;
-    const wellRect = wellElement.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-    const tooltipRect = tooltip.getBoundingClientRect();
-    const pos = placeWellTooltip({
-      well: {
-        left: wellRect.left,
-        top: wellRect.top,
-        right: wellRect.right,
-        bottom: wellRect.bottom,
-      },
-      container: containerRect,
-      tooltip: { width: tooltipRect.width, height: tooltipRect.height },
-      viewport: {
-        width: document.documentElement.clientWidth || window.innerWidth,
-        height: document.documentElement.clientHeight || window.innerHeight,
-      },
+    positionWellTooltip({
+      wellId: activeId,
+      container: platesRef.current,
+      tooltip: tooltipRef.current,
     });
-    tooltip.style.left = `${pos.left}px`;
-    tooltip.style.top = `${pos.top}px`;
   }, [activeId]);
 
   if (!showsPlates(summary)) return null;
@@ -300,32 +307,12 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
                 onScroll={() => {
                   setHovered(null);
                   const remaining = focused ?? pinned;
-                  const container = platesRef.current;
-                  const tooltip = tooltipRef.current;
-                  if (remaining !== null && container !== null && tooltip !== null) {
-                    const wellElement = container.querySelector(
-                      `[data-plate-well="${remaining.id}"]`,
-                    );
-                    if (wellElement === null) return;
-                    const wellRect = wellElement.getBoundingClientRect();
-                    const containerRect = container.getBoundingClientRect();
-                    const tooltipRect = tooltip.getBoundingClientRect();
-                    const pos = placeWellTooltip({
-                      well: {
-                        left: wellRect.left,
-                        top: wellRect.top,
-                        right: wellRect.right,
-                        bottom: wellRect.bottom,
-                      },
-                      container: containerRect,
-                      tooltip: { width: tooltipRect.width, height: tooltipRect.height },
-                      viewport: {
-                        width: document.documentElement.clientWidth || window.innerWidth,
-                        height: document.documentElement.clientHeight || window.innerHeight,
-                      },
+                  if (remaining !== null) {
+                    positionWellTooltip({
+                      wellId: remaining.id,
+                      container: platesRef.current,
+                      tooltip: tooltipRef.current,
                     });
-                    tooltip.style.left = `${pos.left}px`;
-                    tooltip.style.top = `${pos.top}px`;
                   }
                 }}
                 className="max-w-full overflow-x-auto focus-visible:outline-offset-0"
@@ -430,7 +417,10 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
                         strokeWidth={isPinned ? 2 : undefined}
                         onMouseEnter={() => setHovered(well)}
                         onMouseLeave={() => setHovered(null)}
-                        onFocus={() => setFocused(well)}
+                        onFocus={() => {
+                          setHovered(null);
+                          setFocused(well);
+                        }}
                         onBlur={() => setFocused(null)}
                         onClick={() => togglePinned(well)}
                         onKeyDown={(event) => {

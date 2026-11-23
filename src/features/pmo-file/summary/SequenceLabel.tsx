@@ -111,14 +111,15 @@ export function SequenceLabel({ label, seq, note = null, className }: SequenceLa
     <Popover
       align="start"
       label={t`Sequence for ${label}`}
-      className="w-96! p-3!"
+      className="w-96"
       trigger={
         <Button
           variant="ghost"
           size="sm"
+          wrap
           title={title}
           className={cn(
-            "h-auto! min-h-6 max-w-full justify-start! px-1.5! py-0.5 text-left font-mono text-xs! font-normal! underline decoration-border-strong decoration-dotted underline-offset-2 hover:decoration-text",
+            "justify-start text-left font-mono text-xs font-normal underline decoration-border-strong decoration-dotted underline-offset-2 hover:decoration-text",
             className,
           )}
         >

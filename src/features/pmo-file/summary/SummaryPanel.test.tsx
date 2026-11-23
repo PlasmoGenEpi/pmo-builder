@@ -124,11 +124,25 @@ describe("SummaryPanel: Show targets with no data", () => {
     const targetsSection = targetsHeading.closest("section");
     if (targetsSection === null) throw new Error("Expected targets section");
 
-    // Initially only the 21 targets with data appear in both the grid and the Targets table.
+    // Initially only the 21 targets with data appear in both the grid and the Targets table,
+    // while the row count still reflects all 276 targets in the file.
     expect(toggle).not.toBeChecked();
     expect(within(readsSection).getByText(/50 samples at 21 targets/)).toBeInTheDocument();
-    expect(within(targetsSection).getByText("Showing 21 of 21 rows")).toBeVisible();
+    expect(within(targetsSection).getByText("Showing 21 of 276 rows")).toBeVisible();
     expect(within(targetsSection).getAllByRole("row")).toHaveLength(22);
+
+    // Searching narrows the shown count while keeping the 276-target total.
+    const targetsSearch = within(targetsSection).getByRole("searchbox", { name: "Search Targets" });
+    const firstTargetName = within(targetsSection)
+      .getAllByRole("row")[1]
+      ?.querySelector("button")?.textContent;
+    if (!firstTargetName) throw new Error("Expected a first target row button");
+    await user.type(targetsSearch, firstTargetName);
+    expect(within(targetsSection).getByText("Showing 1 of 276 rows")).toBeVisible();
+    await user.click(
+      within(targetsSection).getByRole("button", { name: "Clear search for Targets" }),
+    );
+    expect(within(targetsSection).getByText("Showing 21 of 276 rows")).toBeVisible();
 
     // Turning it on adds all 276 targets to both views.
     await user.click(toggle);
@@ -141,7 +155,7 @@ describe("SummaryPanel: Show targets with no data", () => {
     await user.click(toggle);
     expect(toggle).not.toBeChecked();
     expect(within(readsSection).getByText(/50 samples at 21 targets/)).toBeInTheDocument();
-    expect(within(targetsSection).getByText("Showing 21 of 21 rows")).toBeVisible();
+    expect(within(targetsSection).getByText("Showing 21 of 276 rows")).toBeVisible();
     expect(within(targetsSection).getAllByRole("row")).toHaveLength(22);
   });
 

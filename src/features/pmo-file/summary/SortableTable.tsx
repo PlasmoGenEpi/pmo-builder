@@ -30,12 +30,23 @@ export interface SortableTableDownload {
   readonly format?: TableFormat;
 }
 
+/** A request to scroll a {@link SortableTable} to a row key; bump `seq` to repeat. */
+export interface TableScrollRequest {
+  readonly key: string;
+  readonly seq: number;
+}
+
 /** Props for {@link SortableTable}. */
 export interface SortableTableProps<Row> {
   /** Names the table for screen readers. */
   readonly label: string;
   readonly columns: readonly SortableColumn<Row>[];
   readonly rows: readonly Row[];
+  /**
+   * Total row count shown as "Showing X of Y rows". Defaults to `rows.length`,
+   * and may be larger when an outside setting hides rows before passing them in.
+   */
+  readonly totalRows?: number;
   readonly rowKey: (row: Row) => string;
   /** Makes rows choosable; the chosen one is marked. */
   readonly onRowSelect?: (row: Row) => void;
@@ -45,7 +56,7 @@ export interface SortableTableProps<Row> {
    * clearing an active search first if it hides that row. Increment `seq` to
    * scroll to the same key again.
    */
-  readonly scrollToRow?: { readonly key: string; readonly seq: number } | null;
+  readonly scrollToRow?: TableScrollRequest | null;
   /** The column sorted by at first, and its direction. */
   readonly initialSort?: { readonly key: string; readonly descending: boolean };
   /** Column keys searched when the table has more than a handful of rows. */
@@ -66,6 +77,7 @@ export function SortableTable<Row>({
   label,
   columns,
   rows,
+  totalRows,
   rowKey,
   onRowSelect,
   selectedKey = null,
@@ -77,19 +89,23 @@ export function SortableTable<Row>({
 }: SortableTableProps<Row>) {
   const [sort, setSort] = useState(initialSort ?? null);
   const [query, setQuery] = useState("");
-  const [handledScrollSeq, setHandledScrollSeq] = useState<number | null>(null);
+  const [clearedSearchScrollSeq, setClearedSearchScrollSeq] = useState<number | null>(null);
   const tableId = useId();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const scrollRegionRef = useRef<HTMLElement>(null);
   const theadRef = useRef<HTMLTableSectionElement>(null);
   const rowElements = useRef(new Map<string, HTMLTableRowElement>());
-  const lastScrolledSeq = useRef<number | null>(null);
+  const scrolledToSeq = useRef<number | null>(null);
 
   const showSearch =
     searchableColumns !== undefined &&
     searchableColumns.length > 0 &&
     rows.length > SEARCH_ROW_THRESHOLD;
-  const showToolbar = showSearch || searchableColumns !== undefined || download !== undefined;
+  const showToolbar =
+    showSearch ||
+    searchableColumns !== undefined ||
+    download !== undefined ||
+    totalRows !== undefined;
   const activeQuery = showSearch ? query.trim().toLowerCase() : "";
 
   const filtered = useMemo(() => {
@@ -104,8 +120,8 @@ export function SortableTable<Row>({
     );
   }, [rows, columns, searchableColumns, activeQuery]);
 
-  if (scrollToRow !== null && scrollToRow.seq !== handledScrollSeq) {
-    setHandledScrollSeq(scrollToRow.seq);
+  if (scrollToRow !== null && scrollToRow.seq !== clearedSearchScrollSeq) {
+    setClearedSearchScrollSeq(scrollToRow.seq);
     if (
       activeQuery !== "" &&
       rows.some((row) => rowKey(row) === scrollToRow.key) &&
@@ -132,17 +148,13 @@ export function SortableTable<Row>({
     scrollToRow !== null && sorted.some((row) => rowKey(row) === scrollToRow.key);
 
   useEffect(() => {
-    if (
-      scrollToRow === null ||
-      !scrollTargetPresent ||
-      lastScrolledSeq.current === scrollToRow.seq
-    ) {
+    if (scrollToRow === null || !scrollTargetPresent || scrolledToSeq.current === scrollToRow.seq) {
       return;
     }
     const container = scrollRegionRef.current;
     const rowElement = rowElements.current.get(scrollToRow.key);
     if (container === null || rowElement === undefined) return;
-    lastScrolledSeq.current = scrollToRow.seq;
+    scrolledToSeq.current = scrollToRow.seq;
 
     const headerHeight = theadRef.current?.offsetHeight ?? 0;
     const containerRect = container.getBoundingClientRect();
@@ -170,7 +182,7 @@ export function SortableTable<Row>({
 
   const title = label;
   const format: TableFormat = download?.format ?? "csv";
-  const total = rows.length;
+  const total = totalRows ?? rows.length;
   const shownCount = formatCount(sorted.length);
   const totalCount = formatCount(total);
 
