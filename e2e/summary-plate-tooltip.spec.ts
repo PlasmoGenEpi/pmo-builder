@@ -194,18 +194,31 @@ test("hovering a well in the last row and last column keeps its details inside t
   });
 
   const wellBoxBefore = await requireBox(wellH12, "well H12");
+  expectInsideViewport(wellBoxBefore, viewport);
   expect(wellBoxBefore.y + wellBoxBefore.height).toBeGreaterThan(viewport.height - 40);
 
-  await wellH12.hover();
+  // Hover by coordinates rather than `locator.hover()` so Playwright does not
+  // auto-scroll well H12 away from the bottom edge before triggering the tooltip.
+  await page.mouse.move(
+    wellBoxBefore.x + wellBoxBefore.width / 2,
+    wellBoxBefore.y + wellBoxBefore.height / 2,
+  );
 
   const tooltip = plates.getByText("corner_h12", { exact: true }).locator("..");
   await expect(tooltip).toBeVisible();
   await expect(tooltip).toContainText("2 targets with data");
 
   const wellBox = await requireBox(wellH12, "well H12");
+  expect(wellBox.y + wellBox.height, "well H12 stays near bottom edge").toBeGreaterThan(
+    viewport.height - 40,
+  );
   const tooltipBox = await requireBox(tooltip, "tooltip");
 
   expectInsideViewport(tooltipBox, viewport);
+  expect(
+    tooltipBox.y + tooltipBox.height,
+    "tooltip flips above well H12 near bottom edge",
+  ).toBeLessThanOrEqual(wellBox.y);
   expect(
     boxDistance(wellBox, tooltipBox),
     "distance between well H12 and tooltip",
@@ -233,10 +246,31 @@ test("plate legend shows scale, no-data and empty-well entries in light and dark
   const legendBox = await requireBox(legend, "plate legend at 390 px");
   expectInsideViewport(legendBox, viewport);
 
-  // Switch to dark theme and confirm the legend remains visible with dark palette styling.
+  const readLegendPalette = async () =>
+    legend.evaluate((list) => {
+      const swatches = list.querySelectorAll<HTMLElement>('[aria-hidden="true"]');
+      const ramp = swatches[0];
+      const noData = swatches[1];
+      return {
+        rampImage: ramp ? getComputedStyle(ramp).backgroundImage : "",
+        noDataBg: noData ? getComputedStyle(noData).backgroundColor : "",
+      };
+    });
+
+  const lightPalette = await readLegendPalette();
+  expect(lightPalette.rampImage).toContain("linear-gradient");
+  expect(lightPalette.noDataBg).not.toBe("");
+
+  // Switch to dark theme and confirm the legend updates to dark palette colours.
   await page.emulateMedia({ colorScheme: "dark" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect(legend).toBeVisible();
+  await expect
+    .poll(async () => (await readLegendPalette()).rampImage)
+    .not.toBe(lightPalette.rampImage);
+  const darkPalette = await readLegendPalette();
+  expect(darkPalette.rampImage).toContain("linear-gradient");
+  expect(darkPalette.noDataBg).not.toBe(lightPalette.noDataBg);
 
   // Keyboard focus on a filled well opens its details inside the viewport.
   const wellA1 = figure.getByRole("button", { name: /^A1, example_sample_01:/ });

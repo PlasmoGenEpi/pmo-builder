@@ -2,6 +2,7 @@
  * Formats and downloads a table as CSV or TSV directly in the browser.
  * Does not import `pmotools-ts` so it stays light on the main thread.
  */
+import { baseNameOf } from "@/domain/tools/baseName";
 import type { TableFormat, WorkingSource } from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
 
@@ -20,8 +21,6 @@ export interface DownloadDelimitedTableOptions extends FormatDelimitedTableOptio
   /** File name without extension, such as `"study-summary-targets"`. */
   readonly fileName: string;
 }
-
-const PMO_EXTENSIONS = /(?:\.pmo)?\.json(?:\.gz)?$|\.gz$/i;
 
 function formatCell(value: DelimitedCell, delimiter: string): string {
   if (value === null) return "";
@@ -68,7 +67,6 @@ export function downloadDelimitedTable({
 
 /** Strips PMO extensions from `fileName` and appends `-subset` when working with a subset. */
 export function pmoBaseName(fileName: string | null, source: WorkingSource = "original"): string {
-  const stripped = (fileName?.trim() ?? "").replace(PMO_EXTENSIONS, "");
-  const base = stripped === "" ? "pmo" : stripped;
+  const base = baseNameOf(fileName ?? "");
   return source === "subset" ? `${base}-subset` : base;
 }

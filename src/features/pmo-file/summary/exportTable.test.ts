@@ -88,6 +88,8 @@ describe("downloadDelimitedTable", () => {
 
 describe("pmoBaseName", () => {
   it("strips PMO file extensions and marks subsets", () => {
+    expect(pmoBaseName("study.pmo.gz", "original")).toBe("study");
+    expect(pmoBaseName("study.pmo.gz", "subset")).toBe("study-subset");
     expect(pmoBaseName("study.pmo.json.gz", "original")).toBe("study");
     expect(pmoBaseName("study.json.gz", "subset")).toBe("study-subset");
     expect(pmoBaseName("study.json", "original")).toBe("study");

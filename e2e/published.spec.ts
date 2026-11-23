@@ -386,8 +386,9 @@ test("opens the coverage grid, navigates and selects a cell from the keyboard, a
     if (!(active instanceof HTMLElement) || !(corner instanceof HTMLElement)) return null;
     return active.getBoundingClientRect().left - corner.getBoundingClientRect().right;
   });
-  expect(leftClearance).not.toBeNull();
-  expect(leftClearance ?? -1).toBeGreaterThanOrEqual(-1);
+  expect(leftClearance, "coverage grid left clearance").not.toBeNull();
+  if (leftClearance === null) throw new Error("Missing coverage grid left clearance");
+  expect(leftClearance, "focused cell clears sticky row header").toBeGreaterThanOrEqual(0);
 
   await page.keyboard.press("Control+Home");
   const cornerClearance = await scrollBox.evaluate((el) => {
@@ -401,9 +402,14 @@ test("opens the coverage grid, navigates and selects a cell from the keyboard, a
       topDelta: activeRect.top - cornerRect.bottom,
     };
   });
-  expect(cornerClearance).not.toBeNull();
-  expect(cornerClearance?.leftDelta ?? -1).toBeGreaterThanOrEqual(-1);
-  expect(cornerClearance?.topDelta ?? -1).toBeGreaterThanOrEqual(-1);
+  expect(cornerClearance, "coverage grid corner clearance").not.toBeNull();
+  if (cornerClearance === null) throw new Error("Missing coverage grid corner clearance");
+  expect(cornerClearance.leftDelta, "corner cell clears sticky left header").toBeGreaterThanOrEqual(
+    0,
+  );
+  expect(cornerClearance.topDelta, "corner cell clears sticky top header").toBeGreaterThanOrEqual(
+    0,
+  );
 });
 
 test("keeps the coverage grid scrolling inside its own area at 390 px with no page overflow", async ({
@@ -427,13 +433,19 @@ test("keeps the coverage grid scrolling inside its own area at 390 px with no pa
       boxScrollWidth: el.scrollWidth,
       boxClientWidth: el.clientWidth,
       boxRight: box.right,
-      readoutRight: readout?.right ?? 0,
+      readoutRight: readout === undefined ? null : readout.right,
+      readoutWidth: readout === undefined ? null : readout.width,
       pageOverflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
   });
 
   expect(metrics.boxScrollWidth).toBeGreaterThan(metrics.boxClientWidth);
   expect(metrics.boxRight).toBeLessThanOrEqual(390);
+  expect(metrics.readoutRight, "coverage readout present").not.toBeNull();
+  if (metrics.readoutRight === null || metrics.readoutWidth === null) {
+    throw new Error("Missing coverage-readout element");
+  }
+  expect(metrics.readoutWidth).toBeGreaterThan(0);
   expect(metrics.readoutRight).toBeLessThanOrEqual(390);
   expect(metrics.pageOverflowX).toBeLessThanOrEqual(0);
 });
@@ -713,8 +725,12 @@ test("renders 50 entries at first, adds 50 with focus on the first new entry, re
     .toBe("#/published?sort=specimens&view=table");
   await expect(page.getByRole("button", { name: "Show more" })).toBeVisible();
 
-  // Filtering down to 50 or fewer entries hides Show more.
+  // Filtering down to fewer than 50 entries hides Show more.
   await chooseOption(page, "Species", /^Plasmodium vivax \(\d+\)$/);
-  expect(await tableRows.count()).toBeLessThanOrEqual(50);
+  await expect
+    .poll(() => page.evaluate(() => window.location.hash))
+    .toBe("#/published?species=5855&sort=specimens&view=table");
+  await expect.poll(() => tableRows.count()).toBeLessThan(50);
+  expect(await tableRows.count()).toBeGreaterThan(0);
   await expect(page.getByRole("button", { name: "Show more" })).toBeHidden();
 });

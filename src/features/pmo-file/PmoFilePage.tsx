@@ -70,26 +70,31 @@ function OpenBuilt() {
     };
   }, [session, navigate]);
 
-  return noBuiltPmo ? (
-    <Callout
-      tone="error"
-      live
-      title={t`There is no built PMO to open`}
-      action={
-        <RouterLink
-          href={BUILD_PATH}
-          className={buttonClassName({ variant: "secondary", size: "sm" })}
+  return (
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold tracking-tight text-text">{t`My PMO file`}</h1>
+      {noBuiltPmo ? (
+        <Callout
+          tone="error"
+          live
+          title={t`There is no built PMO to open`}
+          action={
+            <RouterLink
+              href={BUILD_PATH}
+              className={buttonClassName({ variant: "secondary", size: "sm" })}
+            >
+              {t`Go to Build`}
+            </RouterLink>
+          }
         >
-          {t`Go to Build`}
-        </RouterLink>
-      }
-    >
-      <Trans>Finish the required steps first, so that the PMO can be built.</Trans>
-    </Callout>
-  ) : (
-    <div className="flex items-center gap-2 text-base text-text-muted">
-      <Spinner />
-      {t`Opening the PMO built from your draft`}
+          <Trans>Finish the required steps first, so that the PMO can be built.</Trans>
+        </Callout>
+      ) : (
+        <div className="flex items-center gap-2 text-base text-text-muted">
+          <Spinner label={null} />
+          {t`Opening the PMO built from your draft`}
+        </div>
+      )}
     </div>
   );
 }
@@ -118,6 +123,7 @@ function WorkingPmoBar({
 }) {
   const { choose, dragHandlers, dragging, rejection, clearRejection, input } = useFileDrop({
     label: "PMO",
+    chooseLabel: t`Choose a PMO file`,
     accept: PMO_ACCEPT,
     onFileSelect,
   });
@@ -159,6 +165,8 @@ function WorkingPmoBar({
           ) : null}
           <FileDropActions
             label="PMO"
+            replaceLabel={t`Replace this PMO file`}
+            removeLabel={t`Remove this PMO file`}
             onReplace={choose}
             onRemove={() => {
               clearRejection();
@@ -311,6 +319,11 @@ export function PmoFilePage({ tab = "overview", zenodo = zenodoConfig() }: PmoFi
 
         <FileDropzone
           label="PMO"
+          actionLabels={{
+            choose: t`Choose a PMO file`,
+            replace: t`Replace this PMO file`,
+            remove: t`Remove this PMO file`,
+          }}
           description={t`A PMO file in version ${version}, saved as .json or .json.gz.`}
           accept={PMO_ACCEPT}
           file={shownFile}

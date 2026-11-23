@@ -38,6 +38,7 @@ import { exportPmo, type PmoFile } from "@/domain/build/export";
 import { summarisePmo } from "@/domain/build/merge";
 import { summarisePublication } from "@/domain/build/publication";
 
+import { baseNameOf } from "./baseName";
 import { isPrimitive, readCountsRowCount, readCountsTable } from "./readCountsTable";
 import { groupValue } from "./sampleDetails";
 import {
@@ -261,11 +262,7 @@ export async function openPmo(
   return { outcome: describe(pmo, fileName, check.warnings), pmo };
 }
 
-/** A file name without `.json`, `.json.gz` or `.gz`, and without a `.pmo` before them. */
-export function baseNameOf(fileName: string): string {
-  const base = fileName.replace(/(?:\.pmo)?(?:\.json(?:\.gz)?|\.gz)$/i, "");
-  return base === "" ? "pmo" : base;
-}
+export { baseNameOf } from "./baseName";
 
 /** Applies `request` to `pmo`: specimens, then targets, then reads. Throws what pmotools-ts throws. */
 export function subsetOf(pmo: Pmo, request: SubsetRequest): Pmo {

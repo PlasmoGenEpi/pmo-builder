@@ -7,7 +7,7 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { ArrowUp, ChevronLeft, ChevronRight, TriangleExclamationPoint } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 
 import { useTheme } from "@/app/theme";
 import type {
@@ -31,7 +31,6 @@ import {
   SEQUENTIAL_CELL,
   SERIES,
   Skeleton,
-  Switch,
   cn,
   formatCount,
   jumpToHeading,
@@ -190,10 +189,6 @@ function groupColumns(): SortableColumn<GroupRow>[] {
 
 const MAX_ALLELES = 20;
 
-function isAbsentFromAllGroups(freqs: readonly (number | null)[]): boolean {
-  return freqs.every((freq) => freq === null || freq === 0);
-}
-
 /** One target's microhaplotypes, with their frequency in each group as a bar. */
 function AllelesByGroup({
   target,
@@ -203,19 +198,12 @@ function AllelesByGroup({
   readonly groups: readonly GroupRow[];
 }) {
   const { resolved } = useTheme();
-  const [showAbsent, setShowAbsent] = useState(false);
   const percent = new Intl.NumberFormat(intlLocale(), {
     style: "percent",
     maximumFractionDigits: 0,
   });
-  const presentAlleles = useMemo(
-    () => target.alleles.filter((allele) => !isAbsentFromAllGroups(allele.freqs)),
-    [target.alleles],
-  );
-  const absentCount = target.alleles.length - presentAlleles.length;
-  const showingAll = showAbsent && absentCount > 0;
-  const shown = showingAll ? target.alleles : presentAlleles.slice(0, MAX_ALLELES);
-  const hiddenByLimit = showingAll ? 0 : presentAlleles.length - shown.length;
+  const shown = target.alleles.slice(0, MAX_ALLELES);
+  const hiddenByLimit = target.alleles.length - shown.length;
   const maxFreq = shown.reduce((largest, allele) => {
     let next = largest;
     for (const freq of allele.freqs) {
@@ -226,106 +214,88 @@ function AllelesByGroup({
 
   return (
     <div className="flex flex-col gap-3">
-      {absentCount > 0 ? (
-        <Switch
-          label={t`Show microhaplotypes absent from every group`}
-          description={plural(absentCount, {
-            one: "# microhaplotype is absent from every group shown.",
-            other: "# microhaplotypes are absent from every group shown.",
-          })}
-          checked={showAbsent}
-          onCheckedChange={setShowAbsent}
-          className="max-w-md"
-        />
-      ) : null}
-      {shown.length === 0 ? (
-        <p className="text-sm text-text-muted">
-          {t`No microhaplotypes of this target were seen in the groups shown.`}
-        </p>
-      ) : (
-        <section
+      <section
+        aria-label={t`Microhaplotype frequencies by group`}
+        // Focusable so keyboard users can scroll it.
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+        className="max-h-112 overflow-auto rounded-lg border border-border bg-surface focus-visible:outline-offset-0"
+      >
+        <table
+          className="w-full border-separate border-spacing-0 text-sm"
           aria-label={t`Microhaplotype frequencies by group`}
-          // Focusable so keyboard users can scroll it.
-          // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-          tabIndex={0}
-          className="max-h-112 overflow-auto rounded-lg border border-border bg-surface focus-visible:outline-offset-0"
         >
-          <table
-            className="w-full border-separate border-spacing-0 text-sm"
-            aria-label={t`Microhaplotype frequencies by group`}
-          >
-            <thead className="bg-surface-subtle">
-              <tr>
+          <thead className="bg-surface-subtle">
+            <tr>
+              <th
+                scope="col"
+                className="sticky top-0 left-0 z-30 min-w-32 border-r border-b border-border bg-surface-subtle px-3 py-2 align-bottom text-left font-medium text-text-muted"
+              >
+                {t`Microhaplotype`}
+              </th>
+              {groups.map((group) => (
                 <th
+                  key={group.name ?? ""}
                   scope="col"
-                  className="sticky top-0 left-0 z-30 min-w-32 border-r border-b border-border bg-surface-subtle px-3 py-2 align-bottom text-left font-medium text-text-muted"
+                  className="sticky top-0 z-20 min-w-32 border-b border-border bg-surface-subtle px-3 py-2 align-bottom text-left font-medium text-text-muted"
                 >
-                  {t`Microhaplotype`}
+                  <div>{groupName(group)}</div>
+                  <div className="mt-0.5 text-xs font-normal">
+                    <GroupSizeNote group={group} />
+                  </div>
                 </th>
-                {groups.map((group) => (
-                  <th
-                    key={group.name ?? ""}
-                    scope="col"
-                    className="sticky top-0 z-20 min-w-32 border-b border-border bg-surface-subtle px-3 py-2 align-bottom text-left font-medium text-text-muted"
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((allele) => (
+              <tr key={allele.mhapId} className="group">
+                <th
+                  scope="row"
+                  className="sticky left-0 z-10 min-w-32 border-r border-b border-border bg-surface px-3 py-1.5 text-left font-mono text-xs font-normal text-text-muted group-last:border-b-0"
+                >
+                  <SequenceLabel
+                    label={allele.label.label === "" ? `#${allele.mhapId}` : allele.label.label}
+                    seq={allele.seq}
+                    note={allele.label.note}
+                    className="-mx-2.5 max-w-48"
+                  />
+                </th>
+                {allele.freqs.map((freq, index) => (
+                  <td
+                    key={groups[index]?.name ?? `none${index}`}
+                    className="min-w-32 border-b border-border bg-surface px-3 py-1.5 group-last:border-b-0"
                   >
-                    <div>{groupName(group)}</div>
-                    <div className="mt-0.5 text-xs font-normal">
-                      <GroupSizeNote group={group} />
-                    </div>
-                  </th>
+                    {freq === null ? (
+                      <span className="block text-right text-text-subtle">–</span>
+                    ) : freq === 0 ? (
+                      <span className="block text-right tabular-nums text-text-subtle">
+                        {percent.format(0)}
+                      </span>
+                    ) : (
+                      <span className="flex w-full items-center gap-2">
+                        <span className="block h-2.5 flex-1 overflow-hidden rounded-sm bg-surface-subtle">
+                          <span
+                            aria-hidden="true"
+                            className="block h-full min-w-0.5 rounded-r-sm"
+                            style={{
+                              width: `${maxFreq > 0 ? (freq / maxFreq) * 100 : 0}%`,
+                              background: SERIES[resolved],
+                            }}
+                          />
+                        </span>
+                        <span className="w-11 shrink-0 text-right tabular-nums text-text">
+                          {percent.format(freq)}
+                        </span>
+                      </span>
+                    )}
+                  </td>
                 ))}
               </tr>
-            </thead>
-            <tbody>
-              {shown.map((allele) => (
-                <tr key={allele.mhapId} className="group">
-                  <th
-                    scope="row"
-                    className="sticky left-0 z-10 min-w-32 border-r border-b border-border bg-surface px-3 py-1.5 text-left font-mono text-xs font-normal text-text-muted group-last:border-b-0"
-                  >
-                    <SequenceLabel
-                      label={allele.label.label === "" ? `#${allele.mhapId}` : allele.label.label}
-                      seq={allele.seq}
-                      note={allele.label.note}
-                      className="-mx-2.5 max-w-48"
-                    />
-                  </th>
-                  {allele.freqs.map((freq, index) => (
-                    <td
-                      key={groups[index]?.name ?? `none${index}`}
-                      className="min-w-32 border-b border-border bg-surface px-3 py-1.5 group-last:border-b-0"
-                    >
-                      {freq === null ? (
-                        <span className="block text-right text-text-subtle">–</span>
-                      ) : freq === 0 ? (
-                        <span className="block text-right tabular-nums text-text-subtle">
-                          {percent.format(0)}
-                        </span>
-                      ) : (
-                        <span className="flex w-full items-center gap-2">
-                          <span className="block h-2.5 flex-1 overflow-hidden rounded-sm bg-surface-subtle">
-                            <span
-                              aria-hidden="true"
-                              className="block h-full min-w-0.5 rounded-r-sm"
-                              style={{
-                                width: `${maxFreq > 0 ? (freq / maxFreq) * 100 : 0}%`,
-                                background: SERIES[resolved],
-                              }}
-                            />
-                          </span>
-                          <span className="w-11 shrink-0 text-right tabular-nums text-text">
-                            {percent.format(freq)}
-                          </span>
-                        </span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
+            ))}
+          </tbody>
+        </table>
+      </section>
       {hiddenByLimit > 0 ? (
         <p className="text-sm text-text-muted">
           {plural(hiddenByLimit, {
@@ -358,20 +328,31 @@ function timelineBarPath(options: {
   return `M${x},${axisY} v${-straightY} q0,${-radius} ${radius},${-radius} h${topWidth} q${radius},0 ${radius},${radius} v${straightY} z`;
 }
 
-/** Specimens per month or year, as bars. */
-function Timeline({
-  comparison,
-  total,
-  headingId,
-}: {
+function periodCountLabel(period: string, specimens: number): string {
+  return plural(specimens, {
+    one: `${period}: # specimen`,
+    other: `${period}: # specimens`,
+  });
+}
+
+/** Props for {@link Timeline}. */
+export interface TimelineProps {
+  /** The comparison whose collection timeline to plot. */
   readonly comparison: GroupComparison;
+  /** Total specimens in the file, to note how many carry a collection date. */
   readonly total: number;
+  /** Optional heading id for in-page jump links. */
   readonly headingId?: string;
-}) {
+}
+
+/** Specimens per month or year, as an accessible bar chart. */
+export function Timeline({ comparison, total, headingId }: TimelineProps) {
   const { resolved } = useTheme();
   const [hover, setHover] = useState<number | null>(null);
+  const [roving, setRoving] = useState(0);
   const scroller = useRef<HTMLElement>(null);
   const chart = useRef<SVGSVGElement>(null);
+  const barRefs = useRef<Map<number, SVGRectElement>>(new Map());
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
   const [overflow, setOverflow] = useState<{ readonly left: boolean; readonly right: boolean }>({
     left: false,
@@ -419,7 +400,63 @@ function Timeline({
     return () => observer.disconnect();
   }, [count, syncScroll]);
 
+  useEffect(() => {
+    if (hover === null) return undefined;
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setHover(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [hover]);
+
   if (count === 0) return null;
+
+  const setBarRef = (index: number, node: SVGRectElement | null) => {
+    if (node === null) {
+      barRefs.current.delete(index);
+    } else {
+      barRefs.current.set(index, node);
+    }
+  };
+
+  const focusBar = (index: number) => {
+    setRoving(index);
+    setHover(index);
+    const target = barRefs.current.get(index);
+    if (target !== undefined) {
+      target.focus();
+      if (typeof target.scrollIntoView === "function") {
+        target.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
+    }
+  };
+
+  const handleBarKeyDown = (event: KeyboardEvent<SVGRectElement>, index: number) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setHover(null);
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setRoving(index);
+      setHover(index);
+      return;
+    }
+    let next: number | null = null;
+    if (event.key === "ArrowRight") {
+      next = Math.min(count - 1, index + 1);
+    } else if (event.key === "ArrowLeft") {
+      next = Math.max(0, index - 1);
+    } else if (event.key === "Home") {
+      next = 0;
+    } else if (event.key === "End") {
+      next = count - 1;
+    }
+    if (next === null) return;
+    event.preventDefault();
+    focusBar(next);
+  };
 
   const height = TIMELINE_HEIGHT;
   const pad = TIMELINE_PAD;
@@ -431,9 +468,8 @@ function Timeline({
   const innerBarWidth = Math.max(2, barWidth - barInset * 2);
   const dated = formatCount(comparison.dated);
   const all = formatCount(total);
-  const hovered = hover === null ? null : comparison.timeline[hover];
-  const hoverPeriod = hovered?.period ?? "";
-  const hoverCount = hovered?.specimens ?? 0;
+  const safeRoving = Math.min(roving, count - 1);
+  const hovered = hover === null ? null : (comparison.timeline[hover] ?? null);
   const lastIndex = count - 1;
   const every = Math.max(Math.ceil(count / 12), Math.ceil(36 / barWidth));
   return (
@@ -465,10 +501,11 @@ function Timeline({
           className="overflow-x-auto focus-visible:outline-offset-0"
         >
           <p className="sr-only">
-            {t`A bar chart of specimens per collection period. The figures are in the bars' tooltips and in the group table.`}
+            {t`A bar chart of specimens per collection period. Use the left and right arrow keys to move across bars, or read the counts in the table that follows.`}
           </p>
-          <svg ref={chart} width={width} height={height} className="block" aria-hidden="true">
+          <svg ref={chart} width={width} height={height} className="block">
             <line
+              aria-hidden="true"
               x1={pad.left}
               x2={width - pad.right}
               y1={axisY}
@@ -476,12 +513,13 @@ function Timeline({
               className="stroke-border-strong"
             />
             <text
+              aria-hidden="true"
               x={pad.left - 8}
               y={pad.top + 4}
               textAnchor="end"
               className="fill-text-muted text-[11px]"
             >
-              {max}
+              {formatCount(max)}
             </text>
             {comparison.timeline.map((point, index) => {
               const barHeight = Math.max(2, (point.specimens / max) * plotHeight);
@@ -491,21 +529,43 @@ function Timeline({
               const showLabel =
                 index === lastIndex ||
                 (index % every === 0 && (lastIndex - index) * barWidth >= 32);
+              const barLabel = periodCountLabel(point.period, point.specimens);
+              const isRoving = index === safeRoving;
+              const isActive = hovered !== null && hover === index;
               return (
                 <g
                   key={point.period}
                   onMouseEnter={() => setHover(index)}
-                  onMouseLeave={() => setHover(null)}
+                  onMouseLeave={() => setHover((current) => (current === index ? null : current))}
                 >
                   <rect
+                    ref={(node) => setBarRef(index, node)}
+                    // SVG bar hit targets are <rect> shapes inside the chart, not HTML <button>s.
+                    // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+                    role="button"
+                    tabIndex={isRoving ? 0 : -1}
+                    aria-label={barLabel}
                     x={slotX}
                     y={pad.top}
                     width={barWidth}
                     height={plotHeight}
                     fill="transparent"
+                    className="cursor-pointer focus-visible:outline-offset-0"
+                    onClick={() => focusBar(index)}
+                    onFocus={() => {
+                      setRoving(index);
+                      setHover(index);
+                    }}
+                    onBlur={(event) => {
+                      const nextTarget = event.relatedTarget;
+                      if (nextTarget instanceof Node && chart.current?.contains(nextTarget)) return;
+                      setHover(null);
+                    }}
+                    onKeyDown={(event) => handleBarKeyDown(event, index)}
                   />
                   {point.specimens === 0 ? null : (
                     <path
+                      aria-hidden="true"
                       d={timelineBarPath({
                         x: barX,
                         axisY,
@@ -513,11 +573,13 @@ function Timeline({
                         height: barHeight,
                       })}
                       fill={SERIES[resolved]}
-                      opacity={hover === null || hover === index ? 1 : 0.6}
+                      opacity={hovered === null || isActive ? 1 : 0.6}
+                      className="pointer-events-none"
                     />
                   )}
                   {showLabel ? (
                     <text
+                      aria-hidden="true"
                       x={labelX}
                       y={axisY + 14}
                       textAnchor="end"
@@ -536,7 +598,7 @@ function Timeline({
           <div
             aria-hidden="true"
             data-continues="left"
-            className="pointer-events-none absolute inset-y-0 left-0 flex w-10 items-center justify-start bg-linear-to-r from-canvas via-canvas/80 to-transparent pl-1 text-text-muted"
+            className="pointer-events-none absolute inset-y-0 left-0 flex w-10 items-center justify-start bg-linear-to-r from-surface via-surface/80 to-transparent pl-1 text-text-muted"
           >
             <ChevronLeft className="size-4" />
           </div>
@@ -545,7 +607,7 @@ function Timeline({
           <div
             aria-hidden="true"
             data-continues="right"
-            className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-end bg-linear-to-l from-canvas via-canvas/80 to-transparent pr-1 text-text-muted"
+            className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-end bg-linear-to-l from-surface via-surface/80 to-transparent pr-1 text-text-muted"
           >
             <ChevronRight className="size-4" />
           </div>
@@ -553,12 +615,25 @@ function Timeline({
       </div>
       <p className="min-h-5 text-sm text-text-muted" aria-live="polite">
         {hovered === null
-          ? t`Hover over a bar to see its count.`
-          : plural(hoverCount, {
-              one: `${hoverPeriod}: # specimen`,
-              other: `${hoverPeriod}: # specimens`,
-            })}
+          ? t`Hover over or select a bar to see its count.`
+          : periodCountLabel(hovered.period, hovered.specimens)}
       </p>
+      <table className="sr-only" aria-label={t`Specimens per collection period`}>
+        <thead>
+          <tr>
+            <th scope="col">{comparison.timelineUnit === "month" ? t`Month` : t`Year`}</th>
+            <th scope="col">{t`Specimens`}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {comparison.timeline.map((point) => (
+            <tr key={point.period}>
+              <th scope="row">{point.period}</th>
+              <td>{formatCount(point.specimens)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </section>
   );
 }

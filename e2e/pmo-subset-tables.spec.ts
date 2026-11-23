@@ -6,26 +6,15 @@
  *   follows the original/subset switch, and scrolls horizontally inside its own box without
  *   overflowing the viewport at desktop (1280px) or mobile (390px).
  */
-import type { Page } from "@playwright/test";
-
 import { expect, test } from "./fixtures/privacy";
-import { BUILD_TIMEOUT, loadExample } from "./support/review";
-
-/** Builds the example draft and opens the resulting PMO on My PMO file. */
-async function openExamplePmo(page: Page): Promise<void> {
-  await loadExample(page);
-  await page.evaluate(() => {
-    globalThis.location.hash = "/pmo/open-built";
-  });
-  // The built PMO opens on its Summary tab.
-  await expect(page.getByRole("tab", { name: "Summary" })).toBeVisible({ timeout: BUILD_TIMEOUT });
-}
+import { openBuiltExample } from "./support/pmoFile";
+import { BUILD_TIMEOUT } from "./support/review";
 
 test("previews tables by keyboard with 20 rows and count line, and lists read counts by stage", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await openExamplePmo(page);
+  await openBuiltExample({ page, tab: "summary" });
 
   await page.getByRole("tab", { name: "Tables" }).click();
 
@@ -83,7 +72,7 @@ for (const viewport of [
     page,
   }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    await openExamplePmo(page);
+    await openBuiltExample({ page, tab: "summary" });
 
     await page.getByRole("tab", { name: "Tables" }).click();
     // Targets has many wide columns (primers, coordinates, sequences) so it overflows horizontally on both desktop and mobile.
@@ -124,7 +113,7 @@ test("names Subset fields in plain words, filters by collection year, and update
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await openExamplePmo(page);
+  await openBuiltExample({ page, tab: "summary" });
 
   await page.getByRole("tab", { name: "Subset" }).click();
   await page.getByRole("radio", { name: "Specimens with certain values" }).click();

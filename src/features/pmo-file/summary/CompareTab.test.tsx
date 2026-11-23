@@ -1,6 +1,7 @@
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { stringifyPmo, type PortableMicrohaplotypeObject } from "pmotools-ts";
+import { useState } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createStore } from "zustand/vanilla";
 
@@ -25,7 +26,7 @@ import {
 import { stubMatchMedia } from "@/test/matchMedia";
 import { installDomPolyfills } from "@/ui/testPolyfills";
 
-import { CompareTab } from "./CompareTab";
+import { CompareTab, Timeline } from "./CompareTab";
 
 beforeAll(() => {
   installDomPolyfills();
@@ -765,99 +766,7 @@ async function renderWithComparison(options: {
 }
 
 describe("CompareTab: Microhaplotypes by group readability", () => {
-  it("hides microhaplotypes absent from every group shown by default and reveals them when toggled", async () => {
-    const user = userEvent.setup();
-    await renderWithComparison({
-      fields: [{ key: "collection_country", present: 24, total: 24, distinct: 2 }],
-      comparison: {
-        key: "collection_country",
-        groups: [
-          {
-            name: "Kenya",
-            specimens: 12,
-            librarySamples: 12,
-            withData: 12,
-            polyclonal: 2,
-            meanHeterozygosity: 0.5,
-            alleles: 2,
-          },
-          {
-            name: "Uganda",
-            specimens: 12,
-            librarySamples: 12,
-            withData: 12,
-            polyclonal: 1,
-            meanHeterozygosity: 0.4,
-            alleles: 2,
-          },
-        ],
-        targets: [
-          {
-            name: "pfama1",
-            heterozygosity: [0.5, 0.4],
-            alleles: [
-              {
-                mhapId: 0,
-                seq: "AAAAAA",
-                label: { label: "most common", source: "alignment", note: null },
-                freqs: [0.6, 0.4],
-              },
-              {
-                mhapId: 1,
-                seq: "AAAAAT",
-                label: { label: "A6T", source: "alignment", note: null },
-                freqs: [0.4, 0],
-              },
-              {
-                mhapId: 2,
-                seq: "AAAAAG",
-                label: { label: "A6G", source: "alignment", note: null },
-                freqs: [0, 0],
-              },
-              {
-                mhapId: 3,
-                seq: "AAAAAC",
-                label: { label: "A6C", source: "alignment", note: null },
-                freqs: [null, 0],
-              },
-            ],
-          },
-        ],
-        timeline: [],
-        timelineUnit: null,
-        dated: 0,
-      },
-    });
-
-    const table = await screen.findByRole("table", { name: "Microhaplotype frequencies by group" });
-    // Only the two microhaplotypes present in at least one group appear by default.
-    expect(within(table).getByRole("rowheader", { name: "most common" })).toBeInTheDocument();
-    expect(within(table).getByRole("rowheader", { name: "A6T" })).toBeInTheDocument();
-    expect(within(table).queryByRole("rowheader", { name: "A6G" })).not.toBeInTheDocument();
-    expect(within(table).queryByRole("rowheader", { name: "A6C" })).not.toBeInTheDocument();
-
-    // A switch lets the scientist show the absent microhaplotypes.
-    const toggle = screen.getByRole("switch", {
-      name: /Show microhaplotypes absent from every group/i,
-    });
-    expect(toggle).not.toBeChecked();
-
-    await user.click(toggle);
-    expect(toggle).toBeChecked();
-    expect(within(table).getByRole("rowheader", { name: "A6G" })).toBeInTheDocument();
-    expect(within(table).getByRole("rowheader", { name: "A6C" })).toBeInTheDocument();
-  });
-
-  it("omits the absent-microhaplotypes switch when every microhaplotype appears in at least one group", async () => {
-    await openAndRenderCompare(richPmo());
-    await screen.findByRole("table", { name: "Microhaplotype frequencies by group" });
-    expect(
-      screen.queryByRole("switch", { name: /Show microhaplotypes absent from every group/i }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("cuts off at 20 microhaplotypes across many groups and reveals absent rows when toggled", async () => {
-    const user = userEvent.setup();
+  it("cuts off at 20 microhaplotypes across many groups and notes how many rarer ones are hidden", async () => {
     const groupNames = ["Kenya", "Uganda", "Tanzania", "Malawi", "Mozambique", "Ghana"] as const;
     const groups = groupNames.map((name, index) => ({
       name,
@@ -868,7 +777,7 @@ describe("CompareTab: Microhaplotypes by group readability", () => {
       meanHeterozygosity: 0.9 - index * 0.05,
       alleles: 21,
     }));
-    const alleles = Array.from({ length: 23 }, (_, index) => ({
+    const alleles = Array.from({ length: 21 }, (_, index) => ({
       mhapId: index,
       seq: `AAA${String(index).padStart(3, "A")}`,
       label: {
@@ -876,13 +785,9 @@ describe("CompareTab: Microhaplotypes by group readability", () => {
         source: "alignment" as const,
         note: null,
       },
-      // 21 present microhaplotypes across 6 groups + 2 absent from every group.
-      freqs:
-        index < 21
-          ? groupNames.map((_group, groupIndex) =>
-              groupIndex === 0 ? 0.05 : index === 0 ? 0.5 : 0.01,
-            )
-          : groupNames.map((_group, groupIndex) => (index === 22 && groupIndex === 0 ? null : 0)),
+      freqs: groupNames.map((_group, groupIndex) =>
+        groupIndex === 0 ? 0.05 : index === 0 ? 0.5 : 0.01,
+      ),
     }));
 
     await renderWithComparison({
@@ -906,20 +811,10 @@ describe("CompareTab: Microhaplotypes by group readability", () => {
     const table = await screen.findByRole("table", { name: "Microhaplotype frequencies by group" });
     // Microhaplotype column + all 6 group columns.
     expect(within(table).getAllByRole("columnheader")).toHaveLength(groupNames.length + 1);
-    // Header row + 20 visible microhaplotype rows; absent rows are hidden by default.
+    // Header row + 20 visible microhaplotype rows; the 21st is noted below.
     expect(within(table).getAllByRole("row")).toHaveLength(21);
     expect(screen.getByText("1 rarer microhaplotype is not shown.")).toBeInTheDocument();
-    expect(within(table).queryByRole("rowheader", { name: "A22T" })).not.toBeInTheDocument();
-    expect(within(table).queryByRole("rowheader", { name: "A23T" })).not.toBeInTheDocument();
-
-    // Turning on the switch reveals all 23 rows, including the 2 absent microhaplotypes, with no cut-off note.
-    await user.click(
-      screen.getByRole("switch", { name: /Show microhaplotypes absent from every group/i }),
-    );
-    expect(within(table).getAllByRole("row")).toHaveLength(24);
-    expect(within(table).getByRole("rowheader", { name: "A22T" })).toBeInTheDocument();
-    expect(within(table).getByRole("rowheader", { name: "A23T" })).toBeInTheDocument();
-    expect(screen.queryByText(/rarer microhaplotype/i)).not.toBeInTheDocument();
+    expect(within(table).queryByRole("rowheader", { name: "A21T" })).not.toBeInTheDocument();
   });
 
   it("omits the rarer-microhaplotypes cut-off line when 20 or fewer microhaplotypes are visible", async () => {
@@ -1056,5 +951,189 @@ describe("CompareTab: Microhaplotypes by group readability", () => {
     expect(readBarWidth(ugandaHalf)).toBe("50%");
     expect(readBarWidth(kenyaTenth)).toBe("20%");
     expect(readBarWidth(ugandaZero)).toBeNull();
+  });
+});
+
+function timelineComparison(
+  timeline: readonly { readonly period: string; readonly specimens: number }[],
+): GroupComparison {
+  return {
+    key: "collection_country",
+    groups: [
+      {
+        name: "Kenya",
+        specimens: 12,
+        librarySamples: 12,
+        withData: 12,
+        polyclonal: 2,
+        meanHeterozygosity: 0.5,
+        alleles: 2,
+      },
+      {
+        name: "Mozambique",
+        specimens: 12,
+        librarySamples: 12,
+        withData: 12,
+        polyclonal: 1,
+        meanHeterozygosity: 0.4,
+        alleles: 2,
+      },
+    ],
+    targets: [
+      {
+        name: "t1",
+        heterozygosity: [0.5, 0.4],
+        alleles: [
+          {
+            mhapId: 0,
+            seq: "AAAA",
+            label: { label: "most common", source: "alignment", note: null },
+            freqs: [0.6, 0.4],
+          },
+        ],
+      },
+    ],
+    timeline,
+    timelineUnit: "month",
+    dated: timeline.reduce((sum, point) => sum + point.specimens, 0),
+  };
+}
+
+describe("CompareTab: collection timeline accessibility and bounds", () => {
+  it("navigates timeline bars with arrow, Home, End, and Escape keys and updates the live readout", async () => {
+    const user = userEvent.setup();
+    await openAndRenderCompare(skewedTimelinePmo(45));
+
+    const timeline = await screen.findByRole("region", { name: "When specimens were collected" });
+    const bars = within(timeline).getAllByRole("button");
+    expect(bars).toHaveLength(3);
+    expect(bars[0]).toHaveAttribute("tabindex", "0");
+    expect(bars[1]).toHaveAttribute("tabindex", "-1");
+    expect(bars[2]).toHaveAttribute("tabindex", "-1");
+
+    const readout = screen.getByText("Hover over or select a bar to see its count.");
+    expect(readout).toHaveAttribute("aria-live", "polite");
+
+    act(() => {
+      bars[0]?.focus();
+    });
+    expect(bars[0]).toHaveFocus();
+    expect(readout).toHaveTextContent("2019-01: 45 specimens");
+
+    await user.keyboard("{ArrowRight}");
+    expect(bars[1]).toHaveFocus();
+    expect(bars[0]).toHaveAttribute("tabindex", "-1");
+    expect(bars[1]).toHaveAttribute("tabindex", "0");
+    expect(readout).toHaveTextContent("2019-02: 0 specimens");
+
+    await user.keyboard("{End}");
+    expect(bars[2]).toHaveFocus();
+    expect(bars[2]).toHaveAttribute("tabindex", "0");
+    expect(readout).toHaveTextContent("2019-03: 1 specimen");
+
+    await user.keyboard("{ArrowLeft}");
+    expect(bars[1]).toHaveFocus();
+    expect(readout).toHaveTextContent("2019-02: 0 specimens");
+
+    await user.keyboard("{Home}");
+    expect(bars[0]).toHaveFocus();
+    expect(readout).toHaveTextContent("2019-01: 45 specimens");
+
+    await user.keyboard("{Escape}");
+    expect(readout).toHaveTextContent("Hover over or select a bar to see its count.");
+  });
+
+  it("exposes screen-reader timeline counts even when grouped by a non-date field", async () => {
+    await renderWithComparison({
+      fields: [{ key: "collection_country", present: 24, total: 24, distinct: 2 }],
+      comparison: timelineComparison([
+        { period: "2019-01", specimens: 1200 },
+        { period: "2019-02", specimens: 0 },
+        { period: "2019-03", specimens: 1 },
+      ]),
+    });
+
+    // Groups table shows countries, not collection periods.
+    const groupsTable = await screen.findByRole("table", { name: "Groups" });
+    expect(within(groupsTable).getByText("Kenya")).toBeInTheDocument();
+    expect(within(groupsTable).getByText("Mozambique")).toBeInTheDocument();
+    expect(within(groupsTable).queryByText("2019-01")).not.toBeInTheDocument();
+
+    // Screen-reader timeline table exposes every period's specimen count.
+    const timelineTable = screen.getByRole("table", { name: "Specimens per collection period" });
+    const rows = within(timelineTable).getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toHaveTextContent("2019-01");
+    expect(rows[0]).toHaveTextContent("1,200");
+    expect(rows[1]).toHaveTextContent("2019-02");
+    expect(rows[1]).toHaveTextContent("0");
+    expect(rows[2]).toHaveTextContent("2019-03");
+    expect(rows[2]).toHaveTextContent("1");
+
+    // Each bar carries its own accessible label and the y-axis peak is locale-formatted.
+    const timeline = screen.getByRole("region", { name: "When specimens were collected" });
+    expect(
+      within(timeline).getByRole("button", { name: "2019-01: 1,200 specimens" }),
+    ).toBeInTheDocument();
+    expect(
+      within(timeline).getByRole("button", { name: "2019-03: 1 specimen" }),
+    ).toBeInTheDocument();
+    const axisLabels = [...timeline.querySelectorAll("svg text")].map((node) => node.textContent);
+    expect(axisLabels).toContain("1,200");
+    expect(axisLabels).not.toContain("1200");
+    expect(timeline.textContent).not.toContain("in the group table");
+  });
+
+  it("does not render ': 0 specimens' when the timeline shrinks while a later bar is hovered", async () => {
+    const user = userEvent.setup();
+    const initial = timelineComparison([
+      { period: "2019-01", specimens: 10 },
+      { period: "2019-02", specimens: 8 },
+      { period: "2019-03", specimens: 6 },
+      { period: "2019-04", specimens: 5 },
+    ]);
+    const shorter = timelineComparison([
+      { period: "2019-01", specimens: 4 },
+      { period: "2019-02", specimens: 2 },
+    ]);
+
+    let triggerShrink: (() => void) | null = null;
+    function ShrinkableTimeline() {
+      const [shrunk, setShrunk] = useState(false);
+      triggerShrink = () => setShrunk(true);
+      return <Timeline comparison={shrunk ? shorter : initial} total={shrunk ? 6 : 29} />;
+    }
+
+    await renderWithStore(<ShrinkableTimeline />);
+    const timeline = screen.getByRole("region", { name: "When specimens were collected" });
+    const initialBars = within(timeline).getAllByRole("button");
+    const lastBar = initialBars[3];
+    if (lastBar === undefined) throw new Error("Expected four timeline bars");
+
+    // Hover the 4th bar (index 3) and also move roving focus there before the timeline shrinks.
+    act(() => {
+      lastBar.focus();
+    });
+    await user.hover(lastBar);
+    expect(screen.getByText("2019-04: 5 specimens")).toBeInTheDocument();
+
+    act(() => {
+      triggerShrink?.();
+    });
+
+    const shorterBars = within(timeline).getAllByRole("button");
+    expect(shorterBars).toHaveLength(2);
+    expect(screen.queryByText(": 0 specimens")).not.toBeInTheDocument();
+    expect(screen.getByText("Hover over or select a bar to see its count.")).toBeInTheDocument();
+    // Roving tabIndex stays valid on an existing bar after shrinking.
+    expect(shorterBars[1]).toHaveAttribute("tabindex", "0");
+
+    // Keyboard navigation still works after the timeline shrinks.
+    act(() => {
+      shorterBars[1]?.focus();
+    });
+    await user.keyboard("{ArrowLeft}");
+    expect(shorterBars[0]).toHaveFocus();
+    expect(screen.getByText("2019-01: 4 specimens")).toBeInTheDocument();
   });
 });
