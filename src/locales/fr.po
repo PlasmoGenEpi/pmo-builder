@@ -278,6 +278,10 @@ msgstr "{0, plural, one {Ce champ nécessite aussi {neededFields}. Associez-le �
 msgid "{0, plural, one {This workbook has # sheet. Choose the one that holds “{tableName}”.} other {This workbook has # sheets. Choose the one that holds “{tableName}”.}}"
 msgstr "{0, plural, one {Ce classeur contient # feuille. Choisissez celle qui contient « {tableName} ».} other {Ce classeur contient # feuilles. Choisissez celle qui contient « {tableName} ».}}"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{absentCount, plural, one {# microhaplotype is absent from every group shown.} other {# microhaplotypes are absent from every group shown.}}"
+msgstr "{absentCount, plural, one {# microhaplotype est absent de tous les groupes affichés.} other {# microhaplotypes sont absents de tous les groupes affichés.}}"
+
 #: src/features/review/reviewModel.ts
 msgid "{alleleCalls, plural, one {# allele call} other {# allele calls}} for {samples, plural, one {# sample} other {# samples}} at {targets, plural, one {# target} other {# targets}}, {alleles, plural, one {# distinct allele} other {# distinct alleles}}"
 msgstr "{alleleCalls, plural, one {# appel d’allèle} other {# appels d’allèles}} pour {samples, plural, one {# échantillon} other {# échantillons}} sur {targets, plural, one {# cible} other {# cibles}}, {alleles, plural, one {# allèle distinct} other {# allèles distincts}}"
@@ -534,6 +538,10 @@ msgstr "{firstYear} à {lastYear}"
 #: src/features/review/ThingsToCheck.tsx
 msgid "{hidden, plural, one {and # more like this.} other {and # more like these.}}"
 msgstr "{hidden, plural, one {et # autre similaire.} other {et # autres similaires.}}"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{hiddenByLimit, plural, one {# rarer microhaplotype is not shown.} other {# rarer microhaplotypes are not shown.}}"
+msgstr "{hiddenByLimit, plural, one {# microhaplotype plus rare n’est pas affiché.} other {# microhaplotypes plus rares ne sont pas affichés.}}"
 
 #: src/ui/CodeBlock.tsx
 msgid "{hiddenSize} not shown"
@@ -3561,6 +3569,10 @@ msgstr "Aucune méthode n’est encore prête. Terminez le tableau des méthodes
 msgid "No methods yet"
 msgstr "Aucune méthode pour l’instant"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "No microhaplotypes of this target were seen in the groups shown."
+msgstr "Aucun microhaplotype de cette cible n’a été observé dans les groupes affichés."
+
 #: src/features/pmo-file/summary/AlleleBars.tsx
 msgid "No microhaplotypes were counted at {targetName}."
 msgstr "Aucun microhaplotype n’a été compté pour {targetName}."
@@ -5219,6 +5231,10 @@ msgstr "Tout afficher ({total})"
 #: src/features/shared/SectionResult.tsx
 msgid "Show fewer"
 msgstr "Afficher moins"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Show microhaplotypes absent from every group"
+msgstr "Afficher les microhaplotypes absents de tous les groupes"
 
 #: src/features/published/PublishedPage.tsx
 #: src/ui/CodeBlock.tsx

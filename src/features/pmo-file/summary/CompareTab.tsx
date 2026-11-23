@@ -31,6 +31,7 @@ import {
   SEQUENTIAL_CELL,
   SERIES,
   Skeleton,
+  Switch,
   cn,
   formatCount,
   jumpToHeading,
@@ -193,6 +194,12 @@ function groupColumns(): SortableColumn<GroupRow>[] {
   ];
 }
 
+const MAX_ALLELES = 20;
+
+function isAbsentFromAllGroups(freqs: readonly (number | null)[]): boolean {
+  return freqs.every((freq) => freq === null || freq === 0);
+}
+
 /** One target's microhaplotypes, with their frequency in each group as a bar. */
 function AllelesByGroup({
   target,
@@ -202,80 +209,134 @@ function AllelesByGroup({
   readonly groups: readonly GroupRow[];
 }) {
   const { resolved } = useTheme();
+  const [showAbsent, setShowAbsent] = useState(false);
   const percent = new Intl.NumberFormat(intlLocale(), {
     style: "percent",
     maximumFractionDigits: 0,
   });
+  const presentAlleles = useMemo(
+    () => target.alleles.filter((allele) => !isAbsentFromAllGroups(allele.freqs)),
+    [target.alleles],
+  );
+  const absentCount = target.alleles.length - presentAlleles.length;
+  const visiblePool = showAbsent ? target.alleles : presentAlleles;
+  const shown = visiblePool.slice(0, MAX_ALLELES);
+  const hiddenByLimit = visiblePool.length - shown.length;
+  const maxFreq = shown.reduce((largest, allele) => {
+    let next = largest;
+    for (const freq of allele.freqs) {
+      if (freq !== null && freq > next) next = freq;
+    }
+    return next;
+  }, 0);
+
   return (
-    <section
-      aria-label={t`Microhaplotype frequencies by group`}
-      // Focusable so keyboard users can scroll it.
-      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-      tabIndex={0}
-      className="overflow-x-auto rounded-lg border border-border focus-visible:outline-offset-0"
-    >
-      <table
-        className="w-full border-collapse text-sm"
-        aria-label={t`Microhaplotype frequencies by group`}
-      >
-        <thead className="bg-surface-subtle">
-          <tr>
-            <th
-              scope="col"
-              className="border-b border-border px-3 py-2 align-bottom text-left font-medium text-text-muted"
-            >
-              {t`Microhaplotype`}
-            </th>
-            {groups.map((group) => (
-              <th
-                key={group.name ?? ""}
-                scope="col"
-                className="border-b border-border px-3 py-2 align-bottom text-left font-medium text-text-muted"
-              >
-                <div>{groupName(group)}</div>
-                <div className="mt-0.5 text-xs font-normal">
-                  <GroupSizeNote group={group} />
-                </div>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {target.alleles.slice(0, 20).map((allele) => (
-            <tr key={allele.mhapId} className="border-b border-border last:border-b-0">
-              <th
-                scope="row"
-                className="px-3 py-1.5 text-left font-mono text-xs font-normal text-text-muted"
-                title={allele.seq}
-              >
-                {allele.label.label}
-              </th>
-              {allele.freqs.map((freq, index) => (
-                <td key={groups[index]?.name ?? `none${index}`} className="px-3 py-1.5">
-                  {freq === null ? (
-                    <span className="text-text-subtle">–</span>
-                  ) : freq === 0 ? (
-                    <span className="tabular-nums text-text-subtle">{percent.format(0)}</span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <span
-                        aria-hidden="true"
-                        className="h-2.5 rounded-r-[4px]"
-                        style={{
-                          width: `${Math.max(2, freq * 64)}px`,
-                          background: SERIES[resolved],
-                        }}
-                      />
-                      <span className="tabular-nums text-text">{percent.format(freq)}</span>
-                    </span>
-                  )}
-                </td>
+    <div className="flex flex-col gap-3">
+      {absentCount > 0 ? (
+        <Switch
+          label={t`Show microhaplotypes absent from every group`}
+          description={plural(absentCount, {
+            one: "# microhaplotype is absent from every group shown.",
+            other: "# microhaplotypes are absent from every group shown.",
+          })}
+          checked={showAbsent}
+          onCheckedChange={setShowAbsent}
+          className="max-w-md"
+        />
+      ) : null}
+      {shown.length === 0 ? (
+        <p className="text-sm text-text-muted">
+          {t`No microhaplotypes of this target were seen in the groups shown.`}
+        </p>
+      ) : (
+        <section
+          aria-label={t`Microhaplotype frequencies by group`}
+          // Focusable so keyboard users can scroll it.
+          // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+          tabIndex={0}
+          className="max-h-[28rem] overflow-auto rounded-lg border border-border bg-surface focus-visible:outline-offset-0"
+        >
+          <table
+            className="w-full border-separate border-spacing-0 text-sm"
+            aria-label={t`Microhaplotype frequencies by group`}
+          >
+            <thead className="bg-surface-subtle">
+              <tr>
+                <th
+                  scope="col"
+                  className="sticky top-0 left-0 z-30 min-w-32 border-r border-b border-border bg-surface-subtle px-3 py-2 align-bottom text-left font-medium text-text-muted"
+                >
+                  {t`Microhaplotype`}
+                </th>
+                {groups.map((group) => (
+                  <th
+                    key={group.name ?? ""}
+                    scope="col"
+                    className="sticky top-0 z-20 min-w-32 border-b border-border bg-surface-subtle px-3 py-2 align-bottom text-left font-medium text-text-muted"
+                  >
+                    <div>{groupName(group)}</div>
+                    <div className="mt-0.5 text-xs font-normal">
+                      <GroupSizeNote group={group} />
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((allele) => (
+                <tr key={allele.mhapId} className="group">
+                  <th
+                    scope="row"
+                    className="sticky left-0 z-10 min-w-32 border-r border-b border-border bg-surface px-3 py-1.5 text-left font-mono text-xs font-normal text-text-muted group-last:border-b-0"
+                    title={allele.seq}
+                  >
+                    {allele.label.label}
+                  </th>
+                  {allele.freqs.map((freq, index) => (
+                    <td
+                      key={groups[index]?.name ?? `none${index}`}
+                      className="min-w-32 border-b border-border bg-surface px-3 py-1.5 group-last:border-b-0"
+                    >
+                      {freq === null ? (
+                        <span className="block text-right text-text-subtle">–</span>
+                      ) : freq === 0 ? (
+                        <span className="block text-right tabular-nums text-text-subtle">
+                          {percent.format(0)}
+                        </span>
+                      ) : (
+                        <span className="flex w-full items-center gap-2">
+                          <span className="block h-2.5 flex-1 overflow-hidden rounded-sm bg-surface-subtle">
+                            <span
+                              aria-hidden="true"
+                              className="block h-full min-w-0.5 rounded-r-sm"
+                              style={{
+                                width: `${maxFreq > 0 ? (freq / maxFreq) * 100 : 0}%`,
+                                background: SERIES[resolved],
+                              }}
+                            />
+                          </span>
+                          <span className="w-11 shrink-0 text-right tabular-nums text-text">
+                            {percent.format(freq)}
+                          </span>
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
               ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
+            </tbody>
+          </table>
+        </section>
+      )}
+      {hiddenByLimit > 0 ? (
+        <p className="text-sm text-text-muted">
+          {plural(hiddenByLimit, {
+            one: "# rarer microhaplotype is not shown.",
+            other: "# rarer microhaplotypes are not shown.",
+          })}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -649,6 +710,7 @@ function Comparison({
             />
             <SortableTable
               label={t`Heterozygosity by target`}
+              stickyFirstColumn
               columns={[
                 { key: "target", label: t`Target`, value: (row: TargetAcrossGroups) => row.name },
                 ...loaded.value.groups.map((group, index): SortableColumn<TargetAcrossGroups> => ({
