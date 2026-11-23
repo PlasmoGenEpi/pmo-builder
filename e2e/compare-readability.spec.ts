@@ -96,6 +96,44 @@ async function measureCellBar(
   return { barWidth: barBox.width, trackWidth: trackBox.width };
 }
 
+/** Verifies that a wide table scrolls horizontally while keeping its first column pinned. */
+async function expectStickyFirstColumn(options: {
+  readonly region: Locator;
+  readonly name: string;
+  readonly bodyCellSelector: "td" | "th";
+}): Promise<void> {
+  const { region, name, bodyCellSelector } = options;
+  await region.scrollIntoViewIfNeeded();
+  const metrics = await region.evaluate((el) => ({
+    clientWidth: el.clientWidth,
+    scrollWidth: el.scrollWidth,
+  }));
+  expect(metrics.scrollWidth, `${name} scrolls sideways`).toBeGreaterThan(
+    metrics.clientWidth + 100,
+  );
+
+  const firstHeader = region.locator("thead th").first();
+  const firstBodyCell = region.locator("tbody tr").first().locator(bodyCellSelector).first();
+  const secondHeader = region.locator("thead th").nth(1);
+  const secondHeaderBefore = await requireBox(secondHeader, `${name} second header before`);
+
+  await region.evaluate((el) => {
+    el.scrollLeft = 500;
+  });
+  await expect.poll(() => region.evaluate((el) => el.scrollLeft)).toBeGreaterThan(100);
+
+  const [regionBox, firstHeaderAfter, firstCellAfter, secondHeaderAfter] = await Promise.all([
+    requireBox(region, `${name} region`),
+    requireBox(firstHeader, `${name} first header after scroll`),
+    requireBox(firstBodyCell, `${name} first cell after scroll`),
+    requireBox(secondHeader, `${name} second header after scroll`),
+  ]);
+
+  expect(Math.abs(firstHeaderAfter.x - regionBox.x)).toBeLessThanOrEqual(2);
+  expect(Math.abs(firstCellAfter.x - regionBox.x)).toBeLessThanOrEqual(2);
+  expect(secondHeaderAfter.x).toBeLessThan(secondHeaderBefore.x - 100);
+}
+
 test("grouped by collection month at 1280 px, the first column stays pinned in both wide Compare tables and bars fill their tracks", async ({
   page,
 }) => {
@@ -123,71 +161,18 @@ test("grouped by collection month at 1280 px, the first column stays pinned in b
   });
 
   // 1. Heterozygosity by target: horizontal scroll keeps Target column pinned on the left.
-  await hetRegion.scrollIntoViewIfNeeded();
-  const hetMetrics = await hetRegion.evaluate((el) => ({
-    clientWidth: el.clientWidth,
-    scrollWidth: el.scrollWidth,
-  }));
-  expect(hetMetrics.scrollWidth, "heterozygosity table scrolls sideways").toBeGreaterThan(
-    hetMetrics.clientWidth + 100,
-  );
-
-  const hetFirstHeader = hetRegion.locator("thead th").first();
-  const hetFirstBodyCell = hetRegion.locator("tbody tr").first().locator("td").first();
-  const hetSecondHeader = hetRegion.locator("thead th").nth(1);
-  const hetSecondHeaderBefore = await requireBox(hetSecondHeader, "het second header before");
-
-  await hetRegion.evaluate((el) => {
-    el.scrollLeft = 500;
+  await expectStickyFirstColumn({
+    region: hetRegion,
+    name: "heterozygosity table",
+    bodyCellSelector: "td",
   });
-  await expect.poll(() => hetRegion.evaluate((el) => el.scrollLeft)).toBeGreaterThan(100);
-
-  const [hetRegionBox, hetFirstHeaderAfter, hetFirstCellAfter, hetSecondHeaderAfter] =
-    await Promise.all([
-      requireBox(hetRegion, "het region"),
-      requireBox(hetFirstHeader, "het first header after scroll"),
-      requireBox(hetFirstBodyCell, "het first cell after scroll"),
-      requireBox(hetSecondHeader, "het second header after scroll"),
-    ]);
-
-  expect(Math.abs(hetFirstHeaderAfter.x - hetRegionBox.x)).toBeLessThanOrEqual(2);
-  expect(Math.abs(hetFirstCellAfter.x - hetRegionBox.x)).toBeLessThanOrEqual(2);
-  expect(hetSecondHeaderAfter.x).toBeLessThan(hetSecondHeaderBefore.x - 100);
 
   // 2. Microhaplotypes by group: horizontal scroll keeps Microhaplotype column pinned on the left.
-  await alleleRegion.scrollIntoViewIfNeeded();
-  const alleleMetrics = await alleleRegion.evaluate((el) => ({
-    clientWidth: el.clientWidth,
-    scrollWidth: el.scrollWidth,
-  }));
-  expect(alleleMetrics.scrollWidth, "microhaplotypes table scrolls sideways").toBeGreaterThan(
-    alleleMetrics.clientWidth + 100,
-  );
-
-  const alleleFirstHeader = alleleRegion.locator("thead th").first();
-  const alleleFirstRowHeader = alleleRegion.locator("tbody tr").first().locator("th").first();
-  const alleleSecondHeader = alleleRegion.locator("thead th").nth(1);
-  const alleleSecondHeaderBefore = await requireBox(
-    alleleSecondHeader,
-    "allele second header before",
-  );
-
-  await alleleRegion.evaluate((el) => {
-    el.scrollLeft = 500;
+  await expectStickyFirstColumn({
+    region: alleleRegion,
+    name: "microhaplotypes table",
+    bodyCellSelector: "th",
   });
-  await expect.poll(() => alleleRegion.evaluate((el) => el.scrollLeft)).toBeGreaterThan(100);
-
-  const [alleleRegionBox, alleleFirstHeaderAfter, alleleFirstRowAfter, alleleSecondHeaderAfter] =
-    await Promise.all([
-      requireBox(alleleRegion, "allele region"),
-      requireBox(alleleFirstHeader, "allele first header after scroll"),
-      requireBox(alleleFirstRowHeader, "allele first row header after scroll"),
-      requireBox(alleleSecondHeader, "allele second header after scroll"),
-    ]);
-
-  expect(Math.abs(alleleFirstHeaderAfter.x - alleleRegionBox.x)).toBeLessThanOrEqual(2);
-  expect(Math.abs(alleleFirstRowAfter.x - alleleRegionBox.x)).toBeLessThanOrEqual(2);
-  expect(alleleSecondHeaderAfter.x).toBeLessThan(alleleSecondHeaderBefore.x - 100);
 
   // Scroll back to start and verify the largest bar fills its track.
   await alleleRegion.evaluate((el) => {

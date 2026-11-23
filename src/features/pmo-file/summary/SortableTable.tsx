@@ -72,7 +72,7 @@ export function SortableTable<Row>({
       // Focusable so keyboard users can scroll it.
       // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
       tabIndex={0}
-      className="max-h-[28rem] overflow-auto rounded-lg border border-border bg-surface focus-visible:outline-offset-0"
+      className="max-h-112 overflow-auto rounded-lg border border-border bg-surface focus-visible:outline-offset-0"
     >
       <table className="w-full border-separate border-spacing-0 text-sm" aria-label={label}>
         <thead className="bg-surface-subtle">
@@ -88,9 +88,10 @@ export function SortableTable<Row>({
                   scope="col"
                   aria-sort={!active ? "none" : sort.descending ? "descending" : "ascending"}
                   className={cn(
-                    "sticky top-0 border-b border-border bg-surface-subtle px-3 py-2 align-bottom font-medium text-text-muted",
+                    "sticky top-0 border-b border-b-border bg-surface-subtle px-3 py-2 align-bottom font-medium text-text-muted",
                     column.numeric ? "text-right" : "text-left",
-                    isSticky ? "left-0 z-30 min-w-36 border-r border-border" : "z-20",
+                    onRowSelect !== undefined && index === 0 && "border-l-4 border-l-transparent",
+                    isSticky ? "left-0 z-30 min-w-36 border-r border-r-border" : "z-20",
                   )}
                 >
                   <Button
@@ -149,18 +150,22 @@ export function SortableTable<Row>({
                       key={column.key}
                       style={column.cellStyle?.(row)}
                       className={cn(
-                        "border-b border-border px-3 py-1.5 text-text group-last:border-b-0",
+                        "border-b px-3 py-1.5 text-text",
                         column.numeric ? "text-right tabular-nums" : "break-all",
                         selected
-                          ? "bg-accent-subtle"
-                          : onRowSelect !== undefined
-                            ? "bg-surface group-hover:bg-surface-muted"
-                            : "bg-surface",
-                        isSticky && "sticky left-0 z-10 min-w-36 border-r border-border",
-                        selected &&
-                          (index === 0
-                            ? "shadow-[inset_3px_0_0_var(--color-accent),inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"
-                            : "shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]"),
+                          ? "border-t border-t-accent border-b-accent bg-accent-subtle"
+                          : cn(
+                              "border-b-border group-last:border-b-0",
+                              onRowSelect !== undefined
+                                ? "border-t border-t-transparent bg-surface group-hover:bg-surface-muted"
+                                : "bg-surface",
+                            ),
+                        onRowSelect !== undefined &&
+                          index === 0 &&
+                          (selected
+                            ? "border-l-4 border-l-accent"
+                            : "border-l-4 border-l-transparent"),
+                        isSticky && "sticky left-0 z-10 min-w-36 border-r border-r-border",
                       )}
                     >
                       {index === 0 && onRowSelect !== undefined ? (

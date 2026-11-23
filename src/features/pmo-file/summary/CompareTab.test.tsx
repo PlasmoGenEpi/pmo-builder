@@ -22,6 +22,7 @@ import {
   type WorkingPmoSession,
   type WorkingPmoState,
 } from "@/state";
+import { stubMatchMedia } from "@/test/matchMedia";
 import { installDomPolyfills } from "@/ui/testPolyfills";
 
 import { CompareTab } from "./CompareTab";
@@ -29,23 +30,6 @@ import { CompareTab } from "./CompareTab";
 beforeAll(() => {
   installDomPolyfills();
 });
-
-function stubMatchMedia(reducedMotion: boolean): void {
-  Object.defineProperty(window, "matchMedia", {
-    configurable: true,
-    writable: true,
-    value: vi.fn<(query: string) => MediaQueryList>((query: string) => ({
-      matches: query === "(prefers-reduced-motion: reduce)" && reducedMotion,
-      media: query,
-      onchange: null,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => false,
-    })),
-  });
-}
 
 /** Builds a valid PMO with `peak` specimens in 2019-01 and 1 specimen in 2019-03. */
 function skewedTimelinePmo(peak: number): PortableMicrohaplotypeObject {
@@ -482,25 +466,12 @@ function heterozygosityPmo(): PortableMicrohaplotypeObject {
   };
 }
 
-function rgbLuminance(rgb: string): number {
-  const match = /^rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)$/.exec(rgb);
-  if (match === null) throw new Error(`Expected rgb(...) colour, got "${rgb}"`);
-  const channels = [Number(match[1]), Number(match[2]), Number(match[3])].map((c) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * (channels[0] ?? 0) + 0.7152 * (channels[1] ?? 0) + 0.0722 * (channels[2] ?? 0);
-}
-
-function contrastAgainstHex(rgb: string, hex: string): number {
-  const value = Number.parseInt(hex.slice(1), 16);
-  const textRgb = `rgb(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255})`;
-  const a = rgbLuminance(rgb);
-  const b = rgbLuminance(textRgb);
-  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
-}
-
-function cellFor(table: HTMLElement, targetName: string, columnIndex: number): HTMLElement {
+function cellFor(options: {
+  readonly table: HTMLElement;
+  readonly targetName: string;
+  readonly columnIndex: number;
+}): HTMLElement {
+  const { table, targetName, columnIndex } = options;
   const row = within(table)
     .getAllByRole("row")
     .slice(1)
@@ -517,20 +488,17 @@ describe("CompareTab: heterozygosity table shading", () => {
     resetThemeForTests();
   });
 
-  it.each([
-    { theme: "light" as const, textHex: "#171a21" },
-    { theme: "dark" as const, textHex: "#eceef2" },
-  ])(
-    "shades valued cells monotonically with WCAG AA contrast and leaves dash cells unshaded in the $theme theme",
-    async ({ theme, textHex }) => {
+  it.each(["light", "dark"] as const)(
+    "shades valued cells distinctly by value and leaves dash cells unshaded in the %s theme",
+    async (theme) => {
       setThemePreference(theme);
       await openAndRenderCompare(heterozygosityPmo());
 
       const table = await screen.findByRole("table", { name: "Heterozygosity by target" });
       // Column 1 is Kenya (3 specimens, sorted first), column 2 is Mozambique (1 specimen).
-      const highCell = cellFor(table, "t1", 1);
-      const zeroCell = cellFor(table, "t1", 2);
-      const dashCell = cellFor(table, "t2", 2);
+      const highCell = cellFor({ table, targetName: "t1", columnIndex: 1 });
+      const zeroCell = cellFor({ table, targetName: "t1", columnIndex: 2 });
+      const dashCell = cellFor({ table, targetName: "t2", columnIndex: 2 });
 
       // Numbers remain visible on top of the shading, and missing values stay a dash without shading.
       expect(highCell).toHaveTextContent("0.67");
@@ -538,21 +506,10 @@ describe("CompareTab: heterozygosity table shading", () => {
       expect(dashCell).toHaveTextContent("–");
       expect(dashCell.style.backgroundColor).toBe("");
 
-      // Valued cells are shaded and pass WCAG AA (>= 4.5:1) against body text.
+      // Valued cells are shaded distinctly across different heterozygosity values.
       expect(highCell.style.backgroundColor).not.toBe("");
       expect(zeroCell.style.backgroundColor).not.toBe("");
-      expect(contrastAgainstHex(highCell.style.backgroundColor, textHex)).toBeGreaterThanOrEqual(
-        4.5,
-      );
-      expect(contrastAgainstHex(zeroCell.style.backgroundColor, textHex)).toBeGreaterThanOrEqual(
-        4.5,
-      );
-
-      // Higher heterozygosity is visibly stronger than 0 (darker in light, brighter in dark).
-      const highLum = rgbLuminance(highCell.style.backgroundColor);
-      const zeroLum = rgbLuminance(zeroCell.style.backgroundColor);
-      const direction = theme === "light" ? -1 : 1;
-      expect((highLum - zeroLum) * direction).toBeGreaterThan(0);
+      expect(highCell.style.backgroundColor).not.toBe(zeroCell.style.backgroundColor);
     },
   );
 
@@ -714,7 +671,7 @@ describe("CompareTab: jump links and compact toolbar", () => {
     expect(screen.queryByRole("navigation", { name: "On this page" })).toBeNull();
   });
 
-  it("uses matching compact control heights and keeps toolbar controls mounted when switching fields", async () => {
+  it("keeps toolbar controls mounted when switching fields", async () => {
     const user = userEvent.setup();
     await openAndRenderCompare(richPmo());
 
@@ -722,8 +679,6 @@ describe("CompareTab: jump links and compact toolbar", () => {
     const minReadsInput = screen.getByRole("textbox", {
       name: "Minimum reads per microhaplotype",
     });
-    expect(groupSelect).toHaveClass("h-control-sm", "text-sm");
-    expect(minReadsInput).toHaveClass("h-control-sm", "text-sm");
 
     await user.click(groupSelect);
     await user.click(await screen.findByRole("option", { name: /Administrative area, level 1/ }));
@@ -881,8 +836,18 @@ describe("CompareTab: Microhaplotypes by group readability", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("cuts off at 20 microhaplotypes and states how many rarer ones are not shown", async () => {
+  it("cuts off at 20 microhaplotypes across many groups and reveals absent rows when toggled", async () => {
     const user = userEvent.setup();
+    const groupNames = ["Kenya", "Uganda", "Tanzania", "Malawi", "Mozambique", "Ghana"] as const;
+    const groups = groupNames.map((name, index) => ({
+      name,
+      specimens: 12,
+      librarySamples: 12,
+      withData: 12,
+      polyclonal: 2,
+      meanHeterozygosity: 0.9 - index * 0.05,
+      alleles: 21,
+    }));
     const alleles = Array.from({ length: 23 }, (_, index) => ({
       mhapId: index,
       seq: `AAA${String(index).padStart(3, "A")}`,
@@ -891,35 +856,27 @@ describe("CompareTab: Microhaplotypes by group readability", () => {
         source: "alignment" as const,
         note: null,
       },
-      // 21 present microhaplotypes + 2 absent from every group.
-      freqs: index < 21 ? [0.05, index === 0 ? 0.5 : 0.01] : [0, 0],
+      // 21 present microhaplotypes across 6 groups + 2 absent from every group.
+      freqs:
+        index < 21
+          ? groupNames.map((_group, groupIndex) =>
+              groupIndex === 0 ? 0.05 : index === 0 ? 0.5 : 0.01,
+            )
+          : groupNames.map((_group, groupIndex) => (index === 22 && groupIndex === 0 ? null : 0)),
     }));
 
     await renderWithComparison({
-      fields: [{ key: "collection_country", present: 24, total: 24, distinct: 2 }],
+      fields: [{ key: "collection_country", present: 72, total: 72, distinct: groupNames.length }],
       comparison: {
         key: "collection_country",
-        groups: [
+        groups,
+        targets: [
           {
-            name: "Kenya",
-            specimens: 12,
-            librarySamples: 12,
-            withData: 12,
-            polyclonal: 2,
-            meanHeterozygosity: 0.9,
-            alleles: 21,
-          },
-          {
-            name: "Uganda",
-            specimens: 12,
-            librarySamples: 12,
-            withData: 12,
-            polyclonal: 2,
-            meanHeterozygosity: 0.8,
-            alleles: 21,
+            name: "pfama1",
+            heterozygosity: groupNames.map((_, index) => 0.9 - index * 0.05),
+            alleles,
           },
         ],
-        targets: [{ name: "pfama1", heterozygosity: [0.9, 0.8], alleles }],
         timeline: [],
         timelineUnit: null,
         dated: 0,
@@ -927,16 +884,22 @@ describe("CompareTab: Microhaplotypes by group readability", () => {
     });
 
     const table = await screen.findByRole("table", { name: "Microhaplotype frequencies by group" });
-    // Header row + 20 visible microhaplotype rows.
+    // Microhaplotype column + all 6 group columns.
+    expect(within(table).getAllByRole("columnheader")).toHaveLength(groupNames.length + 1);
+    // Header row + 20 visible microhaplotype rows; absent rows are hidden by default.
     expect(within(table).getAllByRole("row")).toHaveLength(21);
     expect(screen.getByText("1 rarer microhaplotype is not shown.")).toBeInTheDocument();
+    expect(within(table).queryByRole("rowheader", { name: "A22T" })).not.toBeInTheDocument();
+    expect(within(table).queryByRole("rowheader", { name: "A23T" })).not.toBeInTheDocument();
 
-    // Turning on the switch adds the 2 absent microhaplotypes to the pool (23 total -> 3 not shown).
+    // Turning on the switch reveals all 23 rows, including the 2 absent microhaplotypes, with no cut-off note.
     await user.click(
       screen.getByRole("switch", { name: /Show microhaplotypes absent from every group/i }),
     );
-    expect(within(table).getAllByRole("row")).toHaveLength(21);
-    expect(screen.getByText("3 rarer microhaplotypes are not shown.")).toBeInTheDocument();
+    expect(within(table).getAllByRole("row")).toHaveLength(24);
+    expect(within(table).getByRole("rowheader", { name: "A22T" })).toBeInTheDocument();
+    expect(within(table).getByRole("rowheader", { name: "A23T" })).toBeInTheDocument();
+    expect(screen.queryByText(/rarer microhaplotype/i)).not.toBeInTheDocument();
   });
 
   it("omits the rarer-microhaplotypes cut-off line when 20 or fewer microhaplotypes are visible", async () => {

@@ -1,24 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { SectionHeading, jumpToHeading } from "./SectionHeading";
+import { stubMatchMedia } from "@/test/matchMedia";
 
-function stubMatchMedia(reducedMotion: boolean): void {
-  Object.defineProperty(window, "matchMedia", {
-    configurable: true,
-    writable: true,
-    value: vi.fn<(query: string) => MediaQueryList>((query: string) => ({
-      matches: query === "(prefers-reduced-motion: reduce)" && reducedMotion,
-      media: query,
-      onchange: null,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => false,
-    })),
-  });
-}
+import { SectionHeading, jumpToHeading } from "./SectionHeading";
 
 describe("jumpToHeading", () => {
   const originalMatchMedia = window.matchMedia;
