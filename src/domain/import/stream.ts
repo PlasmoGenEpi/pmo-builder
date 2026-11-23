@@ -11,7 +11,18 @@ import type { RawRow } from "../types";
 
 import { isGzip, isOle, isZip } from "./bytes";
 import { detectDelimiter, type Delimiter } from "./delimited";
-import { IMPORT_LIMITS, ImportError, formatLimitBytes } from "./errors";
+import { IMPORT_LIMITS } from "./errors";
+import {
+  DELIMITED_EXTENSIONS,
+  baseExtension,
+  emptyFileError,
+  isGzipOnly,
+  noRowsError,
+  tooLargeError,
+  unreadableGzipError,
+  unreadableWorkbookError,
+  unsupportedTypeError,
+} from "./fileFormat";
 import { createCellInterner } from "./intern";
 import { cleanCell, uniqueHeaders } from "./rawTable";
 import { xlsNotSupported } from "./xlsx";
@@ -24,9 +35,6 @@ export const PREVIEW_KEEP_ROWS = 200;
 
 /** Default number of rows yielded per chunk by {@link streamDelimitedChunks}. */
 export const DEFAULT_STREAM_CHUNK_SIZE = 50_000;
-
-const DELIMITED_EXTENSIONS = new Set(["csv", "tsv", "txt", "tab"]);
-const GZIP_EXTENSIONS = new Set(["gz", "gzip"]);
 
 const UTF8_BOM = [0xef, 0xbb, 0xbf] as const;
 const UTF16LE_BOM = [0xff, 0xfe] as const;
@@ -120,67 +128,6 @@ export interface StreamDistinctValuesOptions {
 export interface StreamDistinctValuesResult {
   readonly values: readonly string[];
   readonly truncated: boolean;
-}
-
-function baseExtension(fileName: string): string {
-  const parts = fileName.toLowerCase().split(".");
-  if (parts.length > 1 && GZIP_EXTENSIONS.has(parts.at(-1) ?? "")) parts.pop();
-  return parts.length > 1 ? (parts.at(-1) ?? "") : "";
-}
-
-function isGzipOnly(fileName: string): boolean {
-  const parts = fileName.toLowerCase().split(".");
-  return parts.length === 2 && GZIP_EXTENSIONS.has(parts[1] ?? "");
-}
-
-function unsupportedTypeError(fileName: string): ImportError {
-  return new ImportError(
-    "unsupported-type",
-    `${fileName} is not a file type that can be read. Upload a .csv, .tsv, .txt or .xlsx file (a .gz of a text file also works).`,
-  );
-}
-
-function emptyFileError(fileName: string): ImportError {
-  return new ImportError(
-    "empty-file",
-    `${fileName} is empty. Choose a file that has a header row and data.`,
-  );
-}
-
-function noRowsError(fileName: string): ImportError {
-  return new ImportError(
-    "no-rows",
-    `${fileName} has a header row but no data rows. Add the data below the header and try again.`,
-  );
-}
-
-function unreadableWorkbookError(fileName: string): ImportError {
-  return new ImportError(
-    "unreadable-workbook",
-    `${fileName} is not a valid Excel workbook. Open it in Excel, save it as .xlsx, and try again.`,
-  );
-}
-
-function unreadableGzipError(fileName: string, cause: unknown): ImportError {
-  return new ImportError(
-    "unreadable-file",
-    `${fileName} looks compressed but could not be unpacked. Check that the file is complete, or upload it uncompressed.`,
-    { cause },
-  );
-}
-
-function tooLargeError(
-  fileName: string,
-  measure: "text" | "workbook",
-  limitBytes: number,
-): ImportError {
-  return new ImportError(
-    "too-large",
-    measure === "text"
-      ? `${fileName} is larger than ${formatLimitBytes(limitBytes)} of text, too large to open in the browser. Split it into smaller files, or remove columns you do not need, and try again.`
-      : `${fileName} is a workbook larger than ${formatLimitBytes(limitBytes)}, too large to open in the browser. Save the sheet as a .csv or .tsv file and import that instead.`,
-    { detail: { kind: "too-large", measure, limitBytes } },
-  );
 }
 
 function startsWith(bytes: Uint8Array, signature: readonly number[]): boolean {
@@ -458,7 +405,7 @@ async function openDecodedStream(
     unpackedBytes += result.value.byteLength;
     if (unpackedBytes > maxTextBytes) {
       await safeCancel();
-      throw tooLargeError(fileName, "text", maxTextBytes);
+      throw tooLargeError({ fileName, measure: "text", limitBytes: maxTextBytes });
     }
     return result.value;
   }
@@ -684,14 +631,14 @@ async function validateFileHeader(
   if (!gzipped) {
     if (isZip(head) || extension === "xlsx") {
       if (source.size > maxWorkbookBytes) {
-        throw tooLargeError(fileName, "workbook", maxWorkbookBytes);
+        throw tooLargeError({ fileName, measure: "workbook", limitBytes: maxWorkbookBytes });
       }
       if (isOle(head)) throw xlsNotSupported(fileName);
       if (isZip(head)) return { kind: "workbook" };
       throw unreadableWorkbookError(fileName);
     }
     if (source.size > maxTextBytes) {
-      throw tooLargeError(fileName, "text", maxTextBytes);
+      throw tooLargeError({ fileName, measure: "text", limitBytes: maxTextBytes });
     }
     if (isOle(head)) throw xlsNotSupported(fileName);
   }
@@ -857,7 +804,7 @@ export async function* streamDelimitedChunks(
   const head = new Uint8Array(await source.slice(0, HEADER_PROBE_BYTES).arrayBuffer());
   const gzipped = isGzip(head);
   if (!gzipped && source.size > maxTextBytes) {
-    throw tooLargeError(options.fileName, "text", maxTextBytes);
+    throw tooLargeError({ fileName: options.fileName, measure: "text", limitBytes: maxTextBytes });
   }
   const extension = baseExtension(options.fileName);
 
@@ -977,7 +924,12 @@ export async function* streamDelimitedChunks(
 
     if (restartAsWindows1252) {
       activeEncoding = "windows-1252";
-      if (yieldedRows > 0 && yieldedHadNonAscii && options.onRestart !== undefined) {
+      if (yieldedRows > 0 && yieldedHadNonAscii) {
+        if (options.onRestart === undefined) {
+          throw new Error(
+            `Cannot restart "${options.fileName}" as Windows-1252 after yielding non-ASCII UTF-8 rows without an onRestart callback.`,
+          );
+        }
         // Non-ASCII UTF-8 rows were already emitted and may decode differently in Windows-1252.
         skipRows = 0;
         options.onRestart("windows-1252");
@@ -1005,7 +957,7 @@ export async function streamDistinctValues(
   const head = new Uint8Array(await source.slice(0, HEADER_PROBE_BYTES).arrayBuffer());
   const gzipped = isGzip(head);
   if (!gzipped && source.size > maxTextBytes) {
-    throw tooLargeError(options.fileName, "text", maxTextBytes);
+    throw tooLargeError({ fileName: options.fileName, measure: "text", limitBytes: maxTextBytes });
   }
   const extension = baseExtension(options.fileName);
 

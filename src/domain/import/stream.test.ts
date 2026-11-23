@@ -429,6 +429,31 @@ describe("streamDelimitedChunks parity and chunk-boundary resilience", () => {
     expect(rows).toEqual(expected.table.rows);
   });
 
+  it("throws instead of mixing encodings when late Windows-1252 follows non-ASCII UTF-8 without onRestart", async () => {
+    const encoder = new TextEncoder();
+    const bytes = new Uint8Array([
+      ...encoder.encode("id,site\n1,"),
+      0xc3,
+      0xa9,
+      ...encoder.encode("\n2,plain\n3,"),
+      0xe9,
+      ...encoder.encode("\n"),
+    ]);
+    const drain = async (): Promise<RawRow[]> => {
+      const collected: RawRow[] = [];
+      for await (const chunk of streamDelimitedChunks(chunkedBlob(bytesBlob(bytes), 2), {
+        fileName: "mixed.csv",
+        delimiter: ",",
+        encoding: "utf-8",
+        chunkSize: 1,
+      })) {
+        collected.push(...chunk);
+      }
+      return collected;
+    };
+    await expect(drain()).rejects.toThrow(/onRestart/);
+  });
+
   it("reports monotonic compressed/raw byte progress for both plain and gzipped files", async () => {
     const raw = new Uint8Array(
       await (await exampleBlob("mad4hatter_allele_data_example.csv")).arrayBuffer(),
@@ -561,6 +586,31 @@ describe("streamDistinctValues", () => {
     });
     expect(result).toEqual({ values: ["r1", "r2", "r3"], truncated: true });
     expect(bytesPulled).toBeLessThan(base.size / 10);
+  });
+
+  it("resets seen values on late Windows-1252 fallback after non-ASCII UTF-8 values", async () => {
+    const encoder = new TextEncoder();
+    // Row 1 holds valid UTF-8 ("é") which decodes as "Ã©" in Windows-1252; row 3 has 0xe9 (invalid UTF-8).
+    const bytes = new Uint8Array([
+      ...encoder.encode("id,site\n1,"),
+      0xc3,
+      0xa9,
+      ...encoder.encode("\n2,plain\n3,"),
+      0xe9,
+      ...encoder.encode("\n"),
+    ]);
+    const blob = bytesBlob(bytes);
+    const parsed = await parseFile(blob, "mixed-distinct.csv");
+
+    const result = await streamDistinctValues(chunkedBlob(blob, 2), {
+      fileName: "mixed-distinct.csv",
+      delimiter: ",",
+      encoding: "utf-8",
+      column: "site",
+      limit: 50,
+    });
+    expect(result).toEqual(distinctValues(parsed.table, "site", 50));
+    expect(result.values).toEqual(["Ã©", "plain", "é"]);
   });
 });
 

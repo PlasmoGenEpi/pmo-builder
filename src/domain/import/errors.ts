@@ -82,11 +82,18 @@ export function isImportError(error: unknown): error is ImportError {
 const BYTES_PER_MB = 1024 * 1024;
 const BYTES_PER_GB = 1024 * BYTES_PER_MB;
 
-/** Formats a size limit in GB (when at least 1 GB) or rounded MB, for messages. */
-export function formatLimitBytes(bytes: number): string {
+/** Formats a size limit in GB (when at least 1 GB) or rounded MB, optionally using `locale`. */
+export function formatLimitBytes(bytes: number, locale?: string): string {
   if (bytes >= BYTES_PER_GB) {
     const gb = bytes / BYTES_PER_GB;
-    return `${Number.isInteger(gb) ? gb : Number(gb.toFixed(1))} GB`;
+    const value = Number.isInteger(gb) ? gb : Number(gb.toFixed(1));
+    const size =
+      locale === undefined
+        ? String(value)
+        : new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value);
+    return `${size} GB`;
   }
-  return `${Math.round(bytes / BYTES_PER_MB)} MB`;
+  const mb = Math.round(bytes / BYTES_PER_MB);
+  const size = locale === undefined ? String(mb) : new Intl.NumberFormat(locale).format(mb);
+  return `${size} MB`;
 }

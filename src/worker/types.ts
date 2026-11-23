@@ -16,7 +16,7 @@ import type {
 } from "@/domain/build";
 import type { Draft, JsonValue, TableRef } from "@/domain/draft";
 import type { WorkingPmoAnswer, WorkingPmoCall, WorkingPmoKind } from "@/domain/tools/types";
-import type { ImportFailure, parseFile } from "@/domain/import";
+import type { ImportFailure, StreamReadProgress, parseFile } from "@/domain/import";
 import type { Notice, RawRow, SectionId, SectionStatus } from "@/domain/types";
 
 export type { PmoTextPreview } from "@/domain/build";
@@ -75,16 +75,14 @@ export type TablePreview =
   | { readonly kind: "missing" }
   | { readonly kind: "failed"; readonly message: string };
 
+/** Active reading/building progress while streaming a large allele table. */
+export interface ReadingBuildProgress extends StreamReadProgress {
+  readonly phase: "reading";
+  readonly stage: "checking" | "building";
+}
+
 /** Live progress reported while streaming and building the allele table. */
-export type BuildProgress =
-  | { readonly phase: "idle" }
-  | {
-      readonly phase: "reading";
-      readonly stage: "checking" | "building";
-      readonly bytesRead: number;
-      readonly totalBytes: number;
-      readonly rowsRead: number;
-    };
+export type BuildProgress = { readonly phase: "idle" } | ReadingBuildProgress;
 
 /** Which column's values to list. */
 export interface DistinctValuesRequest {

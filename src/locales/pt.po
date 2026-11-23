@@ -308,7 +308,7 @@ msgstr "{column} tem de conter números inteiros, mas o alvo «{target}» tem «
 msgid "{columnCount, plural, one {The {issueTable} has no column {columns}. Check the column mapping.} other {The {issueTable} has no columns {columns}. Check the column mapping.}}"
 msgstr "{columnCount, plural, one {A {issueTable} não tem a coluna {columns}. Verifique a associação das colunas.} other {A {issueTable} não tem as colunas {columns}. Verifique a associação das colunas.}}"
 
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "{columnCount, plural, one {The allele table has no column {columns}, chosen to carry onto each microhaplotype. Untick it.} other {The allele table has no columns {columns}, chosen to carry onto each microhaplotype. Untick them.}}"
 msgstr "{columnCount, plural, one {A tabela de alelos não tem a coluna {columns}, escolhida para ser incluída em cada micro-haplótipo. Desmarque-a.} other {A tabela de alelos não tem as colunas {columns}, escolhidas para serem incluídas em cada micro-haplótipo. Desmarque-as.}}"
 
@@ -757,12 +757,12 @@ msgid "{rowCount, plural, one {{totalRows} row} other {{totalRows} rows}}"
 msgstr "{rowCount, plural, one {{totalRows} linha} other {{totalRows} linhas}}"
 
 #. {rowList} is such as 'rows 5 and 9'.
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "{rowCount, plural, one {# row repeats the sample, target and sequence of an earlier row in the same run: {rowList} (sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.} other {# rows repeat the sample, target and sequence of an earlier row in the same run: {rowList} (such as sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.}}"
 msgstr "{rowCount, plural, one {# linha repete a amostra, o alvo e a sequência de uma linha anterior na mesma execução: {rowList} (amostra «{sampleName}», alvo «{targetName}»), por isso as suas leituras seriam contadas duas vezes.} other {# linhas repetem a amostra, o alvo e a sequência de uma linha anterior na mesma execução: {rowList} (por exemplo, amostra «{sampleName}», alvo «{targetName}»), por isso as suas leituras seriam contadas duas vezes.}}"
 
 #. {rowList} is such as 'rows 5 and 9'.
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "{rowCount, plural, one {# row repeats the sample, target and sequence of an earlier row: {rowList} (sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.} other {# rows repeat the sample, target and sequence of an earlier row: {rowList} (such as sample \"{sampleName}\", target \"{targetName}\"), so their reads would be counted twice.}}"
 msgstr "{rowCount, plural, one {# linha repete a amostra, o alvo e a sequência de uma linha anterior: {rowList} (amostra «{sampleName}», alvo «{targetName}»), por isso as suas leituras seriam contadas duas vezes.} other {# linhas repetem a amostra, o alvo e a sequência de uma linha anterior: {rowList} (por exemplo, amostra «{sampleName}», alvo «{targetName}»), por isso as suas leituras seriam contadas duas vezes.}}"
 
@@ -1354,7 +1354,7 @@ msgid "Allele name"
 msgstr "Nome do alelo"
 
 #. The table of microhaplotypes: a table name in lower case, used inside other messages, such as 'The allele table has no rows.' French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "allele table"
 msgstr "tabela de alelos"
 
@@ -1794,7 +1794,7 @@ msgid "Column \"{column}\" of the {issueTable} needs a whole number, but holds \
 msgstr "A coluna «{column}» da {issueTable} precisa de um número inteiro, mas contém «{value}»."
 
 #. "Bioinformatics run name" is the label of a field on the page; use the same words as there.
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "Column \"{runLike}\" tells them apart, so the table probably holds several analysis runs. Choose that column under \"Bioinformatics run name\"."
 msgstr "A coluna «{runLike}» distingue essas linhas, por isso a tabela contém provavelmente várias execuções de análise. Escolha essa coluna em «Nome da execução bioinformática»."
 
@@ -2662,6 +2662,7 @@ msgid "If your browser does not let the app store data, as in some private windo
 msgstr "Se o seu navegador não permitir que a aplicação guarde dados, como em algumas janelas privadas, o rascunho dura apenas até fechar ou recarregar a página."
 
 #: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesStream.ts
 msgid "Import the allele table."
 msgstr "Carregue a tabela de alelos."
 
@@ -4471,12 +4472,12 @@ msgstr "Remover a condição sobre {fieldName}"
 msgid "Remove the panel \"{title}\"?"
 msgstr "Remover o painel «{title}»?"
 
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "Remove the repeated rows."
 msgstr "Remova as linhas repetidas."
 
 #. "Bioinformatics run name" is the label of a field on the page; use the same words as there.
-#: src/domain/build/microhaplotypes.ts
+#: src/domain/build/microhaplotypesShared.ts
 msgid "Remove the repeated rows. If the table holds several analysis runs, choose the column that names the run under \"Bioinformatics run name\"."
 msgstr "Remova as linhas repetidas. Se a tabela contiver várias execuções de análise, escolha a coluna que indica a execução em «Nome da execução bioinformática»."
 

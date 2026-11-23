@@ -523,15 +523,28 @@ function readCountTableLabel(details: IssueDetails, fallback: string): string {
 }
 
 /**
+ * Formats matching row numbers from precomputed streaming `context.errorRows`
+ * when present, otherwise computes row indexes lazily from the in-memory table.
+ */
+function resolveErrorRows(
+  context: TableIssueContext,
+  fallback: () => readonly number[],
+): string | null {
+  if (context.errorRows !== undefined) {
+    return context.errorRows.count > 0 ? describeRowSample(context.errorRows) : null;
+  }
+  const rows = fallback();
+  return rows.length > 0 ? describeRows(rows) : null;
+}
+
+/**
  * The rows of `column` that are blank, as " (rows 5 and 9)" to follow a
  * column, or `null` when none are found.
  */
 function blankRows(context: TableIssueContext, column: string): string | null {
-  if (context.errorRows !== undefined) {
-    return context.errorRows.count > 0 ? describeRowSample(context.errorRows) : null;
-  }
-  const rows = context.typed === null ? [] : blankRowIndexes(context.typed, column);
-  return rows.length > 0 ? describeRows(rows) : null;
+  return resolveErrorRows(context, () =>
+    context.typed === null ? [] : blankRowIndexes(context.typed, column),
+  );
 }
 
 /**
@@ -612,22 +625,15 @@ function describeIssue(
       const target = text(details, "target_name");
       const readsColumn = columnFor(context, "reads");
       const sampleColumn = columnFor(context, "librarySampleName");
-      const rowsText =
-        context.errorRows !== undefined
-          ? context.errorRows.count > 0
-            ? describeRowSample(context.errorRows)
-            : null
-          : (() => {
-              const rowIndexes =
-                context.typed !== null && readsColumn !== null
-                  ? blankRowIndexes(
-                      context.typed,
-                      readsColumn,
-                      (row) => sampleColumn === null || String(row[sampleColumn] ?? "") === sample,
-                    )
-                  : [];
-              return rowIndexes.length > 0 ? describeRows(rowIndexes) : null;
-            })();
+      const rowsText = resolveErrorRows(context, () =>
+        context.typed !== null && readsColumn !== null
+          ? blankRowIndexes(
+              context.typed,
+              readsColumn,
+              (row) => sampleColumn === null || String(row[sampleColumn] ?? "") === sample,
+            )
+          : [],
+      );
       if (readsColumn === null) {
         return target === null
           ? t`Sample "${sample}" has no read count in the read count column. Every row needs a read count.`
@@ -707,16 +713,9 @@ function describeIssue(
     case "mhap/invalid-masking": {
       const columnName = text(details, "column") ?? "";
       const value = text(details, "value") ?? "";
-      const rowsText =
-        context.errorRows !== undefined
-          ? context.errorRows.count > 0
-            ? describeRowSample(context.errorRows)
-            : null
-          : (() => {
-              const rowIndexes =
-                context.raw === null ? [] : rowIndexesWithValue(context.raw, columnName, value);
-              return rowIndexes.length > 0 ? describeRows(rowIndexes) : null;
-            })();
+      const rowsText = resolveErrorRows(context, () =>
+        context.raw === null ? [] : rowIndexesWithValue(context.raw, columnName, value),
+      );
       const column = describeColumnAtStart(context, columnName);
       if (rowsText !== null) {
         const rows = rowsText;

@@ -590,4 +590,181 @@ describe("streaming worker protocol and progress", () => {
       summary: { rows: 981, librarySamples: 49, targets: 21 },
     });
   });
+
+  it("handles late Windows-1252 fallback cleanly in previewRows past row 200 after non-ASCII UTF-8", async () => {
+    const encoder = new TextEncoder();
+    const parts: Uint8Array[] = [encoder.encode("id,site\n")];
+    // Row 1 (index 0) holds valid UTF-8 ("é"), which decodes as "Ã©" in Windows-1252.
+    parts.push(new Uint8Array([...encoder.encode("1,"), 0xc3, 0xa9, 0x0a]));
+    for (let i = 2; i <= 2_100; i += 1) {
+      parts.push(encoder.encode(`${i},ASCII_${i}\n`));
+    }
+    // Row 2101 (index 2100) has 0xe9 (invalid UTF-8 -> "é" in Windows-1252), past PREVIEW_SCAN_ROWS.
+    parts.push(new Uint8Array([...encoder.encode("2101,S"), 0xe3, 0x6f, 0x0a]));
+    const total = parts.reduce((sum, part) => sum + part.length, 0);
+    const combined = new Uint8Array(total);
+    let pos = 0;
+    for (const part of parts) {
+      combined.set(part, pos);
+      pos += part.length;
+    }
+
+    const engine = createInThreadEngine();
+    const table = imported(
+      await engine.importFile({
+        file: new Blob([combined]),
+        fileName: "late-preview.csv",
+        stream: true,
+      }),
+    );
+    expect(table.rowCount).toBeNull();
+
+    // Streaming past row 200 hits the late CP-1252 byte after yielding non-ASCII UTF-8 chunks,
+    // restarts cleanly via onRestart, and returns consistent Windows-1252 rows.
+    const latePage = await engine.previewRows({ tableId: table.id, offset: 2_099, limit: 5 });
+    expect(latePage).toMatchObject({
+      kind: "ready",
+      offset: 2_099,
+      rows: [
+        { id: "2100", site: "ASCII_2100" },
+        { id: "2101", site: "São" },
+      ],
+    });
+
+    // Cached preview rows and encoding are refreshed to Windows-1252 too.
+    const firstPage = await engine.previewRows({ tableId: table.id, offset: 0, limit: 1 });
+    expect(firstPage).toMatchObject({
+      kind: "ready",
+      rows: [{ id: "1", site: "Ã©" }],
+    });
+  });
+
+  it("releases stale latestPmo before a streamed allele rebuild and retains it on non-allele edits", async () => {
+    const gate: { release: (() => void) | null } = { release: null };
+    let streamOpens = 0;
+    const alleleBytes = new TextEncoder().encode(makeAlleleCsv(2_100, { includeRun: true }));
+    // Opens: 1 = inspect, 2 = build1 Pass 1, 3 = build1 Pass 2, 4 = rebuild Pass 1 (paused).
+    class RebuildGatedBlob extends Blob {
+      override stream(): ReadableStream<Uint8Array<ArrayBuffer>> {
+        streamOpens += 1;
+        const openNumber = streamOpens;
+        let offset = 0;
+        const step = 8_192;
+        return new ReadableStream<Uint8Array<ArrayBuffer>>({
+          async pull(controller) {
+            if (openNumber === 4 && offset > 0 && gate.release === null) {
+              await new Promise<void>((resolve) => {
+                gate.release = resolve;
+              });
+            }
+            if (offset >= alleleBytes.byteLength) {
+              controller.close();
+              return;
+            }
+            const end = Math.min(offset + step, alleleBytes.byteLength);
+            controller.enqueue(alleleBytes.slice(offset, end));
+            offset = end;
+          },
+        });
+      }
+    }
+
+    const engine = createInThreadEngine();
+    const alleles = imported(
+      await engine.importFile({
+        file: new RebuildGatedBlob([alleleBytes]),
+        fileName: "gated_alleles.csv",
+        stream: true,
+      }),
+    );
+    // Minimal panel matching targets T0..T24 with distinct primer pairs so the merged PMO builds.
+    const bases = ["A", "C", "G", "T"] as const;
+    const tagOf = (n: number): string =>
+      `${bases[n % 4] ?? "A"}${bases[Math.floor(n / 4) % 4] ?? "A"}${bases[Math.floor(n / 16) % 4] ?? "A"}`;
+    const panelLines = [
+      "target_name,forward_primer,reverse_primer",
+      ...Array.from(
+        { length: 25 },
+        (_, i) => `T${i},ACGTACGTACGT${tagOf(i)},TGCATGCATGCA${tagOf(i)}`,
+      ),
+    ].join("\n");
+    const panel = imported(
+      await engine.importFile({
+        file: new Blob([`${panelLines}\n`]),
+        fileName: "panel.csv",
+      }),
+    );
+
+    const empty = createEmptyDraft();
+    const firstPanel = empty.panel.panels[0];
+    if (firstPanel === undefined) throw new Error("missing default panel");
+    const panelMapping: ColumnMapping = {
+      fields: {
+        targetName: "target_name",
+        forwardPrimersSeq: "forward_primer",
+        reversePrimersSeq: "reverse_primer",
+      },
+      additionalColumns: [],
+    };
+    const draft1: Draft = {
+      ...empty,
+      microhaplotypes: {
+        table: mapped(alleles, SYNTHETIC_MAPPING),
+        runName: { mode: "none", fixedName: "", column: null },
+        representativeColumns: [],
+      },
+      panel: {
+        panels: [{ ...firstPanel, name: "P1", table: mapped(panel, panelMapping) }],
+      },
+    };
+
+    const first = await engine.build(draft1, { creationDate: "2026-01-01" });
+    if (first.kind !== "built") throw new Error("first build superseded");
+    expect(first.view.overall.pmo).not.toBe("none");
+    expect(await engine.getPmoText({ maxLength: 50 })).not.toBeNull();
+    expect(streamOpens).toBe(3);
+
+    // Non-allele edit hits the microhaplotypes memo: stream is not opened again and latestPmo stays intact.
+    const draftProject: Draft = {
+      ...draft1,
+      project: {
+        ...draft1.project,
+        records: [createProjectRecord({ project_name: "Study1", project_description: "Desc" })],
+      },
+    };
+    const second = await engine.build(draftProject, { creationDate: "2026-01-01" });
+    if (second.kind !== "built") throw new Error("second build superseded");
+    expect(second.view.rebuilt).toEqual(["project"]);
+    expect(streamOpens).toBe(3);
+    expect(await engine.getPmoText({ maxLength: 50 })).not.toBeNull();
+
+    // Allele edit triggers a streamed rebuild and releases latestPmo/caches BEFORE Pass 2 allocates.
+    const draftRebuild: Draft = {
+      ...draftProject,
+      microhaplotypes: {
+        ...draftProject.microhaplotypes,
+        runName: { mode: "fixed", fixedName: "run_fixed", column: null },
+      },
+    };
+    const rebuilding = engine.build(draftRebuild, { creationDate: "2026-01-01" });
+    await new Promise<void>((resolve) => {
+      const check = (): void => {
+        if (gate.release !== null) resolve();
+        else setTimeout(check, 5);
+      };
+      check();
+    });
+
+    // While the streamed rebuild is paused, stale PMO caches must already be released.
+    expect(await engine.getPmoText({ maxLength: 50 })).toBeNull();
+    expect(await engine.getPmoFile({ gzip: false })).toBeNull();
+    expect(await engine.getPmoFileSize({ gzip: false })).toBeNull();
+
+    gate.release?.();
+    const third = await rebuilding;
+    if (third.kind !== "built") throw new Error("third build superseded");
+    expect(third.view.rebuilt).toEqual(["microhaplotypes"]);
+    expect(third.view.sections.microhaplotypes.summary?.runNames).toEqual(["run_fixed"]);
+    expect(await engine.getPmoText({ maxLength: 50 })).not.toBeNull();
+  });
 });

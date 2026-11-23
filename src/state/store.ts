@@ -475,6 +475,8 @@ export function createAppStore(options: AppStoreOptions): AppStore {
   let buildRunning: Promise<void> | null = null;
   /** Saves that have started and not finished. Start over waits for them, so none writes after it. */
   const savesInFlight = new Set<Promise<void>>();
+  /** Referenced tables whose file write failed, so a later draft JSON save does not report "saved". */
+  const failedFileSaves = new Map<string, string>();
   let builtDraft: Draft | null = null;
   let savedDraft: Draft | null = null;
   let initialising: Promise<void> | null = null;
@@ -557,8 +559,23 @@ export function createAppStore(options: AppStoreOptions): AppStore {
 
     const forgetTable = (tableId: string): void => {
       if (referencedTableIds(get().draft).includes(tableId)) return;
+      failedFileSaves.delete(tableId);
       void engine.dropTable(tableId);
       void storage.deleteFile(tableId);
+    };
+
+    const recordFileSaveResult = (
+      tableId: string,
+      saved: { readonly ok: boolean; readonly reason?: string },
+    ): void => {
+      if (!saved.ok && storage.availability().kind !== "session-only") {
+        failedFileSaves.set(tableId, saved.reason ?? t`The draft could not be saved.`);
+      } else {
+        failedFileSaves.delete(tableId);
+      }
+      if (!saved.ok || storage.availability().kind === "session-only") {
+        set({ persistence: persistenceAfterWrite(saved) });
+      }
     };
 
     const setImport = (slot: TableSlot, value: ImportState | null): void => {
@@ -578,6 +595,7 @@ export function createAppStore(options: AppStoreOptions): AppStore {
       clearTimeout(saveTimer);
       // A save already under way would otherwise write the draft back after it is cleared.
       await Promise.all(savesInFlight);
+      failedFileSaves.clear();
       const ids = referencedTableIds(get().draft);
       await Promise.all(ids.map((id) => engine.dropTable(id)));
       const result = isEditor() ? await storage.clearDraft() : { ok: true };
@@ -607,6 +625,7 @@ export function createAppStore(options: AppStoreOptions): AppStore {
       /** The draft to keep when nothing is saved. */
       fallback: Draft,
     ): Promise<void> => {
+      failedFileSaves.clear();
       const loaded = await storage.loadDraft();
       let restore: RestoreReport = { kind: "fresh" };
       let draft = fallback;
@@ -700,11 +719,10 @@ export function createAppStore(options: AppStoreOptions): AppStore {
         setImport(slot, null);
         return outcome;
       }
-      if (isEditor()) {
+      const deferFileSave = slot.section === "microhaplotypes" && table.rowCount === null;
+      if (isEditor() && !deferFileSave) {
         const saved = await storage.saveFile(table.id, file);
-        if (!saved.ok || storage.availability().kind === "session-only") {
-          set({ persistence: persistenceAfterWrite(saved) });
-        }
+        recordFileSaveResult(table.id, saved);
       }
       const previous = getSlotTable(get().draft, slot);
       const mapped: MappedTable = {
@@ -718,6 +736,27 @@ export function createAppStore(options: AppStoreOptions): AppStore {
       setImport(slot, null);
       if (previous !== null) forgetTable(previous.table.id);
       emit({ kind: "table-imported", slot, route, table });
+      if (isEditor() && deferFileSave) {
+        const fileSave = (async () => {
+          let saved: { readonly ok: boolean; readonly reason?: string };
+          try {
+            saved = await storage.saveFile(table.id, file);
+          } catch (error) {
+            saved = {
+              ok: false,
+              reason: error instanceof Error ? error.message : String(error),
+            };
+          }
+          if (!referencedTableIds(get().draft).includes(table.id)) {
+            failedFileSaves.delete(table.id);
+            if (saved.ok) await storage.deleteFile(table.id);
+            return;
+          }
+          recordFileSaveResult(table.id, saved);
+        })();
+        savesInFlight.add(fileSave);
+        void fileSave.finally(() => savesInFlight.delete(fileSave));
+      }
       return outcome;
     };
 
@@ -1013,7 +1052,6 @@ export function createAppStore(options: AppStoreOptions): AppStore {
       async saveNow() {
         if (isEditor() && get().draft !== savedDraft) {
           await runSave();
-          return;
         }
         await Promise.all(savesInFlight);
       },
@@ -1112,12 +1150,17 @@ export function createAppStore(options: AppStoreOptions): AppStore {
     const run = (async () => {
       const result = await storage.saveDraft(draft);
       const availability = storage.availability();
+      const failedReason = referencedTableIds(store.getState().draft)
+        .map((id) => failedFileSaves.get(id))
+        .find((reason): reason is string => reason !== undefined);
       let persistence: PersistenceState;
       if (availability.kind === "session-only")
         persistence = { kind: "session-only", reason: availability.reason };
       else if (!result.ok) {
         persistence = { kind: "failed", reason: result.reason };
         emit({ kind: "save-failed" });
+      } else if (failedReason !== undefined) {
+        persistence = { kind: "failed", reason: failedReason };
       } else
         persistence =
           store.getState().draft === draft
