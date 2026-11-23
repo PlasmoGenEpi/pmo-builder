@@ -74,7 +74,7 @@ export function SaveStatus() {
       label={view.heading}
       align="end"
       trigger={
-        <Button variant="ghost" size="sm" className="min-w-0">
+        <Button variant="ghost" size="sm" className="min-w-0 shrink! rounded-full">
           <Icon
             aria-hidden="true"
             className={cn(

@@ -150,7 +150,7 @@ test("at 390 px the density plot fits the page and hover names the right sample"
 
   const readout = densitySection.locator("figure p[aria-live='polite']");
   await svg.locator("circle").nth(0).hover();
-  await expect(readout).toContainText("dens_low: 10 per µL, 1 targets with data.");
+  await expect(readout).toContainText("dens_low: 10 per µL, 1 target with data.");
 
   await svg.locator("circle").nth(3).hover();
   await expect(readout).toContainText("dens_high: 10,000 per µL, 4 targets with data.");

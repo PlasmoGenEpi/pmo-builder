@@ -78,32 +78,10 @@ msgstr "(current choice)"
 msgid "(opens in a new tab)"
 msgstr "(opens in a new tab)"
 
-#. placeholder {0}: datasets.length
-#: src/features/published/PublishedPage.tsx
-msgid "{0, plural, one {{matchingCount} of # dataset} other {{matchingCount} of # datasets}}"
-msgstr "{0, plural, one {{matchingCount} of # dataset} other {{matchingCount} of # datasets}}"
-
-#. placeholder {0}: matrix.maxSpecimens
-#: src/features/published/CoverageGrid.tsx
-msgid "{0, plural, one {{maxSpecimensText} specimen (log scale)} other {{maxSpecimensText} specimens (log scale)}}"
-msgstr "{0, plural, one {{maxSpecimensText} specimen (log scale)} other {{maxSpecimensText} specimens (log scale)}}"
-
 #. placeholder {0}: method.steps
 #: src/features/bioinformatics/methodOptions.ts
 msgid "{0, plural, one {{name} (# step)} other {{name} (# steps)}}"
 msgstr "{0, plural, one {{name} (# step)} other {{name} (# steps)}}"
-
-#. placeholder {0}: matrix.countries.length
-#. placeholder {0}: selected.length
-#: src/features/published/CountryFilter.tsx
-#: src/features/published/CoverageGrid.tsx
-msgid "{0, plural, one {# country} other {# countries}}"
-msgstr "{0, plural, one {# country} other {# countries}}"
-
-#. placeholder {0}: datasets.length
-#: src/features/published/PublishedPage.tsx
-msgid "{0, plural, one {# dataset} other {# datasets}}"
-msgstr "{0, plural, one {# dataset} other {# datasets}}"
 
 #. placeholder {0}: state.count
 #: src/features/records/RecordBadge.tsx
@@ -130,11 +108,6 @@ msgstr "{0, plural, one {# panel. Targets that appear in more than one panel are
 msgid "{0, plural, one {# project} other {# projects}}"
 msgstr "{0, plural, one {# project} other {# projects}}"
 
-#. placeholder {0}: cell.datasets
-#: src/features/published/CoverageGrid.tsx
-msgid "{0, plural, one {# published PMO} other {# published PMOs}}"
-msgstr "{0, plural, one {# published PMO} other {# published PMOs}}"
-
 #. placeholder {0}: using.length
 #: src/features/bioinformatics/MethodsPart.tsx
 msgid "{0, plural, one {# run uses this method and will need another one.} other {# runs use this method and will need another one.}}"
@@ -145,21 +118,12 @@ msgstr "{0, plural, one {# run uses this method and will need another one.} othe
 msgid "{0, plural, one {# run} other {# runs}}"
 msgstr "{0, plural, one {# run} other {# runs}}"
 
-#. placeholder {0}: selected.length
-#: src/features/published/CountryFilter.tsx
-msgid "{0, plural, one {# selected} other {# selected}}"
-msgstr "{0, plural, one {# selected} other {# selected}}"
-
 #. placeholder {0}: summary.runs
 #: src/features/review/reviewModel.ts
 msgid "{0, plural, one {# sequencing run} other {# sequencing runs}}"
 msgstr "{0, plural, one {# sequencing run} other {# sequencing runs}}"
 
-#. placeholder {0}: cell.specimens
-#. placeholder {0}: dataset.summary.specimens
 #. placeholder {0}: summary.specimens
-#: src/features/published/CoverageGrid.tsx
-#: src/features/published/PublishedPage.tsx
 #: src/features/review/reviewModel.ts
 msgid "{0, plural, one {# specimen} other {# specimens}}"
 msgstr "{0, plural, one {# specimen} other {# specimens}}"
@@ -169,34 +133,15 @@ msgstr "{0, plural, one {# specimen} other {# specimens}}"
 msgid "{0, plural, one {# target, saved {savedDate}} other {# targets, saved {savedDate}}}"
 msgstr "{0, plural, one {# target, saved {savedDate}} other {# targets, saved {savedDate}}}"
 
-#. placeholder {0}: dataset.summary.targets
-#: src/features/published/PublishedPage.tsx
-msgid "{0, plural, one {# target} other {# targets}}"
-msgstr "{0, plural, one {# target} other {# targets}}"
-
 #. placeholder {0}: state.count
 #: src/features/records/RecordBadge.tsx
 msgid "{0, plural, one {# value to check} other {# values to check}}"
 msgstr "{0, plural, one {# value to check} other {# values to check}}"
 
-#. placeholder {0}: dataset.bioProjects.length
-#: src/features/published/DatasetPage.tsx
-msgid "{0, plural, one {BioProject} other {BioProjects}}"
-msgstr "{0, plural, one {BioProject} other {BioProjects}}"
-
 #. placeholder {0}: countries.length
-#. placeholder {0}: dataset.countries.length
-#. placeholder {0}: totals.countries
-#: src/features/published/DatasetPage.tsx
-#: src/features/published/PublishedPage.tsx
 #: src/features/specimens/SpecimensStep.tsx
 msgid "{0, plural, one {Country} other {Countries}}"
 msgstr "{0, plural, one {Country} other {Countries}}"
-
-#. placeholder {0}: totals.datasets
-#: src/features/published/PublishedPage.tsx
-msgid "{0, plural, one {Dataset} other {Datasets}}"
-msgstr "{0, plural, one {Dataset} other {Datasets}}"
 
 #. placeholder {0}: repeatedNames.length
 #: src/domain/build/panel.ts
@@ -223,10 +168,8 @@ msgstr "{0, plural, one {Needed because {matchedFields} is matched.} other {Need
 msgid "{0, plural, one {One step needs your attention before a PMO can be built.} other {# steps need your attention before a PMO can be built.}}"
 msgstr "{0, plural, one {One step needs your attention before a PMO can be built.} other {# steps need your attention before a PMO can be built.}}"
 
-#. placeholder {0}: dataset.panels.length
 #. placeholder {0}: summary.panels.length
 #: src/features/panel/PanelStep.tsx
-#: src/features/published/DatasetPage.tsx
 msgid "{0, plural, one {Panel} other {Panels}}"
 msgstr "{0, plural, one {Panel} other {Panels}}"
 
@@ -253,21 +196,6 @@ msgstr "{0, plural, one {Run} other {Runs}}"
 msgid "{0, plural, one {Sequencing run} other {Sequencing runs}}"
 msgstr "{0, plural, one {Sequencing run} other {Sequencing runs}}"
 
-#. placeholder {0}: matching.length
-#: src/features/published/PublishedPage.tsx
-msgid "{0, plural, one {Showing {shownCount} of # published PMO} other {Showing {shownCount} of # published PMOs}}"
-msgstr "{0, plural, one {Showing {shownCount} of # published PMO} other {Showing {shownCount} of # published PMOs}}"
-
-#. placeholder {0}: dataset.summary.specimens
-#: src/features/published/PublishedPage.tsx
-msgid "{0, plural, one {specimen} other {specimens}}"
-msgstr "{0, plural, one {specimen} other {specimens}}"
-
-#. placeholder {0}: totals.specimens
-#: src/features/published/PublishedPage.tsx
-msgid "{0, plural, one {Specimen} other {Specimens}}"
-msgstr "{0, plural, one {Specimen} other {Specimens}}"
-
 #. placeholder {0}: panelNames.length
 #: src/features/panel/PanelNameField.tsx
 msgid "{0, plural, one {The library sample table names its panel {tableNames}, not \"{name}\". Its samples link to this panel only if the names match.} other {The library sample table names its panels {tableNames}, not \"{name}\". Its samples link to this panel only if the names match.}}"
@@ -284,14 +212,6 @@ msgstr "{0, plural, one {This needs {neededFields} as well. Match it too, or set
 msgid "{0, plural, one {This workbook has # sheet. Choose the one that holds “{tableName}”.} other {This workbook has # sheets. Choose the one that holds “{tableName}”.}}"
 msgstr "{0, plural, one {This workbook has # sheet. Choose the one that holds “{tableName}”.} other {This workbook has # sheets. Choose the one that holds “{tableName}”.}}"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-msgid "{absentCount, plural, one {# microhaplotype is absent from every group shown.} other {# microhaplotypes are absent from every group shown.}}"
-msgstr "{absentCount, plural, one {# microhaplotype is absent from every group shown.} other {# microhaplotypes are absent from every group shown.}}"
-
-#: src/features/pmo-file/summary/QualityViews.tsx
-msgid "{activeTargets, plural, one {{activePlate}, well {activeCoord}, {activeSampleName}: # target with data.} other {{activePlate}, well {activeCoord}, {activeSampleName}: # targets with data.}}"
-msgstr "{activeTargets, plural, one {{activePlate}, well {activeCoord}, {activeSampleName}: # target with data.} other {{activePlate}, well {activeCoord}, {activeSampleName}: # targets with data.}}"
-
 #: src/features/review/reviewModel.ts
 msgid "{alleleCalls, plural, one {# allele call} other {# allele calls}} for {samples, plural, one {# sample} other {# samples}} at {targets, plural, one {# target} other {# targets}}, {alleles, plural, one {# distinct allele} other {# distinct alleles}}"
 msgstr "{alleleCalls, plural, one {# allele call} other {# allele calls}} for {samples, plural, one {# sample} other {# samples}} at {targets, plural, one {# target} other {# targets}}, {alleles, plural, one {# distinct allele} other {# distinct alleles}}"
@@ -303,6 +223,10 @@ msgstr "{alleleCount, plural, one {# microhaplotype} other {# microhaplotypes}}"
 #: src/features/pmo-file/summary/SequenceLabel.tsx
 msgid "{baseCount, plural, one {# base} other {# bases}}"
 msgstr "{baseCount, plural, one {# base} other {# bases}}"
+
+#: src/features/published/DatasetPage.tsx
+msgid "{bioProjectCount, plural, one {BioProject} other {BioProjects}}"
+msgstr "{bioProjectCount, plural, one {BioProject} other {BioProjects}}"
 
 #. {column} starts the sentence and names a column, with any article, such as 'Column "Host taxon"'. {row} is one row without an article, such as 'row 5'.
 #: src/domain/build/notices.ts
@@ -453,19 +377,29 @@ msgstr "{count, plural, one {The specimen table names a project with no record h
 msgid "{count, plural, one {Warning} other {Warnings}}"
 msgstr "{count, plural, one {Warning} other {Warnings}}"
 
-#. Summary in the coverage grid header: country count and collection year range
-#: src/features/published/CoverageGrid.tsx
-msgid "{countriesLabel}, {yearsRange}"
-msgstr "{countriesLabel}, {yearsRange}"
-
 #: src/features/published/CountryFilter.tsx
 msgid "{country} <0>({countText})</0>"
 msgstr "{country} <0>({countText})</0>"
 
-#. Accessible description of a cell in the coverage grid
+#. Accessible description of a populated cell in the coverage grid
 #: src/features/published/CoverageGrid.tsx
-msgid "{country}, {year}: {summary}"
-msgstr "{country}, {year}: {summary}"
+msgid "{country}, {year}: {specimens, plural, one {# specimen} other {# specimens}} in {datasets, plural, one {# published PMO} other {# published PMOs}}"
+msgstr "{country}, {year}: {specimens, plural, one {# specimen} other {# specimens}} in {datasets, plural, one {# published PMO} other {# published PMOs}}"
+
+#. Accessible description of an empty cell in the coverage grid
+#: src/features/published/CoverageGrid.tsx
+msgid "{country}, {year}: 0 specimens"
+msgstr "{country}, {year}: 0 specimens"
+
+#. Summary in the coverage grid header: country count and collection year range
+#: src/features/published/CoverageGrid.tsx
+msgid "{countryCount, plural, one {# country} other {# countries}}, {yearsRange}"
+msgstr "{countryCount, plural, one {# country} other {# countries}}, {yearsRange}"
+
+#: src/features/published/DatasetPage.tsx
+#: src/features/published/PublishedPage.tsx
+msgid "{countryCount, plural, one {Country} other {Countries}}"
+msgstr "{countryCount, plural, one {Country} other {Countries}}"
 
 #: src/features/pmo-file/summary/CompareTab.tsx
 msgid "{dated} of {all} specimens have a collection date that gives the month."
@@ -565,13 +499,9 @@ msgstr "{hiddenByLimit, plural, one {# rarer microhaplotype is not shown.} other
 msgid "{hiddenSize} not shown"
 msgstr "{hiddenSize} not shown"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-msgid "{hoverCount, plural, one {{hoverPeriod}: # specimen} other {{hoverPeriod}: # specimens}}"
-msgstr "{hoverCount, plural, one {{hoverPeriod}: # specimen} other {{hoverPeriod}: # specimens}}"
-
 #: src/features/pmo-file/summary/QualityViews.tsx
-msgid "{hoverName}: {hoverDensity} per µL, {hoverTargets} targets with data."
-msgstr "{hoverName}: {hoverDensity} per µL, {hoverTargets} targets with data."
+msgid "{hoverName}: {hoverDensity} per µL, {hoverTargetCount, plural, one {# target with data} other {# targets with data}}."
+msgstr "{hoverName}: {hoverDensity} per µL, {hoverTargetCount, plural, one {# target with data} other {# targets with data}}."
 
 #: src/features/table-import/MatchingParts.tsx
 msgid "{includedCount} of {columnCount} included"
@@ -648,6 +578,10 @@ msgstr "{leadIn} Details: {detail}"
 msgid "{librarySamples, plural, one {# library sample} other {# library samples}} from {specimens, plural, one {# specimen} other {# specimens}}, with alleles found in {samplesWithAlleles} of them at {targetsWithAlleles} of the panel's {targets, plural, one {# target} other {# targets}}."
 msgstr "{librarySamples, plural, one {# library sample} other {# library samples}} from {specimens, plural, one {# specimen} other {# specimens}}, with alleles found in {samplesWithAlleles} of them at {targetsWithAlleles} of the panel's {targets, plural, one {# target} other {# targets}}."
 
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "{liveTargets, plural, one {{livePlate}, well {liveCoord}, {liveSampleName}: # target with data.} other {{livePlate}, well {liveCoord}, {liveSampleName}: # targets with data.}}"
+msgstr "{liveTargets, plural, one {{livePlate}, well {liveCoord}, {liveSampleName}: # target with data.} other {{livePlate}, well {liveCoord}, {liveSampleName}: # targets with data.}}"
+
 #. Fields that only work together. {mappedFields} and {mappedCount} are the fields matched to a column; {missingFields} and {missingCount} are the ones still to match.
 #: src/domain/build/notices.ts
 msgid "{mappedCount, plural, one {{missingCount, plural, one {{mappedFields} is mapped, but {missingFields} is not.} other {{mappedFields} is mapped, but {missingFields} are not.}}} other {{missingCount, plural, one {{mappedFields} are mapped, but {missingFields} is not.} other {{mappedFields} are mapped, but {missingFields} are not.}}}}"
@@ -658,8 +592,12 @@ msgid "{maxReads, plural, one {The most in this file is {mostReads} read. Lower 
 msgstr "{maxReads, plural, one {The most in this file is {mostReads} read. Lower the minimum or clear it to see all microhaplotypes.} other {The most in this file is {mostReads} reads. Lower the minimum or clear it to see all microhaplotypes.}}"
 
 #: src/features/pmo-file/summary/ReadsGrid.tsx
-msgid "{maxReads} reads (log scale)"
-msgstr "{maxReads} reads (log scale)"
+msgid "{maxReadsCount, plural, one {# read (log scale)} other {# reads (log scale)}}"
+msgstr "{maxReadsCount, plural, one {# read (log scale)} other {# reads (log scale)}}"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "{maxSpecimens, plural, one {{maxSpecimensText} specimen (log scale)} other {{maxSpecimensText} specimens (log scale)}}"
+msgstr "{maxSpecimens, plural, one {{maxSpecimensText} specimen (log scale)} other {{maxSpecimensText} specimens (log scale)}}"
 
 #: src/features/review/VerdictCard.tsx
 msgid "{message} Reload the page to try again."
@@ -726,6 +664,10 @@ msgstr "{optionalMatched} of {optionalTotal} matched, {problemCount} to fix"
 msgid "{optionCount, plural, one {{optionTotal} match} other {{optionTotal} matches}}"
 msgstr "{optionCount, plural, one {{optionTotal} match} other {{optionTotal} matches}}"
 
+#: src/features/published/DatasetPage.tsx
+msgid "{panelCount, plural, one {Panel} other {Panels}}"
+msgstr "{panelCount, plural, one {Panel} other {Panels}}"
+
 #: src/domain/build/merge.ts
 msgid "{panelCount, plural, one {There is # panel but no library sample table, so every sample is put on panel \"{firstPanel}\". Add a library sample table to say which panel each sample used.} other {There are # panels but no library sample table, so every sample is put on panel \"{firstPanel}\". Add a library sample table to say which panel each sample used.}}"
 msgstr "{panelCount, plural, one {There is # panel but no library sample table, so every sample is put on panel \"{firstPanel}\". Add a library sample table to say which panel each sample used.} other {There are # panels but no library sample table, so every sample is put on panel \"{firstPanel}\". Add a library sample table to say which panel each sample used.}}"
@@ -761,6 +703,10 @@ msgstr "{projectCount, plural, one {There is # project, so each specimen needs t
 #: src/domain/build/merge.ts
 msgid "{projectCount, plural, one {There is # project, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.} other {There are # projects, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.}}"
 msgstr "{projectCount, plural, one {There is # project, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.} other {There are # projects, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.}}"
+
+#: src/features/published/PublishedPage.tsx
+msgid "{publishedPmoCount, plural, one {Published PMO} other {Published PMOs}}"
+msgstr "{publishedPmoCount, plural, one {Published PMO} other {Published PMOs}}"
 
 #: src/features/pmo-file/summary/ReadsGrid.tsx
 msgid "{readCount, plural, one {# read} other {# reads}}"
@@ -940,6 +886,14 @@ msgstr "{samples, plural, one {# sample} other {# samples}} over {stages, plural
 msgid "{section} is not finished, so it is left out of the PMO."
 msgstr "{section} is not finished, so it is left out of the PMO."
 
+#: src/features/published/CountryFilter.tsx
+msgid "{selectedCount, plural, one {# country} other {# countries}}"
+msgstr "{selectedCount, plural, one {# country} other {# countries}}"
+
+#: src/features/published/CountryFilter.tsx
+msgid "{selectedCount, plural, one {# selected} other {# selected}}"
+msgstr "{selectedCount, plural, one {# selected} other {# selected}}"
+
 #: src/features/pmo-file/NameChecklist.tsx
 msgid "{selectedCount} of {totalCount} ticked"
 msgstr "{selectedCount} of {totalCount} ticked"
@@ -960,14 +914,25 @@ msgstr "{specimenCount, plural, one {Project \"{project}\" is applied to all # s
 msgid "{specimenCount, plural, one {Project \"{project}\" is applied to all # specimen, because there is no specimen table to name a project for each.} other {Project \"{project}\" is applied to all # specimens, because there is no specimen table to name a project for each.}}"
 msgstr "{specimenCount, plural, one {Project \"{project}\" is applied to all # specimen, because there is no specimen table to name a project for each.} other {Project \"{project}\" is applied to all # specimens, because there is no specimen table to name a project for each.}}"
 
+#: src/features/published/PublishedPage.tsx
+msgid "{specimenCount, plural, one {Specimen} other {Specimens}}"
+msgstr "{specimenCount, plural, one {Specimen} other {Specimens}}"
+
 #: src/features/review/PublishToZenodo.tsx
 msgid "{specimens, plural, one {{fieldLabel}, in # specimen} other {{fieldLabel}, in # specimens}}"
 msgstr "{specimens, plural, one {{fieldLabel}, in # specimen} other {{fieldLabel}, in # specimens}}"
 
-#. Specimen and published PMO counts for a populated cell in the coverage grid
-#: src/features/published/CoverageGrid.tsx
-msgid "{specimensText} in {pmosText}"
-msgstr "{specimensText} in {pmosText}"
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{specimens, plural, one {{period}: # specimen} other {{period}: # specimens}}"
+msgstr "{specimens, plural, one {{period}: # specimen} other {{period}: # specimens}}"
+
+#: src/features/published/PublishedPage.tsx
+msgid "{specimens, plural, one {# specimen} other {# specimens}}"
+msgstr "{specimens, plural, one {# specimen} other {# specimens}}"
+
+#: src/features/published/PublishedPage.tsx
+msgid "{specimens, plural, one {specimen} other {specimens}}"
+msgstr "{specimens, plural, one {specimen} other {specimens}}"
 
 #: src/features/panel/PanelStep.tsx
 msgid "{targetCount} before merging"
@@ -980,6 +945,10 @@ msgstr "{targets, plural, one {# target with data} other {# targets with data}}"
 #: src/features/panel/PanelEditor.tsx
 msgid "{targets, plural, one {# target, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.} other {# targets, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.}}"
 msgstr "{targets, plural, one {# target, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.} other {# targets, saved {savedDate}. Its targets and genome come from the saved copy. To change them, add the target table instead.}}"
+
+#: src/features/published/PublishedPage.tsx
+msgid "{targets, plural, one {# target} other {# targets}}"
+msgstr "{targets, plural, one {# target} other {# targets}}"
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "{targetsWithData, plural, one {Choose a target to see its alleles. # target has data. Heterozygosity is 1 minus the sum of squared allele frequencies.} other {Choose a target to see its alleles. # targets have data. Heterozygosity is 1 minus the sum of squared allele frequencies.}}"
@@ -1029,6 +998,18 @@ msgstr "{total, plural, one {More than # method: {methodNames}. Runs refer to a 
 #: src/ui/DataTable.tsx
 msgid "{total, plural, one {Showing {shownCount} of {totalCount} row} other {Showing {shownCount} of {totalCount} rows}}"
 msgstr "{total, plural, one {Showing {shownCount} of {totalCount} row} other {Showing {shownCount} of {totalCount} rows}}"
+
+#: src/features/published/PublishedPage.tsx
+msgid "{totalCount, plural, one {{matchingCount} of # published PMO} other {{matchingCount} of # published PMOs}}"
+msgstr "{totalCount, plural, one {{matchingCount} of # published PMO} other {{matchingCount} of # published PMOs}}"
+
+#: src/features/published/PublishedPage.tsx
+msgid "{totalCount, plural, one {# published PMO} other {# published PMOs}}"
+msgstr "{totalCount, plural, one {# published PMO} other {# published PMOs}}"
+
+#: src/features/published/PublishedPage.tsx
+msgid "{totalMatching, plural, one {Showing {shownCount} of # published PMO} other {Showing {shownCount} of # published PMOs}}"
+msgstr "{totalMatching, plural, one {Showing {shownCount} of # published PMO} other {Showing {shownCount} of # published PMOs}}"
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "{totalSamples, plural, one {{sampleShare} of {allSamples} library sample} other {{sampleShare} of {allSamples} library samples}}"
@@ -1125,8 +1106,12 @@ msgid "<0>. Accepts</0> {fileTypes}"
 msgstr "<0>. Accepts</0> {fileTypes}"
 
 #: src/features/published/CoverageGrid.tsx
-msgid "<0>{country}, {year}:</0> {summary}"
-msgstr "<0>{country}, {year}:</0> {summary}"
+msgid "<0>{country}, {year}:</0> {specimens, plural, one {# specimen} other {# specimens}} in {datasets, plural, one {# published PMO} other {# published PMOs}}"
+msgstr "<0>{country}, {year}:</0> {specimens, plural, one {# specimen} other {# specimens}} in {datasets, plural, one {# published PMO} other {# published PMOs}}"
+
+#: src/features/published/CoverageGrid.tsx
+msgid "<0>{country}, {year}:</0> 0 specimens"
+msgstr "<0>{country}, {year}:</0> 0 specimens"
 
 #: src/features/records/NameCoverage.tsx
 msgid "<0>{shownNames}</0> and {more} more"
@@ -1161,14 +1146,13 @@ msgstr "<0>Sequencing run</0>, if you have it, must match a run on the Sequencin
 msgid "<0>Specimen name</0> must match a name in the table on the Specimens step."
 msgstr "<0>Specimen name</0> must match a name in the table on the Specimens step."
 
-#. Specimen count for an empty cell in the coverage grid
 #: src/features/published/CoverageGrid.tsx
 msgid "0 specimens"
 msgstr "0 specimens"
 
 #: src/features/pmo-file/summary/CompareTab.tsx
-msgid "A bar chart of specimens per collection period. The figures are in the bars' tooltips and in the group table."
-msgstr "A bar chart of specimens per collection period. The figures are in the bars' tooltips and in the group table."
+msgid "A bar chart of specimens per collection period. Use the left and right arrow keys to move across bars, or read the counts in the table that follows."
+msgstr "A bar chart of specimens per collection period. Use the left and right arrow keys to move across bars, or read the counts in the table that follows."
 
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "A column holds each run's method name, as given in the methods above."
@@ -1208,8 +1192,8 @@ msgid "A draft was started. You can finish it on Zenodo, or delete it there and 
 msgstr "A draft was started. You can finish it on Zenodo, or delete it there and try again."
 
 #: src/features/pmo-file/summary/ReadsGrid.tsx
-msgid "A grid of reads for {sampleCount} samples at {targetCount} targets. Use the arrow keys to move between cells and read each sample and target's figures. The tables below give totals per sample and per target, not individual cells."
-msgstr "A grid of reads for {sampleCount} samples at {targetCount} targets. Use the arrow keys to move between cells and read each sample and target's figures. The tables below give totals per sample and per target, not individual cells."
+msgid "A grid of reads for {sampleCount, plural, one {# sample} other {# samples}} at {targetCount, plural, one {# target} other {# targets}}. Use the arrow keys to move between cells and read each sample and target's figures. The tables below give totals per sample and per target, not individual cells."
+msgstr "A grid of reads for {sampleCount, plural, one {# sample} other {# samples}} at {targetCount, plural, one {# target} other {# targets}}. Use the arrow keys to move between cells and read each sample and target's figures. The tables below give totals per sample and per target, not individual cells."
 
 #: src/features/librarySamples/LibrarySamplesStep.tsx
 msgid "A library sample is one sequencing library made from a specimen. A specimen sequenced twice has two library samples. The library sample name is the sample name in your allele table."
@@ -1467,7 +1451,7 @@ msgstr "Administrative area, level 3"
 msgid "Age"
 msgstr "Age"
 
-#. Placeholder in the minimum reads input when empty, meaning all microhaplotypes count
+#. Button in the minimum reads controls meaning all microhaplotypes count
 #: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "All"
 msgstr "All"
@@ -1775,7 +1759,7 @@ msgstr "Chief scientist"
 msgid "Choose"
 msgstr "Choose"
 
-#. Accessible name of the file picker input. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.
+#. Accessible name of the file picker input. {fileLabel} is a lower-case table name, such as "allele table". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.
 #: src/ui/FileDropzone.tsx
 msgid "Choose {fileLabel} file"
 msgstr "Choose {fileLabel} file"
@@ -1801,6 +1785,10 @@ msgstr "Choose a label to open and copy the whole sequence. Each bar is a share 
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "Choose a method"
 msgstr "Choose a method"
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Choose a PMO file"
+msgstr "Choose a PMO file"
 
 #: src/domain/build/panel.ts
 msgid "Choose a saved panel."
@@ -2123,10 +2111,6 @@ msgstr "Dark"
 #: src/features/pmo-file/OpenPublished.tsx
 msgid "Dataset page"
 msgstr "Dataset page"
-
-#: src/features/published/PublishedPage.tsx
-msgid "Datasets"
-msgstr "Datasets"
 
 #: src/app/HomePage.tsx
 msgid "Datasets published on Zenodo, with their countries, years and panels."
@@ -2804,13 +2788,13 @@ msgstr "Host sex"
 msgid "Host taxon ID"
 msgstr "Host taxon ID"
 
-#: src/features/pmo-file/summary/CompareTab.tsx
-msgid "Hover over a bar to see its count."
-msgstr "Hover over a bar to see its count."
-
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "Hover over a dot to see its sample."
 msgstr "Hover over a dot to see its sample."
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Hover over or select a bar to see its count."
+msgstr "Hover over or select a bar to see its count."
 
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "How is the method given?"
@@ -3517,6 +3501,10 @@ msgstr "Microhaplotypes with fewer reads are left out. Leave empty to keep them 
 msgid "Minimum reads per microhaplotype"
 msgstr "Minimum reads per microhaplotype"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Month"
+msgstr "Month"
+
 #: src/features/records/RecordForm.tsx
 msgid "More details"
 msgstr "More details"
@@ -3663,10 +3651,6 @@ msgstr "No method is ready yet. Finish the methods table above."
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "No methods yet"
 msgstr "No methods yet"
-
-#: src/features/pmo-file/summary/CompareTab.tsx
-msgid "No microhaplotypes of this target were seen in the groups shown."
-msgstr "No microhaplotypes of this target were seen in the groups shown."
 
 #: src/features/pmo-file/summary/AlleleBars.tsx
 msgid "No microhaplotypes were counted at {targetName}."
@@ -4177,7 +4161,6 @@ msgstr "Optional. This tells readers of the PMO which programs and versions turn
 msgid "Original"
 msgstr "Original"
 
-#. A control that is neither negative nor positive
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
@@ -4186,8 +4169,13 @@ msgstr "Original"
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading over optional fields that belong to no group
 #: src/domain/fields/samples.ts
-#: src/features/pmo-file/summary/SummaryPanel.tsx
 #: src/features/table-import/mappingModel.ts
+msgid "Other"
+msgstr "Other"
+
+#. A control that is neither negative nor positive
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgctxt "control"
 msgid "Other"
 msgstr "Other"
 
@@ -4360,12 +4348,17 @@ msgstr "Pipeline stages"
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #: src/domain/fields/samples.ts
+#: src/features/pmo-file/summary/QualityViews.tsx
 msgid "Plate"
 msgstr "Plate"
 
 #: src/features/pmo-file/summary/QualityViews.tsx
-msgid "Plate {plate}: {wellCount} library samples. The sample table gives the same figures."
-msgstr "Plate {plate}: {wellCount} library samples. The sample table gives the same figures."
+msgid "Plate {plate}"
+msgstr "Plate {plate}"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Plate {plate}: {sampleCount, plural, one {# library sample} other {# library samples}}. The sample table gives the same figures."
+msgstr "Plate {plate}: {sampleCount, plural, one {# library sample} other {# library samples}}. The sample table gives the same figures."
 
 #. {table} is a table name in lower case, such as 'specimen table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
@@ -4383,6 +4376,10 @@ msgstr "Plate positions are given for {haveCount} of {totalCount} library sample
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Plate well"
 msgstr "Plate well"
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Plate: {sampleCount, plural, one {# library sample} other {# library samples}}. The sample table gives the same figures."
+msgstr "Plate: {sampleCount, plural, one {# library sample} other {# library samples}}. The sample table gives the same figures."
 
 #: src/features/pmo-file/summary/QualityViews.tsx
 #: src/features/pmo-file/summary/SummaryPanel.tsx
@@ -4606,6 +4603,7 @@ msgid "Published {publishedDate}"
 msgstr "Published {publishedDate}"
 
 #: src/features/pmo-file/OpenPublished.tsx
+#: src/features/published/DatasetPage.tsx
 msgid "Published PMO"
 msgstr "Published PMO"
 
@@ -4614,6 +4612,7 @@ msgid "Published PMO views"
 msgstr "Published PMO views"
 
 #: src/features/published/PublishedPage.tsx
+#: src/features/published/PublishedTable.tsx
 msgid "Published PMOs"
 msgstr "Published PMOs"
 
@@ -4715,6 +4714,10 @@ msgstr "Reads at each stage"
 msgid "Reads by sample and target"
 msgstr "Reads by sample and target"
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "reads grid"
+msgstr "reads grid"
+
 #. Short name of the section 'Reads by sample and target'
 #: src/features/pmo-file/summary/SummaryPanel.tsx
 msgid "Reads grid"
@@ -4808,7 +4811,7 @@ msgstr "Remove"
 msgid "Remove “{tableName}”?"
 msgstr "Remove “{tableName}”?"
 
-#. Accessible name of a button. Removes this file. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.
+#. Accessible name of a button. Removes this file. {fileLabel} is a lower-case table name, such as "allele table". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.
 #: src/ui/FileDropzone.tsx
 msgid "Remove {fileLabel} file"
 msgstr "Remove {fileLabel} file"
@@ -4854,6 +4857,10 @@ msgstr "Remove the repeated rows. If the table holds several analysis runs, choo
 msgid "Remove this panel"
 msgstr "Remove this panel"
 
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Remove this PMO file"
+msgstr "Remove this PMO file"
+
 #: src/features/panel/PanelNameField.tsx
 msgid "Renaming it here changes this draft only, not the saved panel."
 msgstr "Renaming it here changes this draft only, not the saved panel."
@@ -4863,7 +4870,7 @@ msgstr "Renaming it here changes this draft only, not the saved panel."
 msgid "Replace"
 msgstr "Replace"
 
-#. Accessible name of a button. Chooses another file in place of this one. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.
+#. Accessible name of a button. Chooses another file in place of this one. {fileLabel} is a lower-case table name, such as "allele table". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.
 #: src/ui/FileDropzone.tsx
 msgid "Replace {fileLabel} file"
 msgstr "Replace {fileLabel} file"
@@ -4883,6 +4890,10 @@ msgstr "Replace the file open in My PMO file?"
 #: src/features/panel/PanelEditor.tsx
 msgid "Replace the saved panel \"{name}\"?"
 msgstr "Replace the saved panel \"{name}\"?"
+
+#: src/features/pmo-file/PmoFilePage.tsx
+msgid "Replace this PMO file"
+msgstr "Replace this PMO file"
 
 #: src/app/HomePage.tsx
 msgid "Replace your draft with the example?"
@@ -5135,8 +5146,8 @@ msgid "Search {label}"
 msgstr "Search {label}"
 
 #: src/features/published/PublishedPage.tsx
-msgid "Search datasets"
-msgstr "Search datasets"
+msgid "Search published PMOs"
+msgstr "Search published PMOs"
 
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "Search sample"
@@ -5206,6 +5217,7 @@ msgstr "Send usage counts"
 
 #. Field label: an allele's DNA sequence
 #: src/domain/fields/microhaplotypes.ts
+#: src/features/pmo-file/summary/SequenceLabel.tsx
 msgid "Sequence"
 msgstr "Sequence"
 
@@ -5347,10 +5359,6 @@ msgstr "Show all {total}"
 #: src/features/shared/SectionResult.tsx
 msgid "Show fewer"
 msgstr "Show fewer"
-
-#: src/features/pmo-file/summary/CompareTab.tsx
-msgid "Show microhaplotypes absent from every group"
-msgstr "Show microhaplotypes absent from every group"
 
 #: src/features/published/PublishedPage.tsx
 #: src/ui/CodeBlock.tsx
@@ -5531,6 +5539,10 @@ msgstr "Specimens I tick"
 #: src/features/librarySamples/LibrarySamplesStep.tsx
 msgid "Specimens named in this table"
 msgstr "Specimens named in this table"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Specimens per collection period"
+msgstr "Specimens per collection period"
 
 #: src/features/pmo-file/summary/CompareTab.tsx
 msgid "Specimens per month of collection."
@@ -7394,6 +7406,10 @@ msgstr "Written from what is in your PMO. Change them on Zenodo as you see fit."
 #: src/features/review/PublishToZenodo.tsx
 msgid "Written from what is in your PMO. You can change them on Zenodo before you submit."
 msgstr "Written from what is in your PMO. You can change them on Zenodo before you submit."
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Year"
+msgstr "Year"
 
 #: src/features/pmo-file/SubsetPanel.tsx
 msgid "You can still make it. If that fails too, open the file again."

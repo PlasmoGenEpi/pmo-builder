@@ -36,7 +36,7 @@ test("keeps search, multiple countries and species in the address, loads a copie
   await serveLargeCatalogue(page);
   await page.goto("/?lang=en#/published");
   const status = page.getByRole("status");
-  await expect(status).toHaveText("150 datasets");
+  await expect(status).toHaveText("150 published PMOs");
   expect(await page.evaluate(() => window.location.hash)).toBe("#/published");
 
   const historyBeforeSearch = await page.evaluate(() => window.history.length);
@@ -49,7 +49,7 @@ test("keeps search, multiple countries and species in the address, loads a copie
   expect(await page.evaluate(() => window.location.search)).toBe("?lang=en");
   const vivaxCount = await page.locator("article").count();
   expect(vivaxCount).toBeGreaterThan(0);
-  await expect(status).toHaveText(`${vivaxCount} of 150 datasets`);
+  await expect(status).toHaveText(`${vivaxCount} of 150 published PMOs`);
 
   await searchBox.fill("");
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#/published");
@@ -88,7 +88,7 @@ test("keeps search, multiple countries and species in the address, loads a copie
 
   // Clearing the filters resets both the list and the address.
   await page.getByRole("button", { name: "Clear the filters" }).click();
-  await expect(status).toHaveText("150 datasets");
+  await expect(status).toHaveText("150 published PMOs");
   expect(await page.evaluate(() => window.location.hash)).toBe("#/published");
 });
 
@@ -98,7 +98,7 @@ test("restores search, filters and scroll position when going Back from a datase
   await serveLargeCatalogue(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/#/published");
-  await expect(page.getByText("150 datasets")).toBeVisible();
+  await expect(page.getByText("150 published PMOs", { exact: true })).toBeVisible();
 
   await page.getByRole("searchbox", { name: "Search" }).fill("20");
   await chooseOption(page, "Panel", /^Mad4hatter \(\d+\)$/);
@@ -194,7 +194,7 @@ test("totals follow filters and fit without overlap at 390 px with six-digit spe
   await serveLargeCatalogue(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#/published");
-  await expect(page.getByText("150 datasets")).toBeVisible();
+  await expect(page.getByText("150 published PMOs", { exact: true })).toBeVisible();
 
   const totalsRegion = page.getByRole("region", { name: "Totals" });
   await expect(totalsRegion).toBeVisible();
@@ -269,7 +269,7 @@ test("sorts the list from the keyboard, keeps sort in the address, and survives 
 }) => {
   await serveLargeCatalogue(page);
   await page.goto("/#/published");
-  await expect(page.getByText("150 datasets")).toBeVisible();
+  await expect(page.getByText("150 published PMOs", { exact: true })).toBeVisible();
 
   await expect(page.getByText("Sort by", { exact: true })).toBeVisible();
   const sortControl = page.getByLabel("Sort by");
@@ -332,7 +332,7 @@ test("opens the coverage grid, navigates and selects a cell from the keyboard, a
   await serveLargeCatalogue(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/#/published");
-  await expect(page.getByText("150 datasets")).toBeVisible();
+  await expect(page.getByText("150 published PMOs", { exact: true })).toBeVisible();
 
   const toggle = page.getByRole("button", { name: /Coverage by country and year/ });
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
@@ -373,7 +373,7 @@ test("opens the coverage grid, navigates and selects a cell from the keyboard, a
   // Choosing the active cell again clears the country and year filters.
   await page.keyboard.press("Enter");
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe("#/published");
-  await expect(page.getByRole("status")).toHaveText("150 datasets");
+  await expect(page.getByRole("status")).toHaveText("150 published PMOs");
 
   // Scrolling far down/right then jumping back left/up keeps focused cells clear of sticky headers.
   const scrollBox = page.getByTestId("coverage-scroll");
@@ -418,7 +418,7 @@ test("keeps the coverage grid scrolling inside its own area at 390 px with no pa
   await serveLargeCatalogue(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#/published");
-  await expect(page.getByText("150 datasets")).toBeVisible();
+  await expect(page.getByText("150 published PMOs", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: /Coverage by country and year/ }).click();
   const scrollBox = page.getByTestId("coverage-scroll");
@@ -458,7 +458,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     await serveLargeCatalogue(page);
     await page.goto("/#/published");
     await expect(page.locator("html")).toHaveAttribute("data-theme", colorScheme);
-    await expect(page.getByText("150 datasets")).toBeVisible();
+    await expect(page.getByText("150 published PMOs", { exact: true })).toBeVisible();
 
     await page.getByRole("button", { name: /Coverage by country and year/ }).click();
     const grid = page.getByRole("table", { name: "Specimens by country and collection year" });
@@ -485,7 +485,7 @@ test("shows at least ten compact rows per screen at 1280 by 800, clamps long tit
   await serveLargeCatalogue(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/#/published");
-  await expect(page.getByText("150 datasets")).toBeVisible();
+  await expect(page.getByText("150 published PMOs", { exact: true })).toBeVisible();
 
   const list = page.locator("article");
   await expect(list).toHaveCount(50);
@@ -537,7 +537,7 @@ test("switches to table view, syncs column sorting with Sort by, and survives Ba
   await serveLargeCatalogue(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/#/published");
-  await expect(page.getByText("150 datasets")).toBeVisible();
+  await expect(page.getByText("150 published PMOs", { exact: true })).toBeVisible();
 
   const tableToggle = page.getByRole("radio", { name: "Table" });
   const listToggle = page.getByRole("radio", { name: "List" });
@@ -622,7 +622,7 @@ test("keeps both list and table views usable at 390 px without horizontal page s
   await serveLargeCatalogue(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#/published");
-  await expect(page.getByText("150 datasets")).toBeVisible();
+  await expect(page.getByText("150 published PMOs", { exact: true })).toBeVisible();
 
   const listOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -656,7 +656,7 @@ test("renders 50 entries at first, adds 50 with focus on the first new entry, re
   await serveLargeCatalogue(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/#/published");
-  await expect(page.getByText("150 datasets")).toBeVisible();
+  await expect(page.getByText("150 published PMOs", { exact: true })).toBeVisible();
 
   const articles = page.locator("article");
   await expect(articles).toHaveCount(50);

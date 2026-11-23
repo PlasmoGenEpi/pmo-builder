@@ -674,6 +674,7 @@ function Comparison({ source, grouping, reads }: ComparisonProps) {
   const { fields, field, onChange: onFieldChange } = grouping;
   const { min: minReads, input: minReadsInput, max: maxReads, onChange: onMinReadsChange } = reads;
   const { resolved } = useTheme();
+  const minReadsInputRef = useRef<HTMLInputElement>(null);
   const [target, setTarget] = useState<string | null>(null);
   const request = useMemo(
     (): WorkingPmoRequest<"groups"> => ({ kind: "groups", source, key: field.key, minReads }),
@@ -723,7 +724,12 @@ function Comparison({ source, grouping, reads }: ComparisonProps) {
             </div>
           )}
         </Field>
-        <MinReadsField value={minReadsInput} maxReads={maxReads} onValueChange={onMinReadsChange} />
+        <MinReadsField
+          value={minReadsInput}
+          maxReads={maxReads}
+          onValueChange={onMinReadsChange}
+          inputRef={minReadsInputRef}
+        />
         {comparison === null || nothingPasses ? null : (
           <SectionJumps jumps={jumpsOf(comparison, shownTarget !== null)} />
         )}
@@ -739,7 +745,10 @@ function Comparison({ source, grouping, reads }: ComparisonProps) {
         <NoReadsAboveMinimum
           minReads={minReads}
           maxReads={maxReads}
-          onClear={() => onMinReadsChange(null)}
+          onClear={() => {
+            onMinReadsChange(null);
+            minReadsInputRef.current?.focus();
+          }}
         />
       ) : (
         <>
