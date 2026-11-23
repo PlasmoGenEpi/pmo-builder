@@ -23,10 +23,19 @@ export type FileDropHandlers = Pick<
   "onDragEnter" | "onDragOver" | "onDragLeave" | "onDrop"
 >;
 
+/** Whole-sentence accessible names for file picker, replace, and remove actions. */
+export interface FileDropActionLabels {
+  readonly choose?: string;
+  readonly replace?: string;
+  readonly remove?: string;
+}
+
 /** Options for {@link useFileDrop}. */
 export interface UseFileDropOptions {
   /** What the file is, such as "Allele table" or "PMO". Used in accessible names. */
   readonly label: string;
+  /** Whole-sentence accessible name for the hidden file input, when `label` should not be lowercased. */
+  readonly chooseLabel?: string;
   /** File name endings that are allowed, with the dot, such as `[".json", ".json.gz", ".gz"]`. */
   readonly accept: readonly string[];
   /** Called with a file of an accepted type. */
@@ -57,6 +66,10 @@ export interface FileDropState {
 export interface FileDropActionsProps {
   /** What the file is, such as "Allele table" or "PMO". Used in accessible names. */
   readonly label: string;
+  /** Whole-sentence accessible name for the Replace button, when `label` should not be lowercased. */
+  readonly replaceLabel?: string;
+  /** Whole-sentence accessible name for the Remove button, when `label` should not be lowercased. */
+  readonly removeLabel?: string;
   /** Opens the file picker to choose a replacement file. */
   readonly onReplace: () => void;
   /** Removes the current file. */
@@ -67,6 +80,8 @@ export interface FileDropActionsProps {
 /** Replace and Remove buttons for a chosen file, with consistent accessible names. */
 export function FileDropActions({
   label,
+  replaceLabel,
+  removeLabel,
   onReplace,
   onRemove,
   disabled = false,
@@ -78,11 +93,14 @@ export function FileDropActions({
         size="sm"
         onClick={onReplace}
         disabled={disabled}
-        aria-label={t({
-          message: `Replace ${fileLabel} file`,
-          comment:
-            'Accessible name of a button. Chooses another file in place of this one. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
-        })}
+        aria-label={
+          replaceLabel ??
+          t({
+            message: `Replace ${fileLabel} file`,
+            comment:
+              'Accessible name of a button. Chooses another file in place of this one. {fileLabel} is a lower-case table name, such as "allele table". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
+          })
+        }
       >
         {t({
           message: "Replace",
@@ -94,11 +112,14 @@ export function FileDropActions({
         variant="ghost"
         onClick={onRemove}
         disabled={disabled}
-        aria-label={t({
-          message: `Remove ${fileLabel} file`,
-          comment:
-            'Accessible name of a button. Removes this file. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
-        })}
+        aria-label={
+          removeLabel ??
+          t({
+            message: `Remove ${fileLabel} file`,
+            comment:
+              'Accessible name of a button. Removes this file. {fileLabel} is a lower-case table name, such as "allele table". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
+          })
+        }
       >
         {t({ message: "Remove", comment: "Button: remove this file" })}
       </Button>
@@ -121,6 +142,8 @@ export interface ChosenFile {
 export interface FileDropzoneProps {
   /** What the file is, such as "Allele table". Used in the accessible names. */
   label: string;
+  /** Whole-sentence accessible names for picker/replace/remove actions, when `label` should not be lowercased. */
+  actionLabels?: FileDropActionLabels;
   /** One sentence about what the file should contain. */
   description?: ReactNode;
   /** File name endings that are allowed, with the dot, such as `[".csv", ".tsv", ".xlsx"]`. */
@@ -158,6 +181,7 @@ function hasFiles(event: DragEvent): boolean {
  */
 export function useFileDrop({
   label,
+  chooseLabel,
   accept,
   onFileSelect,
   inactive = false,
@@ -212,11 +236,14 @@ export function useFileDrop({
       type="file"
       hidden
       accept={accept.join(",")}
-      aria-label={t({
-        message: `Choose ${fileLabel} file`,
-        comment:
-          'Accessible name of the file picker input. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
-      })}
+      aria-label={
+        chooseLabel ??
+        t({
+          message: `Choose ${fileLabel} file`,
+          comment:
+            'Accessible name of the file picker input. {fileLabel} is a lower-case table name, such as "allele table". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
+        })
+      }
       onChange={(event) => {
         take(event.target.files);
         // Allow choosing the same file again after it was removed.
@@ -243,6 +270,7 @@ export function useFileDrop({
  */
 export function FileDropzone({
   label,
+  actionLabels,
   description,
   accept,
   file,
@@ -260,6 +288,7 @@ export function FileDropzone({
   const { choose, dragHandlers, dragging, rejection, clearRejection, fileTypes, input } =
     useFileDrop({
       label,
+      chooseLabel: actionLabels?.choose,
       accept,
       onFileSelect,
       inactive,
@@ -323,6 +352,8 @@ export function FileDropzone({
           </div>
           <FileDropActions
             label={label}
+            replaceLabel={actionLabels?.replace}
+            removeLabel={actionLabels?.remove}
             onReplace={choose}
             onRemove={() => {
               clearRejection();

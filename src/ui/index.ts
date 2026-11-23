@@ -46,6 +46,7 @@ export {
   FileDropzone,
   useFileDrop,
   type ChosenFile,
+  type FileDropActionLabels,
   type FileDropActionsProps,
   type FileDropHandlers,
   type FileDropState,
@@ -58,7 +59,7 @@ export { KeyValueList, type KeyValueItem, type KeyValueListProps } from "./KeyVa
 export { ButtonLink, Link, type ButtonLinkProps, type LinkProps } from "./Link";
 export { Menu, type MenuEntry, type MenuProps } from "./Menu";
 export { NumberField, type NumberFieldProps } from "./NumberField";
-export { Popover, type PopoverProps } from "./Popover";
+export { Popover, type PopoverPadding, type PopoverProps, type PopoverSize } from "./Popover";
 export { ProgressBar, type ProgressBarProps } from "./ProgressBar";
 export { RadioGroup, type RadioGroupProps, type RadioOption } from "./RadioGroup";
 export { SectionHeading, jumpToHeading, type SectionHeadingProps } from "./SectionHeading";

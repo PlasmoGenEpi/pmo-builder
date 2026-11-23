@@ -17,6 +17,9 @@ const variantClasses: Record<ButtonVariant, string> = {
   danger: "bg-danger text-danger-fg shadow-xs hover:bg-danger-hover",
 };
 
+const selectedClasses =
+  "border border-accent bg-accent-subtle font-semibold text-accent-text shadow-xs hover:border-accent hover:bg-accent-subtle";
+
 const sizeClasses: Record<ButtonSize, string> = {
   sm: "h-control-sm gap-1.5 px-2.5 text-sm",
   md: "h-control gap-2 px-3.5 text-base",
@@ -41,6 +44,8 @@ export interface ButtonStyleOptions {
    * grow past its control height to fit, such as for narrow table headings.
    */
   wrap?: boolean;
+  /** Marks a toggle or chip button as the active choice, using the accent surface and border. */
+  selected?: boolean;
 }
 
 /**
@@ -53,12 +58,13 @@ export function buttonClassName({
   size = "md",
   fullWidth = false,
   wrap = false,
+  selected = false,
 }: ButtonStyleOptions = {}): string {
   return cn(
     "inline-flex cursor-pointer items-center justify-center rounded-md font-medium select-none",
     wrap ? "max-w-full whitespace-normal" : "shrink-0 whitespace-nowrap",
     "transition-colors duration-100 disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-60",
-    variantClasses[variant],
+    selected ? selectedClasses : variantClasses[variant],
     wrap ? wrappingSizeClasses[size] : sizeClasses[size],
     fullWidth && "w-full",
   );
@@ -78,6 +84,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
    * grow past its control height to fit, such as for narrow table headings.
    */
   wrap?: boolean;
+  /** Marks a toggle or chip button as the active choice, using the accent surface and border. */
+  selected?: boolean;
   ref?: Ref<HTMLButtonElement>;
 }
 
@@ -96,6 +104,7 @@ export function Button({
   icon: Icon,
   fullWidth,
   wrap = false,
+  selected = false,
   className,
   children,
   type = "button",
@@ -117,7 +126,7 @@ export function Button({
       aria-busy={loading || undefined}
       aria-disabled={loading || undefined}
       onClick={handleClick}
-      className={cn(buttonClassName({ variant, size, fullWidth, wrap }), className)}
+      className={cn(buttonClassName({ variant, size, fullWidth, wrap, selected }), className)}
     >
       {loading ? (
         <Spinner size={size === "lg" ? "md" : "sm"} label={null} />

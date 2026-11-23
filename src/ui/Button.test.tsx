@@ -28,6 +28,18 @@ describe("buttonClassName", () => {
       expect(classes).not.toContain(fixedHeight);
     }
   });
+
+  it("uses the accent selection style without conflicting secondary tokens when selected", () => {
+    const classes = buttonClassName({ variant: "secondary", size: "sm", selected: true }).split(
+      " ",
+    );
+    expect(classes).toContain("bg-accent-subtle");
+    expect(classes).toContain("border-accent");
+    expect(classes).toContain("text-accent-text");
+    expect(classes).not.toContain("bg-surface");
+    expect(classes).not.toContain("border-border");
+    expect(classes).not.toContain("text-text");
+  });
 });
 
 describe("Button", () => {

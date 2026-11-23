@@ -53,8 +53,8 @@ export function SegmentedControl<V extends string = string>({
           value={segmentValue}
           aria-label={iconOnly ? segmentLabel : undefined}
           className={cn(
-            "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md font-medium text-text-muted transition-colors duration-100 hover:text-text",
-            "data-[state=on]:bg-surface data-[state=on]:text-text data-[state=on]:shadow-sm",
+            "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-transparent font-medium text-text-muted transition-colors duration-100 hover:text-text",
+            "data-[state=on]:border-accent data-[state=on]:bg-accent-subtle data-[state=on]:font-semibold data-[state=on]:text-accent-text data-[state=on]:shadow-xs",
             size === "sm" ? "h-6 px-2 text-sm" : "h-7.5 px-3 text-base",
           )}
         >

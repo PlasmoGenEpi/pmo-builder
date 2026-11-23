@@ -94,8 +94,8 @@ export function RadioGroup<V extends string = string>({
                 value={option.value}
                 disabled={option.disabled}
                 className={cn(
-                  "inline-flex h-6 cursor-pointer items-center justify-center rounded-md px-2.5 text-sm font-medium whitespace-nowrap text-text-muted transition-colors duration-100 hover:text-text",
-                  "data-[state=checked]:bg-surface data-[state=checked]:text-text data-[state=checked]:shadow-sm",
+                  "inline-flex h-6 cursor-pointer items-center justify-center rounded-md border border-transparent px-2.5 text-sm font-medium whitespace-nowrap text-text-muted transition-colors duration-100 hover:text-text",
+                  "data-[state=checked]:border-accent data-[state=checked]:bg-accent-subtle data-[state=checked]:font-semibold data-[state=checked]:text-accent-text data-[state=checked]:shadow-xs",
                   "disabled:cursor-not-allowed disabled:opacity-50",
                 )}
               >
