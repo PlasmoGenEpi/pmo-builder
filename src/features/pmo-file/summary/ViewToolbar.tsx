@@ -43,49 +43,47 @@ export function MinReadsField({ value, onValueChange, maxReads }: MinReadsFieldP
   });
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <NumberField
-          label={t`Minimum reads per microhaplotype`}
-          aria-describedby={hintId}
-          title={hint}
-          placeholder={allLabel}
-          layout="compact"
-          integer
-          min={0}
-          value={value}
-          onValueChange={onValueChange}
-        />
-        {cutoffs.length > 0 ? (
-          <fieldset className="flex flex-wrap items-center gap-1">
-            <legend className="sr-only">{t`Common minimum read counts`}</legend>
-            <Button
-              variant="secondary"
-              size="sm"
-              aria-pressed={allActive}
-              className={cn("px-2", allActive && ACTIVE_CUTOFF_CLASS)}
-              onClick={() => onValueChange(null)}
-            >
-              {allLabel}
-            </Button>
-            {cutoffs.map((cutoff) => {
-              const active = value === cutoff;
-              return (
-                <Button
-                  key={cutoff}
-                  variant="secondary"
-                  size="sm"
-                  aria-pressed={active}
-                  className={cn("px-2 tabular-nums", active && ACTIVE_CUTOFF_CLASS)}
-                  onClick={() => onValueChange(cutoff)}
-                >
-                  {formatCount(cutoff)}
-                </Button>
-              );
-            })}
-          </fieldset>
-        ) : null}
-      </div>
+    <div className="flex flex-col gap-1.5">
+      <NumberField
+        label={t`Minimum reads per microhaplotype`}
+        aria-describedby={hintId}
+        title={hint}
+        placeholder={allLabel}
+        layout="compact"
+        integer
+        min={0}
+        value={value}
+        onValueChange={onValueChange}
+      />
+      {cutoffs.length > 0 ? (
+        <fieldset className="flex flex-wrap items-center gap-1">
+          <legend className="sr-only">{t`Common minimum read counts`}</legend>
+          <Button
+            variant="secondary"
+            size="sm"
+            aria-pressed={allActive}
+            className={cn(allActive && ACTIVE_CUTOFF_CLASS)}
+            onClick={() => onValueChange(null)}
+          >
+            {allLabel}
+          </Button>
+          {cutoffs.map((cutoff) => {
+            const active = value === cutoff;
+            return (
+              <Button
+                key={cutoff}
+                variant="secondary"
+                size="sm"
+                aria-pressed={active}
+                className={cn("tabular-nums", active && ACTIVE_CUTOFF_CLASS)}
+                onClick={() => onValueChange(cutoff)}
+              >
+                {formatCount(cutoff)}
+              </Button>
+            );
+          })}
+        </fieldset>
+      ) : null}
       <p id={hintId} className="text-xs text-text-muted">
         {hint}
       </p>
