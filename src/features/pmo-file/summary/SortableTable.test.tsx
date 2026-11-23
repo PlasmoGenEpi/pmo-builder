@@ -7,7 +7,7 @@ import { saveFile } from "@/features/review/saveFile";
 
 import { buttonClassName } from "@/ui";
 
-import { SortableTable, type SortableColumn } from "./SortableTable";
+import { SortableTable, type SortableColumn, type TableScrollRequest } from "./SortableTable";
 
 vi.mock("@/features/review/saveFile", () => ({ saveFile: vi.fn<typeof saveFile>() }));
 
@@ -331,10 +331,7 @@ describe("SortableTable", () => {
 
     function Harness() {
       const [selected, setSelected] = useState<string | null>(null);
-      const [scrollToRow, setScrollToRow] = useState<{
-        readonly key: string;
-        readonly seq: number;
-      } | null>(null);
+      const [scrollToRow, setScrollToRow] = useState<TableScrollRequest | null>(null);
       return (
         <div>
           <button
@@ -417,5 +414,36 @@ describe("SortableTable", () => {
     }
 
     expect(scrollToSpy).toHaveBeenCalledWith({ top: 130, behavior: "auto" });
+  });
+
+  it("shows an outside totalRows denominator in the row count and updates cleanly with search", async () => {
+    const user = userEvent.setup();
+    const rows: readonly TargetRow[] = [
+      { name: "Pf3D7_01", heterozygosity: 0.4 },
+      { name: "Pf3D7_02", heterozygosity: 0.5 },
+      { name: "Pf3D7_03", heterozygosity: 0.6 },
+      { name: "Pf3D7_04", heterozygosity: 0.7 },
+      { name: "Pf3D7_05", heterozygosity: 0.8 },
+      { name: "Pf3D7_06", heterozygosity: 0.9 },
+    ];
+    render(
+      <SortableTable
+        label="Targets"
+        columns={TARGET_COLUMNS}
+        rows={rows}
+        totalRows={276}
+        rowKey={(row) => row.name}
+        searchableColumns={["name"]}
+      />,
+    );
+
+    expect(screen.getByText("Showing 6 of 276 rows")).toBeInTheDocument();
+
+    const search = screen.getByRole("searchbox", { name: "Search Targets" });
+    await user.type(search, "Pf3D7_01");
+    expect(screen.getByText("Showing 1 of 276 rows")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Clear search for Targets" }));
+    expect(screen.getByText("Showing 6 of 276 rows")).toBeInTheDocument();
   });
 });

@@ -1598,7 +1598,7 @@ describe("PmoFilePage: summary", () => {
       screen.queryByRole("searchbox", { name: "Search Reads at each pipeline stage" }),
     ).not.toBeInTheDocument();
     expect(screen.getByText("Showing 50 of 50 rows")).toBeInTheDocument();
-    expect(screen.getByText("Showing 21 of 21 rows")).toBeInTheDocument();
+    expect(screen.getByText("Showing 21 of 276 rows")).toBeInTheDocument();
     expect(screen.getByText("Showing 3 of 3 rows")).toBeInTheDocument();
 
     // Narrow Targets by part of the first target's name and download CSV of shown rows.
@@ -1608,7 +1608,7 @@ describe("PmoFilePage: summary", () => {
     const matchingTargets = columnOf(targets, /^Target/);
     expect(matchingTargets).toContain(firstTarget);
     expect(matchingTargets.length).toBeLessThan(21);
-    expect(screen.getByText(`Showing ${matchingTargets.length} of 21 rows`)).toBeInTheDocument();
+    expect(screen.getByText(`Showing ${matchingTargets.length} of 276 rows`)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Download Targets as csv" }));
     const targetsCsv = await savedText();
@@ -1619,7 +1619,7 @@ describe("PmoFilePage: summary", () => {
     expect(targetLines[1]?.split(",")[0]).toBe(matchingTargets[0]);
 
     await user.click(screen.getByRole("button", { name: "Clear search for Targets" }));
-    expect(screen.getByText("Showing 21 of 21 rows")).toBeInTheDocument();
+    expect(screen.getByText("Showing 21 of 276 rows")).toBeInTheDocument();
 
     // Narrow Samples by library sample name, then by specimen name.
     const firstSample = columnOf(samples, /^Library sample/)[0] ?? "";

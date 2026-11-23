@@ -211,6 +211,48 @@ describe("PlateView", () => {
     expect(screen.queryByText("sample_a2")).not.toBeInTheDocument();
   });
 
+  it("shows the focused well's details when keyboard focus moves to another well while the pointer hovers the first", () => {
+    const summary = makePlateSummary([
+      makeSample({
+        libraryId: 0,
+        name: "sample_a1",
+        targets: 18,
+        plate: { plate: "Plate 1", row: "A", col: 1 },
+      }),
+      makeSample({
+        libraryId: 1,
+        name: "sample_a2",
+        targets: 5,
+        plate: { plate: "Plate 1", row: "A", col: 2 },
+      }),
+    ]);
+
+    render(<PlateView summary={summary} />);
+
+    const wellA1 = screen.getByRole("button", {
+      name: "A1, sample_a1: 18 targets with data",
+    });
+    const wellA2 = screen.getByRole("button", {
+      name: "A2, sample_a2: 5 targets with data",
+    });
+
+    // Pointer rests over well A1.
+    fireEvent.mouseEnter(wellA1);
+    expect(screen.getByText("sample_a1")).toBeVisible();
+
+    // Keyboard focus moves to well A2 without the pointer leaving well A1.
+    fireEvent.focus(wellA2);
+    expect(screen.queryByText("sample_a1")).not.toBeInTheDocument();
+    const tooltipA2 = screen.getByText("sample_a2").parentElement;
+    if (tooltipA2 === null) throw new Error("Expected tooltip container for well A2");
+    expect(within(tooltipA2).getByText("A2")).toBeVisible();
+    expect(within(tooltipA2).getByText("sample_a2")).toBeVisible();
+    expect(within(tooltipA2).getByText("5 targets with data")).toBeVisible();
+    expect(
+      screen.getByText("Plate 1, well A2, sample_a2: 5 targets with data."),
+    ).toBeInTheDocument();
+  });
+
   it("pins well details on tap/click until another well is chosen, Escape is pressed, or clicking outside", () => {
     const summary = makePlateSummary([
       makeSample({

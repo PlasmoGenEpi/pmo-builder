@@ -278,4 +278,67 @@ describe("ReadsGrid", () => {
     expect(status).toHaveTextContent("target_1");
     expect(region).toHaveFocus();
   });
+
+  it("takes focus as one control on Tab without stopping on target header buttons, while pointer clicks still select a target", async () => {
+    const user = userEvent.setup();
+    const summary = makeSummary(2, 4);
+    const columns = [0, 1, 2, 3];
+    const onTargetSelect = vi.fn<(targetName: string) => void>();
+    render(
+      <div>
+        <button type="button">Before grid</button>
+        <ReadsGrid summary={summary} columns={columns} onTargetSelect={onTargetSelect} />
+        <button type="button">After grid</button>
+      </div>,
+    );
+
+    const beforeButton = screen.getByRole("button", { name: "Before grid" });
+    const region = screen.getByRole("region", { name: "Reads by sample and target" });
+    const afterButton = screen.getByRole("button", { name: "After grid" });
+    const targetButtons = within(region).getAllByRole("button");
+    expect(targetButtons).toHaveLength(4);
+    for (const button of targetButtons) {
+      expect(button).toHaveAttribute("tabindex", "-1");
+    }
+
+    beforeButton.focus();
+    await user.tab();
+    expect(region).toHaveFocus();
+
+    await user.tab();
+    expect(afterButton).toHaveFocus();
+
+    await user.click(within(region).getByRole("button", { name: "target_3" }));
+    expect(onTargetSelect).toHaveBeenCalledWith("target_3");
+  });
+
+  it("announces whole chosen-cell sentences for zero reads and singular or plural counts", () => {
+    const base = makeSummary(2, 2);
+    const summary: PmoSummary = {
+      ...base,
+      grid: {
+        columns: 2,
+        reads: [0, 1, 30, 12],
+        alleles: [0, 1, 2, 1],
+      },
+    };
+    render(<ReadsGrid summary={summary} columns={[0, 1]} />);
+
+    const region = screen.getByRole("region", { name: "Reads by sample and target" });
+    const status = screen.getByRole("status");
+    region.focus();
+
+    // (0, 0): 0 reads, 0 microhaplotypes.
+    fireEvent.keyDown(region, { key: "ArrowRight" });
+    expect(status).toHaveTextContent("sample_1 at target_1: no reads, 0 microhaplotypes.");
+
+    // (0, 1): 1 read, 1 microhaplotype.
+    fireEvent.keyDown(region, { key: "ArrowRight" });
+    expect(status).toHaveTextContent("sample_1 at target_2: 1 read, 1 microhaplotype.");
+
+    // (1, 1) then (1, 0): 30 reads, 2 microhaplotypes.
+    fireEvent.keyDown(region, { key: "ArrowDown" });
+    fireEvent.keyDown(region, { key: "ArrowLeft" });
+    expect(status).toHaveTextContent("sample_2 at target_1: 30 reads, 2 microhaplotypes.");
+  });
 });

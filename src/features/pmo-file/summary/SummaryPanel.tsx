@@ -25,7 +25,7 @@ import {
   showsStages,
 } from "./QualityViews";
 import { ReadsGrid, sampleRowKey } from "./ReadsGrid";
-import { SortableTable, type SortableColumn } from "./SortableTable";
+import { SortableTable, type SortableColumn, type TableScrollRequest } from "./SortableTable";
 import { NoAnswer } from "../NoAnswer";
 import { useSettled } from "../useSettled";
 
@@ -285,6 +285,10 @@ export interface SummaryPanelProps {
   readonly maxReads: number | null;
 }
 
+function nextScrollRequest(key: string): (before: TableScrollRequest | null) => TableScrollRequest {
+  return (before) => ({ key, seq: (before?.seq ?? 0) + 1 });
+}
+
 /**
  * The Summary tab: headline numbers, the reads grid, and per-sample and
  * per-target tables, with each target's allele frequencies. One read
@@ -301,14 +305,8 @@ export function SummaryPanel({
   const [grouped, setGrouped] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const [selectedSample, setSelectedSample] = useState<string | null>(null);
-  const [sampleScroll, setSampleScroll] = useState<{
-    readonly key: string;
-    readonly seq: number;
-  } | null>(null);
-  const [targetScroll, setTargetScroll] = useState<{
-    readonly key: string;
-    readonly seq: number;
-  } | null>(null);
+  const [sampleScroll, setSampleScroll] = useState<TableScrollRequest | null>(null);
+  const [targetScroll, setTargetScroll] = useState<TableScrollRequest | null>(null);
   const tableFormat = usePmo((state) => state.tableFormat);
   const openName = usePmo((state) => (state.open.kind === "opened" ? state.open.name : null));
   const fileBase = pmoBaseName(openName, source);
@@ -351,12 +349,12 @@ export function SummaryPanel({
 
   function selectTargetFromGrid(targetName: string): void {
     setSelected(targetName);
-    setTargetScroll((before) => ({ key: targetName, seq: (before?.seq ?? 0) + 1 }));
+    setTargetScroll(nextScrollRequest(targetName));
   }
 
   function selectSampleFromGrid(sampleKey: string): void {
     setSelectedSample(sampleKey);
-    setSampleScroll((before) => ({ key: sampleKey, seq: (before?.seq ?? 0) + 1 }));
+    setSampleScroll(nextScrollRequest(sampleKey));
   }
 
   return (
@@ -468,6 +466,7 @@ export function SummaryPanel({
                 label={t`Targets`}
                 columns={targetColumns()}
                 rows={summary.targets.filter((target) => allTargets || target.samples > 0)}
+                totalRows={summary.targets.length}
                 rowKey={(row) => row.name}
                 onRowSelect={(row) => setSelected(row.name)}
                 selectedKey={chosenTarget?.name ?? null}
