@@ -118,11 +118,13 @@ export function NumberField({
             }}
             className={cn(
               inputClassName,
-              compact ? "h-control-sm text-sm tabular-nums" : "h-control text-base tabular-nums",
+              compact
+                ? "h-control-sm pr-2 pl-2 text-sm tabular-nums"
+                : "h-control text-base tabular-nums",
             )}
           />
         );
-        return compact ? <div className="w-24 shrink-0">{element}</div> : element;
+        return compact ? <div className="w-18 shrink-0">{element}</div> : element;
       }}
     </Field>
   );

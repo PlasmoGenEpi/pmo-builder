@@ -25,7 +25,7 @@ function measureOverflow(element: HTMLElement): OverflowEdges {
 /** The row of controls above the Summary and Compare views. */
 export function ViewToolbar({ children }: { readonly children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start gap-x-3 gap-y-2 border-b border-border pb-3">
+    <div className="flex flex-wrap items-start gap-x-2.5 gap-y-2 border-b border-border pb-3">
       {children}
     </div>
   );
@@ -82,14 +82,14 @@ export function MinReadsField({ value, onValueChange, maxReads, inputRef }: MinR
           onValueChange={onValueChange}
         />
         {cutoffs.length > 0 ? (
-          <fieldset className="flex flex-wrap items-center gap-1">
+          <fieldset className="flex flex-wrap items-center gap-0.5">
             <legend className="sr-only">{t`Common minimum read counts`}</legend>
             <Button
               variant="secondary"
               size="sm"
               selected={allActive}
               aria-pressed={allActive}
-              className="pr-1.5 pl-1.5"
+              className="pr-1.5 pl-1.5 text-xs"
               onClick={() => selectCutoff(null)}
             >
               {allLabel}
@@ -103,7 +103,7 @@ export function MinReadsField({ value, onValueChange, maxReads, inputRef }: MinR
                   size="sm"
                   selected={active}
                   aria-pressed={active}
-                  className="pr-1.5 pl-1.5 tabular-nums"
+                  className="pr-1.5 pl-1.5 text-xs tabular-nums"
                   onClick={() => selectCutoff(cutoff)}
                 >
                   {formatCount(cutoff)}
@@ -209,7 +209,7 @@ export function SectionJumps({ jumps }: { readonly jumps: readonly Jump[] }) {
         onScroll={measure}
         className="flex items-center gap-x-0.5 gap-y-1 max-sm:-m-0.5 max-sm:overflow-x-auto max-sm:p-0.5 sm:flex-wrap"
       >
-        <span className="shrink-0 pr-1 text-sm text-text-subtle">
+        <span className="shrink-0 pr-0.5 text-xs text-text-subtle">
           {t({ message: "Jump to", comment: "Followed by links to the sections of the page" })}
         </span>
         {jumps.map((jump) => (
@@ -217,7 +217,7 @@ export function SectionJumps({ jumps }: { readonly jumps: readonly Jump[] }) {
             key={jump.id}
             variant="ghost"
             size="sm"
-            className="pr-1 pl-1"
+            className="pr-1 pl-1 text-xs"
             onClick={() => jumpToHeading(jump.id)}
           >
             {jump.label}
