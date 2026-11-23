@@ -61,7 +61,7 @@ export function ControlsCheck({ summary }: { readonly summary: PmoSummary }) {
           const name = sample.name;
           const reads = sample.reads;
           return (
-            <li key={`n${sample.libraryId}`}>
+            <li key={`n:${sample.run}:${sample.libraryId}`}>
               {plural(reads, {
                 one: `Negative control ${name} has # read.`,
                 other: `Negative control ${name} has # reads.`,
@@ -71,7 +71,11 @@ export function ControlsCheck({ summary }: { readonly summary: PmoSummary }) {
         })}
         {failed.map((sample) => {
           const name = sample.name;
-          return <li key={`p${sample.libraryId}`}>{t`Positive control ${name} has no data.`}</li>;
+          return (
+            <li key={`p:${sample.run}:${sample.libraryId}`}>
+              {t`Positive control ${name} has no data.`}
+            </li>
+          );
         })}
       </ul>
     </Callout>
@@ -196,14 +200,76 @@ function positionWellTooltip(options: {
   tooltip.style.top = `${pos.top}px`;
 }
 
+interface PlateWellCell {
+  readonly wellId: string;
+  readonly row: number;
+  readonly col: number;
+  readonly coord: string;
+  readonly sample: SampleSummary;
+}
+
+/** Finds the next filled well on a plate for Arrow, Home or End navigation. */
+function nextPlateWell(options: {
+  readonly filled: readonly PlateWellCell[];
+  readonly current: PlateWellCell;
+  readonly key: string;
+  readonly ctrlOrMeta: boolean;
+}): PlateWellCell | null {
+  const { filled, current, key, ctrlOrMeta } = options;
+  switch (key) {
+    case "ArrowRight":
+      return filled.find((cell) => cell.row === current.row && cell.col > current.col) ?? null;
+    case "ArrowLeft":
+      return filled.findLast((cell) => cell.row === current.row && cell.col < current.col) ?? null;
+    case "ArrowDown": {
+      const sameCol = filled.find((cell) => cell.col === current.col && cell.row > current.row);
+      if (sameCol !== undefined) return sameCol;
+      const below = filled.filter((cell) => cell.row > current.row);
+      const nextRow = below[0]?.row;
+      if (nextRow === undefined) return null;
+      return (
+        below
+          .filter((cell) => cell.row === nextRow)
+          .toSorted((a, b) => Math.abs(a.col - current.col) - Math.abs(b.col - current.col))[0] ??
+        null
+      );
+    }
+    case "ArrowUp": {
+      const sameCol = filled.findLast((cell) => cell.col === current.col && cell.row < current.row);
+      if (sameCol !== undefined) return sameCol;
+      const above = filled.filter((cell) => cell.row < current.row);
+      const prevRow = above.at(-1)?.row;
+      if (prevRow === undefined) return null;
+      return (
+        above
+          .filter((cell) => cell.row === prevRow)
+          .toSorted((a, b) => Math.abs(a.col - current.col) - Math.abs(b.col - current.col))[0] ??
+        null
+      );
+    }
+    case "Home": {
+      if (ctrlOrMeta) return filled[0] ?? null;
+      return filled.find((cell) => cell.row === current.row) ?? null;
+    }
+    case "End": {
+      if (ctrlOrMeta) return filled.at(-1) ?? null;
+      return filled.findLast((cell) => cell.row === current.row) ?? null;
+    }
+    default:
+      return null;
+  }
+}
+
 /** Each plate as a grid of wells, coloured by how many targets have data. */
 export function PlateView({ summary, headingId }: QualityViewProps) {
   const { resolved } = useTheme();
   const platesRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const wellRefs = useRef(new Map<string, SVGRectElement>());
   const [hovered, setHovered] = useState<ActiveWell | null>(null);
   const [focused, setFocused] = useState<ActiveWell | null>(null);
   const [pinned, setPinned] = useState<ActiveWell | null>(null);
+  const [activeWellByPlate, setActiveWellByPlate] = useState<Record<string, string>>({});
 
   const placed = summary.samples.filter((sample) => sample.plate !== null);
   const rawActive = hovered ?? focused ?? pinned;
@@ -214,7 +280,23 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
           (sample) => sample.libraryId === rawActive.libraryId && sample.run === rawActive.run,
         ) ?? null);
   const activeId = rawActive === null || activeSample === null ? null : rawActive.id;
+  // Live-region readout follows hover or explicit pin so focusing a well does not double-speak its aria-label.
+  const rawLive = hovered ?? pinned;
+  const liveSample =
+    rawLive === null
+      ? null
+      : (placed.find(
+          (sample) => sample.libraryId === rawLive.libraryId && sample.run === rawLive.run,
+        ) ?? null);
   const hasPinned = pinned !== null;
+
+  const setWellRef = useCallback((wellId: string, node: SVGRectElement | null) => {
+    if (node === null) {
+      wellRefs.current.delete(wellId);
+    } else {
+      wellRefs.current.set(wellId, node);
+    }
+  }, []);
 
   const clearSelection = useCallback(() => {
     setPinned(null);
@@ -272,9 +354,11 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
   const totalCount = formatCount(total);
   const cell = 26;
   const activeTargets = activeSample?.targets ?? 0;
-  const activePlate = rawActive?.plate ?? "";
   const activeCoord = rawActive?.coord ?? "";
-  const activeSampleName = activeSample?.name ?? "";
+  const liveTargets = liveSample?.targets ?? 0;
+  const livePlate = rawLive?.plate ?? "";
+  const liveCoord = rawLive?.coord ?? "";
+  const liveSampleName = liveSample?.name ?? "";
 
   return (
     <section className="flex flex-col gap-4">
@@ -294,13 +378,54 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
             ...wells.map((sample) => ROW_LETTERS.indexOf(sample.plate?.row ?? "A") + 1),
           );
           const cols = Math.max(12, ...wells.map((sample) => sample.plate?.col ?? 1));
-          const wellCount = formatCount(wells.length);
+          const resolvedSlots = Array.from({ length: rows * cols }, (_, index) => {
+            const row = Math.floor(index / cols);
+            const col = index % cols;
+            const rowLetter = ROW_LETTERS[row] ?? "";
+            const coord = `${rowLetter}${col + 1}`;
+            const sample = wells.find(
+              (item) => item.plate?.row === rowLetter && item.plate?.col === col + 1,
+            );
+            const wellId = `${plateIndex}-${row}-${col}`;
+            return { index, row, col, coord, wellId, sample };
+          });
+          const filledCells: PlateWellCell[] = resolvedSlots.flatMap((slot) =>
+            slot.sample === undefined
+              ? []
+              : [
+                  {
+                    wellId: slot.wellId,
+                    row: slot.row,
+                    col: slot.col,
+                    coord: slot.coord,
+                    sample: slot.sample,
+                  },
+                ],
+          );
+          const storedActiveId = activeWellByPlate[plate];
+          const rovingWellId =
+            storedActiveId !== undefined &&
+            filledCells.some((item) => item.wellId === storedActiveId)
+              ? storedActiveId
+              : (filledCells[0]?.wellId ?? null);
+          const sampleCount = filledCells.length;
+          const plateLandmarkLabel = plate === "" ? t`Plate` : t`Plate ${plate}`;
           return (
             <figure key={plate} className="flex min-w-0 max-w-full flex-col gap-2">
               <figcaption className="text-sm font-medium text-text">{plate}</figcaption>
-              <p className="sr-only">{t`Plate ${plate}: ${wellCount} library samples. The sample table gives the same figures.`}</p>
+              <p className="sr-only">
+                {plate === ""
+                  ? t`Plate: ${plural(sampleCount, {
+                      one: "# library sample",
+                      other: "# library samples",
+                    })}. The sample table gives the same figures.`
+                  : t`Plate ${plate}: ${plural(sampleCount, {
+                      one: "# library sample",
+                      other: "# library samples",
+                    })}. The sample table gives the same figures.`}
+              </p>
               <section
-                aria-label={plate}
+                aria-label={plateLandmarkLabel}
                 // Focusable so keyboard users can scroll wide plates.
                 // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
                 tabIndex={0}
@@ -350,14 +475,7 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
                       {ROW_LETTERS[row]}
                     </text>
                   ))}
-                  {Array.from({ length: rows * cols }, (_, index) => {
-                    const row = Math.floor(index / cols);
-                    const col = index % cols;
-                    const rowLetter = ROW_LETTERS[row] ?? "";
-                    const coord = `${rowLetter}${col + 1}`;
-                    const sample = wells.find(
-                      (item) => item.plate?.row === rowLetter && item.plate?.col === col + 1,
-                    );
+                  {resolvedSlots.map(({ index, row, col, coord, wellId, sample }) => {
                     if (sample === undefined) {
                       return (
                         <rect
@@ -374,7 +492,6 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
                         />
                       );
                     }
-                    const wellId = `${plateIndex}-${row}-${col}`;
                     const sampleName = sample.name;
                     const wellTargets = sample.targets;
                     const fill =
@@ -393,14 +510,16 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
                       plate,
                       coord,
                     };
+                    const currentCell: PlateWellCell = { wellId, row, col, coord, sample };
                     return (
                       <rect
                         key={index}
+                        ref={(node) => setWellRef(wellId, node)}
                         data-plate-well={wellId}
                         // SVG wells are <rect> shapes inside the plate grid, not HTML <button>s.
                         // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
                         role="button"
-                        tabIndex={0}
+                        tabIndex={wellId === rovingWellId ? 0 : -1}
                         aria-label={wellLabel}
                         aria-pressed={isPinned}
                         x={(col + 1) * cell + 2}
@@ -420,6 +539,11 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
                         onFocus={() => {
                           setHovered(null);
                           setFocused(well);
+                          setActiveWellByPlate((previous) =>
+                            previous[plate] === wellId
+                              ? previous
+                              : { ...previous, [plate]: wellId },
+                          );
                         }}
                         onBlur={() => setFocused(null)}
                         onClick={() => togglePinned(well)}
@@ -429,21 +553,40 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
                             togglePinned(well);
                           } else if (event.key === "Escape") {
                             clearSelection();
+                          } else {
+                            const next = nextPlateWell({
+                              filled: filledCells,
+                              current: currentCell,
+                              key: event.key,
+                              ctrlOrMeta: event.ctrlKey || event.metaKey,
+                            });
+                            if (next !== null) {
+                              event.preventDefault();
+                              setActiveWellByPlate((previous) => ({
+                                ...previous,
+                                [plate]: next.wellId,
+                              }));
+                              const element = wellRefs.current.get(next.wellId);
+                              if (element !== undefined) {
+                                element.focus();
+                                if (typeof element.scrollIntoView === "function") {
+                                  element.scrollIntoView({ block: "nearest", inline: "nearest" });
+                                }
+                              }
+                            }
                           }
                         }}
                       />
                     );
                   })}
-                  {wells
-                    .filter((sample) => sample.targets === 0)
-                    .map((sample) => {
-                      const row = ROW_LETTERS.indexOf(sample.plate?.row ?? "A");
-                      const col = (sample.plate?.col ?? 1) - 1;
-                      const x = (col + 1) * cell + 8;
-                      const y = (row + 1) * cell + 8;
+                  {filledCells
+                    .filter((item) => item.sample.targets === 0)
+                    .map((item) => {
+                      const x = (item.col + 1) * cell + 8;
+                      const y = (item.row + 1) * cell + 8;
                       return (
                         <path
-                          key={`x${sample.libraryId}`}
+                          key={`x-${item.wellId}`}
                           aria-hidden="true"
                           d={`M${x},${y} l${cell - 16},${cell - 16} M${x + cell - 16},${y} l${-(cell - 16)},${cell - 16}`}
                           className="pointer-events-none stroke-text-muted"
@@ -500,11 +643,11 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
         )}
       </div>
       <p className="sr-only" aria-live="polite">
-        {activeId === null || activeSample === null
+        {rawLive === null || liveSample === null
           ? ""
-          : plural(activeTargets, {
-              one: `${activePlate}, well ${activeCoord}, ${activeSampleName}: # target with data.`,
-              other: `${activePlate}, well ${activeCoord}, ${activeSampleName}: # targets with data.`,
+          : plural(liveTargets, {
+              one: `${livePlate}, well ${liveCoord}, ${liveSampleName}: # target with data.`,
+              other: `${livePlate}, well ${liveCoord}, ${liveSampleName}: # targets with data.`,
             })}
       </p>
     </section>
@@ -541,7 +684,7 @@ export function DensityView({ summary, headingId }: QualityViewProps) {
   const pointCount = formatCount(points.length);
   const hoverName = hover?.name ?? "";
   const hoverDensity = number.format(hover?.density?.value ?? 0);
-  const hoverTargets = formatCount(hover?.targets ?? 0);
+  const hoverTargetCount = hover?.targets ?? 0;
 
   return (
     <section className="flex flex-col gap-4">
@@ -563,7 +706,7 @@ export function DensityView({ summary, headingId }: QualityViewProps) {
           style={{ maxWidth: width }}
           aria-hidden="true"
         >
-          {ticks.map((tick) => (
+          {ticks.map((tick, index) => (
             <g key={tick}>
               <line
                 x1={x(10 ** tick)}
@@ -575,7 +718,7 @@ export function DensityView({ summary, headingId }: QualityViewProps) {
               <text
                 x={x(10 ** tick)}
                 y={height - pad.bottom + 16}
-                textAnchor="middle"
+                textAnchor={index === ticks.length - 1 ? "end" : "middle"}
                 className="fill-text-muted text-[11px]"
               >
                 {number.format(10 ** tick)}
@@ -590,7 +733,7 @@ export function DensityView({ summary, headingId }: QualityViewProps) {
             className="stroke-border-strong"
           />
           <text
-            x={(width + pad.left) / 2}
+            x={(width + pad.left - pad.right) / 2}
             y={height - 6}
             textAnchor="middle"
             className="fill-text-muted text-[11px]"
@@ -614,7 +757,7 @@ export function DensityView({ summary, headingId }: QualityViewProps) {
               textAnchor="end"
               className="fill-text-muted text-[11px]"
             >
-              {value}
+              {formatCount(value)}
             </text>
           ))}
           {points.map((sample) => (
@@ -634,7 +777,10 @@ export function DensityView({ summary, headingId }: QualityViewProps) {
         <p className="min-h-5 text-sm text-text-muted" aria-live="polite">
           {hover === null
             ? t`Hover over a dot to see its sample.`
-            : t`${hoverName}: ${hoverDensity} per µL, ${hoverTargets} targets with data.`}
+            : t`${hoverName}: ${hoverDensity} per µL, ${plural(hoverTargetCount, {
+                one: "# target with data",
+                other: "# targets with data",
+              })}.`}
         </p>
       </figure>
     </section>

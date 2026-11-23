@@ -1,5 +1,5 @@
 import { plural, t } from "@lingui/core/macro";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import type {
   ControlKind,
@@ -152,7 +152,11 @@ function controlName(kind: ControlKind): string {
       return t({ message: "Positive", comment: "A positive control" });
     case "other":
     default:
-      return t({ message: "Other", comment: "A control that is neither negative nor positive" });
+      return t({
+        message: "Other",
+        context: "control",
+        comment: "A control that is neither negative nor positive",
+      });
   }
 }
 
@@ -301,6 +305,7 @@ export function SummaryPanel({
   maxReads,
 }: SummaryPanelProps) {
   const minReads = useSettled(Math.max(0, minReadsInput ?? 0), 400);
+  const minReadsInputRef = useRef<HTMLInputElement>(null);
   const [allTargets, setAllTargets] = useState(false);
   const [grouped, setGrouped] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
@@ -317,6 +322,10 @@ export function SummaryPanel({
   const loaded = usePmoQuery(request);
 
   const summary = loaded.kind === "ok" ? loaded.value : null;
+  const visibleTargets = useMemo(
+    () => summary?.targets.filter((target) => allTargets || target.samples > 0) ?? [],
+    [summary, allTargets],
+  );
   const columns = useMemo(
     () =>
       summary === null
@@ -341,8 +350,8 @@ export function SummaryPanel({
   );
   const targetsWithData = summary?.headline.targetsWithData ?? 0;
   const chosenTarget =
-    summary?.targets.find((target) => target.name === selected) ??
-    summary?.targets.toSorted((a, b) => b.samples - a.samples)[0] ??
+    visibleTargets.find((target) => target.name === selected) ??
+    visibleTargets.toSorted((a, b) => b.samples - a.samples)[0] ??
     null;
 
   const nothingPasses = summary !== null && minReads > 0 && summary.headline.samplesWithData === 0;
@@ -360,7 +369,12 @@ export function SummaryPanel({
   return (
     <div className="flex flex-col gap-6">
       <ViewToolbar>
-        <MinReadsField value={minReadsInput} maxReads={maxReads} onValueChange={onMinReadsChange} />
+        <MinReadsField
+          value={minReadsInput}
+          maxReads={maxReads}
+          onValueChange={onMinReadsChange}
+          inputRef={minReadsInputRef}
+        />
         {summary === null || nothingPasses ? null : (
           <>
             <Switch
@@ -394,7 +408,10 @@ export function SummaryPanel({
         <NoReadsAboveMinimum
           minReads={minReads}
           maxReads={maxReads}
-          onClear={() => onMinReadsChange(null)}
+          onClear={() => {
+            onMinReadsChange(null);
+            minReadsInputRef.current?.focus();
+          }}
         />
       ) : (
         <>
@@ -465,7 +482,7 @@ export function SummaryPanel({
               <SortableTable
                 label={t`Targets`}
                 columns={targetColumns()}
-                rows={summary.targets.filter((target) => allTargets || target.samples > 0)}
+                rows={visibleTargets}
                 totalRows={summary.targets.length}
                 rowKey={(row) => row.name}
                 onRowSelect={(row) => setSelected(row.name)}

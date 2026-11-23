@@ -57,7 +57,10 @@ describe("ReadsGrid", () => {
     render(<ReadsGrid summary={summary} columns={columns} />);
 
     const region = screen.getByRole("region", { name: "Reads by sample and target" });
-    expect(region).toHaveAttribute("tabindex", "0");
+    const grid = screen.getByRole("application", { name: "Reads by sample and target" });
+    expect(region).not.toHaveAttribute("tabindex");
+    expect(grid).toHaveAttribute("tabindex", "0");
+    expect(grid).toHaveAttribute("aria-roledescription", "reads grid");
     expect(
       screen.getByText(
         "A grid of reads for 4 samples at 276 targets. Use the arrow keys to move between cells and read each sample and target's figures. The tables below give totals per sample and per target, not individual cells.",
@@ -66,10 +69,11 @@ describe("ReadsGrid", () => {
     expect(screen.getByText("No reads")).toBeInTheDocument();
     expect(screen.getByText(/5,520 reads \(log scale\)/)).toBeInTheDocument();
 
-    // With 276 targets the columns are too narrow for target names, so group names appear instead.
+    // With 276 targets the columns are too narrow for target names, so compact group labels appear instead.
     expect(within(region).queryByRole("button", { name: "target_1" })).not.toBeInTheDocument();
-    expect(region).toHaveTextContent("Targets 1–50");
-    expect(region).toHaveTextContent("Targets 251–276");
+    expect(within(region).getByText("Targets 1–50")).toBeInTheDocument();
+    expect(within(region).getByText("251–276")).toBeInTheDocument();
+    expect(within(region).queryByText("Targets 251–276")).not.toBeInTheDocument();
 
     const cellsCanvas = region.querySelectorAll("canvas")[1];
     if (cellsCanvas === undefined) throw new Error("Expected cells canvas");
@@ -91,6 +95,10 @@ describe("ReadsGrid", () => {
     expect(within(tooltip).getByText("sample_1")).toBeInTheDocument();
     expect(within(tooltip).getByText("target_1")).toBeInTheDocument();
     expect(within(tooltip).getByText("5 reads")).toBeInTheDocument();
+
+    // Pressing Escape dismisses the hover tooltip (WCAG 1.4.13).
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
 
     // Hover the last target (target_276) in row 0.
     fireEvent.mouseMove(cellsCanvas, { clientX: 140 + 659, clientY: 5 });
@@ -233,14 +241,14 @@ describe("ReadsGrid", () => {
       />,
     );
 
-    const region = screen.getByRole("region", { name: "Reads by sample and target" });
-    region.focus();
-    expect(region).toHaveFocus();
+    const grid = screen.getByRole("application", { name: "Reads by sample and target" });
+    grid.focus();
+    expect(grid).toHaveFocus();
 
     // First arrow press selects cell (0, 0): sample_1, target_1 (5 reads, 1 microhaplotype).
-    fireEvent.keyDown(region, { key: "ArrowRight" });
+    fireEvent.keyDown(grid, { key: "ArrowRight" });
     const status = screen.getByRole("status");
-    expect(region).toHaveFocus();
+    expect(grid).toHaveFocus();
     expect(status).toHaveTextContent("sample_1");
     expect(status).toHaveTextContent("target_1");
     expect(status).toHaveTextContent("5 reads");
@@ -249,37 +257,37 @@ describe("ReadsGrid", () => {
     expect(onSampleSelect).toHaveBeenLastCalledWith("run1\u0000sample_1");
 
     // ArrowRight moves to (0, 1): sample_1, target_2 (10 reads, 2 microhaplotypes).
-    fireEvent.keyDown(region, { key: "ArrowRight" });
+    fireEvent.keyDown(grid, { key: "ArrowRight" });
     expect(status).toHaveTextContent("sample_1");
     expect(status).toHaveTextContent("target_2");
     expect(status).toHaveTextContent("10 reads");
     expect(status).toHaveTextContent("2 microhaplotypes");
 
     // ArrowDown moves to (1, 1): sample_2, target_2 (30 reads, 2 microhaplotypes).
-    fireEvent.keyDown(region, { key: "ArrowDown" });
+    fireEvent.keyDown(grid, { key: "ArrowDown" });
     expect(status).toHaveTextContent("sample_2");
     expect(status).toHaveTextContent("target_2");
     expect(status).toHaveTextContent("30 reads");
     expect(onSampleSelect).toHaveBeenLastCalledWith("run1\u0000sample_2");
 
     // End jumps to the last column of the current row: (1, 3): sample_2, target_4.
-    fireEvent.keyDown(region, { key: "End" });
+    fireEvent.keyDown(grid, { key: "End" });
     expect(status).toHaveTextContent("sample_2");
     expect(status).toHaveTextContent("target_4");
 
     // Home jumps back to the first column of the current row: (1, 0): sample_2, target_1.
-    fireEvent.keyDown(region, { key: "Home" });
+    fireEvent.keyDown(grid, { key: "Home" });
     expect(status).toHaveTextContent("sample_2");
     expect(status).toHaveTextContent("target_1");
 
     // ArrowUp moves to (0, 0): sample_1, target_1.
-    fireEvent.keyDown(region, { key: "ArrowUp" });
+    fireEvent.keyDown(grid, { key: "ArrowUp" });
     expect(status).toHaveTextContent("sample_1");
     expect(status).toHaveTextContent("target_1");
-    expect(region).toHaveFocus();
+    expect(grid).toHaveFocus();
   });
 
-  it("takes focus as one control on Tab without stopping on target header buttons, while pointer clicks still select a target", async () => {
+  it("takes focus as one control on Tab without stopping on target header buttons, and preserves arrow navigation after clicking a target header", async () => {
     const user = userEvent.setup();
     const summary = makeSummary(2, 4);
     const columns = [0, 1, 2, 3];
@@ -293,9 +301,9 @@ describe("ReadsGrid", () => {
     );
 
     const beforeButton = screen.getByRole("button", { name: "Before grid" });
-    const region = screen.getByRole("region", { name: "Reads by sample and target" });
+    const grid = screen.getByRole("application", { name: "Reads by sample and target" });
     const afterButton = screen.getByRole("button", { name: "After grid" });
-    const targetButtons = within(region).getAllByRole("button");
+    const targetButtons = within(grid).getAllByRole("button");
     expect(targetButtons).toHaveLength(4);
     for (const button of targetButtons) {
       expect(button).toHaveAttribute("tabindex", "-1");
@@ -303,13 +311,18 @@ describe("ReadsGrid", () => {
 
     beforeButton.focus();
     await user.tab();
-    expect(region).toHaveFocus();
+    expect(grid).toHaveFocus();
 
     await user.tab();
     expect(afterButton).toHaveFocus();
 
-    await user.click(within(region).getByRole("button", { name: "target_3" }));
+    // Clicking a target header selects it and returns focus to the grid widget so arrow keys keep working.
+    await user.click(within(grid).getByRole("button", { name: "target_3" }));
     expect(onTargetSelect).toHaveBeenCalledWith("target_3");
+    expect(grid).toHaveFocus();
+
+    fireEvent.keyDown(grid, { key: "ArrowRight" });
+    expect(screen.getByRole("status")).toHaveTextContent("sample_1 at target_1");
   });
 
   it("announces whole chosen-cell sentences for zero reads and singular or plural counts", () => {
@@ -324,21 +337,33 @@ describe("ReadsGrid", () => {
     };
     render(<ReadsGrid summary={summary} columns={[0, 1]} />);
 
-    const region = screen.getByRole("region", { name: "Reads by sample and target" });
+    const grid = screen.getByRole("application", { name: "Reads by sample and target" });
     const status = screen.getByRole("status");
-    region.focus();
+    grid.focus();
 
     // (0, 0): 0 reads, 0 microhaplotypes.
-    fireEvent.keyDown(region, { key: "ArrowRight" });
+    fireEvent.keyDown(grid, { key: "ArrowRight" });
     expect(status).toHaveTextContent("sample_1 at target_1: no reads, 0 microhaplotypes.");
 
     // (0, 1): 1 read, 1 microhaplotype.
-    fireEvent.keyDown(region, { key: "ArrowRight" });
+    fireEvent.keyDown(grid, { key: "ArrowRight" });
     expect(status).toHaveTextContent("sample_1 at target_2: 1 read, 1 microhaplotype.");
 
     // (1, 1) then (1, 0): 30 reads, 2 microhaplotypes.
-    fireEvent.keyDown(region, { key: "ArrowDown" });
-    fireEvent.keyDown(region, { key: "ArrowLeft" });
+    fireEvent.keyDown(grid, { key: "ArrowDown" });
+    fireEvent.keyDown(grid, { key: "ArrowLeft" });
     expect(status).toHaveTextContent("sample_2 at target_1: 30 reads, 2 microhaplotypes.");
+  });
+
+  it("uses singular wording in the legend and hidden description for a 1-sample, 1-target, 1-read grid", () => {
+    const base = makeSummary(1, 1);
+    const summary: PmoSummary = {
+      ...base,
+      grid: { columns: 1, reads: [1], alleles: [1] },
+    };
+    render(<ReadsGrid summary={summary} columns={[0]} />);
+
+    expect(screen.getByText(/A grid of reads for 1 sample at 1 target\./)).toBeInTheDocument();
+    expect(screen.getByText(/1 read \(log scale\)/)).toBeInTheDocument();
   });
 });

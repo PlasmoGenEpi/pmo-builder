@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import type { TableFormat } from "@/domain/tools/types";
+import { intlLocale } from "@/i18n/languages";
 import { Button, TextField, cn, formatCount } from "@/ui";
 
 import { downloadDelimitedTable } from "./exportTable";
@@ -83,7 +84,7 @@ export interface SortableTableProps<Row> {
 
 function compareValues(a: string | number, b: string | number): number {
   if (typeof a === "number" && typeof b === "number") return a - b;
-  return String(a).localeCompare(String(b), undefined, { numeric: true });
+  return String(a).localeCompare(String(b), intlLocale(), { numeric: true });
 }
 
 /** A table whose columns sort when their heading is chosen. Missing values sort last. */
@@ -94,7 +95,7 @@ export function SortableTable<Row>({
   totalRows,
   rowKey,
   onRowSelect,
-  selectedKey = null,
+  selectedKey,
   scrollToRow = null,
   initialSort,
   searchableColumns,
@@ -112,15 +113,13 @@ export function SortableTable<Row>({
   const rowElements = useRef(new Map<string, HTMLTableRowElement>());
   const scrolledToSeq = useRef<number | null>(null);
 
+  const hasSelection = onRowSelect !== undefined || selectedKey !== undefined;
   const showSearch =
     searchableColumns !== undefined &&
     searchableColumns.length > 0 &&
     rows.length > SEARCH_ROW_THRESHOLD;
   const showToolbar =
-    showSearch ||
-    searchableColumns !== undefined ||
-    download !== undefined ||
-    totalRows !== undefined;
+    searchableColumns !== undefined || download !== undefined || totalRows !== undefined;
   const activeQuery = showSearch ? query.trim().toLowerCase() : "";
 
   const filtered = useMemo(() => {
@@ -245,7 +244,7 @@ export function SortableTable<Row>({
                   className={cn(
                     "sticky top-0 border-b border-b-border bg-surface-subtle px-3 py-2 align-bottom font-medium text-text-muted",
                     column.numeric ? "text-right" : "text-left",
-                    onRowSelect !== undefined && index === 0 && "border-l-4 border-l-transparent",
+                    hasSelection && index === 0 && "border-l-4 border-l-transparent",
                     isSticky ? "left-0 z-30 min-w-36 border-r border-r-border" : "z-20",
                   )}
                 >
@@ -297,7 +296,8 @@ export function SortableTable<Row>({
           ) : (
             sorted.map((row) => {
               const key = rowKey(row);
-              const selected = key === selectedKey;
+              const selected =
+                selectedKey !== undefined && selectedKey !== null && key === selectedKey;
               return (
                 <tr
                   key={key}
@@ -337,7 +337,7 @@ export function SortableTable<Row>({
                           index === 0 &&
                             (selected
                               ? "border-l-4 border-l-accent"
-                              : onRowSelect !== undefined && "border-l-4 border-l-transparent"),
+                              : hasSelection && "border-l-4 border-l-transparent"),
                           index === 0 && selected && onRowSelect === undefined && "font-medium",
                           isSticky && "sticky left-0 z-10 min-w-36 border-r border-r-border",
                         )}
@@ -377,7 +377,7 @@ export function SortableTable<Row>({
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         {showSearch ? (
-          <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:max-w-xs">
+          <div className="flex w-full min-w-0 items-center gap-1.5 sm:w-auto sm:max-w-xs sm:min-w-44 sm:flex-1">
             <TextField
               label={t`Search ${label}`}
               hideLabel

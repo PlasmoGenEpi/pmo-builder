@@ -4,7 +4,7 @@ import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { saveFile } from "@/features/review/saveFile";
-
+import { stubMatchMedia } from "@/test/matchMedia";
 import { buttonClassName } from "@/ui";
 
 import { SortableTable, type SortableColumn, type TableScrollRequest } from "./SortableTable";
@@ -396,8 +396,12 @@ describe("SortableTable", () => {
     await user.click(screen.getByRole("button", { name: "Jump to sample_7" }));
     expect(search).toHaveValue("");
     const sample7Row = screen.getByText("sample_7").closest("tr");
-    if (sample7Row === null) throw new Error("Expected sample_7 row");
+    const sample1Row = screen.getByText("sample_1").closest("tr");
+    if (sample7Row === null || sample1Row === null) throw new Error("Expected sample rows");
     expect(sample7Row).toHaveAttribute("aria-current", "true");
+    // Unselected rows also reserve the 4 px left border so marking a row does not shift cells.
+    const unselectedCell = within(sample1Row).getAllByRole("cell")[0];
+    expect(unselectedCell).toHaveClass("border-l-4", "border-l-transparent");
 
     // Position the row below the scroll container viewport and re-trigger scrolling.
     sample7Row.getBoundingClientRect = () => ({
@@ -412,16 +416,7 @@ describe("SortableTable", () => {
       toJSON: () => ({}),
     });
     const originalMatchMedia = window.matchMedia;
-    window.matchMedia = vi.fn<(query: string) => MediaQueryList>().mockReturnValue({
-      matches: true,
-      media: "(prefers-reduced-motion: reduce)",
-      onchange: null,
-      addListener: vi.fn<() => void>(),
-      removeListener: vi.fn<() => void>(),
-      addEventListener: vi.fn<() => void>(),
-      removeEventListener: vi.fn<() => void>(),
-      dispatchEvent: vi.fn<() => boolean>(),
-    });
+    stubMatchMedia(true);
     try {
       await user.click(screen.getByRole("button", { name: "Jump to sample_7" }));
     } finally {

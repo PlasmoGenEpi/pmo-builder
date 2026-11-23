@@ -1,14 +1,28 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { stringifyPmo, type PortableMicrohaplotypeObject } from "pmotools-ts";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { buildExamplePmo } from "@/domain/build/testing";
+import { summaryOf } from "@/domain/tools/summary";
 import { richPmo } from "@/domain/tools/testing";
 import { createTestStore, renderWithStore } from "@/features/shared/testing";
 import { workingPmoSessionOf } from "@/state";
 
 import { SummaryPanel } from "./SummaryPanel";
+
+function ControlledSummary() {
+  const [minReads, setMinReads] = useState<number | null>(5000);
+  return (
+    <SummaryPanel
+      source="original"
+      minReads={minReads}
+      onMinReadsChange={setMinReads}
+      maxReads={100}
+    />
+  );
+}
 
 async function openAndRenderSummary(pmo: PortableMicrohaplotypeObject) {
   const store = createTestStore();
@@ -194,7 +208,7 @@ describe("SummaryPanel: reads grid links to tables", () => {
     const example = buildExamplePmo();
     await openAndRenderSummary(example);
 
-    const gridRegion = screen.getByRole("region", { name: "Reads by sample and target" });
+    const grid = screen.getByRole("application", { name: "Reads by sample and target" });
     const samplesTable = screen.getByRole("table", { name: "Samples" });
     const targetsTable = screen.getByRole("table", { name: "Targets" });
 
@@ -204,13 +218,15 @@ describe("SummaryPanel: reads grid links to tables", () => {
     expect(within(samplesTable).getByText("Nothing matches the search.")).toBeVisible();
 
     // Move to the second column of row 0 via keyboard on the grid.
-    gridRegion.focus();
-    fireEvent.keyDown(gridRegion, { key: "ArrowRight" });
-    fireEvent.keyDown(gridRegion, { key: "ArrowRight" });
+    grid.focus();
+    fireEvent.keyDown(grid, { key: "ArrowRight" });
+    fireEvent.keyDown(grid, { key: "ArrowRight" });
 
     // Extract the chosen sample and target from the grid's status strip.
-    const readsSection = gridRegion.closest("section")?.parentElement?.closest("section");
-    if (readsSection === null || readsSection === undefined) {
+    const readsSection = screen
+      .getByRole("heading", { level: 2, name: "Reads by sample and target" })
+      .closest("section");
+    if (readsSection === null) {
       throw new Error("Expected reads section");
     }
     const status = within(readsSection).getByRole("status");
@@ -236,6 +252,8 @@ describe("SummaryPanel: reads grid links to tables", () => {
   it("choosing a target header selects that target and choosing a row label marks that sample", async () => {
     const user = userEvent.setup();
     const example = buildExamplePmo();
+    const expectedSecondSample = summaryOf(example, 0).samples[1]?.name;
+    if (expectedSecondSample === undefined) throw new Error("Expected a second sample");
     await openAndRenderSummary(example);
 
     const gridRegion = screen.getByRole("region", { name: "Reads by sample and target" });
@@ -274,5 +292,58 @@ describe("SummaryPanel: reads grid links to tables", () => {
 
     const markedRows = Array.from(samplesTable.querySelectorAll('tbody tr[aria-current="true"]'));
     expect(markedRows).toHaveLength(1);
+    const markedRow = markedRows[0];
+    if (!(markedRow instanceof HTMLElement)) throw new Error("Expected a marked row");
+    expect(within(markedRow).getByText(expectedSecondSample)).toBeInTheDocument();
+  });
+
+  it("drops a hidden zero-data target selection from AlleleBars when empty targets are hidden again", async () => {
+    const user = userEvent.setup();
+    const pmo = richPmo();
+    const emptyTarget = summaryOf(pmo, 0).targets.find((target) => target.samples === 0)?.name;
+    if (emptyTarget === undefined) throw new Error("Expected an empty target in richPmo");
+    await openAndRenderSummary(pmo);
+
+    const toggle = screen.getByRole("switch", { name: "Show targets with no data" });
+    await user.click(toggle);
+
+    const targetsTable = screen.getByRole("table", { name: "Targets" });
+    await user.click(within(targetsTable).getByRole("button", { name: emptyTarget }));
+    expect(screen.getByText(`No microhaplotypes were counted at ${emptyTarget}.`)).toBeVisible();
+
+    // Hiding empty targets again switches AlleleBars back to a visible target with data.
+    await user.click(toggle);
+    expect(
+      screen.queryByText(`No microhaplotypes were counted at ${emptyTarget}.`),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/^Microhaplotypes at /)).toBeVisible();
+    const pressedButtons = within(targetsTable)
+      .getAllByRole("button")
+      .filter((button) => button.getAttribute("aria-pressed") === "true");
+    expect(pressedButtons).toHaveLength(1);
+  });
+
+  it("restores focus to the minimum reads input when Clear minimum reads is pressed", async () => {
+    const user = userEvent.setup();
+    const store = createTestStore();
+    await store.getState().actions.initialise();
+    const pmo = richPmo();
+    const file = new File([stringifyPmo(pmo)], "study.json", { type: "application/json" });
+    const outcome = await workingPmoSessionOf(store).open({
+      kind: "file",
+      file,
+      name: file.name,
+      origin: { kind: "chosen" },
+    });
+    if (outcome.kind !== "opened") throw new Error("Expected PMO to open");
+
+    await renderWithStore(<ControlledSummary />, { store });
+
+    const clearButton = await screen.findByRole("button", { name: "Clear minimum reads" });
+    await user.click(clearButton);
+
+    const input = screen.getByLabelText("Minimum reads per microhaplotype");
+    expect(input).toHaveValue("");
+    expect(input).toHaveFocus();
   });
 });

@@ -23,7 +23,9 @@ describe("SequenceLabel", () => {
 
     const dialog = screen.getByRole("dialog", { name: "Sequence for C12T" });
     expect(dialog).toBeVisible();
-    const sequenceNode = within(dialog).getByText(seq);
+    const sequenceRegion = within(dialog).getByRole("region", { name: "Sequence" });
+    expect(sequenceRegion).toHaveAttribute("tabindex", "0");
+    const sequenceNode = within(sequenceRegion).getByText(seq);
     expect(sequenceNode).toBeVisible();
     expect(sequenceNode.className).toContain("select-all");
     expect(within(dialog).getByText("Generated from reference genome")).toBeVisible();
