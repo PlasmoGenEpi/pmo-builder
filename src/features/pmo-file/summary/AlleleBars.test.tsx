@@ -1,4 +1,5 @@
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import type { TargetSummary } from "@/domain/tools/types";
@@ -11,11 +12,13 @@ function allele(options: {
   readonly label: string;
   readonly count: number;
   readonly freq: number;
+  readonly seq?: string;
+  readonly note?: string | null;
 }): TargetSummary["alleles"][number] {
   return {
     mhapId: options.mhapId,
-    seq: `ACGT${options.mhapId}`,
-    label: { label: options.label, source: "alignment", note: null },
+    seq: options.seq ?? `ACGT${options.mhapId}`,
+    label: { label: options.label, source: "alignment", note: options.note ?? null },
     count: options.count,
     freq: options.freq,
   };
@@ -52,5 +55,41 @@ describe("AlleleBars", () => {
     expect(within(first).getByText("8.7% (22 samples)")).toBeVisible();
     expect(within(second).getByText("#1")).toBeVisible();
     expect(screen.getByText("2 rarer microhaplotypes are not drawn.")).toBeVisible();
+  });
+
+  it("opens and copies a microhaplotype's full sequence from its label", async () => {
+    const user = userEvent.setup();
+    const fullSeq = "ATGCTAGCTAGCTAGCTAGCTA";
+    await renderWithStore(
+      <AlleleBars
+        target={{
+          name: "pfama1",
+          samples: 5,
+          alleles: [
+            allele({
+              mhapId: 0,
+              label: "C12T",
+              seq: fullSeq,
+              note: "Compared to 3D7",
+              count: 5,
+              freq: 1,
+            }),
+          ],
+          heterozygosity: 0,
+        }}
+      />,
+    );
+
+    expect(screen.getByText(/Choose a label to open and copy the whole sequence\./)).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "C12T" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Sequence for C12T" });
+    expect(within(dialog).getByText(fullSeq)).toBeVisible();
+    expect(within(dialog).getByText("Compared to 3D7")).toBeVisible();
+
+    await user.click(within(dialog).getByRole("button", { name: "Copy" }));
+    expect(await navigator.clipboard.readText()).toBe(fullSeq);
+    expect(within(dialog).getByRole("button", { name: "Copied" })).toBeVisible();
   });
 });

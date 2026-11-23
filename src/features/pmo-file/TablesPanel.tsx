@@ -12,7 +12,7 @@ import {
   type WorkingSource,
 } from "@/domain/tools/types";
 import { saveFile } from "@/features/review/saveFile";
-import { usePmoQuery, usePmoSession } from "@/state";
+import { usePmo, usePmoQuery, usePmoSession } from "@/state";
 import { Button, DataTable, SegmentedControl, Spinner, formatCount, type CellValue } from "@/ui";
 
 import { NoAnswer, type NoAnswerReason } from "./NoAnswer";
@@ -160,7 +160,7 @@ export interface TablesPanelProps {
 export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) {
   const session = usePmoSession();
   const idPrefix = useId();
-  const [format, setFormat] = useState<TableFormat>("csv");
+  const format = usePmo((state) => state.tableFormat);
   const [saving, setSaving] = useState<TableId | "all" | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [openPreviews, setOpenPreviews] = useState<ReadonlySet<TableId>>(() => new Set());
@@ -207,7 +207,7 @@ export function TablesPanel({ tables, subsetTables, source }: TablesPanelProps) 
         <SegmentedControl<TableFormat>
           label={t`File type`}
           value={format}
-          onValueChange={setFormat}
+          onValueChange={(next) => session.setTableFormat(next)}
           segments={[
             { value: "csv", label: t`CSV` },
             { value: "tsv", label: t`TSV` },

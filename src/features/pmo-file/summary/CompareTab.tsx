@@ -42,6 +42,7 @@ import { NoAnswer, type NoAnswerReason } from "../NoAnswer";
 import { specimenFieldLabel } from "../specimenFieldNames";
 import { useSettled } from "../useSettled";
 
+import { SequenceLabel } from "./SequenceLabel";
 import { SortableTable, type SortableColumn } from "./SortableTable";
 import {
   MinReadsField,
@@ -281,9 +282,13 @@ function AllelesByGroup({
                   <th
                     scope="row"
                     className="sticky left-0 z-10 min-w-32 border-r border-b border-border bg-surface px-3 py-1.5 text-left font-mono text-xs font-normal text-text-muted group-last:border-b-0"
-                    title={allele.seq}
                   >
-                    {allele.label.label}
+                    <SequenceLabel
+                      label={allele.label.label === "" ? `#${allele.mhapId}` : allele.label.label}
+                      seq={allele.seq}
+                      note={allele.label.note}
+                      className="-mx-2.5 max-w-48"
+                    />
                   </th>
                   {allele.freqs.map((freq, index) => (
                     <td
@@ -643,7 +648,7 @@ function Comparison({ source, grouping, reads }: ComparisonProps) {
             </div>
           )}
         </Field>
-        <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
+        <MinReadsField value={minReadsInput} maxReads={maxReads} onValueChange={onMinReadsChange} />
         {comparison === null || nothingPasses ? null : (
           <SectionJumps jumps={jumpsOf(comparison, shownTarget !== null)} />
         )}
@@ -669,21 +674,6 @@ function Comparison({ source, grouping, reads }: ComparisonProps) {
             </p>
           ) : null}
 
-          {hasSmallGroups ? (
-            <p className="flex items-start gap-1.5 text-sm text-text-muted">
-              <TriangleExclamationPoint
-                aria-hidden="true"
-                className="mt-0.5 size-4 shrink-0 text-warning-text"
-              />
-              <span>
-                {t({
-                  message: `Groups marked with a warning have fewer than ${threshold} samples with data. Read their percentages with care.`,
-                  comment: "{threshold} is a number of samples, such as 10",
-                })}
-              </span>
-            </p>
-          ) : null}
-
           <section className="flex flex-col gap-4">
             <SectionHeading
               id={HEADING.groups}
@@ -696,6 +686,21 @@ function Comparison({ source, grouping, reads }: ComparisonProps) {
               rows={loaded.value.groups}
               rowKey={(row) => row.name ?? "\u0000"}
             />
+            {/* Under the first table that carries the mark, so it does not push the data down. */}
+            {hasSmallGroups ? (
+              <p className="flex items-start gap-1.5 text-sm text-text-muted">
+                <TriangleExclamationPoint
+                  aria-hidden="true"
+                  className="mt-0.5 size-4 shrink-0 text-warning-text"
+                />
+                <span>
+                  {t({
+                    message: `Groups marked with a warning have fewer than ${threshold} samples with data. Read their percentages with care.`,
+                    comment: "{threshold} is a number of samples, such as 10",
+                  })}
+                </span>
+              </p>
+            ) : null}
           </section>
 
           <section className="flex flex-col gap-4">

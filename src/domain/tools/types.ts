@@ -144,6 +144,8 @@ export type SubsetOutcome =
       /** What a Zenodo record of the subset would say. */
       readonly publication: PublicationSummary;
       readonly tables: readonly TableInfo[];
+      /** The most reads any detected microhaplotype has in the subset. */
+      readonly maxReads: number;
       /** Problems found when checking the subset. Empty when it is a valid PMO. */
       readonly problems: readonly string[];
     }
@@ -306,10 +308,15 @@ export interface PmoSummary {
   /** Every target, in the order of the panel's target table. */
   readonly targets: readonly TargetSummary[];
   /**
-   * Reads per sample and target: row `i` is `samples[i]`, column `j` is
-   * `targets[j]`, stored row by row. `0` where nothing was counted.
+   * Reads and microhaplotype counts per sample and target: row `i` is
+   * `samples[i]`, column `j` is `targets[j]`, stored row by row. `0` where
+   * nothing was counted.
    */
-  readonly grid: { readonly columns: number; readonly reads: readonly number[] };
+  readonly grid: {
+    readonly columns: number;
+    readonly reads: readonly number[];
+    readonly alleles: readonly number[];
+  };
   /** The pipeline stages in the read counts by stage, in the order first given. */
   readonly stages: readonly string[];
   /** The panels' reactions, in order. */

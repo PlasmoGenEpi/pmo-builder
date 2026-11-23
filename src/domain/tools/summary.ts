@@ -47,6 +47,7 @@ export function summaryOf(pmo: Pmo, minReads: number): PmoSummary {
   // library sample with no detections at all: those are the ones to notice.
   const samples: SampleSummary[] = [];
   const reads: number[] = [];
+  const gridAlleles: number[] = [];
   const kept = new Map<
     string,
     (typeof filtered.detected_microhaplotypes)[number]["library_samples"][number]
@@ -64,6 +65,7 @@ export function summaryOf(pmo: Pmo, minReads: number): PmoSummary {
   ): void => {
     const library = pmo.library_sample_info[libraryId];
     const row = Array.from({ length: targetNames.length }, () => 0);
+    const alleleRow = Array.from({ length: targetNames.length }, () => 0);
     let total = 0;
     let maxAlleles = 0;
     const sample = runIndex === null ? undefined : kept.get(`${runIndex}:${libraryId}`);
@@ -72,10 +74,12 @@ export function summaryOf(pmo: Pmo, minReads: number): PmoSummary {
       if (targetId === undefined) continue;
       const targetReads = result.mhaps.reduce((sum, mhap) => sum + mhap.reads, 0);
       row[targetId] = (row[targetId] ?? 0) + targetReads;
+      alleleRow[targetId] = (alleleRow[targetId] ?? 0) + result.mhaps.length;
       total += targetReads;
       maxAlleles = Math.max(maxAlleles, result.mhaps.length);
     }
     reads.push(...row);
+    gridAlleles.push(...alleleRow);
     const stageReads = stageReadsOf(pmo, { libraryId, runId, stages });
     const specimen = library === undefined ? undefined : pmo.specimen_info[library.specimen_id];
     samples.push({
@@ -174,7 +178,7 @@ export function summaryOf(pmo: Pmo, minReads: number): PmoSummary {
     librarySamples: pmo.library_sample_info.length,
     samples,
     targets,
-    grid: { columns: targetNames.length, reads },
+    grid: { columns: targetNames.length, reads, alleles: gridAlleles },
     stages,
     reactions: reactionsOf(pmo),
     headline: {

@@ -623,6 +623,28 @@ describe("working PMO session: subsets", () => {
       value: { librarySamples: 3 },
     });
   });
+
+  it("reports the subset's own largest read count alongside the original's", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(richPmo(), "rich.json")));
+    const open = session.state.getState().open;
+    if (open.kind !== "opened") throw new Error(open.kind);
+    expect(open.opened.choices.maxReads).toBe(90);
+
+    const request: SubsetRequest = {
+      specimens: { kind: "names", names: ["spec2", "neg"] },
+      targets: { kind: "all" },
+      minReads: 0,
+    };
+    const answer = await session.subset(request);
+    expect(answer).toMatchObject({ kind: "ok", value: { kind: "made", maxReads: 50 } });
+    expect(session.state.getState().subset).toMatchObject({
+      kind: "made",
+      made: { maxReads: 50 },
+    });
+    // The original's own figure is unchanged.
+    expect(open.opened.choices.maxReads).toBe(90);
+  });
 });
 
 describe("working PMO session: replacing subsets", () => {
@@ -1211,5 +1233,31 @@ describe("working and published PMO slots", () => {
         request: SUMMARY,
       }),
     ).toEqual({ kind: "not-open" });
+  });
+
+  it("defaults tableFormat to csv and updates it per session", () => {
+    const engine = createInThreadEngine();
+    const working = createWorkingPmoSession({
+      engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "working",
+    });
+    const published = createWorkingPmoSession({
+      engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "published",
+    });
+
+    expect(working.state.getState().tableFormat).toBe("csv");
+    expect(published.state.getState().tableFormat).toBe("csv");
+
+    working.setTableFormat("tsv");
+    expect(working.state.getState().tableFormat).toBe("tsv");
+    expect(published.state.getState().tableFormat).toBe("csv");
+
+    working.setTableFormat("csv");
+    expect(working.state.getState().tableFormat).toBe("csv");
   });
 });

@@ -90,7 +90,8 @@ const WORKING_PMO_VALUES: {
     isRecord(value) && Array.isArray(value["samples"]) && Array.isArray(value["targets"]),
   subset: (value): value is WorkingPmoValues["subset"] =>
     hasKind(value, ["made", "empty"]) &&
-    (value["kind"] === "empty" || typeof value["fileName"] === "string"),
+    (value["kind"] === "empty" ||
+      (typeof value["fileName"] === "string" && typeof value["maxReads"] === "number")),
   preview: (value): value is WorkingPmoValues["preview"] => isSubsetPreview(value),
   table: (value): value is WorkingPmoValues["table"] =>
     isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string",

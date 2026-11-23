@@ -1357,7 +1357,7 @@ describe("PmoFilePage: summary", () => {
     expect(within(targets).getByRole("button", { name: "t1", pressed: false })).toBeInTheDocument();
   });
 
-  it("omits the original file's largest read count when a subset's minimum leaves nothing", async () => {
+  it("names the subset's own largest read count when its minimum leaves nothing, and keeps the original's", async () => {
     const { user } = await open(pmoFile(richPmo()));
     await user.click(await screen.findByRole("tab", { name: "Subset" }));
     await user.click(screen.getByRole("radio", { name: "Specimens I tick" }));
@@ -1376,10 +1376,12 @@ describe("PmoFilePage: summary", () => {
         timeout: 3000,
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/90 reads/)).toBeNull();
     expect(
-      screen.getByText("Lower the minimum or clear it to see all microhaplotypes."),
+      screen.getByText(
+        "The most in this file is 50 reads. Lower the minimum or clear it to see all microhaplotypes.",
+      ),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/90 reads/)).toBeNull();
 
     await user.click(screen.getByRole("tab", { name: "Compare" }));
     expect(
@@ -1387,10 +1389,126 @@ describe("PmoFilePage: summary", () => {
         timeout: 3000,
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/90 reads/)).toBeNull();
     expect(
-      screen.getByText("Lower the minimum or clear it to see all microhaplotypes."),
+      screen.getByText(
+        "The most in this file is 50 reads. Lower the minimum or clear it to see all microhaplotypes.",
+      ),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/90 reads/)).toBeNull();
+
+    // Switching back to the original reports the original file's own largest read count.
+    await user.click(screen.getByRole("radio", { name: "Original" }));
+    expect(
+      await screen.findByText(
+        "The most in this file is 90 reads. Lower the minimum or clear it to see all microhaplotypes.",
+        undefined,
+        { timeout: 3000 },
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+    expect(
+      await screen.findByText(
+        "The most in this file is 90 reads. Lower the minimum or clear it to see all microhaplotypes.",
+        undefined,
+        { timeout: 3000 },
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the file's largest read count and applies common cutoffs across Summary and Compare", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Samples" });
+
+    expect(
+      screen.getByText("Leave empty to count them all. The most in this file is 1,279."),
+    ).toBeVisible();
+    const summaryCutoffs = screen.getByRole("group", { name: "Common minimum read counts" });
+    expect(
+      within(summaryCutoffs)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["All", "10", "50", "100", "500"]);
+
+    const beforeSamples = screen.getAllByText("Samples with data", { exact: true })[0]
+      ?.parentElement?.textContent;
+    await user.click(within(summaryCutoffs).getByRole("button", { name: "500" }));
+    expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("500");
+    await vi.waitFor(
+      () => {
+        expect(
+          screen.getAllByText("Samples with data", { exact: true })[0]?.parentElement?.textContent,
+        ).not.toBe(beforeSamples);
+      },
+      { timeout: 3000 },
+    );
+
+    // Value and active cutoff carry over to Compare, and clearing there carries back to Summary.
+    await user.click(screen.getByRole("tab", { name: "Compare" }));
+    await screen.findByRole("table", { name: "Groups" }, { timeout: 3000 });
+    expect(
+      screen.getByText("Leave empty to count them all. The most in this file is 1,279."),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("500");
+    const compareCutoffs = screen.getByRole("group", { name: "Common minimum read counts" });
+    expect(within(compareCutoffs).getByRole("button", { name: "500" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await user.click(within(compareCutoffs).getByRole("button", { name: "All" }));
+    expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("");
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+    expect(await screen.findByLabelText("Minimum reads per microhaplotype")).toHaveValue("");
+    expect(
+      within(screen.getByRole("group", { name: "Common minimum read counts" })).getByRole(
+        "button",
+        { name: "All" },
+      ),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("filters cutoffs to the active original or subset largest read count", async () => {
+    const { user } = await open(pmoFile(richPmo()));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Samples" });
+
+    expect(
+      screen.getByText("Leave empty to count them all. The most in this file is 90."),
+    ).toBeVisible();
+    const originalCutoffs = screen.getByRole("group", { name: "Common minimum read counts" });
+    expect(
+      within(originalCutoffs)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["All", "10", "50"]);
+
+    // Make a subset with only neg (max 3 reads): no common cutoff <= 3 should be offered.
+    await user.click(screen.getByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: "Specimens I tick" }));
+    const specimens = screen.getByRole("group", { name: "Specimens" });
+    await user.click(within(specimens).getByRole("checkbox", { name: /neg/ }));
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    await screen.findByText("The subset is ready");
+
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Samples" });
+    expect(
+      screen.getByText("Leave empty to count them all. The most in this file is 3."),
+    ).toBeVisible();
+    expect(screen.queryByRole("group", { name: "Common minimum read counts" })).toBeNull();
+
+    // Switching back to Original restores the original largest count and cutoffs.
+    await user.click(screen.getByRole("radio", { name: "Original" }));
+    expect(
+      await screen.findByText("Leave empty to count them all. The most in this file is 90."),
+    ).toBeVisible();
+    expect(
+      within(screen.getByRole("group", { name: "Common minimum read counts" }))
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["All", "10", "50"]);
   });
 
   it("keeps missing values last in both directions on the pipeline stage table", async () => {
@@ -1463,6 +1581,128 @@ describe("PmoFilePage: summary", () => {
     await user.click(sortByDenoised);
     expect(columnOf(stages, /Library sample/)).toEqual(["S2", "S1", "S3"]);
     expect(columnOf(stages, /denoised/).at(-1)).toBe("–");
+  });
+
+  it("searches, counts and downloads Samples, Targets and pipeline stage tables in the chosen format", async () => {
+    const { user } = await open(pmoFile(examplePmoWithReadCounts(), "study.json"));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+
+    const samples = await screen.findByRole("table", { name: "Samples" });
+    const targets = screen.getByRole("table", { name: "Targets" });
+    const stages = screen.getByRole("table", { name: "Reads at each pipeline stage" });
+
+    // Samples (50 rows) and Targets (21 rows) show search; Stages (3 rows) hides search.
+    const samplesSearch = screen.getByRole("searchbox", { name: "Search Samples" });
+    const targetsSearch = screen.getByRole("searchbox", { name: "Search Targets" });
+    expect(
+      screen.queryByRole("searchbox", { name: "Search Reads at each pipeline stage" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Showing 50 of 50 rows")).toBeInTheDocument();
+    expect(screen.getByText("Showing 21 of 276 rows")).toBeInTheDocument();
+    expect(screen.getByText("Showing 3 of 3 rows")).toBeInTheDocument();
+
+    // Narrow Targets by part of the first target's name and download CSV of shown rows.
+    const firstTarget = columnOf(targets, /^Target/)[0] ?? "";
+    expect(firstTarget.length).toBeGreaterThan(3);
+    await user.type(targetsSearch, firstTarget);
+    const matchingTargets = columnOf(targets, /^Target/);
+    expect(matchingTargets).toContain(firstTarget);
+    expect(matchingTargets.length).toBeLessThan(21);
+    expect(screen.getByText(`Showing ${matchingTargets.length} of 276 rows`)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Download Targets as csv" }));
+    const targetsCsv = await savedText();
+    expect(targetsCsv.name).toBe("study-summary-targets.csv");
+    const targetLines = targetsCsv.text.trimEnd().split("\n");
+    expect(targetLines[0]).toBe("Target,Samples with data,Alleles,Heterozygosity");
+    expect(targetLines).toHaveLength(matchingTargets.length + 1);
+    expect(targetLines[1]?.split(",")[0]).toBe(matchingTargets[0]);
+
+    await user.click(screen.getByRole("button", { name: "Clear search for Targets" }));
+    expect(screen.getByText("Showing 21 of 276 rows")).toBeInTheDocument();
+
+    // Narrow Samples by library sample name, then by specimen name.
+    const firstSample = columnOf(samples, /^Library sample/)[0] ?? "";
+    await user.type(samplesSearch, firstSample);
+    expect(columnOf(samples, /^Library sample/)).toContain(firstSample);
+    expect(columnOf(samples, /^Library sample/).length).toBeLessThan(50);
+
+    await user.click(screen.getByRole("button", { name: "Clear search for Samples" }));
+    expect(screen.getByText("Showing 50 of 50 rows")).toBeInTheDocument();
+
+    await user.type(samplesSearch, "specimen_05");
+    const matchingSpecimens = columnOf(samples, /^Specimen/);
+    expect(matchingSpecimens).toEqual(["example_specimen_05"]);
+    expect(screen.getByText("Showing 1 of 50 rows")).toBeInTheDocument();
+
+    vi.mocked(saveFile).mockReset();
+    await user.click(screen.getByRole("button", { name: "Download Samples as csv" }));
+    const samplesCsv = await savedText();
+    expect(samplesCsv.name).toBe("study-summary-samples.csv");
+    const sampleLines = samplesCsv.text.trimEnd().split("\n");
+    expect(sampleLines[0]).toContain("Library sample,Specimen,");
+    expect(sampleLines).toHaveLength(2);
+    expect(sampleLines[1]).toContain("example_specimen_05");
+
+    // Download pipeline stage table (3 rows, no search).
+    expect(columnOf(stages, /^Library sample/)).toHaveLength(3);
+    vi.mocked(saveFile).mockReset();
+    await user.click(
+      screen.getByRole("button", { name: "Download Reads at each pipeline stage as csv" }),
+    );
+    const stagesCsv = await savedText();
+    expect(stagesCsv.name).toBe("study-summary-pipeline-stages.csv");
+    expect(stagesCsv.text.trimEnd().split("\n")).toHaveLength(4);
+
+    // Format chosen on Tables carries over to Summary downloads.
+    await user.click(screen.getByRole("tab", { name: "Tables" }));
+    await user.click(screen.getByRole("radio", { name: "TSV" }));
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+
+    vi.mocked(saveFile).mockReset();
+    await user.click(await screen.findByRole("button", { name: "Download Targets as tsv" }));
+    const targetsTsv = await savedText();
+    expect(targetsTsv.name).toBe("study-summary-targets.tsv");
+    expect(targetsTsv.text.split("\n")[0]).toBe(
+      "Target\tSamples with data\tAlleles\tHeterozygosity",
+    );
+  });
+
+  it("shows search on the pipeline stage table when more than five samples have stage counts", async () => {
+    const base = examplePmoWithReadCounts();
+    const firstStageGroup = base.read_counts_by_stage?.[0];
+    if (firstStageGroup === undefined) throw new Error("expected read_counts_by_stage");
+    const withSixStages: PortableMicrohaplotypeObject = {
+      ...base,
+      read_counts_by_stage: [
+        {
+          ...firstStageGroup,
+          read_counts_by_library_sample_by_stage: Array.from({ length: 6 }, (_, index) => ({
+            library_sample_id: index,
+            total_raw_count: 500 + index * 10,
+            read_counts_for_targets: [
+              {
+                target_id: 0,
+                stages: [{ stage: "demux", reads: 200 + index * 10 }],
+              },
+            ],
+          })),
+        },
+      ],
+    };
+    const { user } = await open(pmoFile(withSixStages, "study.json"));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+
+    const stages = await screen.findByRole("table", { name: "Reads at each pipeline stage" });
+    const stagesSearch = screen.getByRole("searchbox", {
+      name: "Search Reads at each pipeline stage",
+    });
+    expect(screen.getByText("Showing 6 of 6 rows")).toBeInTheDocument();
+
+    const firstSample = columnOf(stages, /^Library sample/)[0] ?? "";
+    await user.type(stagesSearch, firstSample);
+    expect(columnOf(stages, /^Library sample/)).toEqual([firstSample]);
+    expect(screen.getByText("Showing 1 of 6 rows")).toBeInTheDocument();
   });
 });
 

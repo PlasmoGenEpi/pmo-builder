@@ -166,12 +166,16 @@ test("a sortable table scroll region can be focused with the keyboard, shows a f
   const samplesRegion = page.getByRole("region", { name: "Samples" });
   await expect(samplesRegion).toBeVisible({ timeout: BUILD_TIMEOUT });
 
-  // Jump to the Samples heading, then Tab once into the Samples table's scroll region.
+  // Jump to the Samples heading, then Tab past its search and download controls into the scroll region.
   await page
     .getByRole("navigation", { name: "On this page" })
     .getByRole("button", { name: "Samples" })
     .click();
   await expect(page.getByRole("heading", { name: "Samples", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("searchbox", { name: "Search Samples" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Download Samples as csv" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(samplesRegion).toBeFocused();
 

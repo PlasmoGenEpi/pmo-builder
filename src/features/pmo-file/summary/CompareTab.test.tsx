@@ -245,6 +245,23 @@ describe("CompareTab: collection timeline short bars", () => {
   });
 });
 
+describe("CompareTab: microhaplotype sequences", () => {
+  it("opens and copies a microhaplotype's full sequence from the table", async () => {
+    const user = userEvent.setup();
+    await openAndRenderCompare(richPmo());
+    const table = await screen.findByRole("table", { name: "Microhaplotype frequencies by group" });
+
+    await user.click(within(table).getByRole("button", { name: "A4T" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Sequence for A4T" });
+    expect(within(dialog).getByText("AAAT")).toBeVisible();
+
+    await user.click(within(dialog).getByRole("button", { name: "Copy" }));
+    expect(await navigator.clipboard.readText()).toBe("AAAT");
+    expect(within(dialog).getByRole("button", { name: "Copied" })).toBeVisible();
+  });
+});
+
 /** Builds a valid PMO with two countries having the requested number of samples with data. */
 function twoGroupPmo(counts: readonly [number, number]): PortableMicrohaplotypeObject {
   const base = richPmo();
@@ -314,17 +331,18 @@ describe("CompareTab: group sizes and small-group marks", () => {
     }
   });
 
-  it("marks groups with fewer than 10 samples with data and explains the mark above the tables", async () => {
+  it("marks groups with fewer than 10 samples with data and explains the mark under the Groups table", async () => {
     await openAndRenderCompare(buildExamplePmo());
     const groupsTable = await screen.findByRole("table", { name: "Groups" });
     const heTable = screen.getByRole("table", { name: "Heterozygosity by target" });
     const alleleTable = screen.getByRole("table", { name: "Microhaplotype frequencies by group" });
 
-    // A line above the tables says what the small-group mark means.
+    // A line under the Groups table, the first to carry the mark, says what it means.
     const note = screen.getByText(/fewer than 10 samples with data/i, { selector: "p, p *" });
     expect(
-      note.compareDocumentPosition(groupsTable) & Node.DOCUMENT_POSITION_FOLLOWING,
+      groupsTable.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+    expect(note.compareDocumentPosition(heTable) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     const smallYears = ["2015", "2016", "2019"];
     const largerYears = ["2017", "2018"];
@@ -722,6 +740,7 @@ async function renderWithComparison(options: {
     generation: 1,
     open: { kind: "none" },
     minReads: null,
+    tableFormat: "csv",
     subset: { kind: "none" },
     source: "original",
   }));
@@ -735,6 +754,7 @@ async function renderWithComparison(options: {
     subset: () => Promise.resolve({ kind: "not-open" }),
     isPublishedOpen: () => false,
     setMinReads: () => undefined,
+    setTableFormat: () => undefined,
     setSource: () => undefined,
   };
   return renderWithStore(
@@ -1007,10 +1027,13 @@ describe("CompareTab: Microhaplotypes by group readability", () => {
     const secondRow = rows[1];
     if (firstRow === undefined || secondRow === undefined) throw new Error("Expected two rows");
 
-    // Keep row header simple with full sequence in title (Spec #4 coordination).
+    // Row header stays sticky and exposes the SequenceLabel trigger with full sequence in title.
     const firstHeader = within(firstRow).getByRole("rowheader");
     expect(firstHeader).toHaveTextContent("most common");
-    expect(firstHeader).toHaveAttribute("title", "AAAAAA");
+    expect(within(firstHeader).getByRole("button", { name: "most common" })).toHaveAttribute(
+      "title",
+      "AAAAAA",
+    );
 
     const [kenyaTop, ugandaHalf] = within(firstRow).getAllByRole("cell");
     const [kenyaTenth, ugandaZero] = within(secondRow).getAllByRole("cell");
