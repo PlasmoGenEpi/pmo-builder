@@ -67,13 +67,18 @@ test("at 1280x800 the Summary headline is on the first screen, toolbar is one ro
   expect(firstStatBox.y + firstStatBox.height).toBeLessThanOrEqual(800);
 
   const minReadsInput = page.getByLabel("Minimum reads per microhaplotype");
+  const showEmptyTargets = page.getByRole("switch", { name: "Show targets with no data" });
   const jumpsNav = page.getByRole("navigation", { name: "On this page" });
   const jumpButtons = jumpsNav.getByRole("button");
   const inputBox = await boxOf(minReadsInput);
+  const toggleBox = await boxOf(showEmptyTargets);
   const firstJumpBox = await boxOf(jumpButtons.first());
   const lastJumpBox = await boxOf(jumpButtons.last());
-  // Input and every jump link share one horizontal row.
+  // Input, empty-targets toggle and every jump link share one horizontal row.
   expect(Math.abs(firstJumpBox.y - lastJumpBox.y)).toBeLessThanOrEqual(4);
+  expect(Math.max(inputBox.y, toggleBox.y)).toBeLessThan(
+    Math.min(inputBox.y + inputBox.height, toggleBox.y + toggleBox.height),
+  );
   expect(Math.max(inputBox.y, firstJumpBox.y)).toBeLessThan(
     Math.min(inputBox.y + inputBox.height, firstJumpBox.y + firstJumpBox.height),
   );
@@ -142,8 +147,17 @@ test("at 390x844 visible data appears on the first screen of Summary and Compare
   await page.setViewportSize({ width: 390, height: 844 });
   await openExamplePmo(page);
 
-  // Summary: headline tiles sit two to a row within the 390px viewport and fit on the first screen.
+  // Summary: toolbar wraps cleanly without horizontal overflow, and headline tiles fit on screen.
   await page.getByRole("tab", { name: "Summary" }).click();
+  const showEmptyTargets = page.getByRole("switch", { name: "Show targets with no data" });
+  const toggleBox = await boxOf(showEmptyTargets);
+  expect(toggleBox.x + toggleBox.width).toBeLessThanOrEqual(390);
+  const summaryOverflow = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth,
+  }));
+  expect(summaryOverflow.scrollWidth).toBeLessThanOrEqual(summaryOverflow.innerWidth);
+
   const firstStat = page.getByText("Samples with data", { exact: true }).first().locator("..");
   const secondStat = page.getByText("Targets with data", { exact: true }).first().locator("..");
   const thirdStat = page

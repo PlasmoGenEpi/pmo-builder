@@ -344,7 +344,17 @@ export function SummaryPanel({
     <div className="flex flex-col gap-6">
       <ViewToolbar>
         <MinReadsField value={minReadsInput} maxReads={maxReads} onValueChange={onMinReadsChange} />
-        {summary === null || nothingPasses ? null : <SectionJumps jumps={jumpsOf(summary)} />}
+        {summary === null || nothingPasses ? null : (
+          <>
+            <Switch
+              layout="compact"
+              label={t`Show targets with no data`}
+              checked={allTargets}
+              onCheckedChange={setAllTargets}
+            />
+            <SectionJumps jumps={jumpsOf(summary)} />
+          </>
+        )}
       </ViewToolbar>
 
       {loaded.kind === "ok" || loaded.kind === "loading" ? null : (
@@ -380,20 +390,13 @@ export function SummaryPanel({
               title={t`Reads by sample and target`}
               description={t`Each row is a library sample and each column a target. The colour shows the reads, as in the legend below the grid. Hover over a cell to see its numbers.`}
               actions={
-                <div className="flex flex-wrap items-center gap-4">
-                  {reactionsWithData > 1 ? (
-                    <Switch
-                      label={t`Group targets by reaction`}
-                      checked={grouped}
-                      onCheckedChange={setGrouped}
-                    />
-                  ) : null}
+                reactionsWithData > 1 ? (
                   <Switch
-                    label={t`Show targets with no data`}
-                    checked={allTargets}
-                    onCheckedChange={setAllTargets}
+                    label={t`Group targets by reaction`}
+                    checked={grouped}
+                    onCheckedChange={setGrouped}
                   />
-                </div>
+                ) : undefined
               }
             />
             {summary.samples.length === 0 ? (
