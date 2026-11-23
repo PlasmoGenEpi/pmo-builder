@@ -11,7 +11,7 @@ import type { RawRow } from "../types";
 
 import { isGzip, isOle, isZip } from "./bytes";
 import { detectDelimiter, type Delimiter } from "./delimited";
-import { IMPORT_LIMITS, ImportError, megabytes } from "./errors";
+import { IMPORT_LIMITS, ImportError, formatLimitBytes } from "./errors";
 import { createCellInterner } from "./intern";
 import { cleanCell, uniqueHeaders } from "./rawTable";
 import { xlsNotSupported } from "./xlsx";
@@ -72,7 +72,7 @@ export type DelimitedStreamInspection =
 /** Options for {@link inspectDelimitedStream}. */
 export interface InspectStreamOptions {
   readonly fileName: string;
-  /** Maximum unpacked text bytes. Defaults to {@link IMPORT_LIMITS.textBytes}. */
+  /** Maximum unpacked text bytes. Defaults to {@link IMPORT_LIMITS.alleleTextBytes}. */
   readonly maxTextBytes?: number;
   /** Maximum workbook file bytes. Defaults to {@link IMPORT_LIMITS.workbookBytes}. */
   readonly maxWorkbookBytes?: number;
@@ -88,7 +88,7 @@ export interface StreamChunksOptions {
   readonly columns?: readonly string[];
   /** Rows emitted per chunk. Defaults to {@link DEFAULT_STREAM_CHUNK_SIZE}. */
   readonly chunkSize?: number;
-  /** Maximum unpacked text bytes. Defaults to {@link IMPORT_LIMITS.textBytes}. */
+  /** Maximum unpacked text bytes. Defaults to {@link IMPORT_LIMITS.alleleTextBytes}. */
   readonly maxTextBytes?: number;
   /** Called as chunks are emitted with monotonic byte progress against `source.size`. */
   readonly onProgress?: (progress: StreamReadProgress) => void;
@@ -110,7 +110,7 @@ export interface StreamDistinctValuesOptions {
   readonly column: string;
   /** Maximum distinct trimmed non-blank values to return. Defaults to 200. */
   readonly limit?: number;
-  /** Maximum unpacked text bytes. Defaults to {@link IMPORT_LIMITS.textBytes}. */
+  /** Maximum unpacked text bytes. Defaults to {@link IMPORT_LIMITS.alleleTextBytes}. */
   readonly maxTextBytes?: number;
   /** Checked between chunks; when true, cancels the stream and returns what was seen so far. */
   readonly isSuperseded?: () => boolean;
@@ -177,8 +177,8 @@ function tooLargeError(
   return new ImportError(
     "too-large",
     measure === "text"
-      ? `${fileName} is larger than ${megabytes(limitBytes)} of text, too large to open in the browser. Split it into smaller files, or remove columns you do not need, and try again.`
-      : `${fileName} is a workbook larger than ${megabytes(limitBytes)}, too large to open in the browser. Save the sheet as a .csv or .tsv file and import that instead.`,
+      ? `${fileName} is larger than ${formatLimitBytes(limitBytes)} of text, too large to open in the browser. Split it into smaller files, or remove columns you do not need, and try again.`
+      : `${fileName} is a workbook larger than ${formatLimitBytes(limitBytes)}, too large to open in the browser. Save the sheet as a .csv or .tsv file and import that instead.`,
     { detail: { kind: "too-large", measure, limitBytes } },
   );
 }
@@ -715,7 +715,7 @@ export async function inspectDelimitedStream(
   source: Blob,
   options: InspectStreamOptions,
 ): Promise<DelimitedStreamInspection> {
-  const maxTextBytes = options.maxTextBytes ?? IMPORT_LIMITS.textBytes;
+  const maxTextBytes = options.maxTextBytes ?? IMPORT_LIMITS.alleleTextBytes;
   const maxWorkbookBytes = options.maxWorkbookBytes ?? IMPORT_LIMITS.workbookBytes;
 
   const checked = await validateFileHeader(source, {
@@ -851,7 +851,7 @@ export async function* streamDelimitedChunks(
   if (!Number.isInteger(chunkSize) || chunkSize < 1) {
     throw new RangeError(`chunkSize must be a positive integer, got ${chunkSize}`);
   }
-  const maxTextBytes = options.maxTextBytes ?? IMPORT_LIMITS.textBytes;
+  const maxTextBytes = options.maxTextBytes ?? IMPORT_LIMITS.alleleTextBytes;
   if (source.size === 0) throw emptyFileError(options.fileName);
 
   const head = new Uint8Array(await source.slice(0, HEADER_PROBE_BYTES).arrayBuffer());
@@ -999,7 +999,7 @@ export async function streamDistinctValues(
   options: StreamDistinctValuesOptions,
 ): Promise<StreamDistinctValuesResult> {
   const limit = options.limit ?? DEFAULT_DISTINCT_LIMIT;
-  const maxTextBytes = options.maxTextBytes ?? IMPORT_LIMITS.textBytes;
+  const maxTextBytes = options.maxTextBytes ?? IMPORT_LIMITS.alleleTextBytes;
   if (source.size === 0) return { values: [], truncated: false };
 
   const head = new Uint8Array(await source.slice(0, HEADER_PROBE_BYTES).arrayBuffer());
