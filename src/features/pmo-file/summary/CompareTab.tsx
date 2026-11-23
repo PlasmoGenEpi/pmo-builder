@@ -112,13 +112,7 @@ function SmallGroupMark() {
 }
 
 /** Sample count and small-group mark shown under a group's column heading. */
-function GroupSizeNote({
-  group,
-  numeric,
-}: {
-  readonly group: GroupRow;
-  readonly numeric?: boolean;
-}) {
+function GroupSizeNote({ group }: { readonly group: GroupRow }) {
   const sampleCount = group.withData;
   const count = formatCount(sampleCount);
   const fullCount = plural(sampleCount, {
@@ -130,7 +124,6 @@ function GroupSizeNote({
     <span
       className={cn(
         "inline-flex items-center gap-1 whitespace-nowrap font-normal tabular-nums",
-        numeric && "justify-end",
         small ? "text-warning-text" : "text-text-subtle",
       )}
     >
@@ -219,9 +212,9 @@ function AllelesByGroup({
     [target.alleles],
   );
   const absentCount = target.alleles.length - presentAlleles.length;
-  const visiblePool = showAbsent ? target.alleles : presentAlleles;
-  const shown = visiblePool.slice(0, MAX_ALLELES);
-  const hiddenByLimit = visiblePool.length - shown.length;
+  const showingAll = showAbsent && absentCount > 0;
+  const shown = showingAll ? target.alleles : presentAlleles.slice(0, MAX_ALLELES);
+  const hiddenByLimit = showingAll ? 0 : presentAlleles.length - shown.length;
   const maxFreq = shown.reduce((largest, allele) => {
     let next = largest;
     for (const freq of allele.freqs) {
@@ -254,7 +247,7 @@ function AllelesByGroup({
           // Focusable so keyboard users can scroll it.
           // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
           tabIndex={0}
-          className="max-h-[28rem] overflow-auto rounded-lg border border-border bg-surface focus-visible:outline-offset-0"
+          className="max-h-112 overflow-auto rounded-lg border border-border bg-surface focus-visible:outline-offset-0"
         >
           <table
             className="w-full border-separate border-spacing-0 text-sm"
@@ -577,26 +570,29 @@ function NoComparison({ reason }: { readonly reason: NoAnswerReason }) {
   );
 }
 
-/** The groups of one field, side by side, counted in the worker. */
-function Comparison({
-  source,
-  fields,
-  field,
-  onFieldChange,
-  minReads,
-  minReadsInput,
-  onMinReadsChange,
-  maxReads,
-}: {
-  readonly source: WorkingSource;
+interface ComparisonGrouping {
   readonly fields: readonly GroupField[];
   readonly field: GroupField;
-  readonly onFieldChange: (key: GroupKey | null) => void;
-  readonly minReads: number;
-  readonly minReadsInput: number | null;
-  readonly onMinReadsChange: (value: number | null) => void;
-  readonly maxReads: number | null;
-}) {
+  readonly onChange: (key: GroupKey | null) => void;
+}
+
+interface ComparisonReads {
+  readonly min: number;
+  readonly input: number | null;
+  readonly max: number | null;
+  readonly onChange: (value: number | null) => void;
+}
+
+interface ComparisonProps {
+  readonly source: WorkingSource;
+  readonly grouping: ComparisonGrouping;
+  readonly reads: ComparisonReads;
+}
+
+/** The groups of one field, side by side, counted in the worker. */
+function Comparison({ source, grouping, reads }: ComparisonProps) {
+  const { fields, field, onChange: onFieldChange } = grouping;
+  const { min: minReads, input: minReadsInput, max: maxReads, onChange: onMinReadsChange } = reads;
   const { resolved } = useTheme();
   const [target, setTarget] = useState<string | null>(null);
   const request = useMemo(
@@ -716,7 +712,7 @@ function Comparison({
                 ...loaded.value.groups.map((group, index): SortableColumn<TargetAcrossGroups> => ({
                   key: `g${index}`,
                   label: groupName(group),
-                  headerNote: <GroupSizeNote group={group} numeric />,
+                  headerNote: <GroupSizeNote group={group} />,
                   value: (row) => row.heterozygosity[index] ?? null,
                   render: (row) => {
                     const value = row.heterozygosity[index];
@@ -860,13 +856,8 @@ export function CompareTab({
   return (
     <Comparison
       source={source}
-      fields={usable}
-      field={chosen}
-      onFieldChange={setKey}
-      minReads={minReads}
-      minReadsInput={minReadsInput}
-      onMinReadsChange={onMinReadsChange}
-      maxReads={maxReads}
+      grouping={{ fields: usable, field: chosen, onChange: setKey }}
+      reads={{ min: minReads, input: minReadsInput, max: maxReads, onChange: onMinReadsChange }}
     />
   );
 }
