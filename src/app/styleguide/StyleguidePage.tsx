@@ -165,6 +165,18 @@ function Primitives() {
           </Button>
           <Button disabled>Disabled</Button>
         </Row>
+        <Row label="Multi-line (wrap)">
+          <div className="w-36">
+            <Button variant="ghost" size="sm" wrap className="justify-start text-left">
+              Samples with data
+            </Button>
+          </div>
+          <div className="w-44">
+            <Button size="md" wrap icon={Download}>
+              Download summary table
+            </Button>
+          </div>
+        </Row>
         <Row label="Icon buttons and links">
           <IconButton label="Settings" icon={Settings} />
           <IconButton label="Notifications" icon={Bell} variant="secondary" />

@@ -135,6 +135,19 @@ function asText(value: unknown): string {
   return typeof value === "number" ? String(value) : JSON.stringify(value);
 }
 
+/** The most reads any single detected microhaplotype has in `pmo`. */
+function maxReadsOf(pmo: Pmo): number {
+  let maxReads = 0;
+  for (const run of pmo.detected_microhaplotypes) {
+    for (const sample of run.library_samples) {
+      for (const result of sample.target_results) {
+        for (const mhap of result.mhaps) maxReads = Math.max(maxReads, mhap.reads);
+      }
+    }
+  }
+  return maxReads;
+}
+
 /** What a subset of `pmo` can keep. */
 export function choicesOf(pmo: Pmo): PmoChoices {
   const metadata = metadataChoices(pmo);
@@ -148,14 +161,6 @@ export function choicesOf(pmo: Pmo): PmoChoices {
   const detected = new Set(
     pmo.representative_microhaplotypes.targets.map((target) => target.target_id),
   );
-  let maxReads = 0;
-  for (const run of pmo.detected_microhaplotypes) {
-    for (const sample of run.library_samples) {
-      for (const result of sample.target_results) {
-        for (const mhap of result.mhaps) maxReads = Math.max(maxReads, mhap.reads);
-      }
-    }
-  }
   return {
     specimens: pmo.specimen_info.map((specimen, index) => {
       const record: Readonly<Record<string, unknown>> = specimen;
@@ -178,7 +183,7 @@ export function choicesOf(pmo: Pmo): PmoChoices {
       detected.has(index) ? [target.target_name] : [],
     ),
     targetsWithoutData: pmo.target_info.filter((_, index) => !detected.has(index)).length,
-    maxReads,
+    maxReads: maxReadsOf(pmo),
   };
 }
 
@@ -397,6 +402,7 @@ export function makeSubset(
       summary: summarisePmo(subset),
       publication: summarisePublication(subset),
       tables: tablesOf(subset),
+      maxReads: maxReadsOf(subset),
       problems: problemsOf(subset),
     },
     subset,

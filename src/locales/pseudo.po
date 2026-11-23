@@ -288,8 +288,20 @@ msgstr ""
 msgid "{absentCount, plural, one {# microhaplotype is absent from every group shown.} other {# microhaplotypes are absent from every group shown.}}"
 msgstr ""
 
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "{activeTargets, plural, one {{activePlate}, well {activeCoord}, {activeSampleName}: # target with data.} other {{activePlate}, well {activeCoord}, {activeSampleName}: # targets with data.}}"
+msgstr ""
+
 #: src/features/review/reviewModel.ts
 msgid "{alleleCalls, plural, one {# allele call} other {# allele calls}} for {samples, plural, one {# sample} other {# samples}} at {targets, plural, one {# target} other {# targets}}, {alleles, plural, one {# distinct allele} other {# distinct alleles}}"
+msgstr ""
+
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "{alleleCount, plural, one {# microhaplotype} other {# microhaplotypes}}"
+msgstr ""
+
+#: src/features/pmo-file/summary/SequenceLabel.tsx
+msgid "{baseCount, plural, one {# base} other {# bases}}"
 msgstr ""
 
 #. {column} starts the sentence and names a column, with any article, such as 'Column "Host taxon"'. {row} is one row without an article, such as 'row 5'.
@@ -557,16 +569,8 @@ msgstr ""
 msgid "{hoverCount, plural, one {{hoverPeriod}: # specimen} other {{hoverPeriod}: # specimens}}"
 msgstr ""
 
-#: src/features/pmo-file/summary/ReadsGrid.tsx
-msgid "{hoveredReads} reads"
-msgstr ""
-
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "{hoverName}: {hoverDensity} per µL, {hoverTargets} targets with data."
-msgstr ""
-
-#: src/features/pmo-file/summary/QualityViews.tsx
-msgid "{hoverTargets, plural, one {# target with data} other {# targets with data}}"
 msgstr ""
 
 #: src/features/table-import/MatchingParts.tsx
@@ -758,6 +762,10 @@ msgstr ""
 msgid "{projectCount, plural, one {There is # project, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.} other {There are # projects, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.}}"
 msgstr ""
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "{readCount, plural, one {# read} other {# reads}}"
+msgstr ""
+
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "{reads, plural, one {Negative control {name} has # read.} other {Negative control {name} has # reads.}}"
 msgstr ""
@@ -911,6 +919,14 @@ msgstr ""
 msgid "{sampleCount, plural, one {Sequencing run \"{run}\" is applied to all # library sample, because there is no library sample table to name a run for each.} other {Sequencing run \"{run}\" is applied to all # library samples, because there is no library sample table to name a run for each.}}"
 msgstr ""
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "{sampleName} at {targetName}: {reads, plural, one {# read} other {# reads}}, {alleles, plural, one {# microhaplotype} other {# microhaplotypes}}."
+msgstr ""
+
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "{sampleName} at {targetName}: no reads, {alleles, plural, one {# microhaplotype} other {# microhaplotypes}}."
+msgstr ""
+
 #: src/features/review/reviewModel.ts
 msgid "{samples, plural, one {# sample} other {# samples}} over {stages, plural, one {# stage} other {# stages}}"
 msgstr ""
@@ -951,6 +967,10 @@ msgstr ""
 
 #: src/features/panel/PanelStep.tsx
 msgid "{targetCount} before merging"
+msgstr ""
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "{targets, plural, one {# target with data} other {# targets with data}}"
 msgstr ""
 
 #: src/features/panel/PanelEditor.tsx
@@ -1000,9 +1020,18 @@ msgstr ""
 msgid "{total, plural, one {More than # method: {methodNames}. Runs refer to a method by this name.} other {More than # methods: {methodNames}. Runs refer to a method by this name.}}"
 msgstr ""
 
+#: src/features/pmo-file/summary/SortableTable.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 #: src/ui/DataTable.tsx
 msgid "{total, plural, one {Showing {shownCount} of {totalCount} row} other {Showing {shownCount} of {totalCount} rows}}"
+msgstr ""
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "{totalSamples, plural, one {{sampleShare} of {allSamples} library sample} other {{sampleShare} of {allSamples} library samples}}"
+msgstr ""
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "{totalTargets, plural, one {{targetShare} of {allTargets} target} other {{targetShare} of {allTargets} targets}}"
 msgstr ""
 
 #: src/features/review/SectionChecklist.tsx
@@ -1015,6 +1044,10 @@ msgstr ""
 
 #: src/features/review/VerdictCard.tsx
 msgid "{warnings, plural, one {Your PMO can be downloaded. There is # warning worth a look below.} other {Your PMO can be downloaded. There are # warnings worth a look below.}}"
+msgstr ""
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "{wellTargets, plural, one {{coord}, {sampleName}: # target with data} other {{coord}, {sampleName}: # targets with data}}"
 msgstr ""
 
 #. {where} is a place in the PMO, such as 'Specimen "S1", field "collection_country"'.
@@ -1065,6 +1098,10 @@ msgstr ""
 #. {where} is a place in the PMO, such as 'Specimen "S1"'. {reasonText} says what is wrong: one or more verb phrases joined with ', and it', such as 'is missing specimen_name'.
 #: src/domain/build/merge.ts
 msgid "{where}. It {reasonText}."
+msgstr ""
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "{withData, plural, one {{polyclonalShare} of {samplesWithData} sample with data} other {{polyclonalShare} of {samplesWithData} samples with data}}"
 msgstr ""
 
 #: src/features/pmo-file/SubsetPanel.tsx
@@ -1167,7 +1204,7 @@ msgid "A draft was started. You can finish it on Zenodo, or delete it there and 
 msgstr ""
 
 #: src/features/pmo-file/summary/ReadsGrid.tsx
-msgid "A grid of reads for {sampleCount} samples at {targetCount} targets. The tables below give the same figures."
+msgid "A grid of reads for {sampleCount} samples at {targetCount} targets. Use the arrow keys to move between cells and read each sample and target's figures. The tables below give totals per sample and per target, not individual cells."
 msgstr ""
 
 #: src/features/librarySamples/LibrarySamplesStep.tsx
@@ -1731,6 +1768,10 @@ msgstr ""
 msgid "Choose {fileLabel} file"
 msgstr ""
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "Choose a cell or use the arrow keys to inspect a sample and target."
+msgstr ""
+
 #: src/features/bioinformatics/RunsPart.tsx
 #: src/features/shared/RunNameChoice.tsx
 #: src/features/table-import/FieldRow.tsx
@@ -1739,6 +1780,10 @@ msgstr ""
 
 #: src/features/table-import/mappingModel.ts
 msgid "Choose a column. This field is needed to build the table."
+msgstr ""
+
+#: src/features/pmo-file/summary/AlleleBars.tsx
+msgid "Choose a label to open and copy the whole sequence. Each bar is a share of the target's detections: a sample with two microhaplotypes here counts once for each."
 msgstr ""
 
 #: src/features/bioinformatics/RunsPart.tsx
@@ -1799,12 +1844,21 @@ msgstr ""
 msgid "Chromosomes"
 msgstr ""
 
+#. Verb: clear a table search box
+#: src/features/pmo-file/summary/SortableTable.tsx
+msgid "Clear"
+msgstr ""
+
 #: src/features/published/CountryFilter.tsx
 msgid "Clear countries"
 msgstr ""
 
 #: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Clear minimum reads"
+msgstr ""
+
+#: src/features/pmo-file/summary/SortableTable.tsx
+msgid "Clear search for {label}"
 msgstr ""
 
 #: src/features/published/PublishedPage.tsx
@@ -1930,6 +1984,10 @@ msgstr ""
 msgid "Comments"
 msgstr ""
 
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Common minimum read counts"
+msgstr ""
+
 #: src/features/pmo-file/PmoReading.tsx
 msgid "Compare"
 msgstr ""
@@ -1967,6 +2025,8 @@ msgstr ""
 
 #. After a keyword was copied to the clipboard
 #. Button, after the value was copied to the clipboard
+#. Button, after the value was copied to the clipboard
+#: src/features/pmo-file/summary/SequenceLabel.tsx
 #: src/features/review/PublishToZenodo.tsx
 #: src/features/shared/CopyValue.tsx
 #: src/ui/CodeBlock.tsx
@@ -1974,6 +2034,8 @@ msgid "Copied"
 msgstr ""
 
 #. Button: copy the value to the clipboard
+#. Button: copy the value to the clipboard
+#: src/features/pmo-file/summary/SequenceLabel.tsx
 #: src/features/shared/CopyValue.tsx
 #: src/ui/CodeBlock.tsx
 msgid "Copy"
@@ -2000,6 +2062,10 @@ msgstr ""
 #. Button: copy the Zenodo record's title to the clipboard
 #: src/features/review/PublishToZenodo.tsx
 msgid "Copy title"
+msgstr ""
+
+#: src/features/pmo-file/summary/SequenceLabel.tsx
+msgid "Could not copy. Select the sequence to copy it."
 msgstr ""
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
@@ -2169,10 +2235,12 @@ msgid "Done"
 msgstr ""
 
 #: src/features/pmo-file/PmoOverview.tsx
+#: src/features/pmo-file/summary/SortableTable.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Download"
 msgstr ""
 
+#: src/features/pmo-file/summary/SortableTable.tsx
 #: src/features/pmo-file/TablesPanel.tsx
 msgid "Download {title} as {format}"
 msgstr ""
@@ -2250,7 +2318,7 @@ msgid "Each program the pipeline ran, in order. Most pipelines need only the mai
 msgstr ""
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "Each row is a library sample and each column a target. The colour shows the reads, as in the legend below the grid. Hover over a cell to see its numbers."
+msgid "Each row is a library sample and each column a target. The colour shows the reads, as in the legend below the grid. Choose a cell to see its numbers and find its sample and target below."
 msgstr ""
 
 #: src/features/librarySamples/LibrarySamplesStep.tsx
@@ -2271,6 +2339,10 @@ msgstr ""
 
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "Each well is a library sample, coloured by how many targets have data; a cross marks a sample with none. Patterns along a row, a column or the edge point to a problem with the plate rather than the samples."
+msgstr ""
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Empty well"
 msgstr ""
 
 #. Field label: where an allele ends on the chromosome
@@ -2728,10 +2800,6 @@ msgstr ""
 msgid "Hover over a dot to see its sample."
 msgstr ""
 
-#: src/features/pmo-file/summary/AlleleBars.tsx
-msgid "Hover over a label to see the whole sequence. Each bar is a share of the target's detections: a sample with two microhaplotypes here counts once for each."
-msgstr ""
-
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "How is the method given?"
 msgstr ""
@@ -2993,6 +3061,10 @@ msgstr ""
 
 #: src/features/pmo-file/summary/ViewToolbar.tsx
 msgid "Leave empty to count them all."
+msgstr ""
+
+#: src/features/pmo-file/summary/ViewToolbar.tsx
+msgid "Leave empty to count them all. The most in this file is {mostReads}."
 msgstr ""
 
 #: src/features/review/SectionChecklist.tsx
@@ -3546,6 +3618,10 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "No data"
+msgstr ""
+
 #: src/features/pmo-file/NoAnswer.tsx
 msgid "No file is open"
 msgstr ""
@@ -3793,6 +3869,7 @@ msgid "Nothing leaves this copy. These are the records it would send if usage co
 msgstr ""
 
 #: src/features/pmo-file/NameChecklist.tsx
+#: src/features/pmo-file/summary/SortableTable.tsx
 msgid "Nothing matches the search."
 msgstr ""
 
@@ -3815,14 +3892,6 @@ msgstr ""
 #. Screen-reader name of the area where messages appear. The placeholder becomes a key such as F8.
 #: src/ui/Toast.tsx
 msgid "Notifications ({RADIX_HOTKEY})"
-msgstr ""
-
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "of {all}"
-msgstr ""
-
-#: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "of {targets}"
 msgstr ""
 
 #. Name of the jump links to headings in the current view
@@ -4288,6 +4357,10 @@ msgstr ""
 #. {table} is a table name in lower case, such as 'specimen table'. French table names all start with 'tableau' (masculine); Portuguese with 'tabela' (feminine).
 #: src/domain/build/notices.ts
 msgid "Plate columns of the {table} are mapped twice over: give the plate position, or the plate row and column, not both. Unmap one of them."
+msgstr ""
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Plate legend"
 msgstr ""
 
 #: src/features/pmo-file/summary/QualityViews.tsx
@@ -5044,8 +5117,24 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
+#: src/features/pmo-file/summary/SortableTable.tsx
+msgid "Search {label}"
+msgstr ""
+
 #: src/features/published/PublishedPage.tsx
 msgid "Search datasets"
+msgstr ""
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Search sample"
+msgstr ""
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Search sample or specimen"
+msgstr ""
+
+#: src/features/pmo-file/summary/SummaryPanel.tsx
+msgid "Search target"
 msgstr ""
 
 #: src/features/pmo-file/NameChecklist.tsx
@@ -5105,6 +5194,14 @@ msgstr ""
 #. Field label: an allele's DNA sequence
 #: src/domain/fields/microhaplotypes.ts
 msgid "Sequence"
+msgstr ""
+
+#: src/features/pmo-file/summary/SequenceLabel.tsx
+msgid "Sequence copied to clipboard."
+msgstr ""
+
+#: src/features/pmo-file/summary/SequenceLabel.tsx
+msgid "Sequence for {label}"
 msgstr ""
 
 #. Heading for a group of optional fields in the column-matching editor
@@ -5643,6 +5740,10 @@ msgstr ""
 msgid "Target \"{targetName}\" is defined differently in panel \"{panelName}\" than in an earlier panel. The first definition is kept."
 msgstr ""
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "Target {startNumber}"
+msgstr ""
+
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #: src/domain/fields/panel.ts
@@ -5689,6 +5790,10 @@ msgstr ""
 #: src/features/pmo-file/TablesPanel.tsx
 #: src/features/review/PmoContents.tsx
 msgid "Targets"
+msgstr ""
+
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "Targets {startNumber}–{endNumber}"
 msgstr ""
 
 #. Short name of the Targets section
@@ -7033,6 +7138,10 @@ msgstr ""
 #. Read out before a warning message
 #: src/ui/Callout.tsx
 msgid "Warning"
+msgstr ""
+
+#: src/features/pmo-file/summary/QualityViews.tsx
+msgid "Wells on {plate}"
 msgstr ""
 
 #: src/features/review/PmoContents.tsx

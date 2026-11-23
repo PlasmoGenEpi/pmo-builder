@@ -5,7 +5,7 @@
  * the file has its data, and says how much of the file it covers.
  */
 import { plural, t } from "@lingui/core/macro";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { useTheme } from "@/app/theme";
 import type { PmoSummary, SampleSummary } from "@/domain/tools/types";
@@ -20,7 +20,7 @@ import {
   rampColour,
 } from "@/ui";
 
-import { SortableTable, type SortableColumn } from "./SortableTable";
+import { SortableTable, type SortableColumn, type SortableTableDownload } from "./SortableTable";
 
 /** "Plate positions are given for 40 of 50 library samples." and the like, when not all have it. */
 function Coverage({
@@ -154,37 +154,114 @@ function placeWellTooltip(options: {
   };
 }
 
+interface ActiveWell {
+  readonly id: string;
+  readonly libraryId: number;
+  readonly run: string;
+  readonly plate: string;
+  readonly coord: string;
+}
+
+function targetsWithDataLabel(targets: number): string {
+  return plural(targets, { one: "# target with data", other: "# targets with data" });
+}
+
+function positionWellTooltip(options: {
+  readonly wellId: string;
+  readonly container: HTMLElement | null;
+  readonly tooltip: HTMLElement | null;
+}): void {
+  const { wellId, container, tooltip } = options;
+  if (container === null || tooltip === null) return;
+  const wellElement = container.querySelector(`[data-plate-well="${wellId}"]`);
+  if (wellElement === null) return;
+  const wellRect = wellElement.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const pos = placeWellTooltip({
+    well: {
+      left: wellRect.left,
+      top: wellRect.top,
+      right: wellRect.right,
+      bottom: wellRect.bottom,
+    },
+    container: containerRect,
+    tooltip: { width: tooltipRect.width, height: tooltipRect.height },
+    viewport: {
+      width: document.documentElement.clientWidth || window.innerWidth,
+      height: document.documentElement.clientHeight || window.innerHeight,
+    },
+  });
+  tooltip.style.left = `${pos.left}px`;
+  tooltip.style.top = `${pos.top}px`;
+}
+
 /** Each plate as a grid of wells, coloured by how many targets have data. */
 export function PlateView({ summary, headingId }: QualityViewProps) {
   const { resolved } = useTheme();
   const platesRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const [hover, setHover] = useState<{
-    readonly sample: SampleSummary;
-    readonly well: Box;
-  } | null>(null);
-
-  useLayoutEffect(() => {
-    if (hover === null) return;
-    const container = platesRef.current;
-    const tooltip = tooltipRef.current;
-    if (container === null || tooltip === null) return;
-    const containerRect = container.getBoundingClientRect();
-    const tooltipRect = tooltip.getBoundingClientRect();
-    const pos = placeWellTooltip({
-      well: hover.well,
-      container: containerRect,
-      tooltip: { width: tooltipRect.width, height: tooltipRect.height },
-      viewport: {
-        width: document.documentElement.clientWidth || window.innerWidth,
-        height: document.documentElement.clientHeight || window.innerHeight,
-      },
-    });
-    tooltip.style.left = `${pos.left}px`;
-    tooltip.style.top = `${pos.top}px`;
-  }, [hover]);
+  const [hovered, setHovered] = useState<ActiveWell | null>(null);
+  const [focused, setFocused] = useState<ActiveWell | null>(null);
+  const [pinned, setPinned] = useState<ActiveWell | null>(null);
 
   const placed = summary.samples.filter((sample) => sample.plate !== null);
+  const rawActive = hovered ?? focused ?? pinned;
+  const activeSample =
+    rawActive === null
+      ? null
+      : (placed.find(
+          (sample) => sample.libraryId === rawActive.libraryId && sample.run === rawActive.run,
+        ) ?? null);
+  const activeId = rawActive === null || activeSample === null ? null : rawActive.id;
+  const hasPinned = pinned !== null;
+
+  const clearSelection = useCallback(() => {
+    setPinned(null);
+    setFocused(null);
+    setHovered(null);
+  }, []);
+
+  const togglePinned = (well: ActiveWell) => {
+    if (pinned?.id === well.id) {
+      clearSelection();
+    } else {
+      setPinned(well);
+    }
+  };
+
+  useEffect(() => {
+    if (activeId === null) return undefined;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        clearSelection();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [activeId, clearSelection]);
+
+  useEffect(() => {
+    if (!hasPinned) return undefined;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element) || target.closest("[data-plate-well]") === null) {
+        clearSelection();
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [hasPinned, clearSelection]);
+
+  useLayoutEffect(() => {
+    if (activeId === null) return;
+    positionWellTooltip({
+      wellId: activeId,
+      container: platesRef.current,
+      tooltip: tooltipRef.current,
+    });
+  }, [activeId]);
+
   if (!showsPlates(summary)) return null;
   const plates = [...new Set(placed.map((sample) => sample.plate?.plate ?? ""))];
   const maxTargets = Math.max(1, ...placed.map((sample) => sample.targets));
@@ -194,7 +271,10 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
   const haveCount = formatCount(have);
   const totalCount = formatCount(total);
   const cell = 26;
-  const hoverTargets = hover?.sample.targets ?? 0;
+  const activeTargets = activeSample?.targets ?? 0;
+  const activePlate = rawActive?.plate ?? "";
+  const activeCoord = rawActive?.coord ?? "";
+  const activeSampleName = activeSample?.name ?? "";
 
   return (
     <section className="flex flex-col gap-4">
@@ -207,7 +287,7 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
         {t`Plate positions are given for ${haveCount} of ${totalCount} library samples.`}
       </Coverage>
       <div ref={platesRef} className="relative flex min-w-0 flex-wrap gap-8">
-        {plates.map((plate) => {
+        {plates.map((plate, plateIndex) => {
           const wells = placed.filter((sample) => sample.plate?.plate === plate);
           const rows = Math.max(
             8,
@@ -224,18 +304,32 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
                 // Focusable so keyboard users can scroll wide plates.
                 // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
                 tabIndex={0}
-                onScroll={() => setHover(null)}
+                onScroll={() => {
+                  setHovered(null);
+                  const remaining = focused ?? pinned;
+                  if (remaining !== null) {
+                    positionWellTooltip({
+                      wellId: remaining.id,
+                      container: platesRef.current,
+                      tooltip: tooltipRef.current,
+                    });
+                  }
+                }}
                 className="max-w-full overflow-x-auto focus-visible:outline-offset-0"
               >
                 <svg
                   width={(cols + 1) * cell}
                   height={(rows + 1) * cell}
                   className="block"
-                  aria-hidden="true"
+                  // SVG has no native group element; role="group" names the plate grid.
+                  // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+                  role="group"
+                  aria-label={t`Wells on ${plate}`}
                 >
                   {Array.from({ length: cols }, (_, col) => (
                     <text
                       key={`c${col}`}
+                      aria-hidden="true"
                       x={(col + 1.5) * cell}
                       y={cell * 0.65}
                       textAnchor="middle"
@@ -247,6 +341,7 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
                   {Array.from({ length: rows }, (_, row) => (
                     <text
                       key={`r${row}`}
+                      aria-hidden="true"
                       x={cell * 0.5}
                       y={(row + 1.6) * cell}
                       textAnchor="middle"
@@ -258,40 +353,84 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
                   {Array.from({ length: rows * cols }, (_, index) => {
                     const row = Math.floor(index / cols);
                     const col = index % cols;
+                    const rowLetter = ROW_LETTERS[row] ?? "";
+                    const coord = `${rowLetter}${col + 1}`;
                     const sample = wells.find(
-                      (item) => item.plate?.row === ROW_LETTERS[row] && item.plate?.col === col + 1,
+                      (item) => item.plate?.row === rowLetter && item.plate?.col === col + 1,
                     );
+                    if (sample === undefined) {
+                      return (
+                        <rect
+                          key={index}
+                          aria-hidden="true"
+                          x={(col + 1) * cell + 2}
+                          y={(row + 1) * cell + 2}
+                          width={cell - 4}
+                          height={cell - 4}
+                          rx={4}
+                          fill="transparent"
+                          className="stroke-border"
+                          strokeDasharray="2 2"
+                        />
+                      );
+                    }
+                    const wellId = `${plateIndex}-${row}-${col}`;
+                    const sampleName = sample.name;
+                    const wellTargets = sample.targets;
                     const fill =
-                      sample === undefined
-                        ? "transparent"
-                        : sample.targets === 0
-                          ? EMPTY_CELL[resolved]
-                          : rampColour(ramp, sample.targets / maxTargets);
+                      wellTargets === 0
+                        ? EMPTY_CELL[resolved]
+                        : rampColour(ramp, wellTargets / maxTargets);
+                    const wellLabel = plural(wellTargets, {
+                      one: `${coord}, ${sampleName}: # target with data`,
+                      other: `${coord}, ${sampleName}: # targets with data`,
+                    });
+                    const isPinned = pinned?.id === wellId;
+                    const well: ActiveWell = {
+                      id: wellId,
+                      libraryId: sample.libraryId,
+                      run: sample.run,
+                      plate,
+                      coord,
+                    };
                     return (
                       <rect
                         key={index}
+                        data-plate-well={wellId}
+                        // SVG wells are <rect> shapes inside the plate grid, not HTML <button>s.
+                        // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+                        role="button"
+                        tabIndex={0}
+                        aria-label={wellLabel}
+                        aria-pressed={isPinned}
                         x={(col + 1) * cell + 2}
                         y={(row + 1) * cell + 2}
                         width={cell - 4}
                         height={cell - 4}
                         rx={4}
                         fill={fill}
-                        className={sample === undefined ? "stroke-border" : undefined}
-                        strokeDasharray={sample === undefined ? "2 2" : undefined}
-                        onMouseEnter={(event) => {
-                          if (sample === undefined) return;
-                          const rect = event.currentTarget.getBoundingClientRect();
-                          setHover({
-                            sample,
-                            well: {
-                              left: rect.left,
-                              top: rect.top,
-                              right: rect.right,
-                              bottom: rect.bottom,
-                            },
-                          });
+                        className={
+                          isPinned
+                            ? "cursor-pointer stroke-text focus-visible:outline-offset-0"
+                            : "cursor-pointer focus-visible:outline-offset-0"
+                        }
+                        strokeWidth={isPinned ? 2 : undefined}
+                        onMouseEnter={() => setHovered(well)}
+                        onMouseLeave={() => setHovered(null)}
+                        onFocus={() => {
+                          setHovered(null);
+                          setFocused(well);
                         }}
-                        onMouseLeave={() => setHover(null)}
+                        onBlur={() => setFocused(null)}
+                        onClick={() => togglePinned(well)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            togglePinned(well);
+                          } else if (event.key === "Escape") {
+                            clearSelection();
+                          }
+                        }}
                       />
                     );
                   })}
@@ -305,6 +444,7 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
                       return (
                         <path
                           key={`x${sample.libraryId}`}
+                          aria-hidden="true"
                           d={`M${x},${y} l${cell - 16},${cell - 16} M${x + cell - 16},${y} l${-(cell - 16)},${cell - 16}`}
                           className="pointer-events-none stroke-text-muted"
                           strokeWidth={1.5}
@@ -313,21 +453,60 @@ export function PlateView({ summary, headingId }: QualityViewProps) {
                     })}
                 </svg>
               </section>
+              <ul
+                aria-label={t`Plate legend`}
+                className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-text-muted"
+              >
+                <li className="inline-flex items-center gap-1.5">
+                  <span>{formatCount(1)}</span>
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-3 w-24 rounded-sm"
+                    style={{ backgroundImage: `linear-gradient(to right, ${ramp.join(", ")})` }}
+                  />
+                  <span>{targetsWithDataLabel(maxTargets)}</span>
+                </li>
+                <li className="inline-flex items-center gap-1.5">
+                  <span
+                    aria-hidden="true"
+                    className="relative inline-block size-3.5 shrink-0 rounded-sm border border-border"
+                    style={{ backgroundColor: EMPTY_CELL[resolved] }}
+                  >
+                    <span className="absolute top-1/2 left-1/2 h-px w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-text-muted" />
+                    <span className="absolute top-1/2 left-1/2 h-px w-2.5 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-text-muted" />
+                  </span>
+                  {t`No data`}
+                </li>
+                <li className="inline-flex items-center gap-1.5">
+                  <span
+                    aria-hidden="true"
+                    className="inline-block size-3.5 shrink-0 rounded-sm border border-dashed border-border"
+                  />
+                  {t`Empty well`}
+                </li>
+              </ul>
             </figure>
           );
         })}
-        {hover === null ? null : (
+        {activeId === null || activeSample === null ? null : (
           <div
             ref={tooltipRef}
             className="pointer-events-none absolute top-0 left-0 z-10 w-max max-w-64 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm text-text shadow-md"
           >
-            <div className="font-medium break-all">{hover.sample.name}</div>
-            <div className="text-text-muted">
-              {plural(hoverTargets, { one: "# target with data", other: "# targets with data" })}
-            </div>
+            <div className="text-xs text-text-muted">{activeCoord}</div>
+            <div className="font-medium break-all">{activeSample.name}</div>
+            <div className="text-text-muted">{targetsWithDataLabel(activeTargets)}</div>
           </div>
         )}
       </div>
+      <p className="sr-only" aria-live="polite">
+        {activeId === null || activeSample === null
+          ? ""
+          : plural(activeTargets, {
+              one: `${activePlate}, well ${activeCoord}, ${activeSampleName}: # target with data.`,
+              other: `${activePlate}, well ${activeCoord}, ${activeSampleName}: # targets with data.`,
+            })}
+      </p>
     </section>
   );
 }
@@ -462,8 +641,14 @@ export function DensityView({ summary, headingId }: QualityViewProps) {
   );
 }
 
+/** Props for {@link StagesView}. */
+export interface StagesViewProps extends QualityViewProps {
+  /** Offers a browser-side download of the pipeline stage table. */
+  readonly download?: SortableTableDownload;
+}
+
 /** Reads at each pipeline stage: where reads are lost between demultiplexing and the final calls. */
-export function StagesView({ summary, headingId }: QualityViewProps) {
+export function StagesView({ summary, headingId, download }: StagesViewProps) {
   const counted = stageCounted(summary);
   if (counted.length === 0) return null;
   const percent = new Intl.NumberFormat(intlLocale(), {
@@ -520,6 +705,9 @@ export function StagesView({ summary, headingId }: QualityViewProps) {
         rows={counted}
         rowKey={(row) => `${row.run}\u0000${row.libraryId}`}
         initialSort={{ key: "kept", descending: false }}
+        searchableColumns={["name"]}
+        searchPlaceholder={t`Search sample`}
+        download={download}
       />
     </section>
   );

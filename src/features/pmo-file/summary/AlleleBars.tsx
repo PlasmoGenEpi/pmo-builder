@@ -5,6 +5,8 @@ import type { TargetSummary } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
 import { SERIES } from "@/ui";
 
+import { SequenceLabel } from "./SequenceLabel";
+
 /** The most microhaplotypes drawn; the rest are counted. */
 const MAX_BARS = 20;
 
@@ -48,14 +50,12 @@ export function AlleleBars({ target }: { readonly target: TargetSummary }) {
               key={allele.mhapId}
               className="col-span-full grid grid-cols-subgrid items-center gap-y-1 sm:gap-y-0"
             >
-              <span
-                className="col-span-full w-0 min-w-full truncate font-mono text-xs text-text-muted sm:col-span-1 sm:w-auto sm:min-w-0"
-                title={
-                  allele.label.note === null ? allele.seq : `${allele.seq}\n${allele.label.note}`
-                }
-              >
-                {allele.label.label === "" ? `#${allele.mhapId}` : allele.label.label}
-              </span>
+              <SequenceLabel
+                label={allele.label.label === "" ? `#${allele.mhapId}` : allele.label.label}
+                seq={allele.seq}
+                note={allele.label.note}
+                className="col-span-full w-0 min-w-full sm:col-span-1 sm:w-auto sm:min-w-0"
+              />
               <span className="block h-3 w-full overflow-hidden rounded-sm bg-surface-subtle">
                 <span
                   aria-hidden="true"
@@ -96,7 +96,7 @@ export function AlleleBars({ target }: { readonly target: TargetSummary }) {
           </p>
         ) : null}
         <p>
-          {t`Hover over a label to see the whole sequence. Each bar is a share of the target's detections: a sample with two microhaplotypes here counts once for each.`}
+          {t`Choose a label to open and copy the whole sequence. Each bar is a share of the target's detections: a sample with two microhaplotypes here counts once for each.`}
         </p>
       </div>
     </figure>
