@@ -292,8 +292,16 @@ msgstr ""
 msgid "{alleleCalls, plural, one {# allele call} other {# allele calls}} for {samples, plural, one {# sample} other {# samples}} at {targets, plural, one {# target} other {# targets}}, {alleles, plural, one {# distinct allele} other {# distinct alleles}}"
 msgstr ""
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "{alleleCount, plural, one {# microhaplotype} other {# microhaplotypes}}"
+msgstr ""
+
 #: src/features/pmo-file/summary/SequenceLabel.tsx
 msgid "{baseCount, plural, one {# base} other {# bases}}"
+msgstr ""
+
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "{chosenSampleName} at {chosenTargetName}: {chosenReadsLabel}, {chosenAllelesLabel}."
 msgstr ""
 
 #. {column} starts the sentence and names a column, with any article, such as 'Column "Host taxon"'. {row} is one row without an article, such as 'row 5'.
@@ -557,10 +565,6 @@ msgstr ""
 msgid "{hoverCount, plural, one {{hoverPeriod}: # specimen} other {{hoverPeriod}: # specimens}}"
 msgstr ""
 
-#: src/features/pmo-file/summary/ReadsGrid.tsx
-msgid "{hoveredReads} reads"
-msgstr ""
-
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "{hoverName}: {hoverDensity} per µL, {hoverTargets} targets with data."
 msgstr ""
@@ -752,6 +756,10 @@ msgstr ""
 
 #: src/domain/build/merge.ts
 msgid "{projectCount, plural, one {There is # project, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.} other {There are # projects, so each specimen needs to name its project. Choose the project name column of the specimen table, and fill it in for every specimen.}}"
+msgstr ""
+
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "{readCount, plural, one {# read} other {# reads}}"
 msgstr ""
 
 #: src/features/pmo-file/summary/QualityViews.tsx
@@ -1180,7 +1188,7 @@ msgid "A draft was started. You can finish it on Zenodo, or delete it there and 
 msgstr ""
 
 #: src/features/pmo-file/summary/ReadsGrid.tsx
-msgid "A grid of reads for {sampleCount} samples at {targetCount} targets. The tables below give the same figures."
+msgid "A grid of reads for {sampleCount} samples at {targetCount} targets. Use the arrow keys to move between cells and read each sample and target's figures. The tables below give totals per sample and per target, not individual cells."
 msgstr ""
 
 #: src/features/librarySamples/LibrarySamplesStep.tsx
@@ -1740,6 +1748,10 @@ msgstr ""
 msgid "Choose {fileLabel} file"
 msgstr ""
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "Choose a cell or use the arrow keys to inspect a sample and target."
+msgstr ""
+
 #: src/features/bioinformatics/RunsPart.tsx
 #: src/features/shared/RunNameChoice.tsx
 #: src/features/table-import/FieldRow.tsx
@@ -2281,7 +2293,7 @@ msgid "Each program the pipeline ran, in order. Most pipelines need only the mai
 msgstr ""
 
 #: src/features/pmo-file/summary/SummaryPanel.tsx
-msgid "Each row is a library sample and each column a target. The colour shows the reads, as in the legend below the grid. Hover over a cell to see its numbers."
+msgid "Each row is a library sample and each column a target. The colour shows the reads, as in the legend below the grid. Choose a cell to see its numbers and find its sample and target below."
 msgstr ""
 
 #: src/features/librarySamples/LibrarySamplesStep.tsx
@@ -3633,6 +3645,11 @@ msgstr ""
 
 #: src/features/published/PublishedPage.tsx
 msgid "No published PMO matches"
+msgstr ""
+
+#. Part of a chosen reads-grid cell summary
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "no reads"
 msgstr ""
 
 #: src/features/pmo-file/summary/ReadsGrid.tsx
@@ -5671,6 +5688,10 @@ msgstr ""
 msgid "Target \"{targetName}\" is defined differently in panel \"{panelName}\" than in an earlier panel. The first definition is kept."
 msgstr ""
 
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "Target {startNumber}"
+msgstr ""
+
 #. Heading for a group of optional fields in the column-matching editor
 #. Heading for a group of optional fields in the column-matching editor
 #: src/domain/fields/panel.ts
@@ -5717,6 +5738,10 @@ msgstr ""
 #: src/features/pmo-file/TablesPanel.tsx
 #: src/features/review/PmoContents.tsx
 msgid "Targets"
+msgstr ""
+
+#: src/features/pmo-file/summary/ReadsGrid.tsx
+msgid "Targets {startNumber}–{endNumber}"
 msgstr ""
 
 #. Short name of the Targets section

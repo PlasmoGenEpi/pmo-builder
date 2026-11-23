@@ -321,4 +321,101 @@ describe("SortableTable", () => {
     expect(rowButton).not.toHaveClass("h-auto!");
     expect(rowButton.querySelector("span")).toBeNull();
   });
+
+  it("marks a selected row without onRowSelect, clears a hiding search, and scrolls it inside the table container", async () => {
+    const user = userEvent.setup();
+    const rows: readonly TargetRow[] = Array.from({ length: 8 }, (_, index) => ({
+      name: `sample_${index + 1}`,
+      heterozygosity: index * 0.1,
+    }));
+
+    function Harness() {
+      const [selected, setSelected] = useState<string | null>(null);
+      const [scrollToRow, setScrollToRow] = useState<{
+        readonly key: string;
+        readonly seq: number;
+      } | null>(null);
+      return (
+        <div>
+          <button
+            type="button"
+            onClick={() => {
+              setSelected("sample_7");
+              setScrollToRow((before) => ({ key: "sample_7", seq: (before?.seq ?? 0) + 1 }));
+            }}
+          >
+            Jump to sample_7
+          </button>
+          <SortableTable
+            label="Samples"
+            columns={TARGET_COLUMNS}
+            rows={rows}
+            rowKey={(row) => row.name}
+            selectedKey={selected}
+            scrollToRow={scrollToRow}
+            searchableColumns={["name"]}
+          />
+        </div>
+      );
+    }
+
+    render(<Harness />);
+    const scrollRegion = screen.getByRole("region", { name: "Samples" });
+    const scrollToSpy = vi.fn<(options: ScrollToOptions) => void>();
+    Object.defineProperty(scrollRegion, "scrollTo", { value: scrollToSpy, configurable: true });
+    scrollRegion.getBoundingClientRect = () => ({
+      top: 100,
+      bottom: 220,
+      left: 0,
+      right: 400,
+      width: 400,
+      height: 120,
+      x: 0,
+      y: 100,
+      toJSON: () => ({}),
+    });
+
+    // Narrow the search so sample_7 is hidden.
+    const search = screen.getByRole("searchbox", { name: "Search Samples" });
+    await user.type(search, "sample_1");
+    expect(screen.queryByText("sample_7")).not.toBeInTheDocument();
+
+    // Selecting sample_7 from outside clears the hiding search and marks the row.
+    await user.click(screen.getByRole("button", { name: "Jump to sample_7" }));
+    expect(search).toHaveValue("");
+    const sample7Row = screen.getByText("sample_7").closest("tr");
+    if (sample7Row === null) throw new Error("Expected sample_7 row");
+    expect(sample7Row).toHaveAttribute("aria-current", "true");
+
+    // Position the row below the scroll container viewport and re-trigger scrolling.
+    sample7Row.getBoundingClientRect = () => ({
+      top: 320,
+      bottom: 350,
+      left: 0,
+      right: 400,
+      width: 400,
+      height: 30,
+      x: 0,
+      y: 320,
+      toJSON: () => ({}),
+    });
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn<(query: string) => MediaQueryList>().mockReturnValue({
+      matches: true,
+      media: "(prefers-reduced-motion: reduce)",
+      onchange: null,
+      addListener: vi.fn<() => void>(),
+      removeListener: vi.fn<() => void>(),
+      addEventListener: vi.fn<() => void>(),
+      removeEventListener: vi.fn<() => void>(),
+      dispatchEvent: vi.fn<() => boolean>(),
+    });
+    try {
+      await user.click(screen.getByRole("button", { name: "Jump to sample_7" }));
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+
+    expect(scrollToSpy).toHaveBeenCalledWith({ top: 130, behavior: "auto" });
+  });
 });

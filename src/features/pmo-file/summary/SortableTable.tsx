@@ -1,6 +1,6 @@
 import { plural, t } from "@lingui/core/macro";
 import { ArrowDown, ArrowUp, ArrowUpDown, Download, X } from "lucide-react";
-import { useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { TableFormat } from "@/domain/tools/types";
 import { Button, TextField, cn, formatCount } from "@/ui";
@@ -40,6 +40,12 @@ export interface SortableTableProps<Row> {
   /** Makes rows choosable; the chosen one is marked. */
   readonly onRowSelect?: (row: Row) => void;
   readonly selectedKey?: string | null;
+  /**
+   * Scrolls the matching row into view inside the table's scroll container,
+   * clearing an active search first if it hides that row. Increment `seq` to
+   * scroll to the same key again.
+   */
+  readonly scrollToRow?: { readonly key: string; readonly seq: number } | null;
   /** The column sorted by at first, and its direction. */
   readonly initialSort?: { readonly key: string; readonly descending: boolean };
   /** Column keys searched when the table has more than a handful of rows. */
@@ -63,6 +69,7 @@ export function SortableTable<Row>({
   rowKey,
   onRowSelect,
   selectedKey = null,
+  scrollToRow = null,
   initialSort,
   searchableColumns,
   searchPlaceholder,
@@ -70,8 +77,13 @@ export function SortableTable<Row>({
 }: SortableTableProps<Row>) {
   const [sort, setSort] = useState(initialSort ?? null);
   const [query, setQuery] = useState("");
+  const [handledScrollSeq, setHandledScrollSeq] = useState<number | null>(null);
   const tableId = useId();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const scrollRegionRef = useRef<HTMLElement>(null);
+  const theadRef = useRef<HTMLTableSectionElement>(null);
+  const rowElements = useRef(new Map<string, HTMLTableRowElement>());
+  const lastScrolledSeq = useRef<number | null>(null);
 
   const showSearch =
     searchableColumns !== undefined &&
@@ -92,6 +104,17 @@ export function SortableTable<Row>({
     );
   }, [rows, columns, searchableColumns, activeQuery]);
 
+  if (scrollToRow !== null && scrollToRow.seq !== handledScrollSeq) {
+    setHandledScrollSeq(scrollToRow.seq);
+    if (
+      activeQuery !== "" &&
+      rows.some((row) => rowKey(row) === scrollToRow.key) &&
+      !filtered.some((row) => rowKey(row) === scrollToRow.key)
+    ) {
+      setQuery("");
+    }
+  }
+
   const sorted = useMemo(() => {
     const column = columns.find((candidate) => candidate.key === sort?.key);
     if (column === undefined || sort === null) return filtered;
@@ -104,6 +127,46 @@ export function SortableTable<Row>({
       return sort.descending ? -order : order;
     });
   }, [filtered, columns, sort]);
+
+  const scrollTargetPresent =
+    scrollToRow !== null && sorted.some((row) => rowKey(row) === scrollToRow.key);
+
+  useEffect(() => {
+    if (
+      scrollToRow === null ||
+      !scrollTargetPresent ||
+      lastScrolledSeq.current === scrollToRow.seq
+    ) {
+      return;
+    }
+    const container = scrollRegionRef.current;
+    const rowElement = rowElements.current.get(scrollToRow.key);
+    if (container === null || rowElement === undefined) return;
+    lastScrolledSeq.current = scrollToRow.seq;
+
+    const headerHeight = theadRef.current?.offsetHeight ?? 0;
+    const containerRect = container.getBoundingClientRect();
+    const rowRect = rowElement.getBoundingClientRect();
+    const visibleTop = containerRect.top + headerHeight;
+    const visibleBottom = containerRect.bottom;
+    let targetTop = container.scrollTop;
+    if (rowRect.top < visibleTop) {
+      targetTop += rowRect.top - visibleTop;
+    } else if (rowRect.bottom > visibleBottom) {
+      targetTop += rowRect.bottom - visibleBottom;
+    } else {
+      return;
+    }
+    const clampedTop = Math.max(0, targetTop);
+    const reducedMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (typeof container.scrollTo === "function") {
+      container.scrollTo({ top: clampedTop, behavior: reducedMotion ? "auto" : "smooth" });
+    } else {
+      container.scrollTop = clampedTop;
+    }
+  }, [scrollToRow, scrollTargetPresent]);
 
   const title = label;
   const format: TableFormat = download?.format ?? "csv";
@@ -128,6 +191,7 @@ export function SortableTable<Row>({
 
   const tableRegion = (
     <section
+      ref={scrollRegionRef}
       aria-label={label}
       // Focusable so keyboard users can scroll it.
       // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
@@ -135,7 +199,7 @@ export function SortableTable<Row>({
       className="max-h-[28rem] overflow-auto rounded-lg border border-border focus-visible:outline-offset-0"
     >
       <table id={tableId} className="w-full border-collapse text-sm" aria-label={label}>
-        <thead className="sticky top-0 z-10 bg-surface-subtle">
+        <thead ref={theadRef} className="sticky top-0 z-10 bg-surface-subtle">
           <tr>
             {columns.map((column) => {
               const active = sort?.key === column.key;
@@ -193,6 +257,14 @@ export function SortableTable<Row>({
               return (
                 <tr
                   key={key}
+                  ref={(node) => {
+                    if (node === null) {
+                      rowElements.current.delete(key);
+                    } else {
+                      rowElements.current.set(key, node);
+                    }
+                  }}
+                  aria-current={selected && onRowSelect === undefined ? "true" : undefined}
                   onClick={onRowSelect === undefined ? undefined : () => onRowSelect(row)}
                   className={cn(
                     "border-b border-border last:border-b-0",
@@ -206,6 +278,8 @@ export function SortableTable<Row>({
                       className={cn(
                         "px-3 py-1.5 text-text",
                         column.numeric ? "text-right tabular-nums" : "break-all",
+                        index === 0 && selected && "border-l-4 border-l-accent",
+                        index === 0 && selected && onRowSelect === undefined && "font-medium",
                       )}
                     >
                       {index === 0 && onRowSelect !== undefined ? (

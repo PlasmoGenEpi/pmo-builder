@@ -50,7 +50,7 @@ function makePlateSummary(samples: readonly SampleSummary[]): PmoSummary {
     })),
     reactions: [],
     stages: [],
-    grid: { columns: maxTargets, reads: [] },
+    grid: { columns: maxTargets, reads: [], alleles: [] },
   };
 }
 

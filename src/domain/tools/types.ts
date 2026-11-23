@@ -308,10 +308,15 @@ export interface PmoSummary {
   /** Every target, in the order of the panel's target table. */
   readonly targets: readonly TargetSummary[];
   /**
-   * Reads per sample and target: row `i` is `samples[i]`, column `j` is
-   * `targets[j]`, stored row by row. `0` where nothing was counted.
+   * Reads and microhaplotype counts per sample and target: row `i` is
+   * `samples[i]`, column `j` is `targets[j]`, stored row by row. `0` where
+   * nothing was counted.
    */
-  readonly grid: { readonly columns: number; readonly reads: readonly number[] };
+  readonly grid: {
+    readonly columns: number;
+    readonly reads: readonly number[];
+    readonly alleles: readonly number[];
+  };
   /** The pipeline stages in the read counts by stage, in the order first given. */
   readonly stages: readonly string[];
   /** The panels' reactions, in order. */
