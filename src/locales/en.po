@@ -284,6 +284,10 @@ msgstr "{0, plural, one {This needs {neededFields} as well. Match it too, or set
 msgid "{0, plural, one {This workbook has # sheet. Choose the one that holds “{tableName}”.} other {This workbook has # sheets. Choose the one that holds “{tableName}”.}}"
 msgstr "{0, plural, one {This workbook has # sheet. Choose the one that holds “{tableName}”.} other {This workbook has # sheets. Choose the one that holds “{tableName}”.}}"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{absentCount, plural, one {# microhaplotype is absent from every group shown.} other {# microhaplotypes are absent from every group shown.}}"
+msgstr "{absentCount, plural, one {# microhaplotype is absent from every group shown.} other {# microhaplotypes are absent from every group shown.}}"
+
 #: src/features/pmo-file/summary/QualityViews.tsx
 msgid "{activeTargets, plural, one {{activePlate}, well {activeCoord}, {activeSampleName}: # target with data.} other {{activePlate}, well {activeCoord}, {activeSampleName}: # targets with data.}}"
 msgstr "{activeTargets, plural, one {{activePlate}, well {activeCoord}, {activeSampleName}: # target with data.} other {{activePlate}, well {activeCoord}, {activeSampleName}: # targets with data.}}"
@@ -552,6 +556,10 @@ msgstr "{firstYear} to {lastYear}"
 #: src/features/review/ThingsToCheck.tsx
 msgid "{hidden, plural, one {and # more like this.} other {and # more like these.}}"
 msgstr "{hidden, plural, one {and # more like this.} other {and # more like these.}}"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{hiddenByLimit, plural, one {# rarer microhaplotype is not shown.} other {# rarer microhaplotypes are not shown.}}"
+msgstr "{hiddenByLimit, plural, one {# rarer microhaplotype is not shown.} other {# rarer microhaplotypes are not shown.}}"
 
 #: src/ui/CodeBlock.tsx
 msgid "{hiddenSize} not shown"
@@ -894,6 +902,10 @@ msgstr "{runCount, plural, one {There is # sequencing run, so each library sampl
 #: src/domain/build/merge.ts
 msgid "{runCount, plural, one {There is # sequencing run, so each library sample needs to name its run. Choose the sequencing run name column of the library sample table, and fill it in for every library sample.} other {There are # sequencing runs, so each library sample needs to name its run. Choose the sequencing run name column of the library sample table, and fill it in for every library sample.}}"
 msgstr "{runCount, plural, one {There is # sequencing run, so each library sample needs to name its run. Choose the sequencing run name column of the library sample table, and fill it in for every library sample.} other {There are # sequencing runs, so each library sample needs to name its run. Choose the sequencing run name column of the library sample table, and fill it in for every library sample.}}"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "{sampleCount, plural, one {# sample with data} other {# samples with data}}"
+msgstr "{sampleCount, plural, one {# sample with data} other {# samples with data}}"
 
 #: src/features/pmo-file/summary/AlleleBars.tsx
 msgid "{sampleCount, plural, one {Microhaplotypes at {targetName}, seen in # sample} other {Microhaplotypes at {targetName}, seen in # samples}}"
@@ -1595,6 +1607,10 @@ msgstr "Authors"
 msgid "Back"
 msgstr "Back"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Back to heterozygosity"
+msgstr "Back to heterozygosity"
+
 #: src/domain/fields/microhaplotypes.ts
 msgid "Base quality"
 msgstr "Base quality"
@@ -1899,6 +1915,11 @@ msgstr "Collection method"
 #: src/features/pmo-file/specimenFieldNames.ts
 msgid "Collection month"
 msgstr "Collection month"
+
+#. Short name of the section 'When specimens were collected'
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Collection timeline"
+msgstr "Collection timeline"
 
 #: src/features/pmo-file/specimenFieldNames.ts
 msgid "Collection year"
@@ -2400,6 +2421,10 @@ msgid "Everything you type and every column you match."
 msgstr "Everything you type and every column you match."
 
 #: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Expected heterozygosity (0 to 1)"
+msgstr "Expected heterozygosity (0 to 1)"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
 msgid "Expected heterozygosity of each target in each group: 1 minus the sum of squared allele frequencies."
 msgstr "Expected heterozygosity of each target in each group: 1 minus the sum of squared allele frequencies."
 
@@ -2677,6 +2702,11 @@ msgstr "Group targets by reaction"
 #: src/features/pmo-file/summary/CompareTab.tsx
 msgid "Groups"
 msgstr "Groups"
+
+#. {threshold} is a number of samples, such as 10
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Groups marked with a warning have fewer than {threshold} samples with data. Read their percentages with care."
+msgstr "Groups marked with a warning have fewer than {threshold} samples with data. Read their percentages with care."
 
 #. Part of a sentence: a verb phrase that follows 'It', as in 'It has characters ...'. Several such phrases may be joined with ', and it'.
 #: src/domain/build/merge.ts
@@ -3198,6 +3228,7 @@ msgstr "List"
 
 #: src/app/App.tsx
 #: src/app/privacy/PrivacyIndicator.tsx
+#: src/features/pmo-file/summary/CompareTab.tsx
 #: src/features/published/CatalogueProblem.tsx
 #: src/ui/Spinner.tsx
 msgid "Loading"
@@ -3490,8 +3521,8 @@ msgid "More than one clone"
 msgstr "More than one clone"
 
 #: src/features/pmo-file/summary/CompareTab.tsx
-msgid "More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group."
-msgstr "More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group."
+msgid "More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group. Alleles seen is the number of distinct alleles found in the group across targets."
+msgstr "More than one clone is the share of samples with data that have two or more alleles at some target. Mean heterozygosity is over the targets with data in the group. Alleles seen is the number of distinct alleles found in the group across targets."
 
 #. {field} is a PMO field name. {columns} is a list of quoted column names.
 #: src/domain/build/notices.ts
@@ -3528,6 +3559,11 @@ msgstr "Move to a cell to read its figures. Choose a cell to filter by country a
 #: src/features/pmo-file/PmoFilePage.tsx
 msgid "My PMO file"
 msgstr "My PMO file"
+
+#. Compact sample count in a table column heading, e.g. n = 14
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "n = {count}"
+msgstr "n = {count}"
 
 #: src/features/records/ExtraDetails.tsx
 msgid "Name of detail {number}"
@@ -3614,6 +3650,10 @@ msgstr "No method is ready yet. Finish the methods table above."
 #: src/features/bioinformatics/RunsPart.tsx
 msgid "No methods yet"
 msgstr "No methods yet"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "No microhaplotypes of this target were seen in the groups shown."
+msgstr "No microhaplotypes of this target were seen in the groups shown."
 
 #: src/features/pmo-file/summary/AlleleBars.tsx
 msgid "No microhaplotypes were counted at {targetName}."
@@ -3702,6 +3742,10 @@ msgstr "No target is ticked yet."
 #: src/app/privacy/UsageNotice.tsx
 msgid "No usage counts will be sent"
 msgstr "No usage counts will be sent"
+
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "No value (unshaded)"
+msgstr "No value (unshaded)"
 
 #. The choice of no column in a list of columns
 #: src/ui/Combobox.tsx
@@ -5291,6 +5335,10 @@ msgstr "Show all {total}"
 msgid "Show fewer"
 msgstr "Show fewer"
 
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Show microhaplotypes absent from every group"
+msgstr "Show microhaplotypes absent from every group"
+
 #: src/features/published/PublishedPage.tsx
 #: src/ui/CodeBlock.tsx
 msgid "Show more"
@@ -5315,6 +5363,11 @@ msgstr "Sign in to Zenodo and deposit"
 #: src/app/Layout.tsx
 msgid "Skip to content"
 msgstr "Skip to content"
+
+#. Accessible explanation on a warning mark next to a small group; {threshold} is a sample count such as 10
+#: src/features/pmo-file/summary/CompareTab.tsx
+msgid "Small group (fewer than {threshold} samples with data)"
+msgstr "Small group (fewer than {threshold} samples with data)"
 
 #: src/features/review/zenodo.ts
 msgid "Smallest administrative area"

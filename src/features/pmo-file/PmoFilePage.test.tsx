@@ -1964,11 +1964,19 @@ describe("PmoFilePage: compare", () => {
       name: "Sort by Mean heterozygosity",
     });
     await user.click(sortByMeanHe);
-    expect(columnOf(groups, /^Group/)).toEqual(["Kenya", "Mozambique", "Uganda"]);
+    expect(columnOf(groups, /^Group/)).toEqual([
+      expect.stringMatching(/^Kenya\b/),
+      expect.stringMatching(/^Mozambique\b/),
+      expect.stringMatching(/^Uganda\b/),
+    ]);
     expect(columnOf(groups, /Mean heterozygosity/).at(-1)).toBe("–");
 
     await user.click(sortByMeanHe);
-    expect(columnOf(groups, /^Group/)).toEqual(["Mozambique", "Kenya", "Uganda"]);
+    expect(columnOf(groups, /^Group/)).toEqual([
+      expect.stringMatching(/^Mozambique\b/),
+      expect.stringMatching(/^Kenya\b/),
+      expect.stringMatching(/^Uganda\b/),
+    ]);
     expect(columnOf(groups, /Mean heterozygosity/).at(-1)).toBe("–");
 
     // Heterozygosity by target table: in Kenya, t1 is 0.5, t2 is 0, and t3 is missing (–).

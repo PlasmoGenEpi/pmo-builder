@@ -1,6 +1,14 @@
 import { plural, t } from "@lingui/core/macro";
 import { ArrowDown, ArrowUp, ArrowUpDown, Download, X } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
 import type { TableFormat } from "@/domain/tools/types";
 import { Button, TextField, cn, formatCount } from "@/ui";
@@ -18,8 +26,12 @@ export interface SortableColumn<Row> {
   readonly value: (row: Row) => string | number | null;
   /** How a cell shows. Default: the value. */
   readonly render?: (row: Row) => ReactNode;
+  /** Inline style for a cell, such as value shading. Omit or return `undefined` to leave unstyled. */
+  readonly cellStyle?: (row: Row) => CSSProperties | undefined;
   /** Right-aligned, for numbers. */
   readonly numeric?: boolean;
+  /** Secondary line rendered in the column heading below the sort button. */
+  readonly headerNote?: ReactNode;
 }
 
 /** Options for downloading a {@link SortableTable}'s rows as shown. */
@@ -65,6 +77,8 @@ export interface SortableTableProps<Row> {
   readonly searchPlaceholder?: string;
   /** Offers a browser-side download of the rows as shown, with the headings as on screen. */
   readonly download?: SortableTableDownload;
+  /** Keeps the first column in view while the table scrolls sideways. */
+  readonly stickyFirstColumn?: boolean;
 }
 
 function compareValues(a: string | number, b: string | number): number {
@@ -86,6 +100,7 @@ export function SortableTable<Row>({
   searchableColumns,
   searchPlaceholder,
   download,
+  stickyFirstColumn = false,
 }: SortableTableProps<Row>) {
   const [sort, setSort] = useState(initialSort ?? null);
   const [query, setQuery] = useState("");
@@ -208,23 +223,30 @@ export function SortableTable<Row>({
       // Focusable so keyboard users can scroll it.
       // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
       tabIndex={0}
-      className="max-h-[28rem] overflow-auto rounded-lg border border-border focus-visible:outline-offset-0"
+      className="max-h-112 overflow-auto rounded-lg border border-border bg-surface focus-visible:outline-offset-0"
     >
-      <table id={tableId} className="w-full border-collapse text-sm" aria-label={label}>
-        <thead ref={theadRef} className="sticky top-0 z-10 bg-surface-subtle">
+      <table
+        id={tableId}
+        className="w-full border-separate border-spacing-0 text-sm"
+        aria-label={label}
+      >
+        <thead ref={theadRef} className="bg-surface-subtle">
           <tr>
-            {columns.map((column) => {
+            {columns.map((column, index) => {
               const active = sort?.key === column.key;
               const Icon = !active ? ArrowUpDown : sort.descending ? ArrowDown : ArrowUp;
               const columnLabel = column.label;
+              const isSticky = stickyFirstColumn && index === 0;
               return (
                 <th
                   key={column.key}
                   scope="col"
                   aria-sort={!active ? "none" : sort.descending ? "descending" : "ascending"}
                   className={cn(
-                    "border-b border-border px-3 py-2 align-bottom font-medium text-text-muted",
+                    "sticky top-0 border-b border-b-border bg-surface-subtle px-3 py-2 align-bottom font-medium text-text-muted",
                     column.numeric ? "text-right" : "text-left",
+                    onRowSelect !== undefined && index === 0 && "border-l-4 border-l-transparent",
+                    isSticky ? "left-0 z-30 min-w-36 border-r border-r-border" : "z-20",
                   )}
                 >
                   <Button
@@ -247,6 +269,16 @@ export function SortableTable<Row>({
                     {column.label}
                     <Icon aria-hidden="true" className="size-3.5 shrink-0" />
                   </Button>
+                  {column.headerNote ? (
+                    <div
+                      className={cn(
+                        "mt-0.5 text-xs font-normal",
+                        column.numeric ? "text-right" : "text-left",
+                      )}
+                    >
+                      {column.headerNote}
+                    </div>
+                  ) : null}
                 </th>
               );
             })}
@@ -276,43 +308,60 @@ export function SortableTable<Row>({
                       rowElements.current.set(key, node);
                     }
                   }}
+                  data-selected={selected || undefined}
                   aria-current={selected && onRowSelect === undefined ? "true" : undefined}
                   onClick={onRowSelect === undefined ? undefined : () => onRowSelect(row)}
                   className={cn(
-                    "border-b border-border last:border-b-0",
-                    onRowSelect !== undefined && "cursor-pointer hover:bg-surface-muted",
+                    "group",
+                    onRowSelect !== undefined && "cursor-pointer",
                     selected && "bg-accent-subtle",
                   )}
                 >
-                  {columns.map((column, index) => (
-                    <td
-                      key={column.key}
-                      className={cn(
-                        "px-3 py-1.5 text-text",
-                        column.numeric ? "text-right tabular-nums" : "break-all",
-                        index === 0 && selected && "border-l-4 border-l-accent",
-                        index === 0 && selected && onRowSelect === undefined && "font-medium",
-                      )}
-                    >
-                      {index === 0 && onRowSelect !== undefined ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          wrap
-                          aria-pressed={selected}
-                          className="-mx-2.5 justify-start text-left text-accent-text"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onRowSelect(row);
-                          }}
-                        >
-                          {column.render?.(row) ?? column.value(row)}
-                        </Button>
-                      ) : (
-                        (column.render?.(row) ?? column.value(row) ?? "–")
-                      )}
-                    </td>
-                  ))}
+                  {columns.map((column, index) => {
+                    const isSticky = stickyFirstColumn && index === 0;
+                    return (
+                      <td
+                        key={column.key}
+                        style={column.cellStyle?.(row)}
+                        className={cn(
+                          "border-b px-3 py-1.5 text-text",
+                          column.numeric ? "text-right tabular-nums" : "break-all",
+                          selected
+                            ? "border-t border-t-accent border-b-accent bg-accent-subtle"
+                            : cn(
+                                "border-b-border group-last:border-b-0",
+                                onRowSelect !== undefined
+                                  ? "border-t border-t-transparent bg-surface group-hover:bg-surface-muted"
+                                  : "bg-surface",
+                              ),
+                          index === 0 &&
+                            (selected
+                              ? "border-l-4 border-l-accent"
+                              : onRowSelect !== undefined && "border-l-4 border-l-transparent"),
+                          index === 0 && selected && onRowSelect === undefined && "font-medium",
+                          isSticky && "sticky left-0 z-10 min-w-36 border-r border-r-border",
+                        )}
+                      >
+                        {index === 0 && onRowSelect !== undefined ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            wrap
+                            aria-pressed={selected}
+                            className="-mx-2.5 justify-start text-left text-accent-text"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onRowSelect(row);
+                            }}
+                          >
+                            {column.render?.(row) ?? column.value(row)}
+                          </Button>
+                        ) : (
+                          (column.render?.(row) ?? column.value(row) ?? "–")
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })

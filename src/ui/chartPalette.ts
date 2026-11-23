@@ -19,6 +19,17 @@ export const SEQUENTIAL: Readonly<Record<ChartTheme, readonly string[]>> = {
   dark: ["#104281", "#1c5cab", "#2a78d6", "#5598e7", "#86b6ef", "#b7d3f6", "#cde2fb"],
 };
 
+/**
+ * Opaque sequential cell shading ramp for numeric tables (0 to 1).
+ * Uses the same blue hue as {@link SEQUENTIAL}, bounded so body text (`--c-text`)
+ * stays above WCAG AA contrast (>= 5.5:1) at every point in both themes while
+ * remaining distinct from an unshaded surface cell.
+ */
+export const SEQUENTIAL_CELL: Readonly<Record<ChartTheme, readonly string[]>> = {
+  light: ["#eff6fe", "#cde2fb", "#9ec5f4", "#6da7ec"],
+  dark: ["#192436", "#15355e", "#104281", "#1c5cab"],
+};
+
 /** One series of marks (bars), blue 450 on light and 400 on dark. */
 export const SERIES: Readonly<Record<ChartTheme, string>> = {
   light: "#2a78d6",
