@@ -37,3 +37,21 @@ export function readBooleanCell(cell: string | null): BooleanCell {
   if (FALSE_SPELLINGS.has(folded)) return { kind: "value", value: false };
   return { kind: "invalid", text: cell };
 }
+
+/**
+ * Turns one raw yes-or-no cell into a typed builder value: `true`, `false`,
+ * `null` when blank, or the original text when invalid.
+ */
+export function booleanValue(cell: string | null): boolean | string | null {
+  const read = readBooleanCell(cell);
+  switch (read.kind) {
+    case "value":
+      return read.value;
+    case "blank":
+      return null;
+    case "invalid":
+      return read.text;
+    default:
+      return null;
+  }
+}

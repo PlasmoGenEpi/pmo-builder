@@ -1,4 +1,4 @@
-import { act, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { stringifyPmo, type PortableMicrohaplotypeObject } from "pmotools-ts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,7 +6,7 @@ import { Route, Switch } from "wouter";
 
 import { readPmoFile } from "@/domain/build/checkFile";
 import { buildExamplePmo } from "@/domain/build/testing";
-import { richPmo } from "@/domain/tools/testing";
+import { examplePmoWithReadCounts, richPmo } from "@/domain/tools/testing";
 import { readZip } from "@/domain/tools/zipTesting";
 import { saveFile } from "@/features/review/saveFile";
 import type { ZenodoConfig } from "@/features/review/zenodo";
@@ -76,7 +76,7 @@ async function renderPage(zenodo: ZenodoConfig | null = ZENODO, store = createTe
 
 async function open(file: File, zenodo: ZenodoConfig | null = ZENODO) {
   const rendered = await renderPage(zenodo);
-  await rendered.user.upload(screen.getByLabelText("Choose pmo file"), file);
+  await rendered.user.upload(screen.getByLabelText("Choose a PMO file"), file);
   return rendered;
 }
 
@@ -97,6 +97,23 @@ async function savedText(): Promise<{ readonly name: string; readonly text: stri
   if (call === undefined) throw new Error("nothing saved");
   const [blob, name] = call;
   return { name, text: await blob.text() };
+}
+
+async function savedSpecimenNames(): Promise<unknown[]> {
+  const parsed: unknown = JSON.parse((await savedText()).text);
+  if (
+    typeof parsed !== "object" ||
+    parsed === null ||
+    !("specimen_info" in parsed) ||
+    !Array.isArray(parsed.specimen_info)
+  ) {
+    return [];
+  }
+  return parsed.specimen_info.map((item: unknown) =>
+    typeof item === "object" && item !== null && "specimen_name" in item
+      ? item.specimen_name
+      : null,
+  );
 }
 
 beforeEach(() => {
@@ -137,10 +154,10 @@ describe("PmoFilePage: opening", () => {
   it("says when a file is not a PMO at all, and lets the user choose another", async () => {
     const { user } = await open(pmoFile("sample,reads\ns1,10\n", "table.json"));
     expect(await screen.findByText(/This is not a PMO file/)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Remove pmo file" }));
+    await user.click(screen.getByRole("button", { name: "Remove this PMO file" }));
     await act(() => Promise.resolve());
     expect(screen.queryByText(/This is not a PMO file/)).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Choose pmo file")).toBeInTheDocument();
+    expect(screen.getByLabelText("Choose a PMO file")).toBeInTheDocument();
   });
 
   it("keeps the file open when the page is left and opened again", async () => {
@@ -151,9 +168,76 @@ describe("PmoFilePage: opening", () => {
     expect(screen.getByText("This file is a valid PMO")).toBeInTheDocument();
     expect(screen.getByText("study.json")).toBeInTheDocument();
   });
+
+  it("shows the full drop area with no file open, and one compact header bar once opened", async () => {
+    const { user } = await renderPage(ZENODO);
+    expect(
+      screen.getByRole("button", { name: /PMO: Drag a file here or choose a file/ }),
+    ).toBeInTheDocument();
+
+    const file = pmoFile(ownPmo(), "lab-run.json");
+    await user.upload(screen.getByLabelText("Choose a PMO file"), file);
+    await screen.findByText("This file is a valid PMO");
+
+    expect(
+      screen.queryByRole("button", { name: /PMO: Drag a file here or choose a file/ }),
+    ).not.toBeInTheDocument();
+
+    const heading = screen.getByRole("heading", { level: 1, name: "lab-run.json" });
+    const bar = heading.closest("header");
+    expect(bar).not.toBeNull();
+    if (bar === null) return;
+
+    expect(within(bar).getByRole("button", { name: "Replace this PMO file" })).toBeInTheDocument();
+    expect(within(bar).getByRole("button", { name: "Remove this PMO file" })).toBeInTheDocument();
+    expect(within(bar).queryByRole("radiogroup", { name: "Work with" })).not.toBeInTheDocument();
+
+    // Once a subset exists, the Original/Subset choice sits in the same compact bar.
+    await makeSubset(user, 3);
+    expect(within(bar).getByRole("radiogroup", { name: "Work with" })).toBeInTheDocument();
+
+    // Dropping an unsupported file onto the bar warns without closing the open PMO.
+    fireEvent.drop(bar, {
+      dataTransfer: {
+        files: [new File(["%PDF"], "notes.pdf", { type: "application/pdf" })],
+        types: ["Files"],
+      },
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(/notes\.pdf is not a file type/);
+    expect(screen.getByRole("tab", { name: "Summary" })).toBeInTheDocument();
+
+    // Removing closes the file and brings back the full drop area.
+    await user.click(within(bar).getByRole("button", { name: "Remove this PMO file" }));
+    await act(() => Promise.resolve());
+    expect(
+      screen.getByRole("button", { name: /PMO: Drag a file here or choose a file/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Summary" })).not.toBeInTheDocument();
+  });
 });
 
 describe("PmoFilePage: opening the built PMO", () => {
+  it("lands on the Summary tab when opening the built PMO", async () => {
+    installBlobStream();
+    const store = createTestStore();
+    await store.getState().actions.initialise();
+    await act(() => store.getState().actions.loadExample());
+    await act(() => store.getState().actions.flush());
+    const routes = (
+      <Switch>
+        <Route path="/pmo">
+          <PmoFilePage zenodo={ZENODO} />
+        </Route>
+        <Route path="/pmo/:tab">
+          <PmoFileRoute />
+        </Route>
+      </Switch>
+    );
+    await renderWithStore(routes, { store, path: OPEN_BUILT_PATH });
+    expect(await screen.findByRole("tab", { name: "Summary", selected: true })).toBeInTheDocument();
+    expect(await screen.findByText("Reads by sample and target")).toBeInTheDocument();
+  });
+
   it("finishes opening the built PMO when the page is left meanwhile", async () => {
     installBlobStream();
     const store = createTestStore();
@@ -171,6 +255,7 @@ describe("PmoFilePage: opening the built PMO", () => {
       </Switch>
     );
     const opening = await renderWithStore(routes, { store, path: OPEN_BUILT_PATH });
+    expect(screen.getByRole("heading", { level: 1, name: "My PMO file" })).toBeInTheDocument();
     expect(screen.getByText("Opening the PMO built from your draft")).toBeInTheDocument();
     // Left before the open finishes.
     opening.unmount();
@@ -195,6 +280,7 @@ describe("PmoFilePage: when the built PMO cannot be opened", () => {
   it("says there is no built PMO when the draft builds none", async () => {
     await renderWithStore(ROUTES, { path: OPEN_BUILT_PATH });
     expect(await screen.findByText("There is no built PMO to open")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "My PMO file" })).toBeInTheDocument();
   });
 
   it("says the built PMO could not be opened when exporting it fails", async () => {
@@ -280,6 +366,256 @@ describe("PmoFilePage: tables", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/could not be made/)).not.toBeInTheDocument();
     expect(saveFile).not.toHaveBeenCalled();
+  });
+
+  it("lists and downloads read counts by stage on the example PMO, and includes it in the zip", async () => {
+    const { user } = await open(pmoFile(examplePmoWithReadCounts()));
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+    const downloadButton = screen.getByRole("button", {
+      name: "Download Read counts by stage as csv",
+    });
+    const row = downloadButton.closest("li");
+    if (row === null) throw new Error("expected list item");
+    expect(within(row).getByText("Read counts by stage")).toBeInTheDocument();
+    expect(
+      within(row).getByText(
+        "One row per library sample, target and pipeline stage, with total raw reads.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(row).getByText("8 rows")).toBeInTheDocument();
+
+    await user.click(downloadButton);
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    const csv = await savedText();
+    expect(csv.name).toBe("study-read-counts.csv");
+    expect(csv.text.trimEnd().split("\n")[0]).toBe(
+      "library_sample_name,total_raw_count,target_name,stage,reads",
+    );
+    expect(csv.text.trimEnd().split("\n")).toHaveLength(9);
+
+    vi.mocked(saveFile).mockReset();
+    await user.click(screen.getByRole("radio", { name: "TSV" }));
+    await user.click(screen.getByRole("button", { name: "Download Read counts by stage as tsv" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    const tsv = await savedText();
+    expect(tsv.name).toBe("study-read-counts.tsv");
+    expect(tsv.text.trimEnd().split("\n")[0]).toBe(
+      "library_sample_name\ttotal_raw_count\ttarget_name\tstage\treads",
+    );
+
+    vi.mocked(saveFile).mockReset();
+    await user.click(screen.getByRole("button", { name: "Download all tables (.zip)" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    const [blob] = vi.mocked(saveFile).mock.calls.at(-1) ?? [];
+    if (blob === undefined) throw new Error("nothing saved");
+    const files = await readZip(blob);
+    expect(files.map((file) => file.name)).toContain("study-read-counts.tsv");
+  });
+
+  it("does not list read counts by stage when the PMO has none", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+    expect(screen.queryByText("Read counts by stage")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^Download Read counts by stage/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("updates or hides read counts by stage when switching between original and subset", async () => {
+    const { user } = await open(pmoFile(richPmo()));
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+    expect(screen.getByText("Read counts by stage")).toBeInTheDocument();
+    const originalItem = screen
+      .getByRole("button", { name: "Download Read counts by stage as csv" })
+      .closest("li");
+    if (originalItem === null) throw new Error("expected list item");
+    expect(within(originalItem).getByText("3 rows")).toBeInTheDocument();
+
+    // Subset to spec2, which has no read counts.
+    await user.click(screen.getByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: "Specimens I tick" }));
+    const specimens = screen.getByRole("group", { name: "Specimens" });
+    await user.click(within(specimens).getByRole("checkbox", { name: /spec2/ }));
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    await screen.findByText("The subset is ready");
+
+    await user.click(screen.getByRole("tab", { name: "Tables" }));
+    expect(screen.getByRole("radio", { name: "Subset" })).toBeChecked();
+    expect(screen.queryByText("Read counts by stage")).not.toBeInTheDocument();
+
+    // Switching back to Original brings it back.
+    await user.click(screen.getByRole("radio", { name: "Original" }));
+    expect(screen.getByText("Read counts by stage")).toBeInTheDocument();
+  });
+
+  it("loads a table preview only when opened, shows a loading state, then renders the first 20 rows and toggles from the keyboard", async () => {
+    const engine = createInThreadEngine();
+    const held = new Gate();
+    const kinds: string[] = [];
+    const { user } = await openWithEngine(pmoFile(EXAMPLE), {
+      ...engine,
+      workingPmo: async (call) => {
+        kinds.push(call.request.kind);
+        if (call.request.kind === "tablePreview") await held.promise;
+        return engine.workingPmo(call);
+      },
+    });
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+
+    // Opening the tab does not request any table preview yet.
+    expect(kinds).not.toContain("tablePreview");
+
+    const toggle = screen.getByRole("button", { name: "Preview Allele table" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    toggle.focus();
+    await user.keyboard("{Enter}");
+
+    expect(kinds).toContain("tablePreview");
+    expect(await screen.findByText("Loading preview")).toBeInTheDocument();
+    const hideToggle = screen.getByRole("button", { name: "Hide preview of Allele table" });
+    expect(hideToggle).toHaveAttribute("aria-expanded", "true");
+
+    await act(async () => held.open());
+
+    const previewRegion = await screen.findByRole("region", { name: "Preview of Allele table" });
+    expect(previewRegion).toHaveAttribute("tabindex", "0");
+    const table = within(previewRegion).getByRole("table");
+    const headers = within(table)
+      .getAllByRole("columnheader")
+      .map((cell) => cell.textContent);
+    expect(headers).toEqual([
+      "Row#",
+      "library_sample_name",
+      "target_name",
+      "seq",
+      "bioinformatics_run_name",
+      "reads",
+    ]);
+    // 1 header row + 20 preview rows.
+    const rows = within(table).getAllByRole("row");
+    expect(rows).toHaveLength(21);
+
+    // Count line matches the whole allele table's row count.
+    const alleleRowCount = EXAMPLE.detected_microhaplotypes.reduce(
+      (sum, run) =>
+        sum +
+        run.library_samples.reduce(
+          (sSum, sample) =>
+            sSum + sample.target_results.reduce((tSum, result) => tSum + result.mhaps.length, 0),
+          0,
+        ),
+      0,
+    );
+    expect(
+      screen.getByText(`Showing 20 of ${alleleRowCount.toLocaleString("en")} rows`),
+    ).toBeInTheDocument();
+
+    // Closing from the keyboard removes the preview.
+    hideToggle.focus();
+    await user.keyboard(" ");
+    expect(
+      screen.queryByRole("region", { name: "Preview of Allele table" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Preview Allele table" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+  });
+
+  it("previews read counts by stage and single-row tables with their exact row count line", async () => {
+    const { user } = await open(pmoFile(examplePmoWithReadCounts()));
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+
+    await user.click(screen.getByRole("button", { name: "Preview Read counts by stage" }));
+    const countsRegion = await screen.findByRole("region", {
+      name: "Preview of Read counts by stage",
+    });
+    const countsTable = within(countsRegion).getByRole("table");
+    const countRows = within(countsTable).getAllByRole("row");
+    expect(countRows).toHaveLength(9);
+    const firstRow = countRows[1];
+    if (firstRow === undefined) throw new Error("expected data row");
+    expect(
+      within(firstRow)
+        .getAllByRole("cell")
+        .map((cell) => cell.textContent),
+    ).toEqual(["example_sample_01", "10", "Pf3D7_01_v3-145388-145662-1A", "demux", "10"]);
+    expect(screen.getByText("Showing 8 of 8 rows")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Preview File header" }));
+    expect(
+      await screen.findByRole("region", { name: "Preview of File header" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Showing 1 of 1 row")).toBeInTheDocument();
+  });
+
+  it("updates an open preview when switching between Original and Subset", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await makeSubset(user, 3);
+    await user.click(screen.getByRole("tab", { name: "Tables" }));
+    expect(screen.getByRole("radio", { name: "Subset" })).toBeChecked();
+
+    await user.click(screen.getByRole("button", { name: "Preview Specimens" }));
+    const subsetRegion = await screen.findByRole("region", { name: "Preview of Specimens" });
+    expect(within(subsetRegion).getAllByRole("row")).toHaveLength(4);
+    expect(screen.getByText("Showing 3 of 3 rows")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: "Original" }));
+    expect(
+      await screen.findByText(`Showing 20 of ${EXAMPLE.specimen_info.length} rows`),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("region", { name: "Preview of Specimens" })).getAllByRole("row"),
+    ).toHaveLength(21);
+  });
+
+  it("shows an accessible notice when a table preview fails", async () => {
+    const { engine } = watchedEngine((kind) =>
+      kind === "tablePreview" ? { kind: "failed", message: "out of memory" } : null,
+    );
+    const { user } = await openWithEngine(pmoFile(EXAMPLE), engine);
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+    await user.click(screen.getByRole("button", { name: "Preview Allele table" }));
+    expect(await screen.findByText("The preview could not be loaded")).toBeInTheDocument();
+    expect(screen.queryByText(/out of memory/)).not.toBeInTheDocument();
+  });
+
+  it("formats boolean cells in table previews as True/False to match the downloaded CSV", async () => {
+    const base = richPmo();
+    const withBooleans: PortableMicrohaplotypeObject = {
+      ...base,
+      specimen_info: [
+        { ...base.specimen_info[0], specimen_name: "spec1", has_symptoms: true },
+        { ...base.specimen_info[1], specimen_name: "spec2", has_symptoms: false },
+        { ...base.specimen_info[2], specimen_name: "neg" },
+      ],
+    };
+    const { user } = await open(pmoFile(withBooleans));
+    await user.click(await screen.findByRole("tab", { name: "Tables" }));
+
+    await user.click(screen.getByRole("button", { name: "Preview Specimens" }));
+    const previewRegion = await screen.findByRole("region", { name: "Preview of Specimens" });
+    const table = within(previewRegion).getByRole("table");
+    const headers = within(table)
+      .getAllByRole("columnheader")
+      .map((cell) => cell.textContent);
+    // Subtract 1 because the first columnheader is the sticky row-number column (`Row#`).
+    const boolIndex = headers.indexOf("has_symptoms") - 1;
+    expect(boolIndex).toBeGreaterThanOrEqual(0);
+    const previewBooleans = within(table)
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => within(row).getAllByRole("cell")[boolIndex]?.textContent);
+    expect(previewBooleans).toEqual(["True", "False", "blank"]);
+    expect(screen.getByText("Showing 3 of 3 rows")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Download Specimens as csv" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    const { text } = await savedText();
+    const [headerLine, ...dataLines] = text.trimEnd().split("\n");
+    const csvBoolIndex = (headerLine ?? "").split(",").indexOf("has_symptoms");
+    expect(csvBoolIndex).toBeGreaterThanOrEqual(0);
+    expect(dataLines.map((line) => line.split(",")[csvBoolIndex])).toEqual(["True", "False", ""]);
   });
 });
 
@@ -384,6 +720,202 @@ describe("PmoFilePage: subset", () => {
       .slice(1)
       .map((line) => Number(line.split(",").at(-1)));
     expect(Math.min(...reads)).toBeGreaterThanOrEqual(100);
+  });
+
+  it("names metadata fields in plain words matching Compare, and keeps PMO names for unknown fields", async () => {
+    const base = richPmo();
+    const withFields: PortableMicrohaplotypeObject = {
+      ...base,
+      project_info: [
+        { project_name: "Study A", project_description: "a" },
+        { project_name: "Study B", project_description: "b" },
+      ],
+      specimen_info: [
+        {
+          ...base.specimen_info[0],
+          specimen_name: "spec1",
+          collection_country: "Mozambique",
+          geo_admin1: "Maputo",
+          collection_date: "2019-01-15",
+          project_id: 0,
+          specimen_type: "field_sample",
+          study_arm: "arm_a",
+        },
+        {
+          ...base.specimen_info[1],
+          specimen_name: "spec2",
+          collection_country: "Ghana",
+          geo_admin1: "Gaza",
+          collection_date: "2019-03",
+          project_id: 1,
+          specimen_type: "field_sample",
+          study_arm: "arm_b",
+        },
+        {
+          ...base.specimen_info[2],
+          specimen_name: "neg",
+          collection_country: "Ghana",
+          collection_date: "2020",
+          project_id: 1,
+          specimen_type: "negative_control",
+          study_arm: "arm_b",
+        },
+      ],
+    };
+    const { user } = await open(pmoFile(withFields));
+
+    // Read the plain names Compare offers for shared fields.
+    await user.click(await screen.findByRole("tab", { name: "Compare" }));
+    const compareSelect = await screen.findByRole("combobox", { name: "Group specimens by" });
+    await user.click(compareSelect);
+    const compareLabels = screen
+      .getAllByRole("option")
+      .map((option) => (option.textContent ?? "").replace(/\s*\(\d+ of \d+ specimens\)$/, ""));
+    await user.keyboard("{Escape}");
+
+    await user.click(screen.getByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: /Specimens with certain values/ }));
+    const fieldSelect = screen.getByRole("combobox", { name: "Field" });
+    await user.click(fieldSelect);
+    const subsetLabels = screen.getAllByRole("option").map((option) => option.textContent ?? "");
+    await user.keyboard("{Escape}");
+
+    expect(subsetLabels).toEqual(
+      expect.arrayContaining([
+        "Country",
+        "Administrative area, level 1",
+        "Collection year",
+        "Collection date",
+        "Project",
+        "Specimen type",
+        "study_arm",
+      ]),
+    );
+    // Every field offered by both Compare and Subset uses the exact same plain label.
+    for (const shared of [
+      "Country",
+      "Administrative area, level 1",
+      "Collection year",
+      "Project",
+    ]) {
+      expect(compareLabels).toContain(shared);
+      expect(subsetLabels).toContain(shared);
+    }
+
+    // Accessible legend and remove button use the plain name too.
+    expect(screen.getByRole("group", { name: "Values of Country" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Add a condition" }));
+    expect(
+      screen.getByRole("button", { name: "Remove the condition on Country" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the exact specimens for chosen collection years and previews the right counts", async () => {
+    const { user } = await open(pmoFile(EXAMPLE, "study.json.gz"));
+    await user.click(await screen.findByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: /Specimens with certain values/ }));
+
+    const values = screen.getByRole("group", { name: "Values of Collection year" });
+    await user.click(within(values).getByRole("checkbox", { name: /2015/ }));
+    await user.click(within(values).getByRole("checkbox", { name: /2019/ }));
+
+    expect(screen.getByText("13 of 50 specimens kept.")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /^The subset will keep 13 of 50 specimens and 13 of 50 library samples, with alleles at \d+ of \d+ targets\.$/,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    expect(await screen.findByText("The subset is ready")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /^It keeps 13 of 50 specimens and 13 of 50 library samples, with alleles at \d+ of \d+ targets\.$/,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Download as .json" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    expect(await savedSpecimenNames()).toEqual([
+      "example_specimen_01",
+      "example_specimen_04",
+      "example_specimen_05",
+      "example_specimen_09",
+      "example_specimen_10",
+      "example_specimen_16",
+      "example_specimen_22",
+      "example_specimen_26",
+      "example_specimen_29",
+      "example_specimen_33",
+      "example_specimen_35",
+      "example_specimen_45",
+      "example_specimen_50",
+    ]);
+  });
+
+  it("still keeps specimens by exact collection date", async () => {
+    const { user } = await open(pmoFile(EXAMPLE, "study.json.gz"));
+    await user.click(await screen.findByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: /Specimens with certain values/ }));
+
+    await user.click(screen.getByRole("combobox", { name: "Field" }));
+    await user.click(screen.getByRole("option", { name: "Collection date" }));
+
+    const values = screen.getByRole("group", { name: "Values of Collection date" });
+    await user.click(within(values).getByRole("checkbox", { name: /2019-06/ }));
+
+    expect(screen.getByText("5 of 50 specimens kept.")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /^The subset will keep 5 of 50 specimens and 5 of 50 library samples, with alleles at \d+ of \d+ targets\.$/,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    expect(await screen.findByText("The subset is ready")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Download as .json" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    expect(await savedSpecimenNames()).toEqual([
+      "example_specimen_05",
+      "example_specimen_22",
+      "example_specimen_29",
+      "example_specimen_45",
+      "example_specimen_50",
+    ]);
+  });
+
+  it("subsets by a raw custom collection_year field using its raw values instead of collection_date", async () => {
+    const base = richPmo();
+    const withRawYear: PortableMicrohaplotypeObject = {
+      ...base,
+      specimen_info: [
+        { ...base.specimen_info[0], specimen_name: "spec1", collection_year: "FY20" },
+        { ...base.specimen_info[1], specimen_name: "spec2", collection_year: "FY21" },
+        { ...base.specimen_info[2], specimen_name: "neg" },
+      ],
+    };
+    const { user } = await open(pmoFile(withRawYear, "study.json.gz"));
+    await user.click(await screen.findByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: /Specimens with certain values/ }));
+
+    await user.click(screen.getByRole("combobox", { name: "Field" }));
+    await user.click(screen.getByRole("option", { name: "Collection year" }));
+
+    const values = screen.getByRole("group", { name: "Values of Collection year" });
+    await user.click(within(values).getByRole("checkbox", { name: /FY20/ }));
+
+    expect(screen.getByText("1 of 3 specimens kept.")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /^The subset will keep 1 of 3 specimens and 1 of 3 library samples, with alleles at \d+ of \d+ targets\.$/,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    expect(await screen.findByText("The subset is ready")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Download as .json" }));
+    await vi.waitFor(() => expect(saveFile).toHaveBeenCalled());
+    expect(await savedSpecimenNames()).toEqual(["spec1"]);
   });
 });
 
@@ -528,7 +1060,7 @@ describe("PmoFilePage: original or subset", () => {
     await makeSubset(user, 3);
     expect(screen.getByRole("radiogroup", SWITCH)).toBeInTheDocument();
     // Straight over the first, without closing it.
-    await user.upload(screen.getByLabelText("Choose pmo file"), pmoFile(ownPmo(), "other.json"));
+    await user.upload(screen.getByLabelText("Choose a PMO file"), pmoFile(ownPmo(), "other.json"));
     await screen.findByText("other.json");
     await screen.findByRole("tab", { name: "Tables" });
     expect(screen.queryByRole("radiogroup", SWITCH)).not.toBeInTheDocument();
@@ -730,7 +1262,7 @@ describe("PmoFilePage: summary", () => {
   it("jumps to a section, listing only the sections the file has", async () => {
     const { user } = await open(pmoFile(EXAMPLE));
     await user.click(await screen.findByRole("tab", { name: "Summary" }));
-    const jumps = await screen.findByRole("navigation", { name: "Sections" });
+    const jumps = await screen.findByRole("navigation", { name: "On this page" });
     expect(
       within(jumps)
         .getAllByRole("button")
@@ -743,25 +1275,47 @@ describe("PmoFilePage: summary", () => {
   it("recounts with a read threshold, kept when switching tabs", async () => {
     const { user } = await open(pmoFile(EXAMPLE));
     await user.click(await screen.findByRole("tab", { name: "Summary" }));
-    const samples = await screen.findByRole("table", { name: "Samples" });
-    const readsBefore = within(samples).getAllByRole("row").length;
+    await screen.findByRole("table", { name: "Samples" });
     await user.type(screen.getByLabelText("Minimum reads per microhaplotype"), "100000");
-    // Nothing reaches the threshold: no target has data, but every sample stays listed.
-    await vi.waitFor(
-      () =>
-        expect(
-          within(screen.getByRole("table", { name: "Targets" })).getAllByRole("row"),
-        ).toHaveLength(1),
-      { timeout: 3000 },
-    );
-    expect(within(screen.getByRole("table", { name: "Samples" })).getAllByRole("row")).toHaveLength(
-      readsBefore,
-    );
+    expect(
+      await screen.findByText("No microhaplotype has at least 100,000 reads", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
 
     // The threshold is the session's, so it survives a visit to another tab.
     await user.click(screen.getByRole("tab", { name: "Tables" }));
     await user.click(screen.getByRole("tab", { name: "Summary" }));
     expect(await screen.findByLabelText("Minimum reads per microhaplotype")).toHaveValue("100000");
+  });
+
+  it("explains when the minimum read count leaves nothing and clears it", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Targets" });
+
+    await user.type(screen.getByLabelText("Minimum reads per microhaplotype"), "5000");
+    expect(
+      await screen.findByText("No microhaplotype has at least 5,000 reads", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/1,279 reads/)).toBeInTheDocument();
+
+    expect(screen.queryByRole("region", { name: "Reads by sample and target" })).toBeNull();
+    expect(screen.queryByText(/reads \(log scale\)/)).toBeNull();
+    expect(screen.queryByRole("table", { name: "Targets" })).toBeNull();
+    expect(screen.queryByText(/Microhaplotypes at /)).toBeNull();
+    expect(screen.queryByText(/No microhaplotypes were counted at /)).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Sections" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Clear minimum reads" }));
+    expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("");
+    expect(
+      await screen.findByRole("region", { name: "Reads by sample and target" }, { timeout: 3000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Targets" })).toBeInTheDocument();
+    expect(screen.getByText(/Microhaplotypes at /)).toBeInTheDocument();
   });
 
   it("sorts a table by the chosen column", async () => {
@@ -773,6 +1327,384 @@ describe("PmoFilePage: summary", () => {
     expect(header).toHaveAttribute("aria-sort", "ascending");
     await user.click(within(samples).getByRole("button", { name: "Sort by Reads" }));
     expect(header).toHaveAttribute("aria-sort", "descending");
+  });
+
+  it("keeps empty targets last when sorting by heterozygosity and announces the chosen target", async () => {
+    const { user } = await open(pmoFile(richPmo()));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Targets" });
+    await user.click(screen.getByRole("switch", { name: "Show targets with no data" }));
+
+    const targets = screen.getByRole("table", { name: "Targets" });
+    const sortByHe = within(targets).getByRole("button", { name: "Sort by Heterozygosity" });
+
+    // Highest to lowest: real values first, empty target (t3) last.
+    await user.click(sortByHe);
+    expect(columnOf(targets, /Target/)).toEqual(["t1", "t2", "t3"]);
+    expect(columnOf(targets, /Heterozygosity/).at(-1)).toBe("–");
+
+    // Lowest to highest: real values first, empty target (t3) still last.
+    await user.click(sortByHe);
+    expect(columnOf(targets, /Target/)).toEqual(["t2", "t1", "t3"]);
+    expect(columnOf(targets, /Heterozygosity/).at(-1)).toBe("–");
+
+    // Chosen target button announces pressed state; plain table rows carry no aria-selected.
+    expect(within(targets).getByRole("button", { name: "t1", pressed: true })).toBeInTheDocument();
+    expect(within(targets).getByRole("button", { name: "t2", pressed: false })).toBeInTheDocument();
+    for (const row of within(targets).getAllByRole("row")) {
+      expect(row).not.toHaveAttribute("aria-selected");
+    }
+    await user.click(within(targets).getByRole("button", { name: "t2" }));
+    expect(within(targets).getByRole("button", { name: "t2", pressed: true })).toBeInTheDocument();
+    expect(within(targets).getByRole("button", { name: "t1", pressed: false })).toBeInTheDocument();
+  });
+
+  it("names the subset's own largest read count when its minimum leaves nothing, and keeps the original's", async () => {
+    const { user } = await open(pmoFile(richPmo()));
+    await user.click(await screen.findByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: "Specimens I tick" }));
+    // Tick only spec2 (max 50 reads) and neg (max 3 reads); exclude spec1 (90 reads).
+    const specimens = screen.getByRole("group", { name: "Specimens" });
+    await user.click(within(specimens).getByRole("checkbox", { name: /spec2/ }));
+    await user.click(within(specimens).getByRole("checkbox", { name: /neg/ }));
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    await screen.findByText("The subset is ready");
+
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Samples" });
+    await user.type(screen.getByLabelText("Minimum reads per microhaplotype"), "100");
+    expect(
+      await screen.findByText("No microhaplotype has at least 100 reads", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "The most in this file is 50 reads. Lower the minimum or clear it to see all microhaplotypes.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/90 reads/)).toBeNull();
+
+    await user.click(screen.getByRole("tab", { name: "Compare" }));
+    expect(
+      await screen.findByText("No microhaplotype has at least 100 reads", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "The most in this file is 50 reads. Lower the minimum or clear it to see all microhaplotypes.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/90 reads/)).toBeNull();
+
+    // Switching back to the original reports the original file's own largest read count.
+    await user.click(screen.getByRole("radio", { name: "Original" }));
+    expect(
+      await screen.findByText(
+        "The most in this file is 90 reads. Lower the minimum or clear it to see all microhaplotypes.",
+        undefined,
+        { timeout: 3000 },
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+    expect(
+      await screen.findByText(
+        "The most in this file is 90 reads. Lower the minimum or clear it to see all microhaplotypes.",
+        undefined,
+        { timeout: 3000 },
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the file's largest read count and applies common cutoffs across Summary and Compare", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Samples" });
+
+    expect(
+      screen.getByText("Leave empty to count them all. The most in this file is 1,279."),
+    ).toBeVisible();
+    const summaryCutoffs = screen.getByRole("group", { name: "Common minimum read counts" });
+    expect(
+      within(summaryCutoffs)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["All", "10", "50", "100", "500"]);
+
+    const beforeSamples = screen.getAllByText("Samples with data", { exact: true })[0]
+      ?.parentElement?.textContent;
+    await user.click(within(summaryCutoffs).getByRole("button", { name: "500" }));
+    expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("500");
+    await vi.waitFor(
+      () => {
+        expect(
+          screen.getAllByText("Samples with data", { exact: true })[0]?.parentElement?.textContent,
+        ).not.toBe(beforeSamples);
+      },
+      { timeout: 3000 },
+    );
+
+    // Value and active cutoff carry over to Compare, and clearing there carries back to Summary.
+    await user.click(screen.getByRole("tab", { name: "Compare" }));
+    await screen.findByRole("table", { name: "Groups" }, { timeout: 3000 });
+    expect(
+      screen.getByText("Leave empty to count them all. The most in this file is 1,279."),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("500");
+    const compareCutoffs = screen.getByRole("group", { name: "Common minimum read counts" });
+    expect(within(compareCutoffs).getByRole("button", { name: "500" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await user.click(within(compareCutoffs).getByRole("button", { name: "All" }));
+    expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("");
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+    expect(await screen.findByLabelText("Minimum reads per microhaplotype")).toHaveValue("");
+    expect(
+      within(screen.getByRole("group", { name: "Common minimum read counts" })).getByRole(
+        "button",
+        { name: "All" },
+      ),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("filters cutoffs to the active original or subset largest read count", async () => {
+    const { user } = await open(pmoFile(richPmo()));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Samples" });
+
+    expect(
+      screen.getByText("Leave empty to count them all. The most in this file is 90."),
+    ).toBeVisible();
+    const originalCutoffs = screen.getByRole("group", { name: "Common minimum read counts" });
+    expect(
+      within(originalCutoffs)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["All", "10", "50"]);
+
+    // Make a subset with only neg (max 3 reads): no common cutoff <= 3 should be offered.
+    await user.click(screen.getByRole("tab", { name: "Subset" }));
+    await user.click(screen.getByRole("radio", { name: "Specimens I tick" }));
+    const specimens = screen.getByRole("group", { name: "Specimens" });
+    await user.click(within(specimens).getByRole("checkbox", { name: /neg/ }));
+    await user.click(screen.getByRole("button", { name: "Make the subset" }));
+    await screen.findByText("The subset is ready");
+
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+    await screen.findByRole("table", { name: "Samples" });
+    expect(
+      screen.getByText("Leave empty to count them all. The most in this file is 3."),
+    ).toBeVisible();
+    expect(screen.queryByRole("group", { name: "Common minimum read counts" })).toBeNull();
+
+    // Switching back to Original restores the original largest count and cutoffs.
+    await user.click(screen.getByRole("radio", { name: "Original" }));
+    expect(
+      await screen.findByText("Leave empty to count them all. The most in this file is 90."),
+    ).toBeVisible();
+    expect(
+      within(screen.getByRole("group", { name: "Common minimum read counts" }))
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["All", "10", "50"]);
+  });
+
+  it("keeps missing values last in both directions on the pipeline stage table", async () => {
+    const base = richPmo();
+    const withStages: PortableMicrohaplotypeObject = {
+      ...base,
+      read_counts_by_stage: [
+        {
+          bioinformatics_run_id: 0,
+          read_counts_by_library_sample_by_stage: [
+            {
+              library_sample_id: 0,
+              total_raw_count: 500,
+              read_counts_for_targets: [
+                {
+                  target_id: 0,
+                  stages: [
+                    { stage: "demux", reads: 300 },
+                    { stage: "denoised", reads: 100 },
+                  ],
+                },
+              ],
+            },
+            {
+              library_sample_id: 1,
+              total_raw_count: 200,
+              read_counts_for_targets: [
+                {
+                  target_id: 0,
+                  stages: [
+                    { stage: "demux", reads: 150 },
+                    { stage: "denoised", reads: 80 },
+                  ],
+                },
+              ],
+            },
+            {
+              library_sample_id: 2,
+              total_raw_count: 0,
+              read_counts_for_targets: [
+                {
+                  target_id: 0,
+                  stages: [{ stage: "demux", reads: 40 }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const { user } = await open(pmoFile(withStages));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+    const stages = await screen.findByRole("table", { name: "Reads at each pipeline stage" });
+
+    // Initial sort is Kept of raw ascending: S1 (20%), S2 (40%), S3 (–) last.
+    expect(columnOf(stages, /Library sample/)).toEqual(["S1", "S2", "S3"]);
+    expect(columnOf(stages, /Kept of raw/).at(-1)).toBe("–");
+
+    // Flip Kept of raw to descending: S2 (40%), S1 (20%), S3 (–) still last.
+    await user.click(within(stages).getByRole("button", { name: "Sort by Kept of raw" }));
+    expect(columnOf(stages, /Library sample/)).toEqual(["S2", "S1", "S3"]);
+    expect(columnOf(stages, /Kept of raw/).at(-1)).toBe("–");
+
+    // Sort by denoised descending then ascending: S3 (missing denoised) stays last both ways.
+    const sortByDenoised = within(stages).getByRole("button", { name: "Sort by denoised" });
+    await user.click(sortByDenoised);
+    expect(columnOf(stages, /Library sample/)).toEqual(["S1", "S2", "S3"]);
+    expect(columnOf(stages, /denoised/).at(-1)).toBe("–");
+
+    await user.click(sortByDenoised);
+    expect(columnOf(stages, /Library sample/)).toEqual(["S2", "S1", "S3"]);
+    expect(columnOf(stages, /denoised/).at(-1)).toBe("–");
+  });
+
+  it("searches, counts and downloads Samples, Targets and pipeline stage tables in the chosen format", async () => {
+    const { user } = await open(pmoFile(examplePmoWithReadCounts(), "study.json"));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+
+    const samples = await screen.findByRole("table", { name: "Samples" });
+    const targets = screen.getByRole("table", { name: "Targets" });
+    const stages = screen.getByRole("table", { name: "Reads at each pipeline stage" });
+
+    // Samples (50 rows) and Targets (21 rows) show search; Stages (3 rows) hides search.
+    const samplesSearch = screen.getByRole("searchbox", { name: "Search Samples" });
+    const targetsSearch = screen.getByRole("searchbox", { name: "Search Targets" });
+    expect(
+      screen.queryByRole("searchbox", { name: "Search Reads at each pipeline stage" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Showing 50 of 50 rows")).toBeInTheDocument();
+    expect(screen.getByText("Showing 21 of 276 rows")).toBeInTheDocument();
+    expect(screen.getByText("Showing 3 of 3 rows")).toBeInTheDocument();
+
+    // Narrow Targets by part of the first target's name and download CSV of shown rows.
+    const firstTarget = columnOf(targets, /^Target/)[0] ?? "";
+    expect(firstTarget.length).toBeGreaterThan(3);
+    await user.type(targetsSearch, firstTarget);
+    const matchingTargets = columnOf(targets, /^Target/);
+    expect(matchingTargets).toContain(firstTarget);
+    expect(matchingTargets.length).toBeLessThan(21);
+    expect(screen.getByText(`Showing ${matchingTargets.length} of 276 rows`)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Download Targets as csv" }));
+    const targetsCsv = await savedText();
+    expect(targetsCsv.name).toBe("study-summary-targets.csv");
+    const targetLines = targetsCsv.text.trimEnd().split("\n");
+    expect(targetLines[0]).toBe("Target,Samples with data,Alleles,Heterozygosity");
+    expect(targetLines).toHaveLength(matchingTargets.length + 1);
+    expect(targetLines[1]?.split(",")[0]).toBe(matchingTargets[0]);
+
+    await user.click(screen.getByRole("button", { name: "Clear search for Targets" }));
+    expect(screen.getByText("Showing 21 of 276 rows")).toBeInTheDocument();
+
+    // Narrow Samples by library sample name, then by specimen name.
+    const firstSample = columnOf(samples, /^Library sample/)[0] ?? "";
+    await user.type(samplesSearch, firstSample);
+    expect(columnOf(samples, /^Library sample/)).toContain(firstSample);
+    expect(columnOf(samples, /^Library sample/).length).toBeLessThan(50);
+
+    await user.click(screen.getByRole("button", { name: "Clear search for Samples" }));
+    expect(screen.getByText("Showing 50 of 50 rows")).toBeInTheDocument();
+
+    await user.type(samplesSearch, "specimen_05");
+    const matchingSpecimens = columnOf(samples, /^Specimen/);
+    expect(matchingSpecimens).toEqual(["example_specimen_05"]);
+    expect(screen.getByText("Showing 1 of 50 rows")).toBeInTheDocument();
+
+    vi.mocked(saveFile).mockReset();
+    await user.click(screen.getByRole("button", { name: "Download Samples as csv" }));
+    const samplesCsv = await savedText();
+    expect(samplesCsv.name).toBe("study-summary-samples.csv");
+    const sampleLines = samplesCsv.text.trimEnd().split("\n");
+    expect(sampleLines[0]).toContain("Library sample,Specimen,");
+    expect(sampleLines).toHaveLength(2);
+    expect(sampleLines[1]).toContain("example_specimen_05");
+
+    // Download pipeline stage table (3 rows, no search).
+    expect(columnOf(stages, /^Library sample/)).toHaveLength(3);
+    vi.mocked(saveFile).mockReset();
+    await user.click(
+      screen.getByRole("button", { name: "Download Reads at each pipeline stage as csv" }),
+    );
+    const stagesCsv = await savedText();
+    expect(stagesCsv.name).toBe("study-summary-pipeline-stages.csv");
+    expect(stagesCsv.text.trimEnd().split("\n")).toHaveLength(4);
+
+    // Format chosen on Tables carries over to Summary downloads.
+    await user.click(screen.getByRole("tab", { name: "Tables" }));
+    await user.click(screen.getByRole("radio", { name: "TSV" }));
+    await user.click(screen.getByRole("tab", { name: "Summary" }));
+
+    vi.mocked(saveFile).mockReset();
+    await user.click(await screen.findByRole("button", { name: "Download Targets as tsv" }));
+    const targetsTsv = await savedText();
+    expect(targetsTsv.name).toBe("study-summary-targets.tsv");
+    expect(targetsTsv.text.split("\n")[0]).toBe(
+      "Target\tSamples with data\tAlleles\tHeterozygosity",
+    );
+  });
+
+  it("shows search on the pipeline stage table when more than five samples have stage counts", async () => {
+    const base = examplePmoWithReadCounts();
+    const firstStageGroup = base.read_counts_by_stage?.[0];
+    if (firstStageGroup === undefined) throw new Error("expected read_counts_by_stage");
+    const withSixStages: PortableMicrohaplotypeObject = {
+      ...base,
+      read_counts_by_stage: [
+        {
+          ...firstStageGroup,
+          read_counts_by_library_sample_by_stage: Array.from({ length: 6 }, (_, index) => ({
+            library_sample_id: index,
+            total_raw_count: 500 + index * 10,
+            read_counts_for_targets: [
+              {
+                target_id: 0,
+                stages: [{ stage: "demux", reads: 200 + index * 10 }],
+              },
+            ],
+          })),
+        },
+      ],
+    };
+    const { user } = await open(pmoFile(withSixStages, "study.json"));
+    await user.click(await screen.findByRole("tab", { name: "Summary" }));
+
+    const stages = await screen.findByRole("table", { name: "Reads at each pipeline stage" });
+    const stagesSearch = screen.getByRole("searchbox", {
+      name: "Search Reads at each pipeline stage",
+    });
+    expect(screen.getByText("Showing 6 of 6 rows")).toBeInTheDocument();
+
+    const firstSample = columnOf(stages, /^Library sample/)[0] ?? "";
+    await user.type(stagesSearch, firstSample);
+    expect(columnOf(stages, /^Library sample/)).toEqual([firstSample]);
+    expect(screen.getByText("Showing 1 of 6 rows")).toBeInTheDocument();
   });
 });
 
@@ -891,7 +1823,7 @@ function watchedEngine(instead: (kind: WorkingPmoKind) => Instead = () => null):
 
 async function openWithEngine(file: File, engine: Engine) {
   const rendered = await renderPage(ZENODO, createTestStore({ engine }));
-  await rendered.user.upload(screen.getByLabelText("Choose pmo file"), file);
+  await rendered.user.upload(screen.getByLabelText("Choose a PMO file"), file);
   return rendered;
 }
 
@@ -926,24 +1858,139 @@ describe("PmoFilePage: compare", () => {
     await user.type(await screen.findByLabelText("Minimum reads per microhaplotype"), "1000000");
     await user.click(screen.getByRole("tab", { name: "Compare" }));
     expect(await screen.findByLabelText("Minimum reads per microhaplotype")).toHaveValue("1000000");
-    await vi.waitFor(
-      () =>
-        expect(
-          allZero(columnOf(screen.getByRole("table", { name: "Groups" }), /Samples with data/)),
-        ).toBe(true),
-      { timeout: 3000 },
-    );
+    expect(
+      await screen.findByText("No microhaplotype has at least 1,000,000 reads", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/90 reads/)).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Groups" })).toBeNull();
 
     await user.clear(screen.getByLabelText("Minimum reads per microhaplotype"));
-    await vi.waitFor(
-      () =>
-        expect(
-          allZero(columnOf(screen.getByRole("table", { name: "Groups" }), /Samples with data/)),
-        ).toBe(false),
-      { timeout: 3000 },
-    );
+    const groups = await screen.findByRole("table", { name: "Groups" }, { timeout: 3000 });
+    expect(allZero(columnOf(groups, /Samples with data/))).toBe(false);
     await user.click(screen.getByRole("tab", { name: "Summary" }));
     expect(await screen.findByLabelText("Minimum reads per microhaplotype")).toHaveValue("");
+  });
+
+  it("explains when the minimum read count leaves nothing and clears it", async () => {
+    const { user } = await open(pmoFile(EXAMPLE));
+    await user.click(await screen.findByRole("tab", { name: "Compare" }));
+    await screen.findByRole("table", { name: "Groups" });
+
+    await user.type(screen.getByLabelText("Minimum reads per microhaplotype"), "5000");
+    expect(
+      await screen.findByText("No microhaplotype has at least 5,000 reads", undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/1,279 reads/)).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Groups" })).toBeNull();
+    expect(screen.queryByRole("table", { name: "Heterozygosity by target" })).toBeNull();
+    expect(screen.queryByRole("table", { name: "Microhaplotype frequencies by group" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "When specimens were collected" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Clear minimum reads" }));
+    expect(screen.getByLabelText("Minimum reads per microhaplotype")).toHaveValue("");
+    expect(
+      await screen.findByRole("table", { name: "Groups" }, { timeout: 3000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Heterozygosity by target" })).toBeInTheDocument();
+  });
+
+  it("keeps missing values last in both directions on Compare tables", async () => {
+    const pmo: PortableMicrohaplotypeObject = {
+      pmo_header: { pmo_version: "1.1.0" },
+      panel_info: [
+        { panel_name: "p", reactions: [{ reaction_name: "pool1", panel_targets: [0, 1, 2] }] },
+      ],
+      target_info: ["t1", "t2", "t3"].map((target_name) => ({
+        target_name,
+        forward_primer: { seq: "ACGT" },
+        reverse_primer: { seq: "TGCA" },
+      })),
+      specimen_info: [
+        { specimen_name: "spec_k", collection_country: "Kenya" },
+        { specimen_name: "spec_m", collection_country: "Mozambique" },
+        { specimen_name: "spec_u", collection_country: "Uganda" },
+      ],
+      library_sample_info: [
+        { library_sample_name: "L_k", specimen_id: 0, panel_id: 0 },
+        { library_sample_name: "L_m", specimen_id: 1, panel_id: 0 },
+        { library_sample_name: "L_u", specimen_id: 2, panel_id: 0 },
+      ],
+      bioinformatics_methods_info: [{ methods: [{ program: "x", program_version: "1" }] }],
+      bioinformatics_run_info: [{ bioinformatics_run_name: "runA", bioinformatics_methods_id: 0 }],
+      representative_microhaplotypes: {
+        targets: [
+          { target_id: 0, microhaplotypes: [{ seq: "AAAA" }, { seq: "AAAT" }] },
+          { target_id: 1, microhaplotypes: [{ seq: "CCCC" }] },
+          { target_id: 2, microhaplotypes: [{ seq: "GGGG" }] },
+        ],
+      },
+      detected_microhaplotypes: [
+        {
+          bioinformatics_run_id: 0,
+          library_samples: [
+            {
+              library_sample_id: 0,
+              target_results: [
+                {
+                  mhaps_target_id: 0,
+                  mhaps: [
+                    { mhap_id: 0, reads: 50 },
+                    { mhap_id: 1, reads: 50 },
+                  ],
+                },
+                { mhaps_target_id: 1, mhaps: [{ mhap_id: 0, reads: 40 }] },
+              ],
+            },
+            {
+              library_sample_id: 1,
+              target_results: [
+                { mhaps_target_id: 0, mhaps: [{ mhap_id: 0, reads: 30 }] },
+                { mhaps_target_id: 2, mhaps: [{ mhap_id: 0, reads: 20 }] },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const { user } = await open(pmoFile(pmo));
+    await user.click(await screen.findByRole("tab", { name: "Compare" }));
+
+    // Groups table: Uganda has no samples with data so Mean heterozygosity is missing (–).
+    const groups = await screen.findByRole("table", { name: "Groups" });
+    const sortByMeanHe = within(groups).getByRole("button", {
+      name: "Sort by Mean heterozygosity",
+    });
+    await user.click(sortByMeanHe);
+    expect(columnOf(groups, /^Group/)).toEqual([
+      expect.stringMatching(/^Kenya\b/),
+      expect.stringMatching(/^Mozambique\b/),
+      expect.stringMatching(/^Uganda\b/),
+    ]);
+    expect(columnOf(groups, /Mean heterozygosity/).at(-1)).toBe("–");
+
+    await user.click(sortByMeanHe);
+    expect(columnOf(groups, /^Group/)).toEqual([
+      expect.stringMatching(/^Mozambique\b/),
+      expect.stringMatching(/^Kenya\b/),
+      expect.stringMatching(/^Uganda\b/),
+    ]);
+    expect(columnOf(groups, /Mean heterozygosity/).at(-1)).toBe("–");
+
+    // Heterozygosity by target table: in Kenya, t1 is 0.5, t2 is 0, and t3 is missing (–).
+    const byTarget = screen.getByRole("table", { name: "Heterozygosity by target" });
+    const sortByKenya = within(byTarget).getByRole("button", { name: "Sort by Kenya" });
+    await user.click(sortByKenya);
+    expect(columnOf(byTarget, /^Target/)).toEqual(["t1", "t2", "t3"]);
+    expect(columnOf(byTarget, /Kenya/).at(-1)).toBe("–");
+
+    await user.click(sortByKenya);
+    expect(columnOf(byTarget, /^Target/)).toEqual(["t2", "t1", "t3"]);
+    expect(columnOf(byTarget, /Kenya/).at(-1)).toBe("–");
   });
 
   it("says when the comparison could not be made", async () => {
@@ -957,7 +2004,12 @@ describe("PmoFilePage: compare", () => {
 
   it("says when no file is open", async () => {
     await renderWithStore(
-      <CompareTab source="original" minReads={null} onMinReadsChange={() => undefined} />,
+      <CompareTab
+        source="original"
+        minReads={null}
+        maxReads={null}
+        onMinReadsChange={() => undefined}
+      />,
     );
     expect(await screen.findByText("No file is open")).toBeInTheDocument();
   });

@@ -1,7 +1,7 @@
 import { t } from "@lingui/core/macro";
 import { HardDrive, LoaderCircle, TriangleExclamationPoint, type LucideIcon } from "lucide-react";
 
-import { Popover, cn } from "@/ui";
+import { Button, Popover, cn } from "@/ui";
 
 import { useSaveState } from "./draftHooks";
 
@@ -74,13 +74,7 @@ export function SaveStatus() {
       label={view.heading}
       align="end"
       trigger={
-        <button
-          type="button"
-          className={cn(
-            "inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2 text-sm transition-colors duration-100 hover:bg-surface-muted",
-            view.warning ? "text-warning-text" : "text-text-muted hover:text-text",
-          )}
-        >
+        <Button variant="ghost" size="sm" className="min-w-0 shrink! rounded-full">
           <Icon
             aria-hidden="true"
             className={cn(
@@ -89,10 +83,15 @@ export function SaveStatus() {
               view.icon === LoaderCircle && "motion-safe:animate-spin",
             )}
           />
-          <span className={view.warning ? "sr-only sm:not-sr-only" : "sr-only lg:not-sr-only"}>
+          <span
+            className={cn(
+              "truncate",
+              view.warning ? "text-warning-text max-sm:sr-only" : "max-lg:sr-only",
+            )}
+          >
             {view.label}
           </span>
-        </button>
+        </Button>
       }
     >
       <div className="flex flex-col gap-1.5">

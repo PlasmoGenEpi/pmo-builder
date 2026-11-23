@@ -14,11 +14,14 @@ import type { PortableMicrohaplotypeObject, Table } from "pmotools-ts";
 import {
   DEFAULT_BUILD_DEPS,
   NO_SUGGESTIONS,
+  buildMicrohaplotypesStream,
   buildSection,
   collectSuggestions,
   distinctValues as columnDistinctValues,
   exportPmo,
+  measurePmoSize,
   mergeSections,
+  pmoFileName,
   previewPmo,
   statusAfterMerge,
   type BuildDeps,
@@ -40,20 +43,26 @@ import {
 import { describeError } from "@/domain/errors";
 import {
   importFailureMessage,
+  inspectDelimitedStream,
   isImportError,
   parseFile,
+  streamDelimitedChunks,
+  streamDistinctValues,
+  type DelimitedStreamMeta,
   type ImportFailure,
 } from "@/domain/import";
+import type { PmoSlot } from "@/domain/tools/types";
 import {
   answerWorkingPmo,
   NOTHING_HELD,
   settleWorkingPmo,
   type WorkingPmoHeld,
 } from "@/domain/tools/workingPmoHandlers";
-import type { Notice, ParsedFile, RawTable, SectionId } from "@/domain/types";
+import type { Notice, ParsedFile, RawRow, RawTable, SectionId } from "@/domain/types";
 import { SECTION_IDS } from "@/domain/types";
 
 import type {
+  BuildProgress,
   BuildRequestOptions,
   Engine,
   ImportOutcome,
@@ -68,12 +77,19 @@ type TableState =
   | { readonly kind: "pending" }
   | { readonly kind: "parsing"; readonly promise: Promise<void> }
   | { readonly kind: "ready"; readonly parsed: ParsedFile }
+  | {
+      readonly kind: "streamed";
+      meta: DelimitedStreamMeta;
+      exactRowCount: number | null;
+      runNameValues: { readonly column: string; readonly values: readonly string[] } | null;
+    }
   | { readonly kind: "failed"; readonly message: string };
 
 interface TableEntry {
   readonly id: string;
   readonly fileName: string;
   readonly source: Blob;
+  readonly stream: boolean;
   sheetName: string | null;
   /** Counts up whenever the table's rows change, so memoised builds notice. */
   revision: number;
@@ -164,6 +180,19 @@ function toRef(entry: TableEntry, parsed: ParsedFile): TableRef {
   };
 }
 
+function toStreamedRef(entry: TableEntry, meta: DelimitedStreamMeta): TableRef {
+  return {
+    id: entry.id,
+    fileName: entry.fileName,
+    fileSize: entry.source.size,
+    format: "delimited",
+    sheetNames: null,
+    sheetName: null,
+    columns: meta.columns,
+    rowCount: meta.exactRowCount,
+  };
+}
+
 /** The sections whose tables the suggestions read. A section is rebuilt when its table changes. */
 const SUGGESTION_SOURCES: readonly SectionId[] = ["microhaplotypes", "specimens", "librarySamples"];
 
@@ -214,10 +243,51 @@ function cachedTyping(deps: BuildDeps): BuildDeps {
   };
 }
 
+/** A lazy cache keyed by `(pmo, gzip)` for the latest built PMO. */
+interface PmoFormatCache<T> {
+  peek(pmo: PortableMicrohaplotypeObject, gzip: boolean): T | undefined;
+  getOrCreate(pmo: PortableMicrohaplotypeObject, gzip: boolean): T;
+  clearIfNot(pmo: PortableMicrohaplotypeObject | null): void;
+  clear(): void;
+}
+
+/** Caches one value per `(pmo, gzip)` format for the current PMO, clearing when the PMO changes. */
+function createPmoFormatCache<T>(
+  create: (pmo: PortableMicrohaplotypeObject, gzip: boolean) => T,
+): PmoFormatCache<T> {
+  let entry: {
+    readonly pmo: PortableMicrohaplotypeObject;
+    readonly byFormat: Map<boolean, T>;
+  } | null = null;
+  return {
+    peek(pmo, gzip) {
+      return entry !== null && entry.pmo === pmo ? entry.byFormat.get(gzip) : undefined;
+    },
+    getOrCreate(pmo, gzip) {
+      if (entry === null || entry.pmo !== pmo) entry = { pmo, byFormat: new Map() };
+      const existing = entry.byFormat.get(gzip);
+      if (existing !== undefined) return existing;
+      const created = create(pmo, gzip);
+      entry.byFormat.set(gzip, created);
+      return created;
+    },
+    clearIfNot(pmo) {
+      if (entry !== null && entry.pmo !== pmo) entry = null;
+    },
+    clear() {
+      entry = null;
+    },
+  };
+}
+
 /** Creates an engine that runs on the calling thread. */
 export function createInThreadEngine(options: InThreadEngineOptions = {}): Engine {
   const parse = options.parseFile ?? parseFile;
   const deps = cachedTyping(options.deps ?? DEFAULT_BUILD_DEPS);
+  // Only stream when using the real parser and build deps (injected test doubles keep whole-table mode).
+  const allowStreaming = options.parseFile === undefined && options.deps === undefined;
+  const shouldStream = (stream: boolean | undefined, source: Blob): boolean =>
+    allowStreaming && stream === true && typeof source.stream === "function";
   const yieldToQueue =
     options.yieldToQueue ?? (() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
   const tables = new Map<string, TableEntry>();
@@ -229,26 +299,22 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
   } | null = null;
   let latestRequest = 0;
   let buildRevision = 0;
+  let progressActive = false;
   let latestPmo: PortableMicrohaplotypeObject | null = null;
-  /** The working PMO: a PMO file opened to look over, subset or export, apart from the draft. */
-  let held: WorkingPmoHeld = NOTHING_HELD;
-  /** The latest PMO's files, made when first asked for, by format (gzipped or not). */
-  let fileMemo: {
-    readonly pmo: PortableMicrohaplotypeObject;
-    readonly files: Map<boolean, Promise<PmoFile>>;
-  } | null = null;
-  /** The latest PMO as a file, made once per build and format. */
-  const pmoFile = (gzip: boolean): Promise<PmoFile> | null => {
-    const pmo = latestPmo;
-    if (pmo === null) return null;
-    if (fileMemo === null || fileMemo.pmo !== pmo) fileMemo = { pmo, files: new Map() };
-    let file = fileMemo.files.get(gzip);
-    if (file === undefined) {
-      file = exportPmo(pmo, { gzip });
-      fileMemo.files.set(gzip, file);
-    }
-    return file;
+  /** The held PMO slots: the working PMO and the read-only published view, kept apart. */
+  const held: Record<PmoSlot, WorkingPmoHeld> = {
+    working: NOTHING_HELD,
+    published: NOTHING_HELD,
   };
+  /** The latest PMO's files, made when first asked for, by format (gzipped or not). */
+  const fileCache = createPmoFormatCache<Promise<PmoFile>>((pmo, gzip) => exportPmo(pmo, { gzip }));
+  /** The latest PMO's file sizes, counted from the stream without keeping a Blob. */
+  const sizeCache = createPmoFormatCache<
+    Promise<{ readonly fileName: string; readonly size: number }>
+  >((pmo, gzip) => {
+    const fileName = pmoFileName(pmo, gzip);
+    return measurePmoSize(pmo, { gzip }).then((size) => ({ fileName, size }));
+  });
   /** The last preview, so asking again for the same build does not write the whole PMO again. */
   let previewMemo: {
     readonly pmo: PortableMicrohaplotypeObject;
@@ -267,6 +333,28 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       entry.sheetName === null ? undefined : { sheetName: entry.sheetName },
     );
 
+  const inspectOrParseStreamed = async (entry: TableEntry): Promise<TableRef> => {
+    if (entry.stream) {
+      const inspection = await inspectDelimitedStream(entry.source, {
+        fileName: entry.fileName,
+      });
+      if (inspection.kind === "delimited") {
+        entry.state = {
+          kind: "streamed",
+          meta: inspection.meta,
+          exactRowCount: inspection.meta.exactRowCount,
+          runNameValues: null,
+        };
+        entry.sheetName = null;
+        return toStreamedRef(entry, inspection.meta);
+      }
+    }
+    const parsed = await parseEntry(entry);
+    entry.state = { kind: "ready", parsed };
+    entry.sheetName = parsed.sheetName;
+    return toRef(entry, parsed);
+  };
+
   const ensureParsed = async (id: string): Promise<void> => {
     const entry = tables.get(id);
     if (entry === undefined) return;
@@ -277,8 +365,7 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     if (entry.state.kind !== "pending") return;
     const promise = (async () => {
       try {
-        const parsed = await parseEntry(entry);
-        entry.state = { kind: "ready", parsed };
+        await inspectOrParseStreamed(entry);
       } catch (error) {
         entry.state = {
           kind: "failed",
@@ -303,6 +390,7 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
         return { kind: "failed", message: entry.state.message };
       case "pending":
       case "parsing":
+      case "streamed":
         return { kind: "missing" };
       default:
         return { kind: "missing" };
@@ -312,11 +400,6 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
   const tableKey = (id: string): string => {
     const entry = tables.get(id);
     return entry === undefined ? `${id}:missing` : `${id}@${entry.revision}:${entry.state.kind}`;
-  };
-
-  const readTable = async (id: string): Promise<TableLookupResult> => {
-    await ensureParsed(id);
-    return lookup(id);
   };
 
   /**
@@ -334,7 +417,19 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     ) {
       return suggestionsMemo.value;
     }
-    const value = draftSuggestions(draft, lookup);
+    let value = draftSuggestions(draft, lookup);
+    const mhap = draft.microhaplotypes;
+    if (mhap.runName.mode === "column" && mhap.runName.column !== null && mhap.table !== null) {
+      const entry = tables.get(mhap.table.table.id);
+      if (
+        entry !== undefined &&
+        entry.state.kind === "streamed" &&
+        entry.state.runNameValues !== null &&
+        entry.state.runNameValues.column === mhap.runName.column
+      ) {
+        value = { ...value, runNames: entry.state.runNameValues.values };
+      }
+    }
     suggestionsMemo = { sources, value };
     return value;
   };
@@ -345,16 +440,15 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
         id: newId(),
         fileName: input.fileName,
         source: input.file,
+        stream: shouldStream(input.stream, input.file),
         sheetName: input.sheetName ?? null,
         revision: 0,
         state: { kind: "pending" },
       };
       try {
-        const parsed = await parseEntry(entry);
-        entry.state = { kind: "ready", parsed };
-        entry.sheetName = parsed.sheetName;
+        const table = await inspectOrParseStreamed(entry);
         tables.set(entry.id, entry);
-        return { kind: "imported", table: toRef(entry, parsed) };
+        return { kind: "imported", table };
       } catch (error) {
         return importFailed(failureOf(error), input.fileName);
       }
@@ -366,6 +460,7 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
         id: input.tableId,
         fileName: input.fileName,
         source: input.file,
+        stream: shouldStream(input.stream, input.file),
         sheetName: input.sheetName,
         revision: (previous?.revision ?? 0) + 1,
         state: { kind: "pending" },
@@ -393,10 +488,108 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     },
 
     async previewRows(request) {
-      const found = await readTable(request.tableId);
-      if (found.kind !== "ready") return found;
+      await ensureParsed(request.tableId);
+      const entry = tables.get(request.tableId);
+      if (entry === undefined) return { kind: "missing" };
       const offset = Math.max(0, request.offset ?? 0);
       const limit = Math.max(0, request.limit ?? 50);
+      if (entry.state.kind === "streamed") {
+        const { meta } = entry.state;
+        const allCached =
+          meta.exactRowCount !== null && meta.previewRows.length >= meta.exactRowCount;
+        if (limit === 0 || allCached || offset + limit <= meta.previewRows.length) {
+          return {
+            kind: "ready",
+            columns: meta.columns,
+            rows: meta.previewRows.slice(offset, offset + limit),
+            offset,
+            totalRows: entry.state.exactRowCount,
+          };
+        }
+        const rows: RawRow[] = [];
+        const previewScan: {
+          seen: number;
+          resolvedEncoding: DelimitedStreamMeta["encoding"];
+          refreshedPreview: RawRow[] | null;
+        } = {
+          seen: 0,
+          resolvedEncoding: meta.encoding,
+          refreshedPreview: null,
+        };
+        try {
+          const generator = streamDelimitedChunks(entry.source, {
+            fileName: entry.fileName,
+            delimiter: meta.delimiter,
+            encoding: meta.encoding,
+            columns: meta.columns,
+            chunkSize: Math.max(limit, 1_000),
+            onRestart: (nextEncoding) => {
+              previewScan.resolvedEncoding = nextEncoding;
+              previewScan.refreshedPreview = [];
+              rows.length = 0;
+              previewScan.seen = 0;
+            },
+          });
+          try {
+            for (;;) {
+              // oxlint-disable-next-line no-await-in-loop -- consuming stream chunks sequentially
+              const step = await generator.next();
+              if (step.done) {
+                previewScan.resolvedEncoding = step.value;
+                break;
+              }
+              const chunk = step.value;
+              const refreshed = previewScan.refreshedPreview;
+              if (refreshed !== null && refreshed.length < meta.previewRows.length) {
+                const need = meta.previewRows.length - refreshed.length;
+                for (let i = 0; i < chunk.length && i < need; i += 1) {
+                  const row = chunk[i];
+                  if (row !== undefined) refreshed.push(row);
+                }
+              }
+              const chunkEnd = previewScan.seen + chunk.length;
+              if (chunkEnd > offset) {
+                const start = Math.max(0, offset - previewScan.seen);
+                for (let i = start; i < chunk.length && rows.length < limit; i += 1) {
+                  const row = chunk[i];
+                  if (row !== undefined) rows.push(row);
+                }
+              }
+              previewScan.seen = chunkEnd;
+              if (rows.length >= limit) break;
+            }
+          } finally {
+            await generator.return(previewScan.resolvedEncoding);
+          }
+          if (previewScan.resolvedEncoding !== meta.encoding) {
+            entry.state.meta = {
+              ...meta,
+              encoding: previewScan.resolvedEncoding,
+              previewRows:
+                previewScan.refreshedPreview !== null &&
+                previewScan.refreshedPreview.length >= meta.previewRows.length
+                  ? previewScan.refreshedPreview
+                  : meta.previewRows,
+            };
+          }
+        } catch (error) {
+          return {
+            kind: "failed",
+            message: isImportError(error)
+              ? importFailureMessage(failureOf(error))
+              : describeError(error),
+          };
+        }
+        return {
+          kind: "ready",
+          columns: meta.columns,
+          rows,
+          offset,
+          totalRows: entry.state.exactRowCount,
+        };
+      }
+      const found = lookup(request.tableId);
+      if (found.kind !== "ready") return found;
       return {
         kind: "ready",
         columns: found.table.columns,
@@ -407,7 +600,24 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     },
 
     async distinctValues(request) {
-      const found = await readTable(request.tableId);
+      await ensureParsed(request.tableId);
+      const entry = tables.get(request.tableId);
+      if (entry === undefined) return null;
+      if (entry.state.kind === "streamed") {
+        if (!entry.state.meta.columns.includes(request.column)) return null;
+        try {
+          return await streamDistinctValues(entry.source, {
+            fileName: entry.fileName,
+            delimiter: entry.state.meta.delimiter,
+            encoding: entry.state.meta.encoding,
+            column: request.column,
+            limit: request.limit ?? 200,
+          });
+        } catch {
+          return null;
+        }
+      }
+      const found = lookup(request.tableId);
       if (found.kind !== "ready" || !found.table.columns.includes(request.column)) return null;
       return columnDistinctValues(found.table, request.column, request.limit ?? 200);
     },
@@ -416,79 +626,187 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       latestRequest += 1;
       const request = latestRequest;
       const superseded = (): boolean => request !== latestRequest;
-
-      await Promise.all(referencedTableIds(draft).map((id) => ensureParsed(id)));
-      await yieldToQueue();
-      if (superseded()) return { kind: "superseded" };
-
-      const context = { tables: lookup, deps };
-      const rebuilt: SectionId[] = [];
-      const results = new Map<SectionId, SectionResult<SectionId>>();
-      for (const section of SECTION_IDS) {
-        const input = sectionInput(draft, section, buildOptions);
-        const tableKeys = sectionTableIds(draft, section).map(tableKey).join(",");
-        const memo = memos.get(section);
-        if (memo !== undefined && memo.tables === tableKeys && sameInput(memo.input, input)) {
-          results.set(section, memo.result);
-          continue;
-        }
-        const result = buildSection(section, draft, context);
-        memos.set(section, { input, tables: tableKeys, result });
-        results.set(section, result);
-        rebuilt.push(section);
-      }
-      const sections = collect(results);
-      await yieldToQueue();
-      if (superseded()) return { kind: "superseded" };
-
-      const creationDate = buildOptions.creationDate ?? today();
-      const reuse =
-        mergeMemo !== null &&
-        mergeMemo.key === creationDate &&
-        SECTION_IDS.every((id) => mergeMemo?.sections[id] === sections[id]);
-      const merge =
-        reuse && mergeMemo !== null ? mergeMemo.result : mergeSections(sections, { creationDate });
-      mergeMemo = { key: creationDate, sections, result: merge };
-      latestPmo = merge.outcome.kind === "built" ? merge.outcome.pmo : null;
-      if (previewMemo !== null && previewMemo.pmo !== latestPmo) previewMemo = null;
-
-      buildRevision += 1;
-      return {
-        kind: "built",
-        view: {
-          revision: buildRevision,
-          sections: {
-            microhaplotypes: view(sections.microhaplotypes, merge.notices),
-            panel: view(sections.panel, merge.notices),
-            specimens: view(sections.specimens, merge.notices),
-            librarySamples: view(sections.librarySamples, merge.notices),
-            project: view(sections.project, merge.notices),
-            sequencing: view(sections.sequencing, merge.notices),
-            bioinformatics: view(sections.bioinformatics, merge.notices),
-            readCounts: view(sections.readCounts, merge.notices),
-          },
-          overall: {
-            status: merge.status,
-            notices: merge.notices,
-            summary: merge.outcome.kind === "built" ? merge.outcome.summary : null,
-            publication: merge.outcome.kind === "built" ? merge.outcome.publication : null,
-            pmo:
-              merge.outcome.kind === "built" ? (merge.outcome.valid ? "valid" : "invalid") : "none",
-            schemaErrors: merge.outcome.kind === "built" ? merge.outcome.schemaErrors : 0,
-          },
-          suggestions: suggestionsFor(draft, results),
-          rebuilt,
-        },
+      const reportProgress = (progress: BuildProgress): void => {
+        if (superseded()) return;
+        progressActive = progress.phase !== "idle";
+        options.onProgress?.(progress);
       };
+
+      try {
+        await Promise.all(referencedTableIds(draft).map((id) => ensureParsed(id)));
+        await yieldToQueue();
+        if (superseded()) return { kind: "superseded" };
+
+        const cachedSection = (
+          section: SectionId,
+          input: SectionInput,
+          tableKeys: string,
+        ): SectionResult<SectionId> | undefined => {
+          const memo = memos.get(section);
+          return memo !== undefined && memo.tables === tableKeys && sameInput(memo.input, input)
+            ? memo.result
+            : undefined;
+        };
+
+        const context = { tables: lookup, deps };
+        const rebuilt: SectionId[] = [];
+        const results = new Map<SectionId, SectionResult<SectionId>>();
+        for (const section of SECTION_IDS) {
+          const input = sectionInput(draft, section, buildOptions);
+          const tableKeys = sectionTableIds(draft, section).map(tableKey).join(",");
+          const cached = cachedSection(section, input, tableKeys);
+          if (cached !== undefined) {
+            results.set(section, cached);
+            continue;
+          }
+          if (section === "microhaplotypes" && draft.microhaplotypes.table !== null) {
+            const entry = tables.get(draft.microhaplotypes.table.table.id);
+            if (entry !== undefined && entry.state.kind === "streamed") {
+              // Release the stale microhaplotypes fragment and derived PMO caches before
+              // Pass 2 allocates the new fragment, avoiding two multi-hundred-MB copies at once.
+              memos.delete("microhaplotypes");
+              mergeMemo = null;
+              latestPmo = null;
+              fileCache.clear();
+              sizeCache.clear();
+              previewMemo = null;
+              suggestionsMemo = null;
+
+              const streamedState = entry.state;
+              // oxlint-disable-next-line no-await-in-loop -- sections build in order; only a streamed allele table is async
+              const streamed = await buildMicrohaplotypesStream({
+                section: draft.microhaplotypes,
+                source: { kind: "ready", blob: entry.source, meta: streamedState.meta },
+                deps,
+                onProgress: (progress) => reportProgress({ phase: "reading", ...progress }),
+                isSuperseded: superseded,
+              });
+              if (streamed.kind === "superseded" || superseded()) return { kind: "superseded" };
+              if (streamed.totalRows > 0) {
+                streamedState.exactRowCount = streamed.totalRows;
+                if (
+                  draft.microhaplotypes.runName.mode === "column" &&
+                  draft.microhaplotypes.runName.column !== null
+                ) {
+                  streamedState.runNameValues = {
+                    column: draft.microhaplotypes.runName.column,
+                    values: streamed.runNameValues,
+                  };
+                }
+              }
+              memos.set(section, { input, tables: tableKeys, result: streamed.result });
+              results.set(section, streamed.result);
+              rebuilt.push(section);
+              continue;
+            }
+          }
+          const result = buildSection(section, draft, context);
+          memos.set(section, { input, tables: tableKeys, result });
+          results.set(section, result);
+          rebuilt.push(section);
+        }
+        const sections = collect(results);
+        await yieldToQueue();
+        if (superseded()) return { kind: "superseded" };
+
+        // If Pass 1 was skipped on a header-only mapping error, still gather run-name suggestions by streaming.
+        const mhap = draft.microhaplotypes;
+        if (mhap.runName.mode === "column" && mhap.runName.column !== null && mhap.table !== null) {
+          const entry = tables.get(mhap.table.table.id);
+          const runColumn = mhap.runName.column;
+          if (
+            entry !== undefined &&
+            entry.state.kind === "streamed" &&
+            entry.state.meta.columns.includes(runColumn) &&
+            entry.state.runNameValues?.column !== runColumn
+          ) {
+            try {
+              const distinct = await streamDistinctValues(entry.source, {
+                fileName: entry.fileName,
+                delimiter: entry.state.meta.delimiter,
+                encoding: entry.state.meta.encoding,
+                column: runColumn,
+                isSuperseded: superseded,
+              });
+              if (superseded()) return { kind: "superseded" };
+              entry.state.runNameValues = { column: runColumn, values: distinct.values };
+            } catch {
+              // Ignore suggestion-read failures; the section already reports any file error.
+            }
+          }
+        }
+
+        const creationDate = buildOptions.creationDate ?? today();
+        const reuse =
+          mergeMemo !== null &&
+          mergeMemo.key === creationDate &&
+          SECTION_IDS.every((id) => mergeMemo?.sections[id] === sections[id]);
+        const merge =
+          reuse && mergeMemo !== null
+            ? mergeMemo.result
+            : mergeSections(sections, { creationDate });
+        mergeMemo = { key: creationDate, sections, result: merge };
+        latestPmo = merge.outcome.kind === "built" ? merge.outcome.pmo : null;
+        fileCache.clearIfNot(latestPmo);
+        sizeCache.clearIfNot(latestPmo);
+        if (previewMemo !== null && previewMemo.pmo !== latestPmo) previewMemo = null;
+
+        buildRevision += 1;
+        return {
+          kind: "built",
+          view: {
+            revision: buildRevision,
+            sections: {
+              microhaplotypes: view(sections.microhaplotypes, merge.notices),
+              panel: view(sections.panel, merge.notices),
+              specimens: view(sections.specimens, merge.notices),
+              librarySamples: view(sections.librarySamples, merge.notices),
+              project: view(sections.project, merge.notices),
+              sequencing: view(sections.sequencing, merge.notices),
+              bioinformatics: view(sections.bioinformatics, merge.notices),
+              readCounts: view(sections.readCounts, merge.notices),
+            },
+            overall: {
+              status: merge.status,
+              notices: merge.notices,
+              summary: merge.outcome.kind === "built" ? merge.outcome.summary : null,
+              publication: merge.outcome.kind === "built" ? merge.outcome.publication : null,
+              pmo:
+                merge.outcome.kind === "built"
+                  ? merge.outcome.valid
+                    ? "valid"
+                    : "invalid"
+                  : "none",
+              schemaErrors: merge.outcome.kind === "built" ? merge.outcome.schemaErrors : 0,
+            },
+            suggestions: suggestionsFor(draft, results),
+            rebuilt,
+          },
+        };
+      } finally {
+        if (!superseded() && progressActive) {
+          progressActive = false;
+          options.onProgress?.({ phase: "idle" });
+        }
+      }
     },
 
     async getPmoFile(fileOptions = {}) {
-      return pmoFile(fileOptions.gzip ?? true);
+      const pmo = latestPmo;
+      if (pmo === null) return null;
+      return fileCache.getOrCreate(pmo, fileOptions.gzip ?? true);
     },
 
     async getPmoFileSize(fileOptions = {}) {
-      const file = await pmoFile(fileOptions.gzip ?? true);
-      return file === null ? null : { fileName: file.fileName, size: file.blob.size };
+      const pmo = latestPmo;
+      if (pmo === null) return null;
+      const gzip = fileOptions.gzip ?? true;
+      const existing = fileCache.peek(pmo, gzip);
+      if (existing !== undefined) {
+        const file = await existing;
+        return { fileName: file.fileName, size: file.blob.size };
+      }
+      return sizeCache.getOrCreate(pmo, gzip);
     },
 
     getPmoText(textOptions = {}) {
@@ -502,11 +820,12 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
     },
 
     async workingPmo(call) {
-      const step = answerWorkingPmo(held, call);
-      held = step.held;
+      const slot: PmoSlot = call.slot ?? "working";
+      const step = answerWorkingPmo(held[slot], call);
+      held[slot] = step.held;
       const work = await step.work;
-      const settled = settleWorkingPmo({ held, call, work });
-      held = settled.held;
+      const settled = settleWorkingPmo({ held: held[slot], call, work });
+      held[slot] = settled.held;
       return settled.result;
     },
 
@@ -522,9 +841,16 @@ export function createInThreadEngine(options: InThreadEngineOptions = {}): Engin
       memos.clear();
       mergeMemo = null;
       latestPmo = null;
+      fileCache.clear();
+      sizeCache.clear();
       previewMemo = null;
       suggestionsMemo = null;
-      held = NOTHING_HELD;
+      held.working = NOTHING_HELD;
+      held.published = NOTHING_HELD;
+      if (progressActive) {
+        progressActive = false;
+        options.onProgress?.({ phase: "idle" });
+      }
       return Promise.resolve();
     },
   };

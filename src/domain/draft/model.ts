@@ -53,7 +53,8 @@ export interface TableRef {
   readonly sheetName: string | null;
   /** Column names in file order. */
   readonly columns: readonly string[];
-  readonly rowCount: number;
+  /** Data rows in the file, or `null` when a large streamed file was not scanned to the end. */
+  readonly rowCount: number | null;
 }
 
 /** An imported table and the user's choice of which column feeds which field. */

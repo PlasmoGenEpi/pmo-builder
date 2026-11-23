@@ -14,7 +14,7 @@
  * makes the subset again from the request it was made from, and is sent once
  * more. If that fails too, the open state becomes failed.
  *
- * Pages read the state through the hooks in `workingPmoHooks.ts` and change
+ * Pages read the state through the hooks in `workingPmoHooks.tsx` and change
  * it only through the session's methods.
  */
 import { t } from "@lingui/core/macro";
@@ -25,8 +25,10 @@ import { unreachable } from "@/domain/draft";
 import { describeError } from "@/domain/errors";
 import type {
   OpenOutcome,
+  PmoSlot,
   SubsetDetails,
   SubsetRequest,
+  TableFormat,
   WorkingPmoAnswer,
   WorkingPmoKind,
   WorkingPmoQuery,
@@ -103,6 +105,8 @@ export interface WorkingPmoState {
    * back. Reset to the original on each open.
    */
   readonly source: WorkingSource;
+  /** The delimited format for table downloads on Tables and Summary. Defaults to `"csv"`. */
+  readonly tableFormat: TableFormat;
 }
 
 /** The subset of the working PMO. */
@@ -161,6 +165,8 @@ export interface WorkingPmoSessionOptions {
   readonly flush: () => Promise<void>;
   /** Reports an event for usage counts. */
   readonly emit: (event: WorkingPmoEvent) => void;
+  /** Which held PMO slot in the engine this session owns. Defaults to `"working"`. */
+  readonly slot?: PmoSlot;
 }
 
 /** The session's state, to read and watch. */
@@ -171,7 +177,7 @@ export type WorkingPmoStore = Pick<
 
 /** The working PMO session. */
 export interface WorkingPmoSession {
-  /** The state. Read it with the hooks in `workingPmoHooks.ts`. */
+  /** The state. Read it with the hooks in `workingPmoHooks.tsx`. */
   readonly state: WorkingPmoStore;
   /**
    * Opens a file or the built PMO in place of whatever was open, and runs
@@ -199,6 +205,8 @@ export interface WorkingPmoSession {
    * can be chosen only once one is made.
    */
   setSource(source: WorkingSource): void;
+  /** Sets the delimited format for table downloads on Tables and Summary. */
+  setTableFormat(format: TableFormat): void;
 }
 
 const NO_SUBSET: SubsetState = { kind: "none" };
@@ -209,6 +217,7 @@ const INITIAL: WorkingPmoState = {
   minReads: null,
   subset: NO_SUBSET,
   source: "original",
+  tableFormat: "csv",
 };
 
 /** A request the worker stopped before answering. */
@@ -243,7 +252,7 @@ function checkResultOf(outcome: OpenOutcome | null): PmoFileCheckResult {
 
 /** Creates a working PMO session on `engine`. Nothing is open at first. */
 export function createWorkingPmoSession(options: WorkingPmoSessionOptions): WorkingPmoSession {
-  const { engine, flush, emit } = options;
+  const { engine, flush, emit, slot = "working" } = options;
   const store = createStore<WorkingPmoState>(() => INITIAL);
 
   /**
@@ -255,7 +264,7 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
     request: WorkingPmoRequest<K>,
   ): Promise<WorkingPmoAnswer<K> | Stopped> => {
     try {
-      return await engine.workingPmo({ generation, request });
+      return await engine.workingPmo({ slot, generation, request });
     } catch (error) {
       if (!isEngineStoppedError(error)) return { kind: "failed", message: describeError(error) };
       emit({ kind: "engine-stopped" });
@@ -467,6 +476,10 @@ export function createWorkingPmoSession(options: WorkingPmoSessionOptions): Work
     setSource(source) {
       if (source === "subset" && store.getState().subset.kind !== "made") return;
       store.setState({ source });
+    },
+
+    setTableFormat(tableFormat) {
+      store.setState({ tableFormat });
     },
   };
 }

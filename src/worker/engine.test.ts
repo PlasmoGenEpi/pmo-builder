@@ -363,6 +363,134 @@ describe("engine", () => {
       notices: [expect.objectContaining({ code: "table/file-missing" })],
     });
   });
+
+  it("reuses the cached microhaplotypes section across rebuilds when project or panel changes", async () => {
+    const engine = testEngine();
+    const draft = await importExample(engine);
+    const first = await engine.build(draft, { creationDate: "2026-01-01" });
+    if (first.kind !== "built") throw new Error("first build superseded");
+    const firstFile = await engine.getPmoFile({ gzip: false });
+    if (firstFile === null) throw new Error("missing first PMO");
+    const firstPmo: unknown = JSON.parse(await firstFile.blob.text());
+
+    const withProject: Draft = {
+      ...draft,
+      project: {
+        ...draft.project,
+        records: [
+          createProjectRecord({
+            project_name: "PRJNA1040019",
+            project_description: "Updated study",
+          }),
+        ],
+      },
+    };
+    const second = await engine.build(withProject, { creationDate: "2026-01-01" });
+    if (second.kind !== "built") throw new Error("second build superseded");
+    expect(second.view.rebuilt).toEqual(["project"]);
+    expect(second.view.overall).toMatchObject({ status: "ready", pmo: "valid" });
+    expect(second.view.overall.summary).toMatchObject({
+      projects: 1,
+      targets: 276,
+      targetsWithCalls: 21,
+      librarySamplesWithDetections: 49,
+    });
+
+    const panelText = await exampleBlob("mad4hatter_panel_info_example.csv").text();
+    const lines = panelText.split(/\r?\n/);
+    const header = lines[0] ?? "";
+    const extraRow = [
+      "extra_target_00",
+      "10",
+      "100",
+      "20",
+      "90",
+      "TGCATGCATGCATGCATGCA",
+      "90",
+      "70",
+      "ACGTACGTACGTACGTACGT",
+      "diversity",
+    ].join("\t");
+    const expandedPanel = imported(
+      await engine.importFile({
+        file: new Blob([[header, extraRow, ...lines.slice(1)].join("\n")]),
+        fileName: "expanded_panel.tsv",
+      }),
+    );
+    const firstPanel = withProject.panel.panels[0];
+    if (firstPanel === undefined) throw new Error("missing panel");
+    const withExpandedPanel: Draft = {
+      ...withProject,
+      panel: {
+        panels: [{ ...firstPanel, table: mapped(expandedPanel, EXAMPLE_MAPPINGS.panel) }],
+      },
+    };
+    const third = await engine.build(withExpandedPanel, { creationDate: "2026-01-01" });
+    if (third.kind !== "built") throw new Error("third build superseded");
+    expect(third.view.rebuilt).toEqual(["panel"]);
+    expect(third.view.overall).toMatchObject({ status: "ready", pmo: "valid" });
+    expect(third.view.overall.summary).toMatchObject({
+      projects: 1,
+      targets: 277,
+      targetsWithCalls: 21,
+      librarySamplesWithDetections: 49,
+    });
+    const thirdFile = await engine.getPmoFile({ gzip: false });
+    if (thirdFile === null) throw new Error("missing third PMO");
+    const thirdPmo: unknown = JSON.parse(await thirdFile.blob.text());
+    expect(thirdPmo).toMatchObject({
+      project_info: [{ project_name: "PRJNA1040019", project_description: "Updated study" }],
+      detected_microhaplotypes:
+        typeof firstPmo === "object" && firstPmo !== null && "detected_microhaplotypes" in firstPmo
+          ? firstPmo.detected_microhaplotypes
+          : [],
+    });
+  });
+
+  it("counts stream sizes matching the downloaded files and refreshes memos after a rebuild", async () => {
+    const engine = testEngine();
+    const draft = await importExample(engine);
+    await engine.build(draft, { creationDate: "2026-01-01" });
+
+    const [plainSize, gzSize] = await Promise.all([
+      engine.getPmoFileSize({ gzip: false }),
+      engine.getPmoFileSize({ gzip: true }),
+    ]);
+    const [plainFile, gzFile] = await Promise.all([
+      engine.getPmoFile({ gzip: false }),
+      engine.getPmoFile({ gzip: true }),
+    ]);
+    if (plainFile === null || gzFile === null) throw new Error("missing exported PMO files");
+    expect(plainSize).toEqual({ fileName: plainFile.fileName, size: plainFile.blob.size });
+    expect(gzSize).toEqual({ fileName: gzFile.fileName, size: gzFile.blob.size });
+    // Calling getPmoFileSize after getPmoFile reuses the file size consistently.
+    expect(await engine.getPmoFileSize({ gzip: true })).toEqual(gzSize);
+
+    const firstPreview = await engine.getPmoText({ maxLength: 40 });
+    expect(firstPreview).toEqual({
+      text: expect.any(String),
+      truncated: true,
+      length: null,
+    });
+    expect(firstPreview?.text).toHaveLength(40);
+
+    const updated: Draft = {
+      ...draft,
+      project: {
+        ...draft.project,
+        records: [
+          createProjectRecord({ project_name: "PRJNA1040019", project_description: "Example" }),
+        ],
+      },
+    };
+    await engine.build(updated, { creationDate: "2026-01-01" });
+
+    const nextSize = await engine.getPmoFileSize({ gzip: true });
+    const nextFile = await engine.getPmoFile({ gzip: true });
+    expect(nextFile?.fileName).toBe("PRJNA1040019.pmo.json.gz");
+    expect(nextSize).toEqual({ fileName: "PRJNA1040019.pmo.json.gz", size: nextFile?.blob.size });
+    expect(nextFile).not.toBe(gzFile);
+  });
 });
 
 describe("worker protocol", () => {
@@ -465,5 +593,48 @@ describe("worker protocol", () => {
     });
     const client = createEngineClient(page);
     await expect(client.getPmoText()).rejects.toThrow("unexpected answer to getPmoText");
+  });
+
+  it("carries truncated previews with null length across the worker boundary", async () => {
+    const [page, worker] = endpointPair();
+    const stop = serveEngine(testEngine(), worker);
+    const client = createEngineClient(page);
+    const draft = await importExample(client);
+    await client.build(draft, { creationDate: "2026-01-01" });
+
+    const cut = await client.getPmoText({ maxLength: 40 });
+    expect(cut?.truncated).toBe(true);
+    expect(cut?.length).toBeNull();
+    expect(cut?.text).toHaveLength(40);
+
+    const full = await client.getPmoText({ maxLength: 1_000_000 });
+    expect(full?.truncated).toBe(false);
+    expect(full?.length).toBe(full?.text.length);
+    stop();
+  });
+
+  it("refuses getPmoText answers that violate the discriminated union shape", async () => {
+    for (const badValue of [
+      { text: "{}", length: null },
+      { text: "x", truncated: true, length: 5 },
+      { text: "x", truncated: false, length: null },
+    ]) {
+      const [page, worker] = endpointPair();
+      worker.addEventListener("message", (event) => {
+        const data: unknown = event.data;
+        if (!isCallMessage(data)) return;
+        const result = {
+          type: "result",
+          id: data.id,
+          ok: true,
+          value: badValue,
+        };
+        // oxlint-disable-next-line unicorn/require-post-message-target-origin -- not a window
+        worker.postMessage(result);
+      });
+      const client = createEngineClient(page);
+      // oxlint-disable-next-line no-await-in-loop -- checking each invalid payload sequentially
+      await expect(client.getPmoText()).rejects.toThrow("unexpected answer to getPmoText");
+    }
   });
 });

@@ -3,7 +3,7 @@ import { I18nProvider } from "@lingui/react";
 import { Suspense, useEffect, type ReactNode } from "react";
 import { Redirect, Route, Router, Switch, useLocation, type BaseLocationHook } from "wouter";
 // Aliased: the router takes the hook itself as a value.
-import { useHashLocation as hashLocation } from "wouter/use-hash-location";
+import { useHashLocation as hashLocation } from "./hashLocation";
 
 import { recordPageOpened, recordStepOpened } from "@/analytics";
 import { i18n } from "@/i18n";
@@ -15,6 +15,7 @@ import { HomePage } from "./HomePage";
 import { Layout } from "./Layout";
 import { NotFoundPage } from "./NotFoundPage";
 import { PageContainer } from "./PageContainer";
+import { pageIdentity } from "./pageIdentity";
 import { RestoreNotice } from "./RestoreNotice";
 import {
   BUILD_PATH,
@@ -36,7 +37,7 @@ const PmoFile = page(() =>
   import("@/features/pmo-file/PmoFilePage").then((module) => module.PmoFileRoute),
 );
 
-const PmoPublished = page(() =>
+const PublishedView = page(() =>
   import("@/features/pmo-file/OpenPublished").then((module) => module.OpenPublishedRoute),
 );
 
@@ -105,7 +106,12 @@ function useRecordStepOpened(location: string): void {
     // Other pages are counted by kind. A dataset page never says which dataset.
     if (location === "/published") recordPageOpened("published");
     else if (location.startsWith("/published/")) recordPageOpened("dataset");
-    else if (location === "/pmo" || location.startsWith("/pmo/")) recordPageOpened("pmo-file");
+    else if (
+      location === "/pmo" ||
+      (location.startsWith("/pmo/") && !location.startsWith("/pmo/published/"))
+    ) {
+      recordPageOpened("pmo-file");
+    }
   }, [location]);
 }
 
@@ -114,7 +120,7 @@ function Routes() {
   useRecordStepOpened(location);
   usePreloadNextStep(location);
   return (
-    <ErrorBoundary key={location}>
+    <ErrorBoundary key={pageIdentity(location)}>
       <Suspense fallback={<PageSkeleton />}>
         <Switch>
           <Route path="/">
@@ -128,9 +134,19 @@ function Routes() {
           ))}
           <Route path="/published" component={Published.component} />
           <Route path="/published/:id" component={PublishedDataset.component} />
+          <Route path="/published/:id/:tab" component={PublishedView.component} />
           <Route path="/pmo" component={PmoFile.component} />
-          <Route path="/pmo/published/:id" component={PmoPublished.component} />
-          <Route path="/pmo/published/:id/:tab" component={PmoPublished.component} />
+          {/* Legacy addresses from before published PMOs had their own view. */}
+          <Route path="/pmo/published/:id">
+            {(params: { id: string }) => (
+              <Redirect to={`/published/${params.id}/overview`} replace />
+            )}
+          </Route>
+          <Route path="/pmo/published/:id/:tab">
+            {(params: { id: string; tab: string }) => (
+              <Redirect to={`/published/${params.id}/${params.tab}`} replace />
+            )}
+          </Route>
           <Route path="/pmo/:tab" component={PmoFile.component} />
           {/* Addresses from before the Build and My PMO file sections, kept working. */}
           {STEPS.map((step) => (

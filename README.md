@@ -100,12 +100,28 @@ page for each with its numbers, its download from Zenodo and a citation.
 Zenodo is the store of record. The list is a file, `repository/index.json`,
 that `pnpm harvest` rebuilds from Zenodo before each build:
 
-- it lists the community's accepted records that carry the keyword
+- it lists every accepted record in the community that carries the keyword
   "Portable Microhaplotype Object";
-- it downloads each record's `.json` or `.json.gz` file and keeps the record
-  if the file matches the PMO format and its tables link up;
-- a record that fails is left out and named on the workflow run's page, for
-  the curators.
+- when a previous catalogue is available (from `--fallback`, or from `--out`
+  when `--fallback` is omitted), any record whose PMO file fingerprint matches
+  the last run keeps its entry and specimen rows with its title, authors and
+  other listing details refreshed, without downloading the file again;
+- it downloads the `.json` or `.json.gz` file of each new or changed record
+  and keeps the record if the file matches the PMO format and its tables link
+  up;
+- a record removed from the community is dropped from both `index.json` and
+  `specimens.json`;
+- a record that fails is left out, tried again on the next run, and named on
+  the workflow run's page along with how many records were carried over,
+  downloaded and left out.
+
+If the previous catalogue cannot be read or is in an older format version, the
+harvester runs a full harvest. Pass `--full` to force a full rebuild even when
+a previous catalogue exists:
+
+```bash
+pnpm harvest --community pmocommunity --full
+```
 
 The Deploy workflow harvests on every push and every night. If Zenodo cannot
 be read, it keeps the list already on the site. GitHub pauses a nightly
@@ -117,8 +133,9 @@ list, remove its record from the community on Zenodo. `specimens.json`, one
 row per specimen, is written beside the index for a later search across
 datasets; no page reads it yet.
 
-Run `pnpm harvest --community pmocommunity` to try the list locally. The
-output folder, `public/repository/`, is not committed.
+Run `pnpm harvest --community pmocommunity` to try the list locally. Running
+it again carries unchanged records over from `public/repository/`. The output
+folder, `public/repository/`, is not committed.
 
 ## My PMO file
 
@@ -185,18 +202,63 @@ the worker.
 
 ## Large files
 
-Files are read in the browser, so the limit is the memory of a browser tab.
-Delimited text files of up to about 100 MB work comfortably. The app refuses
-a text file above 300 MB once unpacked, and an Excel workbook above 50 MB
-(`IMPORT_LIMITS` in `src/domain/import/errors.ts`). To measure a change:
+Files are read in the browser, so the limit is the memory of a browser tab
+(`IMPORT_LIMITS` in `src/domain/import/errors.ts`):
+
+- **Allele table (CSV, TSV, TXT, plain or `.gz`):** up to **3 GB** of text once
+  unpacked. The worker reads, types, builds and writes the allele table and the
+  PMO in streaming chunks, so neither the whole table nor the full PMO JSON text
+  is held in memory at once.
+- **Other delimited tables** (panel, specimens, library samples, study tables,
+  read counts): up to **300 MB** once unpacked. These tables grow with samples
+  or targets rather than detections and are read whole.
+- **Excel workbooks (`.xlsx`):** up to **50 MB** as stored (Excel sheets cannot
+  hold more than 1,048,576 rows).
+- **Opening an existing PMO in My PMO file:** still reads the whole JSON text at
+  once, so it stays limited to **300 MB** on upload (and browser single-string
+  limits near **512 MB** of JSON for compressed files). Streaming an existing
+  PMO file is separate work.
+
+### Measured performance
+
+Measured on generated MAD4HATTER-shaped tables (`scripts/generate-large-tables.mjs`,
+250 targets, 150 to 300 bp sequences, ~259 MB CSV per million rows).
+
+In Node (`scripts/bench-large-files.mjs`, Node v26.13.1, default 4,192 MB heap limit):
+
+| Rows            | CSV size   | First build (sections, merge, validate) | First build peak RSS (retained heap) | Rebuild peak RSS (run-name edit) | Export `.json.gz` | Streamed plain JSON size | Preview (200k chars) |
+| --------------- | ---------- | --------------------------------------- | ------------------------------------ | -------------------------------- | ----------------- | ------------------------ | -------------------- |
+| 1M (999,997)    | 259.0 MB   | 6.0 s                                   | 547 MB (142 MB)                      | 911 MB (6.9 s)                   | 0.7 s (5.5 MB)    | 0.4 s (131.5 MB)         | 5 ms                 |
+| 2M (1,999,995)  | 518.0 MB   | 9.9 s                                   | 738 MB (273 MB)                      | 1,653 MB (8.6 s)                 | 1.4 s (10.9 MB)   | 0.8 s (262.4 MB)         | 6 ms                 |
+| 5M (5,000,000)  | 1,295.0 MB | 22.1 s                                  | 1,144 MB (664 MB)                    | 2,890 MB (19.3 s)                | 3.4 s (27.2 MB)   | 2.0 s (655.2 MB)         | 8 ms                 |
+| 10M (9,999,986) | 2,589.9 MB | 39.8 s                                  | 2,566 MB (1,316 MB)                  | 2,508 MB (39.9 s)                | 6.6 s (54.4 MB)   | 3.8 s (1,309.7 MB)       | 9 ms                 |
+
+In Chromium (`e2e/large-allele-table.spec.ts`, Playwright Desktop Chrome, full upload,
+matching, build, validation and `.json.gz` download):
+
+| Rows           | CSV size   | End-to-end time | Peak worker JS heap (used / total) | Peak Chromium RSS | `.json.gz` size | Unpacked JSON size |
+| -------------- | ---------- | --------------- | ---------------------------------- | ----------------- | --------------- | ------------------ |
+| 2M (1,999,995) | 518.0 MB   | 12.0 s          | 249 MB / 287 MB                    | 1,409 MB          | 10.9 MB         | 262.4 MB           |
+| 5M (5,000,000) | 1,295.0 MB | 23.4 s          | 595 MB / 650 MB                    | 2,455 MB          | 27.2 MB         | 655.2 MB           |
+
+Safari has not been measured in CI and should be checked by hand on large files.
+
+### Running the benchmarks
+
+Generate tables in a temporary folder outside the repository and delete it when
+done:
 
 ```bash
-node scripts/generate-large-tables.mjs /tmp/big --rows 300000
-node scripts/bench-large-files.mjs /tmp/big
+DIR=$(mktemp -d /tmp/pmo-bench-XXXXXX)
+node scripts/generate-large-tables.mjs "$DIR" --rows 2000000
+node scripts/bench-large-files.mjs "$DIR"
+LARGE_E2E_DIR="$DIR" pnpm e2e large-allele-table
+rm -rf "$DIR"
 ```
 
-The benchmark runs the engine in Node and reports the time and peak memory
-of the import, build, merge, validation and export.
+`scripts/bench-large-files.mjs` runs the engine in Node (`--pass breakdown`
+splits each build stage). The Playwright test in `e2e/large-allele-table.spec.ts`
+is skipped during normal `pnpm e2e` runs unless `LARGE_E2E_DIR` is set.
 
 ## Privacy
 
@@ -223,36 +285,36 @@ Then open the address it prints.
 
 ## Commands
 
-| Command           | What it does                                                     |
-| ----------------- | ---------------------------------------------------------------- |
-| `pnpm dev`        | Dev server with hot reload                                       |
-| `pnpm build`      | Production build into `dist/`                                    |
-| `pnpm preview`    | Serves `dist/`                                                   |
-| `pnpm typecheck`  | TypeScript, no output                                            |
-| `pnpm lint`       | oxlint, type-aware                                               |
-| `pnpm format`     | oxfmt, writes files (`pnpm format:check` only checks)            |
-| `pnpm test`       | Unit tests with Vitest                                           |
-| `pnpm e2e`        | Builds, then runs the Playwright and axe tests against the build |
-| `pnpm check`      | Format check, lint, typecheck, unit tests and build              |
-| `pnpm harvest`    | Rebuilds the list of published PMOs from the Zenodo community    |
-| `pnpm lib:update` | Rebuilds pmotools-ts from `../pmotools-ts` and vendors it        |
+| Command          | What it does                                                     |
+| ---------------- | ---------------------------------------------------------------- |
+| `pnpm dev`       | Dev server with hot reload                                       |
+| `pnpm build`     | Production build into `dist/`                                    |
+| `pnpm preview`   | Serves `dist/`                                                   |
+| `pnpm typecheck` | TypeScript, no output                                            |
+| `pnpm lint`      | oxlint, type-aware                                               |
+| `pnpm format`    | oxfmt, writes files (`pnpm format:check` only checks)            |
+| `pnpm test`      | Unit tests with Vitest                                           |
+| `pnpm e2e`       | Builds, then runs the Playwright and axe tests against the build |
+| `pnpm check`     | Format check, lint, typecheck, unit tests and build              |
+| `pnpm harvest`   | Rebuilds the list of published PMOs from the Zenodo community    |
 
 A pre-commit hook formats and lints staged files. Typecheck and tests run in
 CI.
 
 ## The pmotools-ts dependency
 
-pmotools-ts is not on npm yet. The app depends on a tarball in `vendor/`
-(`"pmotools-ts": "file:vendor/pmotools-ts-0.0.0.tgz"`). To pick up changes,
-check out pmotools-ts next to this repository and run:
+The app reads and writes PMO files with
+[pmotools-ts](https://www.npmjs.com/package/pmotools-ts), an ordinary npm
+dependency. Dependabot proposes each new version in a pull request of its own.
+
+To try unreleased library changes, check out pmotools-ts next to this
+repository and link it:
 
 ```bash
-pnpm lib:update            # or: pnpm lib:update /path/to/pmotools-ts
+pnpm link ../pmotools-ts   # undo with: pnpm unlink pmotools-ts
 ```
 
-This builds the library, packs it into `vendor/` and reinstalls it. Commit the
-new tarball and `pnpm-lock.yaml` together. Once pmotools-ts is published, the
-dependency becomes an ordinary npm version and `vendor/` goes away.
+Release the library first, then move the app to the new version.
 
 ## Deploying
 

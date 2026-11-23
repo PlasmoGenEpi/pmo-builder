@@ -97,6 +97,12 @@ export function importIssueCode(failure: ImportFailure): string {
   }
 }
 
+/**
+ * Lower bound for a large streamed file whose import scan stopped past
+ * `PREVIEW_SCAN_ROWS` (2,000), so usage counts never bucket it as `"0"` rows.
+ */
+const STREAMED_UNCOUNTED_ROWS = 2_001;
+
 function recordEvent(event: AppEvent, recorder: UsageRecorder): void {
   switch (event.kind) {
     case "table-imported":
@@ -104,7 +110,7 @@ function recordEvent(event: AppEvent, recorder: UsageRecorder): void {
         table: fieldSetForSlot(event.slot),
         route: event.route,
         ...fileFormatFromName(event.table.fileName),
-        rows: event.table.rowCount,
+        rows: event.table.rowCount ?? STREAMED_UNCOUNTED_ROWS,
         columns: event.table.columns.length,
       });
       return;

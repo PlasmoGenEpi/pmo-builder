@@ -22,6 +22,7 @@ import {
   exportSpecimenTravelMetaTable,
   exportTargetedGenomesMetaTable,
   exportTargetInfoMetaTable,
+  filterPmoBySpecimenIds,
   filterPmoBySpecimenNames,
   filterPmoByTargetNames,
   formatDelimited,
@@ -37,9 +38,14 @@ import { exportPmo, type PmoFile } from "@/domain/build/export";
 import { summarisePmo } from "@/domain/build/merge";
 import { summarisePublication } from "@/domain/build/publication";
 
+import { baseNameOf } from "./baseName";
+import { isPrimitive, readCountsRowCount, readCountsTable } from "./readCountsTable";
+import { groupValue } from "./sampleDetails";
 import {
+  COLLECTION_YEAR_FIELD,
   MAX_META_VALUES,
   TABLE_IDS,
+  TABLE_PREVIEW_LIMIT,
   type MetaField,
   type OpenOutcome,
   type PmoChoices,
@@ -50,6 +56,7 @@ import {
   type TableFormat,
   type TableId,
   type TableInfo,
+  type TablePreview,
   type TablesArchive,
 } from "./types";
 import { zipFiles } from "./zip";
@@ -66,13 +73,18 @@ const NOT_CHOSEN_BY = new Set([
   "specimen_accession",
 ]);
 
-function isPrimitive(value: unknown): boolean {
-  return (
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean" ||
-    value === null
-  );
+/** Derived collection year field, when between 2 and {@link MAX_META_VALUES} years exist. */
+function collectionYearField(pmo: Pmo): MetaField | null {
+  const counts = new Map<string, number>();
+  pmo.specimen_info.forEach((_, index) => {
+    const year = groupValue(pmo, index, "collection_year");
+    if (year !== null) counts.set(year, (counts.get(year) ?? 0) + 1);
+  });
+  if (counts.size < 2 || counts.size > MAX_META_VALUES) return null;
+  const values = [...counts.entries()]
+    .toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([value, count]) => ({ value, label: value, count }));
+  return { field: COLLECTION_YEAR_FIELD, source: "collectionYear", values };
 }
 
 /** The metadata fields specimens can be chosen by, with their values. */
@@ -81,7 +93,7 @@ function metadataChoices(pmo: Pmo): MetaField[] {
   const fields = countSpecimenPerMetaFields(pmo).rows.flatMap((row) =>
     typeof row[0] === "string" ? [row[0]] : [],
   );
-  return fields.flatMap((field): MetaField[] => {
+  const raw = fields.flatMap((field): MetaField[] => {
     if (NOT_CHOSEN_BY.has(field)) return [];
     const simple = pmo.specimen_info.every((specimen) => {
       const record: Readonly<Record<string, unknown>> = specimen;
@@ -98,6 +110,7 @@ function metadataChoices(pmo: Pmo): MetaField[] {
     return [
       {
         field,
+        source: "specimen",
         values: counts.map(({ value, count }) => ({
           value,
           count,
@@ -106,6 +119,13 @@ function metadataChoices(pmo: Pmo): MetaField[] {
       },
     ];
   });
+  if (raw.some((item) => item.field === COLLECTION_YEAR_FIELD)) return raw;
+  const years = collectionYearField(pmo);
+  if (years === null) return raw;
+  const dateIndex = raw.findIndex((item) => item.field === "collection_date");
+  return dateIndex === -1
+    ? [...raw, years]
+    : [...raw.slice(0, dateIndex), years, ...raw.slice(dateIndex)];
 }
 
 /** A primitive written as Python's `str()` writes it, as the metadata filter compares. */
@@ -114,6 +134,19 @@ function asText(value: unknown): string {
   if (typeof value === "boolean") return value ? "True" : "False";
   if (value === null || value === undefined) return "None";
   return typeof value === "number" ? String(value) : JSON.stringify(value);
+}
+
+/** The most reads any single detected microhaplotype has in `pmo`. */
+function maxReadsOf(pmo: Pmo): number {
+  let maxReads = 0;
+  for (const run of pmo.detected_microhaplotypes) {
+    for (const sample of run.library_samples) {
+      for (const result of sample.target_results) {
+        for (const mhap of result.mhaps) maxReads = Math.max(maxReads, mhap.reads);
+      }
+    }
+  }
+  return maxReads;
 }
 
 /** What a subset of `pmo` can keep. */
@@ -129,14 +162,6 @@ export function choicesOf(pmo: Pmo): PmoChoices {
   const detected = new Set(
     pmo.representative_microhaplotypes.targets.map((target) => target.target_id),
   );
-  let maxReads = 0;
-  for (const run of pmo.detected_microhaplotypes) {
-    for (const sample of run.library_samples) {
-      for (const result of sample.target_results) {
-        for (const mhap of result.mhaps) maxReads = Math.max(maxReads, mhap.reads);
-      }
-    }
-  }
   return {
     specimens: pmo.specimen_info.map((specimen, index) => {
       const record: Readonly<Record<string, unknown>> = specimen;
@@ -144,9 +169,13 @@ export function choicesOf(pmo: Pmo): PmoChoices {
         name: specimen.specimen_name,
         librarySamples: librariesPerSpecimen.get(index) ?? 0,
         values: Object.fromEntries(
-          metadata.flatMap(({ field }) =>
-            field in record ? [[field, asText(record[field])]] : [],
-          ),
+          metadata.flatMap(({ field, source }): readonly [string, string][] => {
+            if (source === "collectionYear") {
+              const year = groupValue(pmo, index, "collection_year");
+              return year === null ? [] : [[field, year]];
+            }
+            return field in record ? [[field, asText(record[field])]] : [];
+          }),
         ),
       };
     }),
@@ -155,7 +184,7 @@ export function choicesOf(pmo: Pmo): PmoChoices {
       detected.has(index) ? [target.target_name] : [],
     ),
     targetsWithoutData: pmo.target_info.filter((_, index) => !detected.has(index)).length,
-    maxReads,
+    maxReads: maxReadsOf(pmo),
   };
 }
 
@@ -169,6 +198,8 @@ function alleleCount(pmo: Pmo): number {
   return count;
 }
 
+export { readCountsRowCount, readCountsTable } from "./readCountsTable";
+
 /** The tables `pmo` can give, with their row counts. Sections it lacks are left out. */
 export function tablesOf(pmo: Pmo): TableInfo[] {
   const rows: Record<TableId, number | null> = {
@@ -177,6 +208,7 @@ export function tablesOf(pmo: Pmo): TableInfo[] {
     librarySamples: pmo.library_sample_info.length,
     targets: pmo.target_info.length,
     panels: pmo.panel_info.length === 0 ? null : exportPanelInfoMetaTable(pmo).rows.length,
+    readCounts: readCountsRowCount(pmo),
     travel: pmo.specimen_info.reduce(
       (sum, specimen) => sum + (specimen.travel_out_six_month?.length ?? 0),
       0,
@@ -230,11 +262,7 @@ export async function openPmo(
   return { outcome: describe(pmo, fileName, check.warnings), pmo };
 }
 
-/** A file name without `.json`, `.json.gz` or `.gz`, and without a `.pmo` before them. */
-export function baseNameOf(fileName: string): string {
-  const base = fileName.replace(/(?:\.pmo)?(?:\.json(?:\.gz)?|\.gz)$/i, "");
-  return base === "" ? "pmo" : base;
-}
+export { baseNameOf } from "./baseName";
 
 /** Applies `request` to `pmo`: specimens, then targets, then reads. Throws what pmotools-ts throws. */
 export function subsetOf(pmo: Pmo, request: SubsetRequest): Pmo {
@@ -242,9 +270,20 @@ export function subsetOf(pmo: Pmo, request: SubsetRequest): Pmo {
   if (request.specimens.kind === "names") {
     out = filterPmoBySpecimenNames(out, request.specimens.names);
   } else if (request.specimens.kind === "metadata") {
-    out = extractFromPmoSamplesWithMetaGroupings(out, [
-      { criteria: request.specimens.criteria },
-    ]).pmo;
+    if (Object.keys(request.specimens.criteria).length > 0) {
+      out = extractFromPmoSamplesWithMetaGroupings(out, [
+        { criteria: request.specimens.criteria },
+      ]).pmo;
+    }
+    const years = request.specimens.collectionYears;
+    if (years !== undefined && years.length > 0) {
+      const wanted = new Set(years);
+      const ids = out.specimen_info.flatMap((_, index) => {
+        const year = groupValue(out, index, "collection_year");
+        return year !== null && wanted.has(year) ? [index] : [];
+      });
+      out = filterPmoBySpecimenIds(out, ids);
+    }
   }
   if (request.targets.kind === "names") out = filterPmoByTargetNames(out, request.targets.names);
   if (request.minReads > 0) out = extractFromPmoWithReadFilter(out, request.minReads);
@@ -263,12 +302,22 @@ function chosenSpecimens(pmo: Pmo, choice: SubsetRequest["specimens"]): Set<numb
     return chosen;
   }
   const criteria = Object.entries(choice.criteria);
+  const years =
+    choice.collectionYears !== undefined && choice.collectionYears.length > 0
+      ? new Set(choice.collectionYears)
+      : null;
+  if (criteria.length === 0 && years === null) return null;
   pmo.specimen_info.forEach((specimen, index) => {
     const record: Readonly<Record<string, unknown>> = specimen;
-    const matches = criteria.every(
+    const matchesCriteria = criteria.every(
       ([field, values]) => field in record && values.includes(asText(record[field])),
     );
-    if (matches) chosen.add(index);
+    if (!matchesCriteria) return;
+    if (years !== null) {
+      const year = groupValue(pmo, index, "collection_year");
+      if (year === null || !years.has(year)) return;
+    }
+    chosen.add(index);
   });
   return chosen;
 }
@@ -350,6 +399,7 @@ export function makeSubset(
       summary: summarisePmo(subset),
       publication: summarisePublication(subset),
       tables: tablesOf(subset),
+      maxReads: maxReadsOf(subset),
       problems: problemsOf(subset),
     },
     subset,
@@ -362,6 +412,7 @@ const FILE_PARTS: Readonly<Record<TableId, string>> = {
   librarySamples: "library-samples",
   targets: "targets",
   panels: "panels",
+  readCounts: "read-counts",
   travel: "travel",
   projects: "projects",
   sequencing: "sequencing",
@@ -391,6 +442,8 @@ function tableOf(pmo: Pmo, id: TableId): ColumnTable {
       return exportTargetInfoMetaTable(pmo);
     case "panels":
       return exportPanelInfoMetaTable(pmo);
+    case "readCounts":
+      return readCountsTable(pmo);
     case "travel":
       return exportSpecimenTravelMetaTable(pmo);
     case "projects":
@@ -419,6 +472,20 @@ export function tableFile(
     delimiter: options.format === "tsv" ? "\t" : ",",
   });
   return { fileName: `${options.baseName}-${FILE_PARTS[options.id]}.${options.format}`, text };
+}
+
+/** The column names and first rows of one table of `pmo`, matching {@link tableFile}. */
+export function tablePreview(
+  pmo: Pmo,
+  options: { readonly id: TableId; readonly limit?: number },
+): TablePreview {
+  const table = tableOf(pmo, options.id);
+  const limit = Math.max(0, options.limit ?? TABLE_PREVIEW_LIMIT);
+  return {
+    columns: table.columns,
+    rows: table.rows.slice(0, limit),
+    totalRows: table.rows.length,
+  };
 }
 
 /** Every table of `pmo`, as {@link tableFile} writes them, in one zip named after `baseName`. */

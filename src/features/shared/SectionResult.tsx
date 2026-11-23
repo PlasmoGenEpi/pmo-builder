@@ -4,8 +4,8 @@ import { useId, useState, type ReactNode } from "react";
 
 import type { SectionSummaries } from "@/domain/build";
 import type { Notice, SectionId, SectionStatus } from "@/domain/types";
-import { useBuildState, useOverallState, useSectionState } from "@/state";
-import { Button, Callout, Card, Stat, StatusBadge, cn, type CalloutTone } from "@/ui";
+import { useBuildProgress, useBuildState, useOverallState, useSectionState } from "@/state";
+import { Button, Callout, Card, ProgressBar, Stat, StatusBadge, cn, type CalloutTone } from "@/ui";
 
 import { crossSectionNotices, useCrossSectionOwner } from "./crossSection";
 import { groupNotices, type NoticeGroup } from "./noticeGroups";
@@ -107,6 +107,24 @@ function NoticeGroupCallout({ group }: { readonly group: NoticeGroup }) {
   );
 }
 
+/** Live progress bar shown while streaming Pass 1 or Pass 2 of the allele table. */
+function AlleleReadingProgress() {
+  const progress = useBuildProgress();
+  if (progress.phase !== "reading") return null;
+  const label =
+    progress.stage === "checking" ? t`Checking the allele table` : t`Building the allele table`;
+  const value =
+    progress.totalBytes > 0
+      ? Math.min(100, Math.round((progress.bytesRead / progress.totalBytes) * 100))
+      : null;
+  return (
+    <div className="flex flex-col gap-1">
+      <output className="sr-only">{label}</output>
+      <ProgressBar label={label} value={value} />
+    </div>
+  );
+}
+
 /**
  * The latest build of one section: its status, its summary numbers and its
  * notices, errors first, then the problems found by comparing its tables
@@ -168,6 +186,7 @@ export function SectionResult<S extends SectionId>({
             <Trans>Updating</Trans>
           </span>
         </div>
+        {section === "microhaplotypes" ? <AlleleReadingProgress /> : null}
         <div className={cn("flex flex-col gap-5 transition-opacity", updating && "opacity-70")}>
           <p className="text-base text-text-muted" aria-live="polite">
             {view === null

@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { buildExamplePmo } from "@/domain/build/testing";
-import { richPmo } from "@/domain/tools/testing";
+import { examplePmoWithReadCounts, richPmo } from "@/domain/tools/testing";
 import { createDraftStorage, createMemoryBackend } from "@/domain/draft";
 import type { SubsetRequest, WorkingPmoRequest } from "@/domain/tools/types";
 import type { Engine } from "@/worker";
@@ -19,7 +19,7 @@ import { readZip } from "@/domain/tools/zipTesting";
 import { createInThreadEngine } from "@/worker/engine";
 import { stoppableWorkers } from "@/test/workers";
 
-import { createAppStore } from "./store";
+import { createAppStore, publishedPmoSessionOf, workingPmoSessionOf } from "./store";
 import {
   createWorkingPmoSession,
   type PmoToOpen,
@@ -337,6 +337,130 @@ describe("working PMO session: tables", () => {
     expect(await engine.workingPmo({ generation, request: TABLE })).toEqual({ kind: "stale" });
     expect(await engine.workingPmo({ generation, request: TABLES })).toEqual({ kind: "stale" });
   });
+
+  it("writes read counts by stage for original and subset, and includes it in the archive", async () => {
+    const { session } = makeSession();
+    const withCounts = examplePmoWithReadCounts();
+    await session.open(chosen(pmoFile(withCounts, "study.json")));
+    const open = session.state.getState().open;
+    expect(open.kind === "opened" && open.opened.tables).toContainEqual({
+      id: "readCounts",
+      rows: 8,
+    });
+
+    const original = await session.query({
+      kind: "table",
+      source: "original",
+      id: "readCounts",
+      format: "csv",
+    });
+    if (original.kind !== "ok") throw new Error(original.kind);
+    expect(original.value.fileName).toBe("study-read-counts.csv");
+    expect(original.value.text.trimEnd().split("\n")).toHaveLength(9);
+
+    const sample01Specimen =
+      withCounts.specimen_info[
+        withCounts.library_sample_info.find(
+          (library) => library.library_sample_name === "example_sample_01",
+        )?.specimen_id ?? -1
+      ]?.specimen_name;
+    if (sample01Specimen === undefined) throw new Error("expected specimen");
+
+    await session.subset({
+      specimens: { kind: "names", names: [sample01Specimen] },
+      targets: { kind: "all" },
+      minReads: 0,
+    });
+    const subset = session.state.getState().subset;
+    expect(subset.kind === "made" && subset.made.tables).toContainEqual({
+      id: "readCounts",
+      rows: 2,
+    });
+
+    const subsetTable = await session.query({
+      kind: "table",
+      source: "subset",
+      id: "readCounts",
+      format: "tsv",
+    });
+    if (subsetTable.kind !== "ok") throw new Error(subsetTable.kind);
+    expect(subsetTable.value.fileName).toBe("study-subset-read-counts.tsv");
+    expect(subsetTable.value.text.trimEnd().split("\n")).toEqual([
+      "library_sample_name\ttotal_raw_count\ttarget_name\tstage\treads",
+      "example_sample_01\t10\tPf3D7_01_v3-145388-145662-1A\tdemux\t10",
+      "example_sample_01\t10\tPf3D7_01_v3-145388-145662-1A\tdada2\t7",
+    ]);
+
+    const archive = await session.query({ kind: "tables", source: "subset", format: "tsv" });
+    if (archive.kind !== "ok") throw new Error(archive.kind);
+    const files = await readZip(archive.value.blob);
+    expect(files.map((file) => file.name)).toContain("study-subset-read-counts.tsv");
+  });
+
+  it("previews the first 20 rows of a table for original and subset, matching the download", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(EXAMPLE, "study.json")));
+
+    const preview = await session.query({
+      kind: "tablePreview",
+      source: "original",
+      id: "alleles",
+    });
+    const downloaded = await session.query({
+      kind: "table",
+      source: "original",
+      id: "alleles",
+      format: "tsv",
+    });
+    if (preview.kind !== "ok" || downloaded.kind !== "ok") {
+      throw new Error(`expected ok, got ${preview.kind} / ${downloaded.kind}`);
+    }
+    const [header, ...dataLines] = downloaded.value.text.trimEnd().split("\n");
+    expect(preview.value.columns).toEqual(header?.split("\t"));
+    expect(preview.value.totalRows).toBe(dataLines.length);
+    expect(preview.value.rows).toHaveLength(20);
+    expect(
+      preview.value.rows.map((row) =>
+        row.map((cell) => (cell === null ? "" : String(cell))).join("\t"),
+      ),
+    ).toEqual(dataLines.slice(0, 20));
+
+    const names = EXAMPLE.specimen_info.slice(0, 2).map((specimen) => specimen.specimen_name);
+    await session.subset({
+      specimens: { kind: "names", names },
+      targets: { kind: "all" },
+      minReads: 0,
+    });
+    const subsetPreview = await session.query({
+      kind: "tablePreview",
+      source: "subset",
+      id: "specimens",
+    });
+    if (subsetPreview.kind !== "ok") throw new Error(subsetPreview.kind);
+    expect(subsetPreview.value.totalRows).toBe(2);
+    expect(subsetPreview.value.rows).toHaveLength(2);
+    const nameColumn = subsetPreview.value.columns.indexOf("specimen_name");
+    expect(subsetPreview.value.rows.map((row) => row[nameColumn])).toEqual(names);
+  });
+
+  it("answers tablePreview with not-open, no-subset, and stale as other queries do", async () => {
+    const engine = createInThreadEngine();
+    const { session } = makeSession({ engine });
+    const request: WorkingPmoRequest<"tablePreview"> = {
+      kind: "tablePreview",
+      source: "original",
+      id: "specimens",
+    };
+
+    expect(await session.query(request)).toEqual({ kind: "not-open" });
+
+    await session.open(chosen(pmoFile(EXAMPLE, "first.json")));
+    expect(await session.query({ ...request, source: "subset" })).toEqual({ kind: "no-subset" });
+
+    const { generation } = session.state.getState();
+    await session.open(chosen(pmoFile(smallerPmo(3), "second.json")));
+    expect(await engine.workingPmo({ generation, request })).toEqual({ kind: "stale" });
+  });
 });
 
 describe("working PMO session: freeing memory", () => {
@@ -498,6 +622,28 @@ describe("working PMO session: subsets", () => {
       kind: "ok",
       value: { librarySamples: 3 },
     });
+  });
+
+  it("reports the subset's own largest read count alongside the original's", async () => {
+    const { session } = makeSession();
+    await session.open(chosen(pmoFile(richPmo(), "rich.json")));
+    const open = session.state.getState().open;
+    if (open.kind !== "opened") throw new Error(open.kind);
+    expect(open.opened.choices.maxReads).toBe(90);
+
+    const request: SubsetRequest = {
+      specimens: { kind: "names", names: ["spec2", "neg"] },
+      targets: { kind: "all" },
+      minReads: 0,
+    };
+    const answer = await session.subset(request);
+    expect(answer).toMatchObject({ kind: "ok", value: { kind: "made", maxReads: 50 } });
+    expect(session.state.getState().subset).toMatchObject({
+      kind: "made",
+      made: { maxReads: 50 },
+    });
+    // The original's own figure is unchanged.
+    expect(open.opened.choices.maxReads).toBe(90);
   });
 });
 
@@ -959,5 +1105,159 @@ describe("working PMO session: original or subset", () => {
     await session.subset(keepFirst(3));
     await session.close();
     expect(session.state.getState().source).toBe("original");
+  });
+});
+
+describe("working and published PMO slots", () => {
+  it("keeps the working PMO and its subset separate from the published slot on one store", async () => {
+    const engine = createInThreadEngine();
+    const store = createAppStore({
+      engine,
+      storage: createDraftStorage({ openBackend: () => createMemoryBackend() }),
+      rebuildDelayMs: 1,
+      saveDelayMs: 1,
+    });
+    const working = workingPmoSessionOf(store);
+    const published = publishedPmoSessionOf(store);
+
+    await working.open(chosen(pmoFile(EXAMPLE, "working.json")));
+    await working.subset(keepFirst(3));
+    working.setMinReads(25);
+
+    await published.open({
+      kind: "file",
+      file: pmoFile(smallerPmo(5), "published.json"),
+      name: "published.json",
+      origin: {
+        kind: "published",
+        id: "303",
+        title: "Published study",
+        recordUrl: "https://zenodo.org/records/303",
+      },
+    });
+    published.setMinReads(10);
+
+    // Each slot answers for its own file.
+    expect(await working.query(SUMMARY)).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: EXAMPLE.library_sample_info.length },
+    });
+    expect(await working.query({ ...SUMMARY, source: "subset" })).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 3 },
+    });
+    expect(await published.query(SUMMARY)).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 5 },
+    });
+
+    // Closing the published slot leaves the working PMO, its subset and its settings untouched.
+    await published.close();
+    expect(await published.query(SUMMARY)).toEqual({ kind: "not-open" });
+    expect(working.state.getState()).toMatchObject({
+      open: { kind: "opened", name: "working.json" },
+      subset: { kind: "made", request: keepFirst(3) },
+      source: "subset",
+      minReads: 25,
+    });
+    expect(await working.query({ ...SUMMARY, source: "subset" })).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 3 },
+    });
+  });
+
+  it("restores each slot independently when the worker restarts", async () => {
+    const workers = stoppableWorkers(() => createInThreadEngine());
+    const working = createWorkingPmoSession({
+      engine: workers.engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "working",
+    });
+    const published = createWorkingPmoSession({
+      engine: workers.engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "published",
+    });
+
+    await working.open(chosen(pmoFile(EXAMPLE, "working.json")));
+    await working.subset(keepFirst(2));
+    await published.open(chosen(pmoFile(smallerPmo(4), "published.json")));
+    workers.stop();
+
+    expect(await published.query(SUMMARY)).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 4 },
+    });
+    expect(await working.query({ ...SUMMARY, source: "subset" })).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: 2 },
+    });
+    expect(await working.query(SUMMARY)).toMatchObject({
+      kind: "ok",
+      value: { librarySamples: EXAMPLE.library_sample_info.length },
+    });
+  });
+
+  it("clears both slots when the engine is disposed", async () => {
+    const engine = createInThreadEngine();
+    const working = createWorkingPmoSession({
+      engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "working",
+    });
+    const published = createWorkingPmoSession({
+      engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "published",
+    });
+
+    await working.open(chosen(pmoFile(EXAMPLE, "working.json")));
+    await published.open(chosen(pmoFile(smallerPmo(4), "published.json")));
+    await engine.dispose();
+
+    expect(
+      await engine.workingPmo({
+        slot: "working",
+        generation: working.state.getState().generation,
+        request: SUMMARY,
+      }),
+    ).toEqual({ kind: "not-open" });
+    expect(
+      await engine.workingPmo({
+        slot: "published",
+        generation: published.state.getState().generation,
+        request: SUMMARY,
+      }),
+    ).toEqual({ kind: "not-open" });
+  });
+
+  it("defaults tableFormat to csv and updates it per session", () => {
+    const engine = createInThreadEngine();
+    const working = createWorkingPmoSession({
+      engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "working",
+    });
+    const published = createWorkingPmoSession({
+      engine,
+      flush: () => Promise.resolve(),
+      emit: () => undefined,
+      slot: "published",
+    });
+
+    expect(working.state.getState().tableFormat).toBe("csv");
+    expect(published.state.getState().tableFormat).toBe("csv");
+
+    working.setTableFormat("tsv");
+    expect(working.state.getState().tableFormat).toBe("tsv");
+    expect(published.state.getState().tableFormat).toBe("csv");
+
+    working.setTableFormat("csv");
+    expect(working.state.getState().tableFormat).toBe("csv");
   });
 });

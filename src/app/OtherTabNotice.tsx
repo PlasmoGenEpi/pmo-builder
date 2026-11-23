@@ -5,7 +5,7 @@ import { useActions, useAppState } from "@/state";
 import { Button, Callout } from "@/ui";
 
 /**
- * Says, above every page, when the draft is open in another tab: this tab
+ * Says, above the Build pages, when the draft is open in another tab: this tab
  * does not save, so the two never overwrite each other. "Use this tab
  * instead" makes the other tab save and step back, then reads the draft here.
  */
@@ -19,6 +19,7 @@ export function OtherTabNotice() {
     <div className="px-4 pt-4 sm:px-6">
       <Callout
         tone="warning"
+        live
         title={t`This draft is open in another tab`}
         action={
           <Button

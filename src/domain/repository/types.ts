@@ -7,7 +7,7 @@
  */
 import type { MergeSummary, YearRange } from "@/domain/build";
 
-/** Bumped when the shape of the index changes. */
+/** Bumped when the shape of the index changes incompatibly. */
 export const INDEX_VERSION = 1;
 
 /** Where the harvester writes, under `public/`, and the pages read from. */
@@ -20,6 +20,12 @@ export interface PublishedFile {
   readonly size: number;
   /** Where the file can be downloaded from Zenodo. */
   readonly url: string;
+  /**
+   * Identifies this file from Zenodo's listing so a later harvest can carry
+   * unchanged records over, or `null` when the listing lacked both checksum
+   * and revision markers. Omitted in earlier v1 catalogues.
+   */
+  readonly fingerprint?: string | null;
 }
 
 /** The licence a record was published under. */
@@ -89,4 +95,8 @@ export interface HarvestResult {
   readonly index: RepositoryIndex;
   readonly specimens: readonly SpecimenRow[];
   readonly skipped: readonly SkippedRecord[];
+  /** Records whose entry and specimen rows were carried over without a download. */
+  readonly carriedOver: number;
+  /** Records whose PMO file was downloaded and kept. */
+  readonly downloaded: number;
 }

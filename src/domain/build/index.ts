@@ -10,6 +10,7 @@ export * from "./exampleData";
 export * from "./export";
 export * from "./merge";
 export * from "./microhaplotypes";
+export * from "./microhaplotypesStream";
 export * from "./notices";
 export * from "./panel";
 export * from "./publication";

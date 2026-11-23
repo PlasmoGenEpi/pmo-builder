@@ -50,10 +50,11 @@ async function openDisclosures(page: Page): Promise<void> {
   // Each click can reveal more sections, so open the first closed one until none is left.
   for (let opened = 0; opened < 50; opened += 1) {
     // oxlint-disable-next-line no-await-in-loop -- each click can reveal more sections.
-    if ((await closed.count()) === 0) return;
+    if ((await closed.count()) === 0) break;
     // oxlint-disable-next-line no-await-in-loop -- each click can reveal more sections.
     await closed.first().click();
   }
+  expect(await closed.count(), "all collapsed sections expanded").toBe(0);
 }
 
 for (const colorScheme of ["light", "dark"] as const) {
@@ -80,21 +81,58 @@ for (const colorScheme of ["light", "dark"] as const) {
       const violations = await seriousViolations(page);
       if (violations.length > 0) found[hash] = violations;
     }
-    // My PMO file with the example built and opened, on each of its tabs.
+    // My PMO file with the example built and opened: lands on Summary, then checks every tab.
     await page.evaluate(() => {
       globalThis.location.hash = "/pmo/open-built";
     });
-    await expect(page.getByText("This is the PMO built from your draft")).toBeVisible({
+    await expect(page.getByRole("tab", { name: "Summary", selected: true })).toBeVisible({
       timeout: BUILD_TIMEOUT,
     });
-    for (const tab of ["Summary", "Compare", "Tables", "Subset"]) {
+    await expect(page.getByText("Reads by sample and target")).toBeVisible({
+      timeout: BUILD_TIMEOUT,
+    });
+    for (const tab of ["Summary", "Overview", "Compare", "Tables", "Subset"]) {
       // oxlint-disable-next-line no-await-in-loop -- tabs are checked one at a time.
       await page.getByRole("tab", { name: tab }).click();
+      if (tab === "Compare") {
+        // oxlint-disable-next-line no-await-in-loop -- wait for the shaded table before axe runs.
+        await expect(page.getByRole("heading", { name: "Heterozygosity by target" })).toBeVisible({
+          timeout: BUILD_TIMEOUT,
+        });
+      }
       // oxlint-disable-next-line no-await-in-loop -- let the tab settle before checking.
       await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: BUILD_TIMEOUT });
+      if (tab === "Summary") {
+        // Choose a reads-grid cell and open a microhaplotype sequence popover so axe checks both.
+        const readsRegion = page.getByRole("region", { name: "Reads by sample and target" });
+        // oxlint-disable-next-line no-await-in-loop -- set up Summary state before running axe.
+        await readsRegion
+          .locator("canvas")
+          .nth(1)
+          .click({ position: { x: 10, y: 6 } });
+        const readsSection = page
+          .locator("section")
+          .filter({ has: page.getByRole("heading", { name: "Reads by sample and target" }) })
+          .first();
+        // oxlint-disable-next-line no-await-in-loop -- confirm chosen cell details rendered.
+        await expect(readsSection.getByRole("status")).toContainText(/microhaplotype/);
+
+        const targetsSection = page
+          .locator("section")
+          .filter({ has: page.getByRole("heading", { name: "Targets", exact: true }) })
+          .first();
+        // oxlint-disable-next-line no-await-in-loop -- open a microhaplotype sequence popover.
+        await targetsSection.locator("figure button").first().click();
+        // oxlint-disable-next-line no-await-in-loop -- wait for popover content before running axe.
+        await expect(page.getByRole("button", { name: "Copy" })).toBeVisible();
+      }
       // oxlint-disable-next-line no-await-in-loop -- tabs are checked one at a time.
       const violations = await seriousViolations(page);
       if (violations.length > 0) found[`My PMO file: ${tab}`] = violations;
+      if (tab === "Summary") {
+        // oxlint-disable-next-line no-await-in-loop -- close the popover before switching tabs.
+        await page.keyboard.press("Escape");
+      }
     }
     expect(found).toEqual({});
   });

@@ -16,9 +16,11 @@ export {
 export { Callout, type CalloutProps, type CalloutTone } from "./Callout";
 export { Card, type CardProps } from "./Card";
 export {
+  CANVAS_SELECTION,
   CANVAS_TEXT,
   EMPTY_CELL,
   SEQUENTIAL,
+  SEQUENTIAL_CELL,
   SERIES,
   rampColour,
   type ChartTheme,
@@ -39,19 +41,30 @@ export {
   type FieldControlProps,
   type FieldProps,
 } from "./Field";
-export { FileDropzone, type ChosenFile, type FileDropzoneProps } from "./FileDropzone";
+export {
+  FileDropActions,
+  FileDropzone,
+  useFileDrop,
+  type ChosenFile,
+  type FileDropActionLabels,
+  type FileDropActionsProps,
+  type FileDropHandlers,
+  type FileDropState,
+  type FileDropzoneProps,
+  type UseFileDropOptions,
+} from "./FileDropzone";
 export { formatBytes, formatCount } from "./format";
 export { IconButton, type IconButtonProps } from "./IconButton";
 export { KeyValueList, type KeyValueItem, type KeyValueListProps } from "./KeyValueList";
 export { ButtonLink, Link, type ButtonLinkProps, type LinkProps } from "./Link";
 export { Menu, type MenuEntry, type MenuProps } from "./Menu";
 export { NumberField, type NumberFieldProps } from "./NumberField";
-export { Popover, type PopoverProps } from "./Popover";
+export { Popover, type PopoverPadding, type PopoverProps, type PopoverSize } from "./Popover";
 export { ProgressBar, type ProgressBarProps } from "./ProgressBar";
 export { RadioGroup, type RadioGroupProps, type RadioOption } from "./RadioGroup";
 export { SectionHeading, jumpToHeading, type SectionHeadingProps } from "./SectionHeading";
 export { SegmentedControl, type Segment, type SegmentedControlProps } from "./SegmentedControl";
-export { Select, type SelectOption, type SelectProps } from "./Select";
+export { Select, type SelectOption, type SelectProps, type SelectSize } from "./Select";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
 export { Spinner, type SpinnerProps } from "./Spinner";
 export { Stat, type StatProps } from "./Stat";

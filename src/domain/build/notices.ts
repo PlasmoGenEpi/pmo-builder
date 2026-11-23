@@ -24,6 +24,17 @@ import { unreachable } from "@/domain/draft";
 /** Most names or rows quoted in one message before the rest are counted. */
 const MAX_LISTED = 8;
 
+/** Maximum number of 0-based data row indexes kept in a {@link RowSample}. */
+export const MAX_ROW_SAMPLE = MAX_LISTED;
+
+/** Bounded sample of 0-based data row indexes for O(1)-memory streaming checks. */
+export interface RowSample {
+  /** At most {@link MAX_LISTED} 0-based data row indexes, in file order. */
+  readonly first: readonly number[];
+  /** Total number of matching rows (may exceed `first.length`). */
+  readonly count: number;
+}
+
 /**
  * A plain lead-in that says where the problem is and what to try, followed
  * by the library's own text as secondary detail, for problems this app does
@@ -56,14 +67,9 @@ export function makeNotice(
   return notice;
 }
 
-/**
- * Joins items as "a, b and c" in the interface language, listing at most
- * {@link MAX_LISTED} and counting the rest ("a, b and 3 more").
- */
-export function listItems(items: readonly string[], max = MAX_LISTED): string {
-  if (items.length === 0) return "";
-  const shown = items.slice(0, max);
-  const rest = items.length - shown.length;
+function formatLimitedList(shown: readonly string[], total: number): string {
+  if (total === 0 || shown.length === 0) return "";
+  const rest = total - shown.length;
   const all =
     rest > 0
       ? [
@@ -76,6 +82,14 @@ export function listItems(items: readonly string[], max = MAX_LISTED): string {
         ]
       : shown;
   return new Intl.ListFormat(intlLocale(), { type: "conjunction" }).format(all);
+}
+
+/**
+ * Joins items as "a, b and c" in the interface language, listing at most
+ * {@link MAX_LISTED} and counting the rest ("a, b and 3 more").
+ */
+export function listItems(items: readonly string[], max = MAX_LISTED): string {
+  return formatLimitedList(items.slice(0, max), items.length);
 }
 
 /** Joins items as "a or b" in the interface language. */
@@ -92,17 +106,29 @@ export function quoteItems(items: readonly unknown[], max = MAX_LISTED): string 
 }
 
 /**
- * "row 5" or "rows 5, 9 and 12", from 0-based data row indexes. It has no
- * article, so the message around it supplies one where its language needs it.
+ * "row 5" or "rows 5, 9 and 3 more", from a bounded {@link RowSample} of
+ * 0-based data row indexes. It has no article, so the message around it
+ * supplies one where its language needs it.
  */
-export function describeRows(indexes: readonly number[]): string {
-  const rowCount = indexes.length;
-  const rowList = listItems(indexes.map((index) => String(index + 2)));
+export function describeRowSample(sample: RowSample): string {
+  const rowCount = sample.count;
+  const rowList = formatLimitedList(
+    sample.first.slice(0, MAX_LISTED).map((index) => String(index + 2)),
+    sample.count,
+  );
   return t({
     message: plural(rowCount, { one: `row ${rowList}`, other: `rows ${rowList}` }),
     comment:
       "Spreadsheet rows, used inside other messages, such as 'is blank in rows 5, 9 and 12'. {rowList} is the list of row numbers. Write it without an article: the message around it adds any article or preposition your language needs.",
   });
+}
+
+/**
+ * "row 5" or "rows 5, 9 and 12", from 0-based data row indexes. It has no
+ * article, so the message around it supplies one where its language needs it.
+ */
+export function describeRows(indexes: readonly number[]): string {
+  return describeRowSample({ first: indexes.slice(0, MAX_LISTED), count: indexes.length });
 }
 
 /** Indexes of the rows whose cell in `column` is missing, optionally only those matching `where`. */
@@ -166,6 +192,8 @@ export interface TableIssueContext {
   readonly typed: Table | null;
   /** The raw table, for finding rows by their text. */
   readonly raw: RawTable | null;
+  /** Precomputed matching rows when the full table is not held in memory (streaming builds). */
+  readonly errorRows?: RowSample;
 }
 
 /**
@@ -495,12 +523,28 @@ function readCountTableLabel(details: IssueDetails, fallback: string): string {
 }
 
 /**
+ * Formats matching row numbers from precomputed streaming `context.errorRows`
+ * when present, otherwise computes row indexes lazily from the in-memory table.
+ */
+function resolveErrorRows(
+  context: TableIssueContext,
+  fallback: () => readonly number[],
+): string | null {
+  if (context.errorRows !== undefined) {
+    return context.errorRows.count > 0 ? describeRowSample(context.errorRows) : null;
+  }
+  const rows = fallback();
+  return rows.length > 0 ? describeRows(rows) : null;
+}
+
+/**
  * The rows of `column` that are blank, as " (rows 5 and 9)" to follow a
  * column, or `null` when none are found.
  */
 function blankRows(context: TableIssueContext, column: string): string | null {
-  const rows = context.typed === null ? [] : blankRowIndexes(context.typed, column);
-  return rows.length > 0 ? describeRows(rows) : null;
+  return resolveErrorRows(context, () =>
+    context.typed === null ? [] : blankRowIndexes(context.typed, column),
+  );
 }
 
 /**
@@ -581,22 +625,23 @@ function describeIssue(
       const target = text(details, "target_name");
       const readsColumn = columnFor(context, "reads");
       const sampleColumn = columnFor(context, "librarySampleName");
-      const rowIndexes =
+      const rowsText = resolveErrorRows(context, () =>
         context.typed !== null && readsColumn !== null
           ? blankRowIndexes(
               context.typed,
               readsColumn,
               (row) => sampleColumn === null || String(row[sampleColumn] ?? "") === sample,
             )
-          : [];
+          : [],
+      );
       if (readsColumn === null) {
         return target === null
           ? t`Sample "${sample}" has no read count in the read count column. Every row needs a read count.`
           : t`Sample "${sample}", target "${target}" has no read count in the read count column. Every row needs a read count.`;
       }
       const column = describeColumn(context, readsColumn);
-      if (rowIndexes.length > 0) {
-        const rows = describeRows(rowIndexes);
+      if (rowsText !== null) {
+        const rows = rowsText;
         return target === null
           ? t({
               message: `Sample "${sample}" has no read count in ${column} (${rows}). Every row needs a read count.`,
@@ -668,11 +713,12 @@ function describeIssue(
     case "mhap/invalid-masking": {
       const columnName = text(details, "column") ?? "";
       const value = text(details, "value") ?? "";
-      const rowIndexes =
-        context.raw === null ? [] : rowIndexesWithValue(context.raw, columnName, value);
+      const rowsText = resolveErrorRows(context, () =>
+        context.raw === null ? [] : rowIndexesWithValue(context.raw, columnName, value),
+      );
       const column = describeColumnAtStart(context, columnName);
-      if (rowIndexes.length > 0) {
-        const rows = describeRows(rowIndexes);
+      if (rowsText !== null) {
+        const rows = rowsText;
         return t({
           message: `${column} must hold whole numbers separated by commas, but holds "${value}" (${rows}).`,
           comment:

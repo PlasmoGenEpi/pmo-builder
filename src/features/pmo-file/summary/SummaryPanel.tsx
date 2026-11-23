@@ -1,5 +1,5 @@
 import { plural, t } from "@lingui/core/macro";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import type {
   ControlKind,
@@ -10,10 +10,11 @@ import type {
   WorkingSource,
 } from "@/domain/tools/types";
 import { intlLocale } from "@/i18n/languages";
-import { useWorkingPmoQuery } from "@/state";
-import { Card, SectionHeading, Skeleton, Stat, Switch, formatCount } from "@/ui";
+import { usePmo, usePmoQuery } from "@/state";
+import { Card, SectionHeading, Skeleton, Stat, Switch, formatCount, jumpToHeading } from "@/ui";
 
 import { AlleleBars } from "./AlleleBars";
+import { pmoBaseName } from "./exportTable";
 import {
   ControlsCheck,
   DensityView,
@@ -23,12 +24,18 @@ import {
   showsPlates,
   showsStages,
 } from "./QualityViews";
-import { ReadsGrid } from "./ReadsGrid";
-import { SortableTable, type SortableColumn } from "./SortableTable";
+import { ReadsGrid, sampleRowKey } from "./ReadsGrid";
+import { SortableTable, type SortableColumn, type TableScrollRequest } from "./SortableTable";
 import { NoAnswer } from "../NoAnswer";
 import { useSettled } from "../useSettled";
 
-import { MinReadsField, SectionJumps, ViewToolbar, type Jump } from "./ViewToolbar";
+import {
+  MinReadsField,
+  NoReadsAboveMinimum,
+  SectionJumps,
+  ViewToolbar,
+  type Jump,
+} from "./ViewToolbar";
 
 function sampleColumns(summary: PmoSummary): SortableColumn<SampleSummary>[] {
   return [
@@ -145,7 +152,11 @@ function controlName(kind: ControlKind): string {
       return t({ message: "Positive", comment: "A positive control" });
     case "other":
     default:
-      return t({ message: "Other", comment: "A control that is neither negative nor positive" });
+      return t({
+        message: "Other",
+        context: "control",
+        comment: "A control that is neither negative nor positive",
+      });
   }
 }
 
@@ -195,20 +206,52 @@ function targetColumns(): SortableColumn<TargetSummary>[] {
 
 function Headline({ summary }: { readonly summary: PmoSummary }) {
   const { headline } = summary;
-  const all = formatCount(summary.librarySamples);
-  const targets = formatCount(summary.targets.length);
+  const percent = new Intl.NumberFormat(intlLocale(), {
+    style: "percent",
+    maximumFractionDigits: 0,
+  });
+  const totalSamples = summary.librarySamples;
+  const allSamples = formatCount(totalSamples);
+  const sampleShare =
+    totalSamples > 0 ? percent.format(headline.samplesWithData / totalSamples) : null;
+
+  const totalTargets = summary.targets.length;
+  const allTargets = formatCount(totalTargets);
+  const targetShare =
+    totalTargets > 0 ? percent.format(headline.targetsWithData / totalTargets) : null;
+
+  const withData = headline.samplesWithData;
+  const samplesWithData = formatCount(withData);
+  const polyclonalShare = withData > 0 ? percent.format(headline.polyclonal / withData) : null;
+
   const medianReads = formatCount(Math.round(headline.medianReads ?? 0));
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       <Stat
         label={t`Samples with data`}
         value={formatCount(headline.samplesWithData)}
-        hint={t`of ${all}`}
+        hint={
+          sampleShare === null
+            ? undefined
+            : plural(totalSamples, {
+                one: `${sampleShare} of ${allSamples} library sample`,
+                other: `${sampleShare} of ${allSamples} library samples`,
+              })
+        }
+        onClick={() => jumpToHeading(HEADING.samples)}
       />
       <Stat
         label={t`Targets with data`}
         value={formatCount(headline.targetsWithData)}
-        hint={t`of ${targets}`}
+        hint={
+          targetShare === null
+            ? undefined
+            : plural(totalTargets, {
+                one: `${targetShare} of ${allTargets} target`,
+                other: `${targetShare} of ${allTargets} targets`,
+              })
+        }
+        onClick={() => jumpToHeading(HEADING.targets)}
       />
       <Stat
         label={t`Median targets per sample`}
@@ -216,11 +259,20 @@ function Headline({ summary }: { readonly summary: PmoSummary }) {
         hint={
           headline.medianReads === null ? undefined : t`Median reads per sample: ${medianReads}`
         }
+        onClick={() => jumpToHeading(HEADING.reads)}
       />
       <Stat
         label={t`Samples with more than one clone`}
         value={formatCount(headline.polyclonal)}
-        hint={t`Two or more alleles at some target`}
+        hint={
+          polyclonalShare === null
+            ? t`Two or more alleles at some target`
+            : plural(withData, {
+                one: `${polyclonalShare} of ${samplesWithData} sample with data`,
+                other: `${polyclonalShare} of ${samplesWithData} samples with data`,
+              })
+        }
+        onClick={() => jumpToHeading(HEADING.samples)}
       />
     </div>
   );
@@ -233,6 +285,12 @@ export interface SummaryPanelProps {
   /** The minimum reads for a microhaplotype to count; `null` counts them all. */
   readonly minReads: number | null;
   readonly onMinReadsChange: (value: number | null) => void;
+  /** The most reads any microhaplotype has in the working PMO, or `null` when unknown. */
+  readonly maxReads: number | null;
+}
+
+function nextScrollRequest(key: string): (before: TableScrollRequest | null) => TableScrollRequest {
+  return (before) => ({ key, seq: (before?.seq ?? 0) + 1 });
 }
 
 /**
@@ -244,18 +302,30 @@ export function SummaryPanel({
   source,
   minReads: minReadsInput,
   onMinReadsChange,
+  maxReads,
 }: SummaryPanelProps) {
   const minReads = useSettled(Math.max(0, minReadsInput ?? 0), 400);
+  const minReadsInputRef = useRef<HTMLInputElement>(null);
   const [allTargets, setAllTargets] = useState(false);
   const [grouped, setGrouped] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
+  const [selectedSample, setSelectedSample] = useState<string | null>(null);
+  const [sampleScroll, setSampleScroll] = useState<TableScrollRequest | null>(null);
+  const [targetScroll, setTargetScroll] = useState<TableScrollRequest | null>(null);
+  const tableFormat = usePmo((state) => state.tableFormat);
+  const openName = usePmo((state) => (state.open.kind === "opened" ? state.open.name : null));
+  const fileBase = pmoBaseName(openName, source);
   const request = useMemo(
     (): WorkingPmoRequest<"summary"> => ({ kind: "summary", source, minReads }),
     [source, minReads],
   );
-  const loaded = useWorkingPmoQuery(request);
+  const loaded = usePmoQuery(request);
 
   const summary = loaded.kind === "ok" ? loaded.value : null;
+  const visibleTargets = useMemo(
+    () => summary?.targets.filter((target) => allTargets || target.samples > 0) ?? [],
+    [summary, allTargets],
+  );
   const columns = useMemo(
     () =>
       summary === null
@@ -280,15 +350,42 @@ export function SummaryPanel({
   );
   const targetsWithData = summary?.headline.targetsWithData ?? 0;
   const chosenTarget =
-    summary?.targets.find((target) => target.name === selected) ??
-    summary?.targets.toSorted((a, b) => b.samples - a.samples)[0] ??
+    visibleTargets.find((target) => target.name === selected) ??
+    visibleTargets.toSorted((a, b) => b.samples - a.samples)[0] ??
     null;
 
+  const nothingPasses = summary !== null && minReads > 0 && summary.headline.samplesWithData === 0;
+
+  function selectTargetFromGrid(targetName: string): void {
+    setSelected(targetName);
+    setTargetScroll(nextScrollRequest(targetName));
+  }
+
+  function selectSampleFromGrid(sampleKey: string): void {
+    setSelectedSample(sampleKey);
+    setSampleScroll(nextScrollRequest(sampleKey));
+  }
+
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <ViewToolbar>
-        <MinReadsField value={minReadsInput} onValueChange={onMinReadsChange} />
-        {summary === null ? null : <SectionJumps jumps={jumpsOf(summary)} />}
+        <MinReadsField
+          value={minReadsInput}
+          maxReads={maxReads}
+          onValueChange={onMinReadsChange}
+          inputRef={minReadsInputRef}
+        />
+        {summary === null || nothingPasses ? null : (
+          <>
+            <Switch
+              layout="compact"
+              label={t`Show targets with no data`}
+              checked={allTargets}
+              onCheckedChange={setAllTargets}
+            />
+            <SectionJumps jumps={jumpsOf(summary)} />
+          </>
+        )}
       </ViewToolbar>
 
       {loaded.kind === "ok" || loaded.kind === "loading" ? null : (
@@ -307,6 +404,15 @@ export function SummaryPanel({
             <Skeleton className="h-64 w-full" />
           </output>
         ) : null
+      ) : nothingPasses ? (
+        <NoReadsAboveMinimum
+          minReads={minReads}
+          maxReads={maxReads}
+          onClear={() => {
+            onMinReadsChange(null);
+            minReadsInputRef.current?.focus();
+          }}
+        />
       ) : (
         <>
           <Headline summary={summary} />
@@ -316,28 +422,29 @@ export function SummaryPanel({
             <SectionHeading
               id={HEADING.reads}
               title={t`Reads by sample and target`}
-              description={t`Each row is a library sample and each column a target. The colour shows the reads, as in the legend below the grid. Hover over a cell to see its numbers.`}
+              description={t`Each row is a library sample and each column a target. The colour shows the reads, as in the legend below the grid. Choose a cell to see its numbers and find its sample and target below.`}
               actions={
-                <div className="flex flex-wrap items-center gap-4">
-                  {reactionsWithData > 1 ? (
-                    <Switch
-                      label={t`Group targets by reaction`}
-                      checked={grouped}
-                      onCheckedChange={setGrouped}
-                    />
-                  ) : null}
+                reactionsWithData > 1 ? (
                   <Switch
-                    label={t`Show targets with no data`}
-                    checked={allTargets}
-                    onCheckedChange={setAllTargets}
+                    label={t`Group targets by reaction`}
+                    checked={grouped}
+                    onCheckedChange={setGrouped}
                   />
-                </div>
+                ) : undefined
               }
             />
             {summary.samples.length === 0 ? (
               <p className="text-base text-text-muted">{t`No sample has any reads to show.`}</p>
             ) : (
-              <ReadsGrid summary={summary} columns={grid.columns} groups={grid.groups} />
+              <ReadsGrid
+                summary={summary}
+                columns={grid.columns}
+                groups={grid.groups}
+                selectedTarget={chosenTarget?.name ?? null}
+                selectedSampleKey={selectedSample}
+                onTargetSelect={selectTargetFromGrid}
+                onSampleSelect={selectSampleFromGrid}
+              />
             )}
           </section>
 
@@ -351,8 +458,13 @@ export function SummaryPanel({
               label={t`Samples`}
               columns={sampleColumns(summary)}
               rows={summary.samples}
-              rowKey={(row) => `${row.run}\u0000${row.name}`}
+              rowKey={sampleRowKey}
+              selectedKey={selectedSample}
+              scrollToRow={sampleScroll}
               initialSort={{ key: "reads", descending: false }}
+              searchableColumns={["name", "specimen"]}
+              searchPlaceholder={t`Search sample or specimen`}
+              download={{ fileName: `${fileBase}-summary-samples`, format: tableFormat }}
             />
           </section>
 
@@ -370,11 +482,16 @@ export function SummaryPanel({
               <SortableTable
                 label={t`Targets`}
                 columns={targetColumns()}
-                rows={summary.targets.filter((target) => allTargets || target.samples > 0)}
+                rows={visibleTargets}
+                totalRows={summary.targets.length}
                 rowKey={(row) => row.name}
                 onRowSelect={(row) => setSelected(row.name)}
                 selectedKey={chosenTarget?.name ?? null}
+                scrollToRow={targetScroll}
                 initialSort={{ key: "samples", descending: true }}
+                searchableColumns={["name"]}
+                searchPlaceholder={t`Search target`}
+                download={{ fileName: `${fileBase}-summary-targets`, format: tableFormat }}
               />
               <Card padding="md">
                 {chosenTarget === null ? null : <AlleleBars target={chosenTarget} />}
@@ -384,7 +501,11 @@ export function SummaryPanel({
 
           <PlateView summary={summary} headingId={HEADING.plates} />
           <DensityView summary={summary} headingId={HEADING.density} />
-          <StagesView summary={summary} headingId={HEADING.stages} />
+          <StagesView
+            summary={summary}
+            headingId={HEADING.stages}
+            download={{ fileName: `${fileBase}-summary-pipeline-stages`, format: tableFormat }}
+          />
         </>
       )}
     </div>

@@ -37,25 +37,25 @@ function BackLink() {
 
 function detailsOf(dataset: PublishedDataset): KeyValueItem[] {
   const doi = doiUrl(dataset);
+  const panelCount = dataset.panels.length;
+  const countryCount = dataset.countries.length;
+  const bioProjectCount = dataset.bioProjects.length;
   const rows: (readonly [string, ReactNode, boolean?] | null)[] = [
-    dataset.panels.length === 0
+    panelCount === 0
+      ? null
+      : [plural(panelCount, { one: "Panel", other: "Panels" }), dataset.panels.join(", ")],
+    countryCount === 0
       ? null
       : [
-          plural(dataset.panels.length, { one: "Panel", other: "Panels" }),
-          dataset.panels.join(", "),
-        ],
-    dataset.countries.length === 0
-      ? null
-      : [
-          plural(dataset.countries.length, { one: "Country", other: "Countries" }),
+          plural(countryCount, { one: "Country", other: "Countries" }),
           dataset.countries.join(", "),
         ],
     yearsText(dataset) === null ? null : [t`Collected`, yearsText(dataset)],
     dataset.taxa.length === 0 ? null : [t`Species`, dataset.taxa.map(taxonName).join(", ")],
-    dataset.bioProjects.length === 0
+    bioProjectCount === 0
       ? null
       : [
-          plural(dataset.bioProjects.length, { one: "BioProject", other: "BioProjects" }),
+          plural(bioProjectCount, { one: "BioProject", other: "BioProjects" }),
           dataset.bioProjects.join(", "),
           true,
         ],
@@ -97,9 +97,9 @@ function Dataset({ dataset }: { readonly dataset: PublishedDataset }) {
           </Link>
         </p>
         <div className="flex flex-wrap items-start gap-x-3 gap-y-3 pt-2">
-          {/* The summary opens the file in My PMO file, whose other tabs are a click away. */}
+          {/* Opens the read-only published view at its own address, leaving the working PMO alone. */}
           <RouterLink
-            href={`/pmo/published/${dataset.id}/summary`}
+            href={`/published/${dataset.id}/summary`}
             className={buttonClassName({ variant: "primary", size: "lg" })}
           >
             <ChartColumn aria-hidden="true" className="size-4.5" />
@@ -174,13 +174,23 @@ export function DatasetPage({ id, load = loadSharedCatalogue }: DatasetPageProps
       <div className="flex flex-col gap-6">
         <BackLink />
         {state.kind !== "ready" ? (
-          <CatalogueProblem state={state} />
+          <>
+            <h1 className="text-2xl font-semibold tracking-tight text-text">
+              <Trans>Published PMO</Trans>
+            </h1>
+            <CatalogueProblem state={state} />
+          </>
         ) : dataset === undefined ? (
-          <Callout tone="warning" title={t`This PMO is not in the list`}>
-            <Trans>
-              It may have been withdrawn from the community, or the address may be mistyped.
-            </Trans>
-          </Callout>
+          <>
+            <h1 className="text-2xl font-semibold tracking-tight text-text">
+              <Trans>Published PMO</Trans>
+            </h1>
+            <Callout tone="warning" title={t`This PMO is not in the list`}>
+              <Trans>
+                It may have been withdrawn from the community, or the address may be mistyped.
+              </Trans>
+            </Callout>
+          </>
         ) : (
           <Dataset dataset={dataset} />
         )}

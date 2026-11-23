@@ -94,8 +94,12 @@ describe("summaryOf", () => {
     expect(t3).toEqual({ name: "t3", samples: 0, alleles: [], heterozygosity: null });
   });
 
-  it("lays out the reads grid by sample and target", () => {
-    expect(summaryOf(PMO, 0).grid).toEqual({ columns: 3, reads: [100, 0, 0, 50, 5, 0] });
+  it("lays out the reads grid by sample and target with microhaplotype counts", () => {
+    expect(summaryOf(PMO, 0).grid).toEqual({
+      columns: 3,
+      reads: [100, 0, 0, 50, 5, 0],
+      alleles: [2, 0, 0, 1, 1, 0],
+    });
   });
 
   it("applies one read threshold to every figure", () => {
@@ -108,6 +112,7 @@ describe("summaryOf", () => {
       ["S2", 1, 1],
     ]);
     expect(summary.grid.reads).toEqual([90, 0, 0, 50, 0, 0]);
+    expect(summary.grid.alleles).toEqual([1, 0, 0, 1, 0, 0]);
     expect(summary.targets[0]?.alleles.map((allele) => allele.mhapId)).toEqual([0]);
     expect(summary.headline).toEqual({
       samplesWithData: 2,
@@ -151,6 +156,7 @@ describe("summaryOf", () => {
     const summary = summaryOf(example, 0);
     expect(summary.samples.length).toBeGreaterThan(0);
     expect(summary.grid.reads).toHaveLength(summary.samples.length * example.target_info.length);
+    expect(summary.grid.alleles).toHaveLength(summary.samples.length * example.target_info.length);
     expect(summary.headline.targetsWithData).toBe(
       example.representative_microhaplotypes.targets.length,
     );

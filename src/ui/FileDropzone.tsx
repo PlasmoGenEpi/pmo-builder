@@ -1,7 +1,14 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { CircleExclamationPoint, FileSpreadsheet, Upload } from "lucide-react";
-import { useId, useRef, useState, type DragEvent, type ReactNode } from "react";
+import {
+  useId,
+  useRef,
+  useState,
+  type DragEvent,
+  type HTMLAttributes,
+  type ReactNode,
+} from "react";
 
 import { intlLocale } from "@/i18n/languages";
 
@@ -9,6 +16,116 @@ import { Button } from "./Button";
 import { cn } from "./cn";
 import { formatBytes, formatCount } from "./format";
 import { Spinner } from "./Spinner";
+
+/** Drag event handlers returned by {@link useFileDrop}. */
+export type FileDropHandlers = Pick<
+  HTMLAttributes<HTMLElement>,
+  "onDragEnter" | "onDragOver" | "onDragLeave" | "onDrop"
+>;
+
+/** Whole-sentence accessible names for file picker, replace, and remove actions. */
+export interface FileDropActionLabels {
+  readonly choose?: string;
+  readonly replace?: string;
+  readonly remove?: string;
+}
+
+/** Options for {@link useFileDrop}. */
+export interface UseFileDropOptions {
+  /** What the file is, such as "Allele table" or "PMO". Used in accessible names. */
+  readonly label: string;
+  /** Whole-sentence accessible name for the hidden file input, when `label` should not be lowercased. */
+  readonly chooseLabel?: string;
+  /** File name endings that are allowed, with the dot, such as `[".json", ".json.gz", ".gz"]`. */
+  readonly accept: readonly string[];
+  /** Called with a file of an accepted type. */
+  readonly onFileSelect: (file: File) => void;
+  /** Disables choosing and dropping files. */
+  readonly inactive?: boolean;
+}
+
+/** State and elements returned by {@link useFileDrop}. */
+export interface FileDropState {
+  /** Opens the browser file picker unless inactive. */
+  readonly choose: () => void;
+  /** Drag-and-drop handlers to spread onto the drop target element. */
+  readonly dragHandlers: FileDropHandlers;
+  /** True while a file is being dragged over the target. */
+  readonly dragging: boolean;
+  /** Validation message when a file of an unsupported type is dropped or chosen. */
+  readonly rejection: string | null;
+  /** Clears any file-type rejection message. */
+  readonly clearRejection: () => void;
+  /** Formatted list of accepted file endings for display. */
+  readonly fileTypes: string;
+  /** The hidden `<input type="file">` with its accessible label. Render once inside the component. */
+  readonly input: ReactNode;
+}
+
+/** Props for {@link FileDropActions}. */
+export interface FileDropActionsProps {
+  /** What the file is, such as "Allele table" or "PMO". Used in accessible names. */
+  readonly label: string;
+  /** Whole-sentence accessible name for the Replace button, when `label` should not be lowercased. */
+  readonly replaceLabel?: string;
+  /** Whole-sentence accessible name for the Remove button, when `label` should not be lowercased. */
+  readonly removeLabel?: string;
+  /** Opens the file picker to choose a replacement file. */
+  readonly onReplace: () => void;
+  /** Removes the current file. */
+  readonly onRemove: () => void;
+  readonly disabled?: boolean;
+}
+
+/** Replace and Remove buttons for a chosen file, with consistent accessible names. */
+export function FileDropActions({
+  label,
+  replaceLabel,
+  removeLabel,
+  onReplace,
+  onRemove,
+  disabled = false,
+}: FileDropActionsProps) {
+  const fileLabel = label.toLowerCase();
+  return (
+    <div className="flex shrink-0 gap-2">
+      <Button
+        size="sm"
+        onClick={onReplace}
+        disabled={disabled}
+        aria-label={
+          replaceLabel ??
+          t({
+            message: `Replace ${fileLabel} file`,
+            comment:
+              'Accessible name of a button. Chooses another file in place of this one. {fileLabel} is a lower-case table name, such as "allele table". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
+          })
+        }
+      >
+        {t({
+          message: "Replace",
+          comment: "Button: choose another file in place of this one",
+        })}
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={onRemove}
+        disabled={disabled}
+        aria-label={
+          removeLabel ??
+          t({
+            message: `Remove ${fileLabel} file`,
+            comment:
+              'Accessible name of a button. Removes this file. {fileLabel} is a lower-case table name, such as "allele table". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
+          })
+        }
+      >
+        {t({ message: "Remove", comment: "Button: remove this file" })}
+      </Button>
+    </div>
+  );
+}
 
 /** What the dropzone shows about a file once it has been read. */
 export interface ChosenFile {
@@ -25,6 +142,8 @@ export interface ChosenFile {
 export interface FileDropzoneProps {
   /** What the file is, such as "Allele table". Used in the accessible names. */
   label: string;
+  /** Whole-sentence accessible names for picker/replace/remove actions, when `label` should not be lowercased. */
+  actionLabels?: FileDropActionLabels;
   /** One sentence about what the file should contain. */
   description?: ReactNode;
   /** File name endings that are allowed, with the dot, such as `[".csv", ".tsv", ".xlsx"]`. */
@@ -57,34 +176,22 @@ function hasFiles(event: DragEvent): boolean {
 }
 
 /**
- * Lets the user choose one file by dragging it in, clicking, or with the
- * keyboard. Once read, it shows the file's name, size and shape with Replace
- * and Remove actions. Files of other types are turned away with a message.
+ * Shared file-picker and drag-and-drop state, with extension checking and a
+ * hidden `<input type="file">`. Used by {@link FileDropzone} and compact file bars.
  */
-export function FileDropzone({
+export function useFileDrop({
   label,
-  description,
+  chooseLabel,
   accept,
-  file,
   onFileSelect,
-  onRemove,
-  busy = false,
-  error,
-  disabled = false,
-  className,
-}: FileDropzoneProps) {
+  inactive = false,
+}: UseFileDropOptions): FileDropState {
   const inputRef = useRef<HTMLInputElement>(null);
-  const id = useId();
-  const messageId = `dropzone-${id}-message`;
   const [dragDepth, setDragDepth] = useState(0);
   const [rejection, setRejection] = useState<string | null>(null);
-  const isBusy = busy !== false;
-  const inactive = disabled || isBusy;
-  const shownError = rejection ?? error ?? null;
   const dragging = dragDepth > 0 && !inactive;
   const fileTypes = listEndings(accept);
   const fileLabel = label.toLowerCase();
-  const busyMessage = typeof busy === "string" ? busy : t`Reading the file`;
 
   function choose() {
     if (!inactive) inputRef.current?.click();
@@ -104,7 +211,7 @@ export function FileDropzone({
     onFileSelect(chosen);
   }
 
-  const dragHandlers = {
+  const dragHandlers: FileDropHandlers = {
     onDragEnter: (event: DragEvent) => {
       if (!hasFiles(event)) return;
       event.preventDefault();
@@ -129,11 +236,14 @@ export function FileDropzone({
       type="file"
       hidden
       accept={accept.join(",")}
-      aria-label={t({
-        message: `Choose ${fileLabel} file`,
-        comment:
-          'Accessible name of the file picker input. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
-      })}
+      aria-label={
+        chooseLabel ??
+        t({
+          message: `Choose ${fileLabel} file`,
+          comment:
+            'Accessible name of the file picker input. {fileLabel} is a lower-case table name, such as "allele table". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
+        })
+      }
       onChange={(event) => {
         take(event.target.files);
         // Allow choosing the same file again after it was removed.
@@ -141,6 +251,50 @@ export function FileDropzone({
       }}
     />
   );
+
+  return {
+    choose,
+    dragHandlers,
+    dragging,
+    rejection,
+    clearRejection: () => setRejection(null),
+    fileTypes,
+    input,
+  };
+}
+
+/**
+ * Lets the user choose one file by dragging it in, clicking, or with the
+ * keyboard. Once read, it shows the file's name, size and shape with Replace
+ * and Remove actions. Files of other types are turned away with a message.
+ */
+export function FileDropzone({
+  label,
+  actionLabels,
+  description,
+  accept,
+  file,
+  onFileSelect,
+  onRemove,
+  busy = false,
+  error,
+  disabled = false,
+  className,
+}: FileDropzoneProps) {
+  const id = useId();
+  const messageId = `dropzone-${id}-message`;
+  const isBusy = busy !== false;
+  const inactive = disabled || isBusy;
+  const { choose, dragHandlers, dragging, rejection, clearRejection, fileTypes, input } =
+    useFileDrop({
+      label,
+      chooseLabel: actionLabels?.choose,
+      accept,
+      onFileSelect,
+      inactive,
+    });
+  const shownError = rejection ?? error ?? null;
+  const busyMessage = typeof busy === "string" ? busy : t`Reading the file`;
 
   const message = shownError ? (
     <p id={messageId} role="alert" className="flex items-start gap-1.5 text-sm text-danger-text">
@@ -196,39 +350,17 @@ export function FileDropzone({
               <p className="text-sm text-text-muted">{file.detail}</p>
             ) : null}
           </div>
-          <div className="flex shrink-0 gap-2">
-            <Button
-              size="sm"
-              onClick={choose}
-              disabled={inactive}
-              aria-label={t({
-                message: `Replace ${fileLabel} file`,
-                comment:
-                  'Accessible name of a button. Chooses another file in place of this one. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
-              })}
-            >
-              {t({
-                message: "Replace",
-                comment: "Button: choose another file in place of this one",
-              })}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setRejection(null);
-                onRemove();
-              }}
-              disabled={inactive}
-              aria-label={t({
-                message: `Remove ${fileLabel} file`,
-                comment:
-                  'Accessible name of a button. Removes this file. {fileLabel} is a lower-case table or file name, such as "allele table" or "pmo". French table names all start with "tableau" (masculine) and Portuguese ones with "tabela" (feminine), so make articles agree.',
-              })}
-            >
-              {t({ message: "Remove", comment: "Button: remove this file" })}
-            </Button>
-          </div>
+          <FileDropActions
+            label={label}
+            replaceLabel={actionLabels?.replace}
+            removeLabel={actionLabels?.remove}
+            onReplace={choose}
+            onRemove={() => {
+              clearRejection();
+              onRemove();
+            }}
+            disabled={inactive}
+          />
           {input}
         </div>
         {message}

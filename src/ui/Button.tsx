@@ -17,10 +17,19 @@ const variantClasses: Record<ButtonVariant, string> = {
   danger: "bg-danger text-danger-fg shadow-xs hover:bg-danger-hover",
 };
 
+const selectedClasses =
+  "border border-accent bg-accent-subtle font-semibold text-accent-text shadow-xs hover:border-accent hover:bg-accent-subtle";
+
 const sizeClasses: Record<ButtonSize, string> = {
   sm: "h-control-sm gap-1.5 px-2.5 text-sm",
   md: "h-control gap-2 px-3.5 text-base",
   lg: "h-control-lg gap-2 px-5 text-md",
+};
+
+const wrappingSizeClasses: Record<ButtonSize, string> = {
+  sm: "min-h-control-sm gap-1.5 px-2.5 py-1 text-sm",
+  md: "min-h-control gap-2 px-3.5 py-1.5 text-base",
+  lg: "min-h-control-lg gap-2 px-5 py-2 text-md",
 };
 
 const iconSizes: Record<ButtonSize, string> = { sm: "size-3.5", md: "size-4", lg: "size-4.5" };
@@ -30,6 +39,13 @@ export interface ButtonStyleOptions {
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
+  /**
+   * Allows the label to wrap onto multiple lines and lets the button's height
+   * grow past its control height to fit, such as for narrow table headings.
+   */
+  wrap?: boolean;
+  /** Marks a toggle or chip button as the active choice, using the accent surface and border. */
+  selected?: boolean;
 }
 
 /**
@@ -41,12 +57,15 @@ export function buttonClassName({
   variant = "secondary",
   size = "md",
   fullWidth = false,
+  wrap = false,
+  selected = false,
 }: ButtonStyleOptions = {}): string {
   return cn(
-    "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md font-medium whitespace-nowrap select-none",
+    "inline-flex cursor-pointer items-center justify-center rounded-md font-medium select-none",
+    wrap ? "max-w-full whitespace-normal" : "shrink-0 whitespace-nowrap",
     "transition-colors duration-100 disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-60",
-    variantClasses[variant],
-    sizeClasses[size],
+    selected ? selectedClasses : variantClasses[variant],
+    wrap ? wrappingSizeClasses[size] : sizeClasses[size],
     fullWidth && "w-full",
   );
 }
@@ -60,11 +79,20 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** A lucide icon shown before the label. */
   icon?: LucideIcon;
   fullWidth?: boolean;
+  /**
+   * Allows the label to wrap onto multiple lines and lets the button's height
+   * grow past its control height to fit, such as for narrow table headings.
+   */
+  wrap?: boolean;
+  /** Marks a toggle or chip button as the active choice, using the accent surface and border. */
+  selected?: boolean;
   ref?: Ref<HTMLButtonElement>;
 }
 
 /**
  * A button. Defaults to `type="button"` so it never submits a form by accident.
+ * Pass `wrap` when the label may span more than one line, such as in a narrow
+ * table column heading.
  *
  * @example
  * <Button variant="primary" icon={Download} onClick={save}>Download PMO</Button>
@@ -75,6 +103,8 @@ export function Button({
   loading = false,
   icon: Icon,
   fullWidth,
+  wrap = false,
+  selected = false,
   className,
   children,
   type = "button",
@@ -96,12 +126,12 @@ export function Button({
       aria-busy={loading || undefined}
       aria-disabled={loading || undefined}
       onClick={handleClick}
-      className={cn(buttonClassName({ variant, size, fullWidth }), className)}
+      className={cn(buttonClassName({ variant, size, fullWidth, wrap, selected }), className)}
     >
       {loading ? (
         <Spinner size={size === "lg" ? "md" : "sm"} label={null} />
       ) : Icon ? (
-        <Icon aria-hidden="true" className={iconSizes[size]} />
+        <Icon aria-hidden="true" className={cn("shrink-0", iconSizes[size])} />
       ) : null}
       {children}
     </button>

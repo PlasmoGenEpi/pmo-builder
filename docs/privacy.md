@@ -63,11 +63,13 @@ choose to deposit it.
 The list of published PMOs is a file on this site, so browsing and searching
 it contacts nothing else. A download, or a link to a record, opens Zenodo.
 
-"Open in My PMO file" on a published PMO's page downloads that public file
-from zenodo.org into your browser, so Zenodo sees the request, as it would
-for any download. The request carries nothing of yours: no draft, file or
-name, and no cookies. The file is then read in your browser like one you
-chose yourself.
+"See its summary" on a published PMO's page downloads that public file from
+zenodo.org into your browser to show its read-only published view, so Zenodo
+sees the request, as it would for any download. The request carries nothing
+of yours: no draft, file or name, and no cookies. The file is read in your
+browser, kept apart from your working PMO, and dropped when you leave the
+view. If you choose "Work with this file", the already-downloaded file moves
+into My PMO file without contacting Zenodo again.
 
 ## Usage counts
 
@@ -98,10 +100,11 @@ Track.
 ## Checking for yourself
 
 The app tells your browser, through a Content Security Policy, that it may
-connect only to its own site and, if usage counts are on, to the one service
-that receives them. Your browser blocks any other connection. You can see
-this policy in the page source and watch every request in your browser's
-developer tools.
+connect only to its own site, to `https://zenodo.org` when a Zenodo community
+is configured (for opening published PMOs and deposits you ask for), and, if
+usage counts are on, to the one service that receives them. Your browser blocks
+any other connection. You can see this policy in the page source and watch
+every request in your browser's developer tools.
 
 The source code is public. `docs/analytics.md` describes the usage counts in
 detail.

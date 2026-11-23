@@ -3,15 +3,22 @@ import userEvent from "@testing-library/user-event";
 import { memoryLocation } from "wouter/memory-location";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { buildExamplePmo } from "@/domain/build/testing";
+import { catalogue, dataset } from "@/features/published/testing";
+import { resetSharedCatalogueForTests } from "@/features/published/useCatalogue";
 import { createTestStore } from "@/features/shared/testing";
+import { workingPmoSessionOf, type EditorLock } from "@/state";
 import { installDomPolyfills } from "@/ui/testPolyfills";
 
 import { App } from "./App";
-import { getStep, page } from "./steps";
+import { pageIdentity } from "./pageIdentity";
+import { STEPS, getStep, page } from "./steps";
 
 beforeAll(installDomPolyfills);
 afterEach(() => {
+  resetSharedCatalogueForTests();
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 function LoadedPage() {
@@ -127,15 +134,28 @@ describe("App", () => {
 });
 
 describe("usage counts for pages outside the steps", () => {
-  it("counts the published list, a dataset page and My PMO file by kind only", async () => {
+  it("counts the published list, a dataset page, a published view and My PMO file by kind only", async () => {
     const spy = vi.spyOn(await import("@/analytics"), "recordPageOpened");
-    for (const path of ["/published", "/published/24237928", "/pmo"]) {
+    for (const path of [
+      "/published",
+      "/published/24237928",
+      "/published/24237928/summary",
+      "/pmo",
+    ]) {
       const { unmount } = render(
         <App locationHook={memoryLocation({ path }).hook} store={createTestStore()} />,
       );
       unmount();
     }
-    expect(spy.mock.calls).toEqual([["published"], ["dataset"], ["pmo-file"]]);
+    expect(spy.mock.calls).toEqual([["published"], ["dataset"], ["dataset"], ["pmo-file"]]);
+  });
+
+  it("does not count legacy /pmo/published links as My PMO file", async () => {
+    const spy = vi.spyOn(await import("@/analytics"), "recordPageOpened");
+    const { location } = renderAt("/pmo/published/303/summary");
+    await waitFor(() => expect(location.history.at(-1)).toBe("/published/303/summary"));
+    expect(spy).not.toHaveBeenCalledWith("pmo-file");
+    expect(spy).toHaveBeenCalledWith("dataset");
   });
 });
 
@@ -146,8 +166,180 @@ describe("addresses from before the sections", () => {
     ["/publish", "/pmo/publish"],
     ["/pmo-tools", "/pmo"],
     ["/build", "/build/microhaplotypes"],
+    ["/pmo/published/303", "/published/303/overview"],
+    ["/pmo/published/303/summary", "/published/303/summary"],
+    ["/pmo/published/303/subset", "/published/303/overview"],
   ])("sends %s to %s", async (from, to) => {
     const { location } = renderAt(from);
     await waitFor(() => expect(location.history.at(-1)).toBe(to));
+  });
+});
+
+describe("published view in the app shell", () => {
+  it("marks Published active in the top bar on /published/:id/:tab", async () => {
+    vi.stubEnv("VITE_ZENODO_COMMUNITY", "pmocommunity");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(catalogue()), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    renderAt("/published/303/summary");
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Border travellers, Mozambique and Eswatini",
+      }),
+    ).toBeInTheDocument();
+    const sections = screen.getByRole("navigation", { name: "Sections" });
+    expect(within(sections).getByRole("link", { current: "page" })).toHaveTextContent("Published");
+    expect(within(sections).getByRole("link", { name: "My PMO file" })).not.toHaveAttribute(
+      "aria-current",
+    );
+  });
+});
+
+async function createOtherTabStore() {
+  const editorLock: EditorLock = {
+    claim: () => Promise.resolve("elsewhere"),
+    takeOver: () => Promise.resolve(),
+    onStepBack: () => {},
+  };
+  const store = createTestStore({ editorLock });
+  await store.getState().actions.initialise();
+  return store;
+}
+
+describe("other-tab draft notice", () => {
+  it.each(STEPS.map((step) => [step.path, step.title] as const))(
+    "shows on Build step %s",
+    async (path, heading) => {
+      const store = await createOtherTabStore();
+      render(<App locationHook={memoryLocation({ path }).hook} store={store} />);
+      expect(await screen.findByRole("heading", { level: 1, name: heading })).toBeInTheDocument();
+      expect(screen.getByText("This draft is open in another tab")).toBeInTheDocument();
+    },
+  );
+
+  it.each([
+    ["/", "PMO Builder"],
+    ["/pmo", "My PMO file"],
+    ["/published", "Published PMOs"],
+    ["/published/301", "Maputo surveillance 2015 to 2019"],
+    ["/published/301/summary", "Maputo surveillance 2015 to 2019"],
+  ])("does not show on %s", async (path, heading) => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(catalogue()), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    const store = await createOtherTabStore();
+    render(<App locationHook={memoryLocation({ path }).hook} store={store} />);
+    expect(await screen.findByRole("heading", { level: 1, name: heading })).toBeInTheDocument();
+    expect(screen.queryByText("This draft is open in another tab")).not.toBeInTheDocument();
+  });
+});
+
+describe("pageIdentity and tab-switch stability", () => {
+  it.each([
+    ["/", "/"],
+    ["/build/panel", "/build/panel"],
+    ["/pmo", "/pmo"],
+    ["/pmo/overview", "/pmo"],
+    ["/pmo/summary", "/pmo"],
+    ["/pmo/open-built", "/pmo/open-built"],
+    ["/published", "/published"],
+    ["/published/303", "/published/303"],
+    ["/published/303/overview", "/published/303"],
+    ["/published/303/summary", "/published/303"],
+    ["/published/304/summary", "/published/304"],
+  ])("maps %s to %s", (from, expected) => {
+    expect(pageIdentity(from)).toBe(expected);
+  });
+
+  it("keeps Tabs mounted and preserves keyboard focus across /published/:id/:tab switches", async () => {
+    vi.stubEnv("VITE_ZENODO_COMMUNITY", "pmocommunity");
+    const pmoBytes = new TextEncoder().encode(JSON.stringify(buildExamplePmo()));
+    const fileUrl = "https://zenodo.org/api/records/303/files/study.pmo.json/content";
+    const index = catalogue([
+      dataset({
+        id: "303",
+        title: "Border travellers, Mozambique and Eswatini",
+        file: { name: "study.pmo.json", size: pmoBytes.byteLength, url: fileUrl },
+      }),
+    ]);
+    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url === fileUrl) {
+        return Promise.resolve(
+          new Response(Uint8Array.from(pmoBytes), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify(index), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    const scrollToSpy = vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
+
+    const { location, user } = renderAt("/published/303/overview");
+    const overviewTab = await screen.findByRole("tab", { name: "Overview" });
+    const tablist = screen.getByRole("tablist");
+    scrollToSpy.mockClear();
+
+    overviewTab.focus();
+    expect(overviewTab).toHaveFocus();
+
+    await user.keyboard("{ArrowRight}");
+    expect(location.history.at(-1)).toBe("/published/303/summary");
+    expect(screen.getByRole("tablist")).toBe(tablist);
+    expect(screen.getByRole("tab", { name: "Summary" })).toHaveFocus();
+    expect(scrollToSpy).not.toHaveBeenCalled();
+
+    await user.keyboard("{ArrowRight}");
+    expect(location.history.at(-1)).toBe("/published/303/compare");
+    expect(screen.getByRole("tablist")).toBe(tablist);
+    expect(screen.getByRole("tab", { name: "Compare" })).toHaveFocus();
+    expect(scrollToSpy).not.toHaveBeenCalled();
+  });
+
+  it("keeps Tabs mounted and preserves keyboard focus across /pmo/:tab switches", async () => {
+    const pmoBytes = new TextEncoder().encode(JSON.stringify(buildExamplePmo()));
+    const store = createTestStore();
+    await workingPmoSessionOf(store).open({
+      kind: "file",
+      file: new Blob([pmoBytes], { type: "application/json" }),
+      name: "study.pmo.json",
+      origin: { kind: "chosen" },
+    });
+    const scrollToSpy = vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
+    const location = memoryLocation({ path: "/pmo/overview", record: true });
+    const user = userEvent.setup();
+    render(<App locationHook={location.hook} store={store} />);
+
+    const overviewTab = await screen.findByRole("tab", { name: "Overview" });
+    const tablist = screen.getByRole("tablist");
+    scrollToSpy.mockClear();
+
+    overviewTab.focus();
+    expect(overviewTab).toHaveFocus();
+
+    await user.keyboard("{ArrowRight}");
+    expect(location.history.at(-1)).toBe("/pmo/summary");
+    expect(screen.getByRole("tablist")).toBe(tablist);
+    expect(screen.getByRole("tab", { name: "Summary" })).toHaveFocus();
+    expect(scrollToSpy).not.toHaveBeenCalled();
+
+    await user.keyboard("{ArrowRight}");
+    expect(location.history.at(-1)).toBe("/pmo/compare");
+    expect(screen.getByRole("tablist")).toBe(tablist);
+    expect(screen.getByRole("tab", { name: "Compare" })).toHaveFocus();
+    expect(scrollToSpy).not.toHaveBeenCalled();
   });
 });

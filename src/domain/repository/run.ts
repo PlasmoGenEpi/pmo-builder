@@ -2,33 +2,94 @@
  * The harvester's command line. `scripts/harvest.mjs` loads this through
  * Vite, so it can use the app's own modules.
  *
- *   pnpm harvest [--community <id>] [--out <dir>] [--fallback <url>]
+ *   pnpm harvest [--community <id>] [--out <dir>] [--fallback <url>] [--full]
  */
-import { appendFile, mkdir, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 // English, for any message the app's own modules build while harvesting.
 import "@/i18n";
 
-import { harvest, HarvestError } from "./harvest";
+import { harvest, HarvestError, type PreviousCatalogue } from "./harvest";
 import { REPOSITORY_PATH, type HarvestResult } from "./types";
 
 /** Zenodo turns away clients that do not name themselves. */
 const USER_AGENT = "pmo-repository-harvester/1.0";
 
-const named: typeof fetch = (input, init) => {
-  const headers = new Headers(init?.headers);
-  headers.set("User-Agent", USER_AGENT);
-  return fetch(input, { ...init, headers });
-};
+/** Optional dependencies for {@link run}. */
+export interface RunOptions {
+  /** Default: the global `fetch`. */
+  readonly fetch?: typeof fetch;
+}
+
+function namedFetch(base: typeof fetch): typeof fetch {
+  return (input, init) => {
+    const headers = new Headers(init?.headers);
+    headers.set("User-Agent", USER_AGENT);
+    return base(input, { ...init, headers });
+  };
+}
 
 function option(args: readonly string[], name: string): string | undefined {
   const index = args.indexOf(`--${name}`);
   return index === -1 ? undefined : args[index + 1];
 }
 
+function baseUrl(url: string): string {
+  return url.endsWith("/") ? url : `${url}/`;
+}
+
 async function write(directory: string, name: string, value: unknown): Promise<void> {
   await writeFile(path.join(directory, name), `${JSON.stringify(value)}\n`);
+}
+
+type FallbackLoad =
+  | { readonly kind: "ok"; readonly indexText: string; readonly specimensText: string }
+  | { readonly kind: "http-error"; readonly name: string; readonly status: number }
+  | { readonly kind: "error"; readonly error: unknown };
+
+async function fetchFallback(fallback: string, send: typeof fetch): Promise<FallbackLoad> {
+  const base = baseUrl(fallback);
+  try {
+    const [indexResponse, specimensResponse] = await Promise.all([
+      send(new URL("index.json", base)),
+      send(new URL("specimens.json", base)),
+    ]);
+    if (!indexResponse.ok) {
+      return { kind: "http-error", name: "index.json", status: indexResponse.status };
+    }
+    if (!specimensResponse.ok) {
+      return { kind: "http-error", name: "specimens.json", status: specimensResponse.status };
+    }
+    const [indexText, specimensText] = await Promise.all([
+      indexResponse.text(),
+      specimensResponse.text(),
+    ]);
+    return { kind: "ok", indexText, specimensText };
+  } catch (error) {
+    return { kind: "error", error };
+  }
+}
+
+function parseFallbackPrevious(loaded: FallbackLoad): PreviousCatalogue | undefined {
+  if (loaded.kind !== "ok") return undefined;
+  try {
+    return { index: JSON.parse(loaded.indexText), specimens: JSON.parse(loaded.specimensText) };
+  } catch {
+    return undefined;
+  }
+}
+
+async function loadPreviousFromDisk(directory: string): Promise<PreviousCatalogue | undefined> {
+  try {
+    const [indexText, specimensText] = await Promise.all([
+      readFile(path.join(directory, "index.json"), "utf8"),
+      readFile(path.join(directory, "specimens.json"), "utf8"),
+    ]);
+    return { index: JSON.parse(indexText), specimens: JSON.parse(specimensText) };
+  } catch {
+    return undefined;
+  }
 }
 
 /** A note for the curators on the workflow run's page, when run by GitHub Actions. */
@@ -36,7 +97,7 @@ async function report(result: HarvestResult): Promise<void> {
   const summary = process.env["GITHUB_STEP_SUMMARY"];
   if (summary === undefined || summary === "") return;
   const lines = [
-    `### Published PMOs: ${result.index.datasets.length} in the catalogue, ${result.skipped.length} left out`,
+    `### Published PMOs: ${result.index.datasets.length} in the catalogue (${result.carriedOver} carried over, ${result.downloaded} downloaded), ${result.skipped.length} left out`,
     "",
     ...result.skipped.map(
       (record) => `- [${record.title}](https://zenodo.org/records/${record.id}): ${record.reason}`,
@@ -48,13 +109,17 @@ async function report(result: HarvestResult): Promise<void> {
 
 /**
  * Harvests the community and writes `index.json` and `specimens.json`.
- * When Zenodo cannot be read and `--fallback` names the address of the last
- * published catalogue, that one is kept. Returns the exit code.
+ * Unchanged records are carried over from the last catalogue (`--fallback`, or
+ * `--out` when `--fallback` is omitted) unless `--full` is passed. When Zenodo
+ * cannot be read and `--fallback` names the address of the last published
+ * catalogue, that one is kept. Returns the exit code.
  */
-export async function run(args: readonly string[]): Promise<number> {
+export async function run(args: readonly string[], options: RunOptions = {}): Promise<number> {
+  const send = namedFetch(options.fetch ?? globalThis.fetch);
   const community = option(args, "community") ?? process.env["VITE_ZENODO_COMMUNITY"] ?? "";
   const out = option(args, "out") ?? path.join("public", REPOSITORY_PATH);
   const fallback = option(args, "fallback");
+  const full = args.includes("--full");
   if (community.trim() === "") {
     console.warn(
       "No Zenodo community is set (VITE_ZENODO_COMMUNITY), so there is no catalogue to build.",
@@ -62,17 +127,25 @@ export async function run(args: readonly string[]): Promise<number> {
     return 0;
   }
   await mkdir(out, { recursive: true });
+  const fallbackLoad =
+    !full && fallback !== undefined ? await fetchFallback(fallback, send) : undefined;
+  const previous = full
+    ? undefined
+    : fallbackLoad !== undefined
+      ? parseFallbackPrevious(fallbackLoad)
+      : await loadPreviousFromDisk(out);
   try {
     const result = await harvest({
       community: community.trim(),
-      fetch: named,
+      fetch: send,
       log: (message) => console.warn(message),
+      previous,
     });
     await write(out, "index.json", result.index);
     await write(out, "specimens.json", result.specimens);
     await report(result);
     console.warn(
-      `Catalogue written to ${out}: ${result.index.datasets.length} datasets, ${result.specimens.length} specimens, ${result.skipped.length} records left out.`,
+      `Catalogue written to ${out}: ${result.index.datasets.length} datasets (${result.carriedOver} carried over, ${result.downloaded} downloaded), ${result.specimens.length} specimens, ${result.skipped.length} records left out.`,
     );
     return 0;
   } catch (error) {
@@ -81,19 +154,20 @@ export async function run(args: readonly string[]): Promise<number> {
     if (fallback === undefined) return 1;
     // Keep the catalogue that is already published, so a deploy while Zenodo
     // is down does not empty the page.
-    const base = fallback.endsWith("/") ? fallback : `${fallback}/`;
-    for (const name of ["index.json", "specimens.json"]) {
-      // oxlint-disable-next-line no-await-in-loop -- two small files
-      const response = await named(new URL(name, base));
-      if (!response.ok) {
-        console.error(
-          `The last catalogue could not be read from ${base}${name} (${response.status}).`,
-        );
-        return 1;
-      }
-      // oxlint-disable-next-line no-await-in-loop
-      await writeFile(path.join(out, name), await response.text());
+    const base = baseUrl(fallback);
+    const kept = fallbackLoad ?? (await fetchFallback(fallback, send));
+    if (kept.kind === "http-error") {
+      console.error(
+        `The last catalogue could not be read from ${base}${kept.name} (${kept.status}).`,
+      );
+      return 1;
     }
+    if (kept.kind === "error") {
+      console.error(`The last catalogue could not be read from ${base}: ${String(kept.error)}`);
+      return 1;
+    }
+    await writeFile(path.join(out, "index.json"), kept.indexText);
+    await writeFile(path.join(out, "specimens.json"), kept.specimensText);
     console.warn(`Kept the last published catalogue from ${base}.`);
     return 0;
   }

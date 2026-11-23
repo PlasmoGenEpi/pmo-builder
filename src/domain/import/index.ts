@@ -10,14 +10,23 @@ import type {
   RawTable,
 } from "../types";
 
-import { readBooleanCell } from "./boolean";
+import { booleanValue } from "./boolean";
 import { decodeText, gunzip, isGzip, isOle, isZip } from "./bytes";
 import { detectDelimiter, parseDelimited, type Delimiter } from "./delimited";
-import { IMPORT_LIMITS, ImportError, megabytes } from "./errors";
+import { IMPORT_LIMITS, ImportError } from "./errors";
+import {
+  DELIMITED_EXTENSIONS,
+  baseExtension,
+  emptyFileError,
+  isGzipOnly,
+  tooLargeError,
+  unreadableWorkbookError,
+  unsupportedTypeError,
+} from "./fileFormat";
 import { gridToRawTable } from "./rawTable";
 import { readWorkbook, xlsNotSupported } from "./xlsx";
 
-export { BOOLEAN_SPELLINGS, readBooleanCell, type BooleanCell } from "./boolean";
+export { BOOLEAN_SPELLINGS, booleanValue, readBooleanCell, type BooleanCell } from "./boolean";
 export {
   IMPORT_LIMITS,
   ImportError,
@@ -26,29 +35,24 @@ export {
   type ImportErrorDetail,
 } from "./errors";
 export { importFailureMessage, type ImportFailure, type ImportFailureCode } from "./messages";
+export { uniqueHeaders } from "./rawTable";
+export {
+  DEFAULT_STREAM_CHUNK_SIZE,
+  PREVIEW_KEEP_ROWS,
+  PREVIEW_SCAN_ROWS,
+  inspectDelimitedStream,
+  streamDelimitedChunks,
+  streamDistinctValues,
+  type DelimitedStreamInspection,
+  type DelimitedStreamMeta,
+  type InspectStreamOptions,
+  type StreamChunksOptions,
+  type StreamDistinctValuesOptions,
+  type StreamDistinctValuesResult,
+  type StreamReadProgress,
+  type StreamTextEncoding,
+} from "./stream";
 export { excelCellToText, formatExcelDate } from "./xlsx";
-
-const DELIMITED_EXTENSIONS = new Set(["csv", "tsv", "txt", "tab"]);
-const GZIP_EXTENSIONS = new Set(["gz", "gzip"]);
-
-/** The file's extension, lower case, with a trailing `.gz` or `.gzip` taken off. */
-function baseExtension(fileName: string): string {
-  const parts = fileName.toLowerCase().split(".");
-  if (parts.length > 1 && GZIP_EXTENSIONS.has(parts.at(-1) ?? "")) parts.pop();
-  return parts.length > 1 ? (parts.at(-1) ?? "") : "";
-}
-
-function isGzipOnly(fileName: string): boolean {
-  const parts = fileName.toLowerCase().split(".");
-  return parts.length === 2 && GZIP_EXTENSIONS.has(parts[1] ?? "");
-}
-
-function unsupported(fileName: string): ImportError {
-  return new ImportError(
-    "unsupported-type",
-    `${fileName} is not a file type that can be read. Upload a .csv, .tsv, .txt or .xlsx file (a .gz of a text file also works).`,
-  );
-}
 
 async function parseWorkbook(
   source: Blob,
@@ -102,7 +106,7 @@ export async function parseFile(
   const extension = baseExtension(fileName);
   if (extension === "xls") throw xlsNotSupported(fileName);
   const known = extension === "xlsx" || DELIMITED_EXTENSIONS.has(extension) || isGzipOnly(fileName);
-  if (!known) throw unsupported(fileName);
+  if (!known) throw unsupportedTypeError(fileName);
 
   const limits = {
     textBytes: options?.limits?.textBytes ?? IMPORT_LIMITS.textBytes,
@@ -130,17 +134,6 @@ interface Limits {
   readonly workbookBytes: number;
 }
 
-function tooLarge(fileName: string, measure: "text" | "workbook", limits: Limits): ImportError {
-  const limitBytes = measure === "text" ? limits.textBytes : limits.workbookBytes;
-  return new ImportError(
-    "too-large",
-    measure === "text"
-      ? `${fileName} is larger than ${megabytes(limitBytes)} of text, too large to open in the browser. Split it into smaller files, or remove columns you do not need, and try again.`
-      : `${fileName} is a workbook larger than ${megabytes(limitBytes)}, too large to open in the browser. Save the sheet as a .csv or .tsv file and import that instead.`,
-    { detail: { kind: "too-large", measure, limitBytes } },
-  );
-}
-
 /**
  * Reads the file's bytes and turns them into text or a workbook. The bytes
  * are not kept once decoded, so a large file is held once, as text, while it
@@ -154,38 +147,36 @@ async function readContent(input: {
   readonly limits: Limits;
 }): Promise<Content> {
   const { source, fileName, extension, limits } = input;
-  if (source.size === 0) {
-    throw new ImportError(
-      "empty-file",
-      `${fileName} is empty. Choose a file that has a header row and data.`,
-    );
-  }
+  if (source.size === 0) throw emptyFileError(fileName);
   const head = new Uint8Array(await source.slice(0, 8).arrayBuffer());
   if (!isGzip(head)) {
     if (isZip(head) || extension === "xlsx") {
-      if (source.size > limits.workbookBytes) throw tooLarge(fileName, "workbook", limits);
+      if (source.size > limits.workbookBytes) {
+        throw tooLargeError({ fileName, measure: "workbook", limitBytes: limits.workbookBytes });
+      }
     } else if (source.size > limits.textBytes) {
-      throw tooLarge(fileName, "text", limits);
+      throw tooLargeError({ fileName, measure: "text", limitBytes: limits.textBytes });
     }
   }
   let bytes: Uint8Array = new Uint8Array(await source.arrayBuffer());
   if (isGzip(bytes)) {
     const unpacked = await gunzip(bytes, fileName, limits.textBytes);
-    if (unpacked === null) throw tooLarge(fileName, "text", limits);
+    if (unpacked === null) {
+      throw tooLargeError({ fileName, measure: "text", limitBytes: limits.textBytes });
+    }
     bytes = unpacked;
   }
   if (isOle(bytes)) throw xlsNotSupported(fileName);
   if (isZip(bytes)) {
-    if (bytes.length > limits.workbookBytes) throw tooLarge(fileName, "workbook", limits);
+    if (bytes.length > limits.workbookBytes) {
+      throw tooLargeError({ fileName, measure: "workbook", limitBytes: limits.workbookBytes });
+    }
     return { kind: "workbook", blob: new Blob([new Uint8Array(bytes)]) };
   }
-  if (extension === "xlsx") {
-    throw new ImportError(
-      "unreadable-workbook",
-      `${fileName} is not a valid Excel workbook. Open it in Excel, save it as .xlsx, and try again.`,
-    );
+  if (extension === "xlsx") throw unreadableWorkbookError(fileName);
+  if (bytes.length > limits.textBytes) {
+    throw tooLargeError({ fileName, measure: "text", limitBytes: limits.textBytes });
   }
-  if (bytes.length > limits.textBytes) throw tooLarge(fileName, "text", limits);
   return { kind: "text", text: decodeText(bytes) };
 }
 
@@ -228,7 +219,7 @@ export function typeTable(table: RawTable, options: TypeTableOptions): Table {
   );
   const inferred = columns.filter((_, index) => kinds[index] === "inferred");
   const typedRows: readonly Row[] =
-    inferred.length === 0 ? [] : inferColumns(table.rows.map((row) => pick(row, inferred))).table;
+    inferred.length === 0 ? [] : inferColumns(pickColumns(table.rows, inferred)).table;
   const rows: Row[] = [];
   for (let index = 0; index < table.rows.length; index += 1) {
     const row = table.rows[index] ?? {};
@@ -250,27 +241,20 @@ export function typeTable(table: RawTable, options: TypeTableOptions): Table {
   return rows;
 }
 
-function pick(row: RawRow, columns: readonly string[]): RawRow {
-  const picked: Record<string, string | null> = {};
-  for (const column of columns) picked[column] = row[column] ?? null;
+/** Projects each raw row onto only `columns`, with missing cells as `null`. */
+export function pickColumns(rows: readonly RawRow[], columns: readonly string[]): RawRow[] {
+  const picked: RawRow[] = [];
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i] ?? {};
+    const record: Record<string, string | null> = {};
+    for (const column of columns) record[column] = row[column] ?? null;
+    picked.push(record);
+  }
   return picked;
 }
 
-function booleanValue(cell: string | null): boolean | string | null {
-  const read = readBooleanCell(cell);
-  switch (read.kind) {
-    case "value":
-      return read.value;
-    case "blank":
-      return null;
-    case "invalid":
-      return read.text;
-    default:
-      return null;
-  }
-}
-
-const TEXT_KINDS: ReadonlySet<FieldKind> = new Set(["text", "date", "list"]);
+/** Field kinds whose columns stay raw text during typing so `"0012"` and `"NA"` are not coerced. */
+export const TEXT_KINDS: ReadonlySet<FieldKind> = new Set(["text", "date", "list"]);
 
 /**
  * The columns that must stay text for a mapping: those mapped to a `text`,

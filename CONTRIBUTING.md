@@ -22,7 +22,9 @@ CI runs the same steps on every pull request.
 - Do not add, remove or upgrade dependencies without agreeing it in an issue
   first. Dependabot proposes updates weekly.
 - Put a test beside the code it tests.
-- Do not edit `vendor/`. Update pmotools-ts with `pnpm lib:update`.
+- `pmotools-ts` is an ordinary npm dependency. To test unreleased library
+  changes locally, link a sibling checkout with `pnpm link ../pmotools-ts`
+  (undo with `pnpm unlink pmotools-ts`).
 
 ## Licence
 

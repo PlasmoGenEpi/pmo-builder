@@ -20,6 +20,7 @@ import type {
 import { SECTION_IDS, type SectionId } from "@/domain/types";
 
 import {
+  isProgressMessage,
   isResultMessage,
   type CallMessage,
   type Endpoint,
@@ -28,7 +29,7 @@ import {
   type EngineResult,
   type ResultMessage,
 } from "./protocol";
-import type { BuildRequestOptions, Engine, RestoreFileInput } from "./types";
+import type { BuildProgress, BuildRequestOptions, Engine, RestoreFileInput } from "./types";
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -89,10 +90,16 @@ const WORKING_PMO_VALUES: {
     isRecord(value) && Array.isArray(value["samples"]) && Array.isArray(value["targets"]),
   subset: (value): value is WorkingPmoValues["subset"] =>
     hasKind(value, ["made", "empty"]) &&
-    (value["kind"] === "empty" || typeof value["fileName"] === "string"),
+    (value["kind"] === "empty" ||
+      (typeof value["fileName"] === "string" && typeof value["maxReads"] === "number")),
   preview: (value): value is WorkingPmoValues["preview"] => isSubsetPreview(value),
   table: (value): value is WorkingPmoValues["table"] =>
     isRecord(value) && typeof value["fileName"] === "string" && typeof value["text"] === "string",
+  tablePreview: (value): value is WorkingPmoValues["tablePreview"] =>
+    isRecord(value) &&
+    Array.isArray(value["columns"]) &&
+    Array.isArray(value["rows"]) &&
+    typeof value["totalRows"] === "number",
   tables: (value): value is WorkingPmoValues["tables"] => isMadeFile(value),
   file: (value): value is WorkingPmoValues["file"] => isMadeFile(value),
   groupFields: (value): value is WorkingPmoValues["groupFields"] =>
@@ -128,7 +135,9 @@ const RESULT_GUARDS: {
   dispose: (value): value is undefined => value === undefined,
   previewRows: (value): value is EngineResult<"previewRows"> =>
     hasKind(value, ["ready", "missing", "failed"]) &&
-    (value["kind"] !== "ready" || Array.isArray(value["rows"])),
+    (value["kind"] !== "ready" ||
+      (Array.isArray(value["rows"]) &&
+        (value["totalRows"] === null || typeof value["totalRows"] === "number"))),
   distinctValues: (value): value is EngineResult<"distinctValues"> =>
     value === null ||
     (isRecord(value) && Array.isArray(value["values"]) && typeof value["truncated"] === "boolean"),
@@ -144,7 +153,10 @@ const RESULT_GUARDS: {
     (isRecord(value) && typeof value["fileName"] === "string" && typeof value["size"] === "number"),
   getPmoText: (value): value is EngineResult<"getPmoText"> =>
     value === null ||
-    (isRecord(value) && typeof value["text"] === "string" && typeof value["length"] === "number"),
+    (isRecord(value) &&
+      typeof value["text"] === "string" &&
+      ((value["truncated"] === false && typeof value["length"] === "number") ||
+        (value["truncated"] === true && value["length"] === null))),
   getPanelFragment: (value): value is EngineResult<"getPanelFragment"> => isJsonValue(value),
   workingPmo: (value): value is EngineResult<"workingPmo"> => isWorkingPmoEnvelope(value),
 };
@@ -201,6 +213,14 @@ function createSectionTokens(): (draft: Draft) => Readonly<Record<SectionId, str
 export interface EngineClientOptions {
   /** Called by `dispose` after the engine has released its data, such as `worker.terminate`. */
   readonly terminate?: () => void;
+  /** Called when the worker reports streaming build progress. */
+  readonly onProgress?: (progress: BuildProgress) => void;
+}
+
+/** Options for {@link createEngine}, {@link createWorkerEngine}, {@link createRestartingEngine} and {@link createLazyInThreadEngine}. */
+export interface CreateEngineOptions {
+  /** Called when the engine reports streaming build progress. */
+  readonly onProgress?: (progress: BuildProgress) => void;
 }
 
 /** An engine client, with a way to fail every pending call when the worker breaks. */
@@ -220,6 +240,10 @@ export function createEngineClient(
 
   endpoint.addEventListener("message", (event) => {
     const data: unknown = event.data;
+    if (isProgressMessage(data)) {
+      options.onProgress?.(data.progress);
+      return;
+    }
     if (!isResultMessage(data)) return;
     const settle = pending.get(data.id);
     if (settle === undefined) return;
@@ -284,6 +308,7 @@ export function createEngineClient(
     },
     fail(reason) {
       broken = reason;
+      options.onProgress?.({ phase: "idle" });
       for (const settle of pending.values())
         settle({ type: "result", id: 0, ok: false, error: reason });
       pending.clear();
@@ -309,7 +334,10 @@ export interface WorkerHandle {
  * so the draft builds as before. The latest build, PMO and memos are lost:
  * the next build makes them again.
  */
-export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
+export function createRestartingEngine(
+  spawn: () => WorkerHandle,
+  options: CreateEngineOptions = {},
+): Engine {
   let current: EngineClient | null = null;
   let stopped = false;
   /** Every file the worker holds, so a new worker can be given them again. */
@@ -317,7 +345,10 @@ export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
 
   const start = (): EngineClient => {
     const handle = spawn();
-    const client = createEngineClient(handle.endpoint, { terminate: handle.terminate });
+    const client = createEngineClient(handle.endpoint, {
+      terminate: handle.terminate,
+      onProgress: options.onProgress,
+    });
     handle.onStopped((reason) => {
       client.fail(reason);
       handle.terminate();
@@ -344,6 +375,7 @@ export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
           file: input.file,
           fileName: input.fileName,
           sheetName: outcome.table.sheetName,
+          ...(input.stream === undefined ? {} : { stream: input.stream }),
         });
       }
       return outcome;
@@ -377,6 +409,7 @@ export function createRestartingEngine(spawn: () => WorkerHandle): Engine {
       const client = current;
       current = null;
       stopped = true;
+      options.onProgress?.({ phase: "idle" });
       if (client !== null) await client.dispose();
     },
   };
@@ -417,7 +450,7 @@ function spawnWorker(): WorkerHandle {
  * {@link EngineStoppedError} and the next call starts a new worker with the
  * same files. Throws when the browser refuses to create the worker at all.
  */
-export function createWorkerEngine(): Engine {
+export function createWorkerEngine(options: CreateEngineOptions = {}): Engine {
   // The first worker starts at once, so a browser that refuses workers throws here.
   const first = spawnWorker();
   let used = false;
@@ -427,15 +460,19 @@ export function createWorkerEngine(): Engine {
       return first;
     }
     return spawnWorker();
-  });
+  }, options);
 }
 
 /**
  * An engine on the calling thread whose code is loaded on first use, with a
  * dynamic import, so it costs nothing where workers are available.
  */
-export function createLazyInThreadEngine(): Engine {
-  return createLazyEngine(() => import("./engine").then((module) => module.createInThreadEngine()));
+export function createLazyInThreadEngine(options: CreateEngineOptions = {}): Engine {
+  return createLazyEngine(() =>
+    import("./engine").then((module) =>
+      module.createInThreadEngine({ onProgress: options.onProgress }),
+    ),
+  );
 }
 
 /** An engine made by `make` the first time it is used. */
@@ -465,11 +502,11 @@ export function createLazyEngine(make: () => Promise<Engine>): Engine {
  * and otherwise on the calling thread, loaded lazily (tests, server-side
  * rendering, a browser that blocks module workers).
  */
-export function createEngine(): Engine {
-  if (typeof Worker !== "function") return createLazyInThreadEngine();
+export function createEngine(options: CreateEngineOptions = {}): Engine {
+  if (typeof Worker !== "function") return createLazyInThreadEngine(options);
   try {
-    return createWorkerEngine();
+    return createWorkerEngine(options);
   } catch {
-    return createLazyInThreadEngine();
+    return createLazyInThreadEngine(options);
   }
 }

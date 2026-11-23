@@ -1,7 +1,7 @@
 import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { ChartColumn, CloudUpload, Download, Plus, Scissors, Table, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import type { MergeSummary } from "@/domain/build/merge";
 import type {
@@ -30,6 +30,7 @@ import {
 import { NameChecklist } from "./NameChecklist";
 import { NoAnswer, type NoAnswerReason } from "./NoAnswer";
 import { settleAnswer } from "./settleAnswer";
+import { specimenFieldLabel } from "./specimenFieldNames";
 import {
   formProblem,
   initialForm,
@@ -65,15 +66,52 @@ function Conditions({
   readonly form: SubsetForm;
   readonly onChange: (conditions: Condition[]) => void;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const removeRefs = useRef(new Map<string, HTMLButtonElement>());
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  const pendingFocusRef = useRef<string | null>(null);
   const used = new Set(form.conditions.map((condition) => condition.field));
   const unused = choices.metadata.filter((field) => !used.has(field.field));
+
+  useEffect(() => {
+    const targetField = pendingFocusRef.current;
+    if (targetField === null) return;
+    pendingFocusRef.current = null;
+    if (form.conditions.some((condition) => condition.field === targetField)) {
+      const removeButton = removeRefs.current.get(targetField);
+      if (removeButton !== undefined) {
+        removeButton.focus();
+        return;
+      }
+      const container = containerRef.current;
+      if (container !== null) {
+        for (const card of container.querySelectorAll<HTMLElement>("[data-condition-field]")) {
+          if (card.dataset.conditionField === targetField) {
+            const combobox = card.querySelector<HTMLElement>('[role="combobox"]');
+            if (combobox !== null) {
+              combobox.focus();
+              return;
+            }
+          }
+        }
+      }
+    }
+    addButtonRef.current?.focus();
+  }, [form.conditions]);
 
   function update(index: number, next: Condition): void {
     onChange(form.conditions.map((condition, at) => (at === index ? next : condition)));
   }
 
+  function remove(index: number): void {
+    const next = form.conditions.filter((_, at) => at !== index);
+    const target = next[index] ?? next[index - 1];
+    pendingFocusRef.current = target?.field ?? "";
+    onChange(next);
+  }
+
   return (
-    <div className="flex flex-col gap-4">
+    <div ref={containerRef} className="flex flex-col gap-4">
       <p className="text-sm text-text-muted">
         <Trans>
           A specimen is kept when it matches every condition: for each field, one of the ticked
@@ -84,10 +122,15 @@ function Conditions({
         const field = choices.metadata.find((item) => item.field === condition.field);
         const fieldOptions = choices.metadata
           .filter((item) => item.field === condition.field || !used.has(item.field))
-          .map((item) => ({ value: item.field, label: item.field }));
-        const fieldName = condition.field;
+          .map((item) => ({ value: item.field, label: specimenFieldLabel(item.field) }));
+        const fieldName = specimenFieldLabel(condition.field);
         return (
-          <Card key={condition.field} padding="sm" className="flex flex-col gap-3">
+          <Card
+            key={condition.field}
+            data-condition-field={condition.field}
+            padding="sm"
+            className="flex flex-col gap-3"
+          >
             <div className="flex items-end gap-2">
               <Field label={t`Field`} className="flex-1">
                 {(control) => (
@@ -95,15 +138,26 @@ function Conditions({
                     {...control}
                     options={fieldOptions}
                     value={condition.field}
-                    onValueChange={(value) => update(index, { field: value, values: [] })}
+                    onValueChange={(value) => {
+                      const chosen = choices.metadata.find((item) => item.field === value);
+                      update(index, {
+                        field: value,
+                        source: chosen?.source ?? "specimen",
+                        values: [],
+                      });
+                    }}
                   />
                 )}
               </Field>
               {form.conditions.length > 1 ? (
                 <IconButton
+                  ref={(node) => {
+                    if (node === null) removeRefs.current.delete(condition.field);
+                    else removeRefs.current.set(condition.field, node);
+                  }}
                   icon={X}
                   label={t`Remove the condition on ${fieldName}`}
-                  onClick={() => onChange(form.conditions.filter((_, at) => at !== index))}
+                  onClick={() => remove(index)}
                 />
               ) : null}
             </div>
@@ -120,6 +174,7 @@ function Conditions({
                     onCheckedChange={(on) =>
                       update(index, {
                         field: condition.field,
+                        source: condition.source,
                         values: on
                           ? [...condition.values, value.value]
                           : condition.values.filter((item) => item !== value.value),
@@ -134,13 +189,20 @@ function Conditions({
       })}
       {unused.length > 0 ? (
         <Button
+          ref={addButtonRef}
           size="sm"
           variant="secondary"
           icon={Plus}
           className="self-start"
-          onClick={() =>
-            onChange([...form.conditions, { field: unused[0]?.field ?? "", values: [] }])
-          }
+          onClick={() => {
+            const next = unused[0];
+            if (next !== undefined) {
+              onChange([
+                ...form.conditions,
+                { field: next.field, source: next.source, values: [] },
+              ]);
+            }
+          }}
         >
           {t`Add a condition`}
         </Button>
@@ -367,6 +429,8 @@ export function SubsetPanel({
 }: SubsetPanelProps) {
   const session = useWorkingPmoSession();
   const subset = useWorkingPmo((state) => state.subset);
+  const specimensHeadingId = useId();
+  const targetsHeadingId = useId();
   const [form, setForm] = useState<SubsetForm>(() => initialForm(choices));
   const [making, setMaking] = useState(false);
   const [shown, setShown] = useState<Shown>(SHOW_SUBSET);
@@ -403,8 +467,8 @@ export function SubsetPanel({
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-4">
-        <SectionHeading title={t`Specimens`} />
+      <section aria-labelledby={specimensHeadingId} className="flex flex-col gap-4">
+        <SectionHeading id={specimensHeadingId} title={t`Specimens`} />
         <RadioGroup<SpecimenMode>
           label={t`Which specimens to keep`}
           value={form.specimenMode}
@@ -460,8 +524,8 @@ export function SubsetPanel({
         ) : null}
       </section>
 
-      <section className="flex flex-col gap-4">
-        <SectionHeading title={t`Targets`} />
+      <section aria-labelledby={targetsHeadingId} className="flex flex-col gap-4">
+        <SectionHeading id={targetsHeadingId} title={t`Targets`} />
         <RadioGroup<TargetMode>
           label={t`Which targets to keep`}
           value={form.targetMode}
